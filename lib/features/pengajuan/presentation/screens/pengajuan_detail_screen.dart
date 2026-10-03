@@ -513,12 +513,12 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFF9EAE8),
+                    color: AppColors.primarySurface,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.verified_outlined,
-                    color: AppColors.chilliDust,
+                    color: AppColors.primaryRed,
                     size: 20,
                   ),
                 ),
@@ -601,8 +601,9 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9F8F5),
+                  color: AppColors.backgroundCanvas,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderSubtle),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -615,7 +616,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.cocoaBeanRoast,
+                            color: AppColors.textMain,
                           ),
                         ),
                         Container(
@@ -625,8 +626,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: surveyTerbaru.statusHasilEvaluasi == 'sesuai'
-                                ? const Color(0xFFE8F5E9)
-                                : const Color(0xFFF9EAE8),
+                                ? AppColors.statusSuccessSurface
+                                : AppColors.statusUrgentSurface,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -636,8 +637,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                               fontWeight: FontWeight.bold,
                               color:
                                   surveyTerbaru.statusHasilEvaluasi == 'sesuai'
-                                  ? const Color(0xFF2E7D32)
-                                  : AppColors.chilliDust,
+                                  ? AppColors.statusSuccessText
+                                  : AppColors.statusUrgentText,
                             ),
                           ),
                         ),
@@ -816,7 +817,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 height: 42,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: AppColors.statusSuccessText,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),

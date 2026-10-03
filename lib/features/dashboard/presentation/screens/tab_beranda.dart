@@ -113,13 +113,13 @@ class TabBeranda extends ConsumerWidget {
             onPressed: () => _quickDemo(context, ref),
             icon: const Icon(
               Icons.bolt,
-              color: AppColors.actionPrimary,
+              color: AppColors.textOnRed,
               size: 18,
             ),
             label: Text(
               'Demo Cepat',
               style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.actionPrimary,
+                color: AppColors.textOnRed,
                 fontWeight: FontWeight.bold,
               ),
             ),

@@ -77,7 +77,7 @@ class PengajuanStep2Screen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${files.length} berkas asli berhasil diunggah sekaligus!',
+                '${files.length} berkas berhasil dipilih untuk formulir.',
               ),
             ),
           );
@@ -262,7 +262,7 @@ class PengajuanStep2Screen extends ConsumerWidget {
             children: [
               if (missingCount > 0) ...[
                 Text(
-                  '$missingCount dokumen administrasi wajib belum diunggah',
+                  '$missingCount dokumen administrasi wajib belum dilampirkan',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.chilliDust,
                     fontWeight: FontWeight.bold,

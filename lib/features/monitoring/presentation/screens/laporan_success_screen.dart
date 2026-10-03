@@ -28,7 +28,7 @@ class LaporanSuccessScreen extends StatelessWidget {
                 width: 84,
                 height: 84,
                 decoration: const BoxDecoration(
-                  color: AppColors.pistachioCream,
+                  color: AppColors.statusSuccessText,
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check, size: 48, color: Colors.white),

@@ -1368,8 +1368,8 @@ class _PengajuanAdminDetailScreenState
       SnackBar(
         content: Text(message),
         backgroundColor: success
-            ? AppColors.pistachioCream
-            : AppColors.chilliDust,
+            ? AppColors.statusSuccessText
+            : AppColors.primaryRed,
       ),
     );
   }
@@ -1683,11 +1683,9 @@ class _PengajuanAdminDetailScreenState
                         ),
                         constraints: BoxConstraints(maxWidth: maxChipWidth),
                         decoration: BoxDecoration(
-                          color: AppColors.pistachioCream.withValues(
-                            alpha: 0.35,
-                          ),
+                          color: AppColors.statusSuccessSurface,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.pistachioCream),
+                          border: Border.all(color: AppColors.statusSuccessText),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

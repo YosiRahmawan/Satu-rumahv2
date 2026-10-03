@@ -118,9 +118,7 @@ class TabBerandaAdmin extends ConsumerWidget {
                           metrics.surveyTerjadwalCount.toString().padLeft(2, '0'),
                       label: 'Survey Minggu Ini',
                       icon: Icons.calendar_today_outlined,
-                      iconBgColor: AppColors.pistachioCream.withValues(
-                        alpha: 0.35,
-                      ),
+                      iconBgColor: AppColors.statusSuccessSurface,
                       iconColor: AppColors.statusSuccess,
                       onTap: () => context.push('/admin/pengajuan'),
                     ),
@@ -259,7 +257,7 @@ class TabBerandaAdmin extends ConsumerWidget {
                                     backgroundColor: Colors.white24,
                                     valueColor:
                                         const AlwaysStoppedAnimation<Color>(
-                                          AppColors.pistachioCream,
+                                          AppColors.statusSuccessText,
                                         ),
                                     minHeight: 6,
                                   ),

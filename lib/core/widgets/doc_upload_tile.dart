@@ -32,10 +32,10 @@ class DocUploadTile extends StatelessWidget {
             ? '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB'
             : '${(sizeBytes / 1024).toStringAsFixed(0)} KB';
         final dateStr = DateFormat('d MMM yyyy, HH:mm').format(stat.modified);
-        return '$sizeStr · Diunggah $dateStr';
+        return '$sizeStr · Dipilih $dateStr';
       }
     } catch (_) {}
-    return 'Diunggah ${DateFormat('d MMM yyyy').format(DateTime.now())}';
+    return 'Dipilih ${DateFormat('d MMM yyyy').format(DateTime.now())}';
   }
 
   @override
@@ -49,7 +49,7 @@ class DocUploadTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isUploaded ? AppColors.pistachioCream : AppColors.grey300,
+          color: isUploaded ? AppColors.statusSuccessText : AppColors.grey300,
           width: isUploaded ? 1.5 : 1,
         ),
       ),
@@ -137,7 +137,7 @@ class DocUploadTile extends StatelessWidget {
               child: const Text('Unggah'),
             )
           else
-            const Icon(Icons.check_circle, color: AppColors.pistachioCream, size: 28),
+            const Icon(Icons.check_circle, color: AppColors.statusSuccessText, size: 28),
         ],
       ),
     );

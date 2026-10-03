@@ -15,18 +15,26 @@ class StatusBadge extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'dalam proses':
       case 'proses':
-        bgColor = AppColors.info.withValues(alpha: 0.12);
-        textColor = AppColors.info;
+      case 'survey':
+      case 'survey lapangan':
+        bgColor = AppColors.statusSurveySurface;
+        textColor = AppColors.statusSurveyText;
         break;
       case 'selesai':
       case 'disetujui':
-        bgColor = AppColors.pistachioCream.withValues(alpha: 0.2);
-        textColor = AppColors.cocoaBeanRoast;
+      case 'sesuai':
+        bgColor = AppColors.statusSuccessSurface;
+        textColor = AppColors.statusSuccessText;
         break;
       case 'perlu perbaikan':
       case 'revisi':
-        bgColor = AppColors.warning.withValues(alpha: 0.12);
-        textColor = AppColors.warning;
+        bgColor = AppColors.statusWarningSurface;
+        textColor = AppColors.statusWarningText;
+        break;
+      case 'ditolak':
+      case 'urgent':
+        bgColor = AppColors.statusUrgentSurface;
+        textColor = AppColors.statusUrgentText;
         break;
       default:
         bgColor = AppColors.grey200;

@@ -179,7 +179,7 @@ class _PengajuanStep5ReviewScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'Berkas Unggahan',
+                            'Berkas Terlampir',
                             style: AppTextStyles.titleMedium,
                           ),
                           const Divider(height: 20),
@@ -236,7 +236,7 @@ class _PengajuanStep5ReviewScreenState
                       ),
                       const Expanded(
                         child: Text(
-                          'Saya menyatakan bahwa seluruh data dan dokumen yang saya unggah adalah benar, sah, dan dapat dipertanggungjawabkan secara hukum.',
+                          'Saya menyatakan bahwa seluruh data dan dokumen yang saya lampirkan adalah benar, sah, dan dapat dipertanggungjawabkan secara hukum.',
                           style: AppTextStyles.bodySmall,
                         ),
                       ),
@@ -366,14 +366,14 @@ class _PengajuanStep5ReviewScreenState
               if (exists) ...[
                 const Icon(
                   Icons.check_circle,
-                  color: AppColors.pistachioCream,
+                  color: AppColors.statusSuccessText,
                   size: 18,
                 ),
                 const SizedBox(width: 4),
                 const Text(
                   'Tersedia',
                   style: TextStyle(
-                    color: AppColors.pistachioCream,
+                    color: AppColors.statusSuccessText,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

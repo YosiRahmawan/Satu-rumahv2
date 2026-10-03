@@ -13,7 +13,6 @@ import '../../features/monitoring/presentation/screens/monitoring_list_screen.da
 import '../../features/monitoring/presentation/screens/monitoring_main_screen.dart';
 import '../../features/monitoring/presentation/screens/tambah_monitoring_stepper_screen.dart';
 import '../../features/notifikasi/presentation/screens/notifikasi_list_screen.dart';
-import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_admin_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_step1_screen.dart';
@@ -65,7 +64,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: '/onboarding',
-        builder: (_, __) => const OnboardingScreen(),
+        redirect: (_, __) => '/login',
       ),
       GoRoute(
         path: '/dashboard',

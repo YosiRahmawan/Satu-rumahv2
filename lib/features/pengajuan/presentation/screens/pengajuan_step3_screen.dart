@@ -86,7 +86,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${files.length} berkas $sectionTitle berhasil diunggah!',
+                '${files.length} berkas $sectionTitle berhasil dipilih untuk formulir.',
               ),
             ),
           );
@@ -577,7 +577,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
             children: [
               if (missingCount > 0) ...[
                 Text(
-                  '$missingCount dokumen wajib belum diunggah',
+                  '$missingCount dokumen wajib belum dilampirkan',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.chilliDust,
                     fontWeight: FontWeight.bold,

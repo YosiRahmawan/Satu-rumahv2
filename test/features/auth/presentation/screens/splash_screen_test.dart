@@ -9,8 +9,8 @@ GoRouter _testRouter() {
     routes: [
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(
-        path: '/onboarding',
-        builder: (_, __) => const Scaffold(body: Text('ONBOARDING')),
+        path: '/login',
+        builder: (_, __) => const Scaffold(body: Text('LOGIN')),
       ),
     ],
   );
@@ -21,7 +21,7 @@ Widget _testApp(GoRouter router) {
 }
 
 void main() {
-  testWidgets('Splash transitions to onboarding after its delay', (
+  testWidgets('Splash transitions to login after its delay', (
     tester,
   ) async {
     final router = _testRouter();
@@ -34,7 +34,7 @@ void main() {
     await tester.pump(const Duration(seconds: 2));
     await tester.pump();
 
-    expect(find.text('ONBOARDING'), findsOneWidget);
+    expect(find.text('LOGIN'), findsOneWidget);
   });
 
   testWidgets('disposing Splash before its delay leaves no pending callback', (
@@ -47,9 +47,9 @@ void main() {
     await tester.pump();
     expect(find.byType(SplashScreen), findsOneWidget);
 
-    router.go('/onboarding');
+    router.go('/login');
     await tester.pumpAndSettle();
-    expect(find.text('ONBOARDING'), findsOneWidget);
+    expect(find.text('LOGIN'), findsOneWidget);
 
     await tester.pump(const Duration(seconds: 3));
     expect(tester.takeException(), isNull);
