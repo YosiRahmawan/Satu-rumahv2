@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../providers/pengajuan_form_controller.dart';
@@ -40,21 +41,23 @@ class _PengajuanSayaListScreenState
           item.id.toLowerCase().contains(_searchQuery.toLowerCase());
 
       if (_filterStatus == 'Semua') return matchesSearch;
-      if (_filterStatus == 'Proses')
+      if (_filterStatus == 'Proses') {
         return matchesSearch && item.status == 'Dalam Proses';
-      if (_filterStatus == 'Selesai')
+      }
+      if (_filterStatus == 'Selesai') {
         return matchesSearch && item.status == 'Selesai';
-      if (_filterStatus == 'Revisi')
+      }
+      if (_filterStatus == 'Revisi') {
         return matchesSearch && item.status == 'Perlu Perbaikan';
+      }
       return matchesSearch;
     }).toList();
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text('Pengajuan Saya', style: AppTextStyles.headlineLarge),
-        elevation: 0,
+      appBar: const AppHeader(
+        title: 'Pengajuan Saya',
+        showNotifications: false,
       ),
       body: Column(
         children: [

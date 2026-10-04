@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/verification_radio.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 import '../providers/pengajuan_form_controller.dart';
@@ -242,7 +243,7 @@ class _PengajuanAdminDetailScreenState
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE8D4A2),
+                        color: AppColors.champagneToast,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -251,6 +252,7 @@ class _PengajuanAdminDetailScreenState
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: AppColors.cocoaBeanRoast,
+                          letterSpacing: 0.6,
                         ),
                       ),
                     ),
@@ -263,8 +265,11 @@ class _PengajuanAdminDetailScreenState
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.16),
+                          color: Colors.white.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: const Row(
                           children: [
@@ -301,8 +306,9 @@ class _PengajuanAdminDetailScreenState
             child: Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: const Color(0xFFEBE8DC),
+                color: AppColors.surfaceMuted,
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.borderSubtle),
               ),
               child: Row(
                 children: [
@@ -525,127 +531,32 @@ class _PengajuanAdminDetailScreenState
                                 color: AppColors.grey200,
                               ),
                               const SizedBox(height: 10),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  // Sesuai Toggle
-                                  GestureDetector(
-                                    onTap: () {
-                                      ref
-                                          .read(
-                                            pengajuanVerifikasiControllerProvider
-                                                .notifier,
-                                          )
-                                          .verifikasiDokumen(
-                                            pengajuan.id,
-                                            key,
-                                            true,
-                                          );
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isVerified == true
-                                            ? const Color(0xFFE2EED7)
-                                            : const Color(0xFFF0EFEA),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: isVerified == true
-                                              ? const Color(0xFF5D7B38)
-                                              : Colors.transparent,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            isVerified == true
-                                                ? Icons.check_circle
-                                                : Icons.radio_button_unchecked,
-                                            size: 14,
-                                            color: isVerified == true
-                                                ? const Color(0xFF5D7B38)
-                                                : AppColors.grey600,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Sesuai',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: isVerified == true
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                              color: isVerified == true
-                                                  ? const Color(0xFF5D7B38)
-                                                  : AppColors.cocoaBeanRoast,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                  // Tidak Sesuai Toggle
-                                  GestureDetector(
-                                    onTap: () {
-                                      ref
-                                          .read(
-                                            pengajuanVerifikasiControllerProvider
-                                                .notifier,
-                                          )
-                                          .verifikasiDokumen(
-                                            pengajuan.id,
-                                            key,
-                                            false,
-                                          );
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isVerified == false
-                                            ? const Color(0xFFF9EAE8)
-                                            : const Color(0xFFF0EFEA),
-                                        borderRadius: BorderRadius.circular(20),
-                                        border: Border.all(
-                                          color: isVerified == false
-                                              ? AppColors.chilliDust
-                                              : Colors.transparent,
-                                        ),
-                                      ),
-                                      child: Row(
-                                        children: [
-                                          Icon(
-                                            isVerified == false
-                                                ? Icons.cancel
-                                                : Icons.radio_button_unchecked,
-                                            size: 14,
-                                            color: isVerified == false
-                                                ? AppColors.chilliDust
-                                                : AppColors.grey600,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            'Tidak Sesuai',
-                                            style: TextStyle(
-                                              fontSize: 11,
-                                              fontWeight: isVerified == false
-                                                  ? FontWeight.bold
-                                                  : FontWeight.normal,
-                                              color: isVerified == false
-                                                  ? AppColors.chilliDust
-                                                  : AppColors.cocoaBeanRoast,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                              VerificationRadioGroup(
+                                isVerified: isVerified,
+                                onVerified: () {
+                                  ref
+                                      .read(
+                                        pengajuanVerifikasiControllerProvider
+                                            .notifier,
+                                      )
+                                      .verifikasiDokumen(
+                                        pengajuan.id,
+                                        key,
+                                        true,
+                                      );
+                                },
+                                onRejected: () {
+                                  ref
+                                      .read(
+                                        pengajuanVerifikasiControllerProvider
+                                            .notifier,
+                                      )
+                                      .verifikasiDokumen(
+                                        pengajuan.id,
+                                        key,
+                                        false,
+                                      );
+                                },
                               ),
                             ],
                           ),
@@ -901,7 +812,9 @@ class _PengajuanAdminDetailScreenState
                       child: OutlinedButton.icon(
                         onPressed: () async {
                           try {
-                            await Share.shareXFiles([XFile(localFile.path)]);
+                            await SharePlus.instance.share(
+                              ShareParams(files: [XFile(localFile.path)]),
+                            );
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -1455,8 +1368,8 @@ class _PengajuanAdminDetailScreenState
       SnackBar(
         content: Text(message),
         backgroundColor: success
-            ? AppColors.pistachioCream
-            : AppColors.chilliDust,
+            ? AppColors.statusSuccessText
+            : AppColors.primaryRed,
       ),
     );
   }
@@ -1770,11 +1683,9 @@ class _PengajuanAdminDetailScreenState
                         ),
                         constraints: BoxConstraints(maxWidth: maxChipWidth),
                         decoration: BoxDecoration(
-                          color: AppColors.pistachioCream.withValues(
-                            alpha: 0.35,
-                          ),
+                          color: AppColors.statusSuccessSurface,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.pistachioCream),
+                          border: Border.all(color: AppColors.statusSuccessText),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1888,122 +1799,30 @@ class _PengajuanAdminDetailScreenState
                   ),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        ref
-                            .read(
-                              pengajuanVerifikasiControllerProvider.notifier,
-                            )
-                            .verifikasiDokumen(
-                              pengajuan.id,
-                              'site_plan_dwg',
-                              true,
-                            );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isVerified == true
-                              ? const Color(0xFFE2EED7)
-                              : const Color(0xFFF0EFEA),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isVerified == true
-                                ? const Color(0xFF5D7B38)
-                                : Colors.transparent,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isVerified == true
-                                  ? Icons.check_circle
-                                  : Icons.radio_button_unchecked,
-                              size: 16,
-                              color: isVerified == true
-                                  ? const Color(0xFF5D7B38)
-                                  : AppColors.grey600,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Sesuai',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: isVerified == true
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: isVerified == true
-                                    ? const Color(0xFF5D7B38)
-                                    : AppColors.cocoaBeanRoast,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () {
-                        ref
-                            .read(
-                              pengajuanVerifikasiControllerProvider.notifier,
-                            )
-                            .verifikasiDokumen(
-                              pengajuan.id,
-                              'site_plan_dwg',
-                              false,
-                            );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isVerified == false
-                              ? const Color(0xFFF9EAE8)
-                              : const Color(0xFFF0EFEA),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isVerified == false
-                                ? AppColors.chilliDust
-                                : Colors.transparent,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              isVerified == false
-                                  ? Icons.cancel
-                                  : Icons.radio_button_unchecked,
-                              size: 16,
-                              color: isVerified == false
-                                  ? AppColors.chilliDust
-                                  : AppColors.grey600,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Tidak Sesuai / Perlu Perbaikan',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: isVerified == false
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                                color: isVerified == false
-                                    ? AppColors.chilliDust
-                                    : AppColors.cocoaBeanRoast,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                VerificationRadioGroup(
+                  isVerified: isVerified,
+                  onVerified: () {
+                    ref
+                        .read(
+                          pengajuanVerifikasiControllerProvider.notifier,
+                        )
+                        .verifikasiDokumen(
+                          pengajuan.id,
+                          'site_plan_dwg',
+                          true,
+                        );
+                  },
+                  onRejected: () {
+                    ref
+                        .read(
+                          pengajuanVerifikasiControllerProvider.notifier,
+                        )
+                        .verifikasiDokumen(
+                          pengajuan.id,
+                          'site_plan_dwg',
+                          false,
+                        );
+                  },
                 ),
               ],
             ),

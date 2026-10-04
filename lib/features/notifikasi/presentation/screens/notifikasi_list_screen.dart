@@ -88,16 +88,18 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
 
     return Scaffold(
       appBar: AppHeader(
-        variant: role == AppRole.admin
-            ? AppHeaderVariant.authority
-            : AppHeaderVariant.light,
+        variant: AppHeaderVariant.roleBased,
         title: role == AppRole.admin
             ? 'Pemerintah Kota Tasikmalaya'
-            : 'SATU RUMAH',
-        subtitle: role == AppRole.admin ? 'SATU RUMAH' : null,
+            : (role == AppRole.perwaskim
+                ? 'Pengawasan Lapangan'
+                : 'SATU RUMAH'),
+        subtitle: role == AppRole.admin
+            ? 'SATU RUMAH - Disperwaskim'
+            : (role == AppRole.perwaskim ? 'Disperwaskim' : 'Kotak Notifikasi'),
         showNotifications: false,
       ),
-      backgroundColor: AppColors.surfaceWarm,
+      backgroundColor: AppColors.background,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -185,7 +187,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           // List Items
           Expanded(
             child: filteredNotifs.isEmpty
-                ? Center(
+                ? const Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -194,8 +196,8 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                           size: 64,
                           color: AppColors.grey400,
                         ),
-                        const SizedBox(height: 12),
-                        const Text(
+                        SizedBox(height: 12),
+                        Text(
                           'Tidak ada notifikasi.',
                           style: TextStyle(
                             color: AppColors.grey600,

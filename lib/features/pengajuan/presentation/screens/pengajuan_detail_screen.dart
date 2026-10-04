@@ -25,8 +25,9 @@ MonitoringModel? findLinkedFinalMonitoring(
   String? beritaAcaraPath,
 }) {
   final normalizedId = pengajuanId.trim();
-  if (normalizedId.isEmpty || beritaAcaraPath?.trim().isNotEmpty != true)
+  if (normalizedId.isEmpty || beritaAcaraPath?.trim().isNotEmpty != true) {
     return null;
+  }
 
   for (final report in reports) {
     if (!report.isDraft && report.pengajuanId?.trim() == normalizedId) {
@@ -512,12 +513,12 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: const BoxDecoration(
-                    color: Color(0xFFF9EAE8),
+                    color: AppColors.primarySurface,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.verified_outlined,
-                    color: AppColors.chilliDust,
+                    color: AppColors.primaryRed,
                     size: 20,
                   ),
                 ),
@@ -600,8 +601,9 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9F8F5),
+                  color: AppColors.backgroundCanvas,
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderSubtle),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -614,7 +616,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                           style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.cocoaBeanRoast,
+                            color: AppColors.textMain,
                           ),
                         ),
                         Container(
@@ -624,8 +626,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: surveyTerbaru.statusHasilEvaluasi == 'sesuai'
-                                ? const Color(0xFFE8F5E9)
-                                : const Color(0xFFF9EAE8),
+                                ? AppColors.statusSuccessSurface
+                                : AppColors.statusUrgentSurface,
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -635,8 +637,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                               fontWeight: FontWeight.bold,
                               color:
                                   surveyTerbaru.statusHasilEvaluasi == 'sesuai'
-                                  ? const Color(0xFF2E7D32)
-                                  : AppColors.chilliDust,
+                                  ? AppColors.statusSuccessText
+                                  : AppColors.statusUrgentText,
                             ),
                           ),
                         ),
@@ -815,7 +817,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 height: 42,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: AppColors.statusSuccessText,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -890,51 +892,74 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
     bool isPassed,
     bool isCurrent,
   ) {
+    final Color circleColor = isPassed
+        ? AppColors.statusSuccess
+        : isCurrent
+        ? AppColors.chilliDust
+        : AppColors.grey300;
+
+    final Color lineColor =
+        isPassed ? AppColors.statusSuccess : AppColors.grey300;
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
           children: [
             Container(
-              width: 16,
-              height: 16,
+              width: 18,
+              height: 18,
               decoration: BoxDecoration(
-                color: isPassed
-                    ? AppColors.pistachioCream
-                    : isCurrent
-                    ? AppColors.chilliDust
-                    : AppColors.grey300,
+                color: isCurrent ? AppColors.surfaceAttention : circleColor,
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: circleColor,
+                  width: isCurrent ? 3 : 2,
+                ),
               ),
+              child: isPassed
+                  ? const Center(
+                      child: Icon(
+                        Icons.check,
+                        size: 11,
+                        color: Colors.white,
+                      ),
+                    )
+                  : null,
             ),
             Container(
               width: 2,
-              height: 40,
-              color: isPassed ? AppColors.pistachioCream : AppColors.grey300,
+              height: 38,
+              color: lineColor,
             ),
           ],
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                  color: isCurrent
-                      ? AppColors.chilliDust
-                      : AppColors.cocoaBeanRoast,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTextStyles.bodyMedium.copyWith(
+                    fontWeight:
+                        isCurrent || isPassed ? FontWeight.bold : FontWeight.w500,
+                    color: isCurrent
+                        ? AppColors.chilliDust
+                        : AppColors.cocoaBeanRoast,
+                  ),
                 ),
-              ),
-              Text(
-                desc,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.grey600,
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textMuted,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],

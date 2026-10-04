@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../../../../core/utils/file_picker_util.dart';
 import '../providers/pengajuan_form_controller.dart';
@@ -69,9 +70,10 @@ class PengajuanStep4Screen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Dokumen Teknis (Step 4)'),
-        elevation: 0,
+      appBar: const AppHeader(
+        title: 'Dokumen Teknis (Step 4)',
+        showNotifications: false,
+        showBackButton: true,
       ),
       body: Column(
         children: [
@@ -170,7 +172,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Daftar Berkas Terunggah (${formState.technicalFiles.length})',
+                          'Daftar Berkas Terlampir (${formState.technicalFiles.length})',
                           style: AppTextStyles.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.cocoaBeanRoast,
@@ -324,7 +326,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 16),
 
-                        // Green Chips Grid / Wrap (Style matching AppColors.pistachioCream)
+                        // Green Chips Grid / Wrap (Style matching AppColors.statusSuccessSurface)
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
@@ -347,14 +349,12 @@ class PengajuanStep4Screen extends ConsumerWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: isSelected
-                                      ? AppColors.pistachioCream.withValues(
-                                          alpha: 0.35,
-                                        )
+                                      ? AppColors.statusSuccessSurface
                                       : AppColors.surface,
                                   borderRadius: BorderRadius.circular(20),
                                   border: Border.all(
                                     color: isSelected
-                                        ? AppColors.pistachioCream
+                                        ? AppColors.statusSuccessText
                                         : AppColors.grey300,
                                     width: isSelected ? 1.5 : 1,
                                   ),
@@ -454,7 +454,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
             children: [
               if (!formState.isStep4Valid) ...[
                 Text(
-                  'Minimal satu berkas teknis wajib diunggah',
+                  'Minimal satu berkas teknis wajib dilampirkan',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.chilliDust,
                     fontWeight: FontWeight.bold,

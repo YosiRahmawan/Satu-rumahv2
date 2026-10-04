@@ -8,7 +8,7 @@ import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../providers/admin_dashboard_provider.dart';
-import '../widgets/admin_header_widget.dart';
+import '../../../../core/widgets/app_header.dart';
 
 class TabBerandaAdmin extends ConsumerWidget {
   const TabBerandaAdmin({super.key});
@@ -18,7 +18,7 @@ class TabBerandaAdmin extends ConsumerWidget {
     final metricsState = ref.watch(adminDashboardMetricsAsyncProvider);
 
     return Scaffold(
-      appBar: const AdminHeaderWidget(),
+      appBar: const AppHeader(title: 'Pemerintah Kota Tasikmalaya', subtitle: 'SATU RUMAH'),
       backgroundColor: AppColors.background,
       body: metricsState.when(
         loading: () => const DataStateView.loading(),
@@ -91,7 +91,7 @@ class TabBerandaAdmin extends ConsumerWidget {
                     _buildMockupStatCard(
                       context,
                       count:
-                          '${metrics.pengajuanBaruCount.toString().padLeft(2, '0')}',
+                          metrics.pengajuanBaruCount.toString().padLeft(2, '0'),
                       label: 'Pengajuan Baru',
                       icon: Icons.article_outlined,
                       iconBgColor: AppColors.champagneToast.withValues(
@@ -103,7 +103,7 @@ class TabBerandaAdmin extends ConsumerWidget {
                     _buildMockupStatCard(
                       context,
                       count:
-                          '${metrics.verifikasiTeknisCount.toString().padLeft(2, '0')}',
+                          metrics.verifikasiTeknisCount.toString().padLeft(2, '0'),
                       label: 'Menunggu Teknis',
                       icon: Icons.access_time,
                       iconBgColor: AppColors.champagneToast.withValues(
@@ -115,19 +115,17 @@ class TabBerandaAdmin extends ConsumerWidget {
                     _buildMockupStatCard(
                       context,
                       count:
-                          '${metrics.surveyTerjadwalCount.toString().padLeft(2, '0')}',
+                          metrics.surveyTerjadwalCount.toString().padLeft(2, '0'),
                       label: 'Survey Minggu Ini',
                       icon: Icons.calendar_today_outlined,
-                      iconBgColor: AppColors.pistachioCream.withValues(
-                        alpha: 0.35,
-                      ),
+                      iconBgColor: AppColors.statusSuccessSurface,
                       iconColor: AppColors.statusSuccess,
                       onTap: () => context.push('/admin/pengajuan'),
                     ),
                     _buildMockupStatCard(
                       context,
                       count:
-                          '${metrics.perluTindakLanjutCount.toString().padLeft(2, '0')}',
+                          metrics.perluTindakLanjutCount.toString().padLeft(2, '0'),
                       label: 'Perlu Tindak Lanjut',
                       icon: Icons.error_outline,
                       iconBgColor: AppColors.statusAttention.withValues(
@@ -259,7 +257,7 @@ class TabBerandaAdmin extends ConsumerWidget {
                                     backgroundColor: Colors.white24,
                                     valueColor:
                                         const AlwaysStoppedAnimation<Color>(
-                                          AppColors.pistachioCream,
+                                          AppColors.statusSuccessText,
                                         ),
                                     minHeight: 6,
                                   ),
@@ -417,7 +415,7 @@ class TabBerandaAdmin extends ConsumerWidget {
   }) {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: AppRadii.card),
+      shape: const RoundedRectangleBorder(borderRadius: AppRadii.card),
       color: Colors.white,
       child: InkWell(
         borderRadius: AppRadii.card,

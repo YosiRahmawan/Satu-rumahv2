@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/doc_upload_tile.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../../../../core/utils/file_picker_util.dart';
@@ -85,7 +86,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${files.length} berkas $sectionTitle berhasil diunggah!',
+                '${files.length} berkas $sectionTitle berhasil dipilih untuk formulir.',
               ),
             ),
           );
@@ -145,8 +146,10 @@ class PengajuanStep3Screen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Administrasi Perumahan (Step 3)'),
+      appBar: AppHeader(
+        title: 'Administrasi Perumahan (Step 3)',
+        showNotifications: false,
+        showBackButton: true,
         actions: [
           TextButton.icon(
             onPressed: () {
@@ -161,12 +164,12 @@ class PengajuanStep3Screen extends ConsumerWidget {
             icon: const Icon(
               Icons.auto_fix_high,
               size: 18,
-              color: AppColors.chilliDust,
+              color: Colors.white70,
             ),
             label: Text(
               'Isi Dummy',
               style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.chilliDust,
+                color: Colors.white70,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -574,7 +577,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
             children: [
               if (missingCount > 0) ...[
                 Text(
-                  '$missingCount dokumen wajib belum diunggah',
+                  '$missingCount dokumen wajib belum dilampirkan',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.chilliDust,
                     fontWeight: FontWeight.bold,

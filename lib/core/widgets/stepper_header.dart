@@ -28,7 +28,7 @@ class StepperHeader extends StatelessWidget {
             return Expanded(
               child: Container(
                 height: 3,
-                color: isPassed ? AppColors.chilliDust : AppColors.grey300,
+                color: isPassed ? AppColors.primaryRed : AppColors.grey300,
               ),
             );
           } else {
@@ -42,17 +42,17 @@ class StepperHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 32,
-                  height: 32,
+                  width: 30,
+                  height: 30,
                   decoration: BoxDecoration(
                     color: isPassed
-                        ? AppColors.chilliDust
+                        ? AppColors.primaryRed
                         : isActive
-                            ? AppColors.chilliDust
+                            ? AppColors.primaryRed
                             : AppColors.grey200,
                     shape: BoxShape.circle,
                     border: isActive
-                        ? Border.all(color: AppColors.champagneToast, width: 2)
+                        ? Border.all(color: AppColors.primarySurface, width: 2)
                         : null,
                   ),
                   alignment: Alignment.center,
@@ -67,11 +67,20 @@ class StepperHeader extends StatelessWidget {
                         ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  stepTitles[stepIndex],
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: isActive ? AppColors.chilliDust : AppColors.grey600,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                SizedBox(
+                  width: 52,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      stepTitles[stepIndex],
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        fontSize: 10.5,
+                        color: isActive ? AppColors.primaryRed : AppColors.grey600,
+                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
                   ),
                 ),
               ],

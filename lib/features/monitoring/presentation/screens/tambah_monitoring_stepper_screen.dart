@@ -95,9 +95,9 @@ class _TambahMonitoringStepperScreenState
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.chilliDust,
         elevation: 0,
         centerTitle: true,
         leading: Padding(
@@ -116,11 +116,12 @@ class _TambahMonitoringStepperScreenState
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.grey300),
+                border: Border.all(color: Colors.white38),
+                color: Colors.white12,
               ),
               child: const Icon(
                 Icons.arrow_back,
-                color: AppColors.cocoaBeanRoast,
+                color: Colors.white,
                 size: 18,
               ),
             ),
@@ -129,7 +130,7 @@ class _TambahMonitoringStepperScreenState
         title: const Text(
           'Form Monitoring Lapangan',
           style: TextStyle(
-            color: AppColors.cocoaBeanRoast,
+            color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 16,
           ),
@@ -148,7 +149,7 @@ class _TambahMonitoringStepperScreenState
               },
               icon: const Icon(
                 Icons.flash_on,
-                color: AppColors.actionPrimary,
+                color: Colors.white70,
                 size: 20,
               ),
             ),
@@ -532,9 +533,9 @@ class _TambahMonitoringStepperScreenState
         const SizedBox(height: 28),
 
         // Wet Signature Section Header
-        Row(
+        const Row(
           children: [
-            const Text(
+            Text(
               'Tanda Tangan Basah ',
               style: TextStyle(
                 fontSize: 14,
@@ -675,17 +676,17 @@ class _TambahMonitoringStepperScreenState
               horizontal: 16,
               vertical: 14,
             ),
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: AppRadii.card,
-              borderSide: const BorderSide(color: AppColors.grey300),
+              borderSide: BorderSide(color: AppColors.grey300),
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: AppRadii.card,
-              borderSide: const BorderSide(color: AppColors.grey300),
+              borderSide: BorderSide(color: AppColors.grey300),
             ),
-            focusedBorder: OutlineInputBorder(
+            focusedBorder: const OutlineInputBorder(
               borderRadius: AppRadii.card,
-              borderSide: const BorderSide(color: AppColors.actionPrimary),
+              borderSide: BorderSide(color: AppColors.actionPrimary),
             ),
           ),
         ),
@@ -731,7 +732,7 @@ class _TambahMonitoringStepperScreenState
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, -4),
           ),
@@ -746,7 +747,7 @@ class _TambahMonitoringStepperScreenState
               backgroundColor: AppColors.actionPrimary,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: AppRadii.pill),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadii.pill),
             ),
             onPressed: () {
               if (formState.currentStep == 0) {

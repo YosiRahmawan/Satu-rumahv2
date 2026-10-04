@@ -30,19 +30,19 @@ class PengajuanSuccessScreen extends ConsumerWidget {
                   Transform.scale(scale: scale, child: child),
               child: const Icon(
                 Icons.check_circle_outline,
-                color: AppColors.pistachioCream,
+                color: AppColors.statusSuccessText,
                 size: 90,
               ),
             ),
             const SizedBox(height: 24),
             const Text(
-              'Pengajuan Berhasil Dikirim!',
+              'Pengajuan Berhasil Disimpan!',
               textAlign: TextAlign.center,
               style: AppTextStyles.displaySmall,
             ),
             const SizedBox(height: 12),
             Text(
-              'Dokumen Site Plan Anda telah berhasil dikirim ke server Disperumkim untuk tahap verifikasi berkas.',
+              'Data dan dokumen pengajuan tersimpan secara lokal pada sesi demo ini untuk simulasi verifikasi berkas.',
               textAlign: TextAlign.center,
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.grey700,
@@ -83,23 +83,23 @@ class PengajuanSuccessScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.pistachioCream.withValues(alpha: 0.15),
+                color: AppColors.statusSuccessSurface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: AppColors.pistachioCream.withValues(alpha: 0.4),
+                  color: AppColors.statusSuccessText.withValues(alpha: 0.3),
                 ),
               ),
               child: const Row(
                 children: [
                   Icon(
                     Icons.notifications_active,
-                    color: AppColors.pistachioCream,
+                    color: AppColors.statusSuccessText,
                     size: 20,
                   ),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'Notifikasi konfirmasi sudah dikirim ke tab Notifikasi Anda.',
+                      'Notifikasi simulasi telah ditambahkan ke tab Notifikasi Anda.',
                       style: AppTextStyles.bodySmall,
                     ),
                   ),

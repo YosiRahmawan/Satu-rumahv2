@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/doc_upload_tile.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../../../../core/utils/file_picker_util.dart';
@@ -76,7 +77,7 @@ class PengajuanStep2Screen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${files.length} berkas asli berhasil diunggah sekaligus!',
+                '${files.length} berkas berhasil dipilih untuk formulir.',
               ),
             ),
           );
@@ -96,7 +97,11 @@ class PengajuanStep2Screen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Dokumen Administrasi (Step 2)')),
+      appBar: const AppHeader(
+        title: 'Dokumen Administrasi (Step 2)',
+        showNotifications: false,
+        showBackButton: true,
+      ),
       body: Column(
         children: [
           const StepperHeader(currentStep: 2),
@@ -257,7 +262,7 @@ class PengajuanStep2Screen extends ConsumerWidget {
             children: [
               if (missingCount > 0) ...[
                 Text(
-                  '$missingCount dokumen administrasi wajib belum diunggah',
+                  '$missingCount dokumen administrasi wajib belum dilampirkan',
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.chilliDust,
                     fontWeight: FontWeight.bold,

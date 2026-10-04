@@ -7,6 +7,8 @@ class AppButton extends StatelessWidget {
   final bool isPrimary;
   final bool isLoading;
   final Widget? icon;
+  final Widget? trailingIcon;
+  final double borderRadius;
 
   const AppButton.primary({
     super.key,
@@ -14,6 +16,8 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.trailingIcon,
+    this.borderRadius = 12.0,
   }) : isPrimary = true;
 
   const AppButton.secondary({
@@ -22,6 +26,8 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.trailingIcon,
+    this.borderRadius = 12.0,
   }) : isPrimary = false;
 
   @override
@@ -30,12 +36,20 @@ class AppButton extends StatelessWidget {
         ? ElevatedButton.styleFrom(
             backgroundColor: AppColors.chilliDust,
             foregroundColor: Colors.white,
+            elevation: 3,
+            shadowColor: AppColors.chilliDust.withValues(alpha: 0.35),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
             disabledBackgroundColor: AppColors.grey300,
             disabledForegroundColor: AppColors.grey600,
           )
         : OutlinedButton.styleFrom(
             foregroundColor: AppColors.chilliDust,
             side: const BorderSide(color: AppColors.chilliDust, width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(borderRadius),
+            ),
             disabledForegroundColor: AppColors.grey500,
           );
 
@@ -53,16 +67,25 @@ class AppButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[icon!, const SizedBox(width: 8)],
-              Text(text),
+              Text(
+                text,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              if (trailingIcon != null) ...[const SizedBox(width: 8), trailingIcon!],
             ],
           );
 
     return SizedBox(
       width: double.infinity,
-      height: 52,
+      height: 50,
       child: isPrimary
           ? ElevatedButton(onPressed: isLoading ? null : onPressed, style: style, child: child)
           : OutlinedButton(onPressed: isLoading ? null : onPressed, style: style, child: child),
     );
   }
 }
+

@@ -536,7 +536,7 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
         );
 
     return PengajuanOperationResult.changed(
-      message: 'Revisi dokumen berhasil diunggah dan menunggu review Admin.',
+      message: 'Revisi dokumen berhasil disimpan dan menunggu review Admin.',
       previousStage: current.statusTahap,
       nextStage: origin,
     );
