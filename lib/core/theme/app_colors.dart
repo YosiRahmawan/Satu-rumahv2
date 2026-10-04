@@ -47,5 +47,29 @@ class AppColors {
   static const Color surfaceAttention = Color(0xFFF9EAE8);
   static const Color surfaceSuccess = Color(0xFFE2EED7);
   static const Color surfaceInfo = Color(0xFFE8E3CB);
-  static const Color surfaceMuted = Color(0xFFF0EFEA);
+  // Red & White Balanced Enterprise Tokens (design.md)
+  static const Color primaryRed = Color(0xFFB91C1C);
+  static const Color primaryDark = Color(0xFF881337);
+  static const Color primaryMaroon = Color(0xFF991B1B);
+  static const Color primarySurface = Color(0xFFFEE2E2);
+  static const Color primarySurfaceSoft = Color(0xFFFFF1F2);
+  static const Color primarySurfaceBorder = Color(0xFFFECDD3);
+  static const Color canvas = Color(0xFFF8FAFC);
+  static const Color cardSurface = Color(0xFFFFFFFF);
+  static const Color textMain = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF64748B);
+  static const Color textTertiary = Color(0xFF94A3B8);
+  static const Color borderNeutral = Color(0xFFE2E8F0);
+  static const Color dividerLine = Color(0xFFF1F5F9);
+
+  // Semantic Status Tokens
+  static const Color semanticSuccessText = Color(0xFF16A34A);
+  static const Color semanticSuccessSurface = Color(0xFFDCFCE7);
+  static const Color semanticSuccessBorder = Color(0xFFBBF7D0);
+  static const Color semanticWarningText = Color(0xFFB45309);
+  static const Color semanticWarningSurface = Color(0xFFFEF3C7);
+  static const Color semanticDangerText = Color(0xFFB91C1C);
+  static const Color semanticDangerSurface = Color(0xFFFEE2E2);
+  static const Color semanticInfoText = Color(0xFF1D4ED8);
+  static const Color semanticInfoSurface = Color(0xFFEFF6FF);
 }

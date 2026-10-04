@@ -222,6 +222,26 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
   PengajuanListNotifier()
     : super([
         Pengajuan(
+          id: 'REG-TSK-2026-084',
+          namaPerumahan: 'Mutiara Regency Tasik',
+          namaPt: 'PT. Tasik Indah Sentosa',
+          namaDirektur: 'H. Tatang Sutisna',
+          npwpPerusahaan: '09.123.456.7-423.000',
+          luasLahan: 12500.0,
+          jumlahUnit: 45,
+          tipePerumahan: 'Subsidi',
+          status: 'Dalam Proses',
+          statusTahap: StatusTahapPengajuan.verifikasiAdministrasi,
+          tanggal: '20 Juli 2026',
+          catatanPerbaikan:
+              'Verifikasi Administrasi Dokumen (Langkah 2 dari 4).',
+          uploadedDocs: {
+            'ktp': 'ktp_direktur_tatang.pdf',
+            'nib': 'nib_tasik_indah.pdf',
+            'npwp_doc': 'npwp_tasik_indah.pdf',
+          },
+        ),
+        Pengajuan(
           id: 'SR-2025-0148',
           namaPerumahan: 'Griya Mangkubumi Asri',
           namaPt: 'PT Citra Tasik Mandiri',
