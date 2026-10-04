@@ -99,7 +99,7 @@ class TabBerandaMonitoring extends ConsumerWidget {
                               horizontal: 8,
                               vertical: 2,
                             ),
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppColors.statusSuccessSurface,
                               borderRadius: AppRadii.control,
                             ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satu_rumah/core/widgets/stepper_header.dart';
 import 'package:satu_rumah/core/widgets/status_badge.dart';
-import 'package:satu_rumah/core/theme/app_colors.dart';
 
 void main() {
   group('StepperHeader Responsive Tests', () {
