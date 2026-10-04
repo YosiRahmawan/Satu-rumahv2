@@ -116,16 +116,14 @@ class PengajuanStep4Screen extends ConsumerWidget {
                       children: [
                         Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.champagneToast.withValues(
-                              alpha: 0.4,
-                            ),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primarySurface,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.cloud_upload_outlined,
                             size: 36,
-                            color: AppColors.chilliDust,
+                            color: AppColors.primaryRed,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -133,7 +131,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
                           'Pilih atau Tarik Berkas Gambar Teknis',
                           style: AppTextStyles.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.cocoaBeanRoast,
+                            color: AppColors.textMain,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -150,7 +148,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
                           icon: const Icon(Icons.add_circle_outline, size: 20),
                           label: const Text('Pilih Berkas Dokumen Teknis'),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.chilliDust,
+                            backgroundColor: AppColors.primaryRed,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 20,
@@ -175,14 +173,14 @@ class PengajuanStep4Screen extends ConsumerWidget {
                           'Daftar Berkas Terlampir (${formState.technicalFiles.length})',
                           style: AppTextStyles.titleMedium.copyWith(
                             fontWeight: FontWeight.bold,
-                            color: AppColors.cocoaBeanRoast,
+                            color: AppColors.textMain,
                           ),
                         ),
                         TextButton(
                           onPressed: pickMultiple,
                           child: const Text(
                             '+ Tambah Berkas',
-                            style: TextStyle(color: AppColors.chilliDust),
+                            style: TextStyle(color: AppColors.primaryRed),
                           ),
                         ),
                       ],
@@ -212,12 +210,8 @@ class PengajuanStep4Screen extends ConsumerWidget {
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
                                   color: isDwg
-                                      ? AppColors.chilliDust.withValues(
-                                          alpha: 0.1,
-                                        )
-                                      : AppColors.champagneToast.withValues(
-                                          alpha: 0.5,
-                                        ),
+                                      ? AppColors.primarySurface
+                                      : AppColors.slate100,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
@@ -226,8 +220,8 @@ class PengajuanStep4Screen extends ConsumerWidget {
                                       : Icons.picture_as_pdf,
                                   size: 20,
                                   color: isDwg
-                                      ? AppColors.chilliDust
-                                      : AppColors.cocoaBeanRoast,
+                                      ? AppColors.primaryRed
+                                      : AppColors.textSecondary,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -236,7 +230,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
                                   fileName.split(RegExp(r'[/\\]')).last,
                                   style: AppTextStyles.bodyMedium.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: AppColors.cocoaBeanRoast,
+                                    color: AppColors.textMain,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
@@ -300,18 +294,18 @@ class PengajuanStep4Screen extends ConsumerWidget {
                               icon: const Icon(
                                 Icons.checklist,
                                 size: 18,
-                                color: AppColors.chilliDust,
+                                color: AppColors.primaryRed,
                               ),
                               label: const Text(
                                 'Pilih List',
                                 style: TextStyle(
-                                  color: AppColors.chilliDust,
+                                  color: AppColors.primaryRed,
                                   fontSize: 13,
                                 ),
                               ),
                               style: OutlinedButton.styleFrom(
                                 side: const BorderSide(
-                                  color: AppColors.chilliDust,
+                                  color: AppColors.primaryRed,
                                 ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
@@ -366,7 +360,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
                                       const Icon(
                                         Icons.check,
                                         size: 16,
-                                        color: AppColors.cocoaBeanRoast,
+                                        color: AppColors.textMain,
                                       ),
                                       const SizedBox(width: 4),
                                     ],
@@ -379,7 +373,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
                                               ? FontWeight.bold
                                               : FontWeight.normal,
                                           color: isSelected
-                                              ? AppColors.cocoaBeanRoast
+                                              ? AppColors.textMain
                                               : AppColors.grey700,
                                         ),
                                         overflow: TextOverflow.ellipsis,
@@ -404,7 +398,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
                                 'Centang Semua',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.chilliDust,
+                                  color: AppColors.primaryRed,
                                 ),
                               ),
                             ),
@@ -456,7 +450,7 @@ class PengajuanStep4Screen extends ConsumerWidget {
                 Text(
                   'Minimal satu berkas teknis wajib dilampirkan',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.chilliDust,
+                    color: AppColors.primaryRed,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -541,7 +535,7 @@ class _CakupanChecklistModal extends ConsumerWidget {
                     'Selesai',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: AppColors.chilliDust,
+                      color: AppColors.primaryRed,
                     ),
                   ),
                 ),
@@ -561,7 +555,7 @@ class _CakupanChecklistModal extends ConsumerWidget {
                 );
                 return CheckboxListTile(
                   value: isChecked,
-                  activeColor: AppColors.chilliDust,
+                  activeColor: AppColors.primaryRed,
                   checkColor: Colors.white,
                   title: Text(
                     item,
@@ -571,7 +565,7 @@ class _CakupanChecklistModal extends ConsumerWidget {
                           ? FontWeight.w600
                           : FontWeight.normal,
                       color: isChecked
-                          ? AppColors.cocoaBeanRoast
+                          ? AppColors.textMain
                           : AppColors.grey800,
                     ),
                   ),
@@ -597,7 +591,7 @@ class _CakupanChecklistModal extends ConsumerWidget {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(context),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.chilliDust,
+                      backgroundColor: AppColors.primaryRed,
                       foregroundColor: Colors.white,
                     ),
                     child: const Text('Terapkan'),

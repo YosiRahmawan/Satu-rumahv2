@@ -126,7 +126,7 @@ class _PengajuanStep5ReviewScreenState
                       child: Text(
                         _missingRequirements(formState),
                         style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.cocoaBeanRoast,
+                          color: AppColors.textMain,
                         ),
                       ),
                     ),
@@ -229,7 +229,7 @@ class _PengajuanStep5ReviewScreenState
                     children: [
                       Checkbox(
                         value: formState.isAgreed,
-                        activeColor: AppColors.chilliDust,
+                        activeColor: AppColors.primaryRed,
                         onChanged: (val) => ref
                             .read(pengajuanFormProvider.notifier)
                             .toggleAgreement(val ?? false),

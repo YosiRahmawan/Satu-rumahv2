@@ -87,7 +87,7 @@ class _JadwalkanSurveyModalState extends State<JadwalkanSurveyModal> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(dateStr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                    const Icon(Icons.calendar_month, color: AppColors.chilliDust),
+                    const Icon(Icons.calendar_month, color: AppColors.primaryRed),
                   ],
                 ),
               ),
@@ -136,7 +136,7 @@ class _JadwalkanSurveyModalState extends State<JadwalkanSurveyModal> {
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: AppColors.chilliDust, width: 2),
+                  borderSide: const BorderSide(color: AppColors.primaryRed, width: 2),
                 ),
               ),
             ),
@@ -146,7 +146,7 @@ class _JadwalkanSurveyModalState extends State<JadwalkanSurveyModal> {
               height: 48,
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.chilliDust,
+                  backgroundColor: AppColors.primaryRed,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
                 onPressed: () {

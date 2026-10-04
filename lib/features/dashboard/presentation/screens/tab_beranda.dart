@@ -5,11 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/route_feedback.dart';
+import '../../../../core/widgets/status_badge.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
-import '../providers/dashboard_provider.dart';
 
 Pengajuan? latestPengajuan(List<Pengajuan> submissions) {
   return submissions.isEmpty ? null : submissions.first;
@@ -89,7 +89,7 @@ class TabBeranda extends ConsumerWidget {
     final submissionsState = ref.watch(dashboardPengajuanAsyncProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.backgroundCanvas,
       body: submissionsState.when(
         loading: () => const DataStateView.loading(),
         error: (error, stack) => DataStateView.error(
@@ -185,10 +185,10 @@ class _DeveloperHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Column(
+              const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Text(
                     'Satu Rumah',
                     style: TextStyle(
@@ -252,7 +252,7 @@ class _DeveloperHeader extends StatelessWidget {
                   width: 12,
                   height: 12,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF22C55E), // Online green
+                    color: AppColors.statusSuccessText,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white, width: 2),
                   ),
@@ -281,7 +281,7 @@ class _DeveloperIdentityCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderNeutral, width: 1),
+            border: Border.all(color: AppColors.borderSubtle, width: 1),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.04),
@@ -308,11 +308,11 @@ class _DeveloperIdentityCard extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               // Nama & ID
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Text(
                       'PT. Tasik Indah Sentosa',
                       style: TextStyle(
@@ -320,7 +320,7 @@ class _DeveloperIdentityCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                         color: AppColors.textMain,
                       ),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 3),
@@ -342,19 +342,19 @@ class _DeveloperIdentityCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.semanticSuccessSurface,
+                  color: AppColors.statusSuccessSurface,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.semanticSuccessBorder,
+                    color: AppColors.statusSuccessText.withValues(alpha: 0.25),
                     width: 0.8,
                   ),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Icon(
                       Icons.check_circle_rounded,
-                      color: AppColors.semanticSuccessText,
+                      color: AppColors.statusSuccessText,
                       size: 13,
                     ),
                     SizedBox(width: 4),
@@ -363,7 +363,7 @@ class _DeveloperIdentityCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.semanticSuccessText,
+                        color: AppColors.statusSuccessText,
                       ),
                     ),
                   ],
@@ -401,7 +401,7 @@ class _PengajuanTerakhirCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.borderNeutral, width: 1),
+          border: Border.all(color: AppColors.borderSubtle, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -415,10 +415,10 @@ class _PengajuanTerakhirCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Baris atas: Label & Status chip
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   'PENGAJUAN TERAKHIR',
                   style: TextStyle(
                     fontSize: 11,
@@ -427,83 +427,50 @@ class _PengajuanTerakhirCard extends StatelessWidget {
                     letterSpacing: 0.8,
                   ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppColors.semanticWarningSurface,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFFFDE68A),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: const Text(
-                    'Dalam Proses',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.semanticWarningText,
-                    ),
-                  ),
-                ),
+                StatusBadge(status: 'Dalam Proses'),
               ],
             ),
             const SizedBox(height: 12),
 
             // Nama proyek & Nomor registrasi
-            Text(
-              projectName,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textMain,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              regNumber,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            // Tahap & Progress langkah
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Verifikasi Administrasi Dokumen',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                    projectName,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
                       color: AppColors.textMain,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: AppColors.dividerLine,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Text(
-                    'Langkah 2 dari 4',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
-                    ),
+                const SizedBox(width: 8),
+                Text(
+                  regNumber,
+                  style: const TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Tahap: Verifikasi Administrasi Dokumen (Langkah 2 dari 4)',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textSecondary,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 12),
 
@@ -518,104 +485,94 @@ class _PengajuanTerakhirCard extends StatelessWidget {
                     width: double.infinity,
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return Container(
+                      return Image.asset(
+                        'assets/images/foto_perumahan.jfif',
                         height: 155,
                         width: double.infinity,
-                        color: AppColors.dividerLine,
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          Icons.image_not_supported_outlined,
-                          color: AppColors.textSecondary,
-                          size: 36,
-                        ),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            height: 155,
+                            width: double.infinity,
+                            color: AppColors.dividerLine,
+                            alignment: Alignment.center,
+                            child: const Icon(
+                              Icons.image_not_supported_outlined,
+                              color: AppColors.textSecondary,
+                              size: 36,
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
-                  // Dark scrim gradient on bottom
-                  Positioned(
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: 54,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withValues(alpha: 0.65),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Overlay kiri bawah: "Kec. Tawang, Kota Tasikmalaya"
+                  // Overlay foto perumahan (Row + Flexible untuk mencegah tabrakan pada 360dp)
                   Positioned(
                     bottom: 10,
                     left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(
-                            Icons.location_on_rounded,
-                            color: Colors.white,
-                            size: 13,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'Kec. Tawang, Kota Tasikmalaya',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
+                    right: 10,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.60),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                                SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    'Kec. Tawang, Kota Tasikmalaya',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  // Overlay kanan bawah: "45 Unit Subsidi"
-                  Positioned(
-                    bottom: 10,
-                    right: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.55),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(
-                            Icons.home_work_rounded,
-                            color: Colors.white,
-                            size: 13,
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
                           ),
-                          SizedBox(width: 4),
-                          Text(
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryDark.withValues(alpha: 0.85),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
                             '45 Unit Subsidi',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 10.5,
+                              fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -624,9 +581,9 @@ class _PengajuanTerakhirCard extends StatelessWidget {
             const SizedBox(height: 14),
 
             // Progress labels & bar
-            Row(
+            const Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
+              children: [
                 Text(
                   'Progres kelengkapan (40%)',
                   style: TextStyle(
@@ -639,8 +596,8 @@ class _PengajuanTerakhirCard extends StatelessWidget {
                   'Verifikasi Tahap 2',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryRed,
                   ),
                 ),
               ],
@@ -660,17 +617,23 @@ class _PengajuanTerakhirCard extends StatelessWidget {
             const Divider(height: 1, color: AppColors.dividerLine),
             const SizedBox(height: 8),
 
-            // CTA: "Cek Detail >"
+            // CTA: "[file_icon] Cek Detail ->"
             InkWell(
               onTap: () {
                 context.push('/pengajuan/detail/$targetId');
               },
               borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 4),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
-                  children: const [
+                  children: [
+                    Icon(
+                      Icons.description_outlined,
+                      size: 15,
+                      color: AppColors.primaryRed,
+                    ),
+                    SizedBox(width: 4),
                     Text(
                       'Cek Detail',
                       style: TextStyle(
@@ -681,8 +644,8 @@ class _PengajuanTerakhirCard extends StatelessWidget {
                     ),
                     SizedBox(width: 4),
                     Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 12,
+                      Icons.arrow_forward_rounded,
+                      size: 14,
                       color: AppColors.primaryRed,
                     ),
                   ],
@@ -798,7 +761,7 @@ class _MenuLayananCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.borderNeutral, width: 1),
+        border: Border.all(color: AppColors.borderSubtle, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),

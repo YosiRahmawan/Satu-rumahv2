@@ -501,7 +501,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
       color: Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.chilliDust.withValues(alpha: 0.3)),
+        side: BorderSide(color: AppColors.primaryRed.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -541,7 +541,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.cocoaBeanRoast,
+                          color: AppColors.textMain,
                         ),
                       ),
                     ],
@@ -560,7 +560,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                   const Icon(
                     Icons.event,
                     size: 14,
-                    color: AppColors.chilliDust,
+                    color: AppColors.primaryRed,
                   ),
                   const SizedBox(width: 6),
                   const Text(
@@ -575,7 +575,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                     '${item.tanggalSurvey!.day}/${item.tanggalSurvey!.month}/${item.tanggalSurvey!.year} ${item.tanggalSurvey!.hour.toString().padLeft(2, '0')}:${item.tanggalSurvey!.minute.toString().padLeft(2, '0')} WIB',
                     style: const TextStyle(
                       fontSize: 12,
-                      color: AppColors.cocoaBeanRoast,
+                      color: AppColors.textMain,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -753,10 +753,10 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   foregroundColor: hasBa
-                      ? AppColors.chilliDust
+                      ? AppColors.primaryRed
                       : AppColors.grey600,
                   side: BorderSide(
-                    color: hasBa ? AppColors.chilliDust : AppColors.grey300,
+                    color: hasBa ? AppColors.primaryRed : AppColors.grey300,
                     width: 1.5,
                   ),
                   shape: RoundedRectangleBorder(
@@ -895,7 +895,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
     final Color circleColor = isPassed
         ? AppColors.statusSuccess
         : isCurrent
-        ? AppColors.chilliDust
+        ? AppColors.primaryRed
         : AppColors.grey300;
 
     final Color lineColor =
@@ -910,7 +910,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
               width: 18,
               height: 18,
               decoration: BoxDecoration(
-                color: isCurrent ? AppColors.surfaceAttention : circleColor,
+                color: isCurrent ? AppColors.primarySurface : circleColor,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: circleColor,
@@ -947,8 +947,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                     fontWeight:
                         isCurrent || isPassed ? FontWeight.bold : FontWeight.w500,
                     color: isCurrent
-                        ? AppColors.chilliDust
-                        : AppColors.cocoaBeanRoast,
+                        ? AppColors.primaryRed
+                        : AppColors.textMain,
                   ),
                 ),
                 const SizedBox(height: 2),

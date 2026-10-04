@@ -99,8 +99,8 @@ class _PengajuanSayaListScreenState
                   child: FilterChip(
                     label: Text(status),
                     selected: isSelected,
-                    selectedColor: AppColors.champagneToast,
-                    checkmarkColor: AppColors.cocoaBeanRoast,
+                    selectedColor: AppColors.primarySurface,
+                    checkmarkColor: AppColors.primaryRed,
                     onSelected: (val) {
                       setState(() {
                         _filterStatus = status;
@@ -195,14 +195,14 @@ class _PengajuanSayaListScreenState
                                               : 'Lihat Detail',
                                           style: AppTextStyles.labelMedium
                                               .copyWith(
-                                                color: AppColors.chilliDust,
+                                                color: AppColors.primaryRed,
                                                 fontWeight: FontWeight.bold,
                                               ),
                                         ),
                                         const Icon(
                                           Icons.chevron_right,
                                           size: 16,
-                                          color: AppColors.chilliDust,
+                                          color: AppColors.primaryRed,
                                         ),
                                       ],
                                     ),
@@ -243,7 +243,7 @@ class _PengajuanSayaListScreenState
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.chilliDust,
+        backgroundColor: AppColors.primaryRed,
         foregroundColor: Colors.white,
         onPressed: () {
           ref.read(pengajuanFormProvider.notifier).reset();

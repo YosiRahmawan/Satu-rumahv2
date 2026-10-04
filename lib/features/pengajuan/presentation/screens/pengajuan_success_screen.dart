@@ -70,7 +70,7 @@ class PengajuanSuccessScreen extends ConsumerWidget {
                   Text(
                     pengajuanId,
                     style: AppTextStyles.headlineMedium.copyWith(
-                      color: AppColors.chilliDust,
+                      color: AppColors.primaryRed,
                       letterSpacing: 1,
                     ),
                   ),

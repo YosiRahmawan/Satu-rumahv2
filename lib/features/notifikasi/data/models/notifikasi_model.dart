@@ -44,7 +44,7 @@ extension JenisNotifikasiX on JenisNotifikasi {
       case JenisNotifikasi.reminderSurvey:
         return const Color(0xFF2E7D32);
       case JenisNotifikasi.deadlineVerifikasi:
-        return AppColors.chilliDust;
+        return AppColors.primaryRed;
     }
   }
 

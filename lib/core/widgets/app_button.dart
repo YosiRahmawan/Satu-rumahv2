@@ -34,10 +34,10 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final style = isPrimary
         ? ElevatedButton.styleFrom(
-            backgroundColor: AppColors.chilliDust,
+            backgroundColor: AppColors.primaryRed,
             foregroundColor: Colors.white,
-            elevation: 3,
-            shadowColor: AppColors.chilliDust.withValues(alpha: 0.35),
+            elevation: 0,
+            shadowColor: Colors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
             ),
@@ -45,8 +45,8 @@ class AppButton extends StatelessWidget {
             disabledForegroundColor: AppColors.grey600,
           )
         : OutlinedButton.styleFrom(
-            foregroundColor: AppColors.chilliDust,
-            side: const BorderSide(color: AppColors.chilliDust, width: 1.5),
+            foregroundColor: AppColors.primaryRed,
+            side: const BorderSide(color: AppColors.primaryRed, width: 1.5),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(borderRadius),
             ),

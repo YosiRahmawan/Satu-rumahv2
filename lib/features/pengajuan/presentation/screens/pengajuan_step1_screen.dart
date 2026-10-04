@@ -199,13 +199,13 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                         children: [
                           Radio<String>(
                             value: 'Subsidi',
-                            activeColor: AppColors.chilliDust,
+                            activeColor: AppColors.primaryRed,
                           ),
                           Text('Subsidi'),
                           SizedBox(width: 20),
                           Radio<String>(
                             value: 'Komersil',
-                            activeColor: AppColors.chilliDust,
+                            activeColor: AppColors.primaryRed,
                           ),
                           Text('Komersil'),
                         ],

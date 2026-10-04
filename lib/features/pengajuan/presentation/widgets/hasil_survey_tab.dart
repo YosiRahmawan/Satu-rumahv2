@@ -130,7 +130,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppColors.cocoaBeanRoast,
+              color: AppColors.textMain,
             ),
           ),
           const SizedBox(height: 6),
@@ -199,7 +199,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
                 ),
                 child: const Icon(
                   Icons.calendar_month,
-                  color: AppColors.chilliDust,
+                  color: AppColors.primaryRed,
                   size: 16,
                 ),
               ),
@@ -210,7 +210,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.cocoaBeanRoast,
+                    color: AppColors.textMain,
                   ),
                 ),
               ),
@@ -356,7 +356,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
             style: const TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.bold,
-              color: AppColors.cocoaBeanRoast,
+              color: AppColors.textMain,
             ),
           ),
 
@@ -384,7 +384,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
                       width: 5,
                       height: 5,
                       decoration: const BoxDecoration(
-                        color: AppColors.chilliDust,
+                        color: AppColors.primaryRed,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -459,7 +459,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
                     const Icon(
                       Icons.arrow_right,
                       size: 16,
-                      color: AppColors.chilliDust,
+                      color: AppColors.primaryRed,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -522,7 +522,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.cocoaBeanRoast,
+                      color: AppColors.textMain,
                     ),
                   ),
                 ],
@@ -656,7 +656,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: hasBa
-                ? AppColors.chilliDust.withValues(alpha: 0.4)
+                ? AppColors.primaryRed.withValues(alpha: 0.4)
                 : AppColors.grey300,
           ),
         ),
@@ -666,7 +666,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
             Icon(
               canExport ? Icons.picture_as_pdf : Icons.picture_as_pdf_outlined,
               size: 16,
-              color: canExport ? AppColors.chilliDust : AppColors.grey500,
+              color: canExport ? AppColors.primaryRed : AppColors.grey500,
             ),
             const SizedBox(width: 8),
             Text(
@@ -678,7 +678,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: canExport ? AppColors.chilliDust : AppColors.grey500,
+                color: canExport ? AppColors.primaryRed : AppColors.grey500,
               ),
             ),
             if (canExport) ...[
@@ -686,7 +686,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
               const Icon(
                 Icons.download_outlined,
                 size: 14,
-                color: AppColors.chilliDust,
+                color: AppColors.primaryRed,
               ),
             ],
             if (survey.nomorSuratBA != null &&
@@ -792,7 +792,7 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.cocoaBeanRoast,
+                    color: AppColors.textMain,
                   ),
                 ),
                 Text(
@@ -866,20 +866,20 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
     switch (status) {
       case 'sesuai':
         return (
-          const Color(0xFF2E7D32),
-          const Color(0xFFE8F5E9),
+          AppColors.statusSuccessText,
+          AppColors.statusSuccessSurface,
           Icons.check_circle_outline,
         );
       case 'tidak_sesuai':
         return (
-          AppColors.chilliDust,
-          const Color(0xFFF9EAE8),
+          AppColors.primaryRed,
+          AppColors.primarySurfaceSoft,
           Icons.cancel_outlined,
         );
       case 'perlu_perbaikan':
         return (
-          const Color(0xFFE65100),
-          const Color(0xFFFFF3E0),
+          AppColors.statusWarningText,
+          AppColors.statusWarningSurface,
           Icons.warning_amber_outlined,
         );
       default:

@@ -135,10 +135,10 @@ class PengajuanStep2Screen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF9EAE8),
+                      color: AppColors.primarySurfaceSoft,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.chilliDust.withValues(alpha: 0.3),
+                        color: AppColors.primaryRed.withValues(alpha: 0.3),
                       ),
                     ),
                     child: Column(
@@ -148,7 +148,7 @@ class PengajuanStep2Screen extends ConsumerWidget {
                           children: [
                             Icon(
                               Icons.folder_zip,
-                              color: AppColors.chilliDust,
+                              color: AppColors.primaryRed,
                               size: 22,
                             ),
                             SizedBox(width: 8),
@@ -157,7 +157,7 @@ class PengajuanStep2Screen extends ConsumerWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
-                                color: AppColors.cocoaBeanRoast,
+                                color: AppColors.textMain,
                               ),
                             ),
                           ],
@@ -176,7 +176,7 @@ class PengajuanStep2Screen extends ConsumerWidget {
                           child: ElevatedButton.icon(
                             onPressed: pickBatch,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.chilliDust,
+                              backgroundColor: AppColors.primaryRed,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
@@ -264,7 +264,7 @@ class PengajuanStep2Screen extends ConsumerWidget {
                 Text(
                   '$missingCount dokumen administrasi wajib belum dilampirkan',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.chilliDust,
+                    color: AppColors.primaryRed,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

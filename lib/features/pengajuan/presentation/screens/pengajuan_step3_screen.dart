@@ -221,7 +221,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
                         ),
                         decoration: BoxDecoration(
                           color: sec1Uploaded == 4
-                              ? AppColors.chilliDust.withValues(alpha: 0.1)
+                              ? AppColors.primaryRed.withValues(alpha: 0.1)
                               : AppColors.grey200,
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -229,7 +229,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
                           '$sec1Uploaded/4',
                           style: AppTextStyles.labelSmall.copyWith(
                             color: sec1Uploaded == 4
-                                ? AppColors.chilliDust
+                                ? AppColors.primaryRed
                                 : AppColors.grey700,
                             fontWeight: FontWeight.bold,
                           ),
@@ -247,9 +247,9 @@ class PengajuanStep3Screen extends ConsumerWidget {
                                   'Bagian 1 (Legalitas)',
                                 ),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.chilliDust,
+                                  foregroundColor: AppColors.primaryRed,
                                   side: const BorderSide(
-                                    color: AppColors.chilliDust,
+                                    color: AppColors.primaryRed,
                                   ),
                                   minimumSize: const Size(double.infinity, 38),
                                   shape: RoundedRectangleBorder(
@@ -350,7 +350,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
                         ),
                         decoration: BoxDecoration(
                           color: sec2Uploaded >= 3
-                              ? AppColors.chilliDust.withValues(alpha: 0.1)
+                              ? AppColors.primaryRed.withValues(alpha: 0.1)
                               : AppColors.grey200,
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -358,7 +358,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
                           '$sec2Uploaded/4',
                           style: AppTextStyles.labelSmall.copyWith(
                             color: sec2Uploaded >= 3
-                                ? AppColors.chilliDust
+                                ? AppColors.primaryRed
                                 : AppColors.grey700,
                             fontWeight: FontWeight.bold,
                           ),
@@ -376,9 +376,9 @@ class PengajuanStep3Screen extends ConsumerWidget {
                                   'Bagian 2 (Teknis)',
                                 ),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.chilliDust,
+                                  foregroundColor: AppColors.primaryRed,
                                   side: const BorderSide(
-                                    color: AppColors.chilliDust,
+                                    color: AppColors.primaryRed,
                                   ),
                                   minimumSize: const Size(double.infinity, 38),
                                   shape: RoundedRectangleBorder(
@@ -468,7 +468,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
                         ),
                         decoration: BoxDecoration(
                           color: sec3Uploaded == 3
-                              ? AppColors.chilliDust.withValues(alpha: 0.1)
+                              ? AppColors.primaryRed.withValues(alpha: 0.1)
                               : AppColors.grey200,
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -476,7 +476,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
                           '$sec3Uploaded/3',
                           style: AppTextStyles.labelSmall.copyWith(
                             color: sec3Uploaded == 3
-                                ? AppColors.chilliDust
+                                ? AppColors.primaryRed
                                 : AppColors.grey700,
                             fontWeight: FontWeight.bold,
                           ),
@@ -494,9 +494,9 @@ class PengajuanStep3Screen extends ConsumerWidget {
                                   'Bagian 3 (Pernyataan)',
                                 ),
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.chilliDust,
+                                  foregroundColor: AppColors.primaryRed,
                                   side: const BorderSide(
-                                    color: AppColors.chilliDust,
+                                    color: AppColors.primaryRed,
                                   ),
                                   minimumSize: const Size(double.infinity, 38),
                                   shape: RoundedRectangleBorder(
@@ -579,7 +579,7 @@ class PengajuanStep3Screen extends ConsumerWidget {
                 Text(
                   '$missingCount dokumen wajib belum dilampirkan',
                   style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.chilliDust,
+                    color: AppColors.primaryRed,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

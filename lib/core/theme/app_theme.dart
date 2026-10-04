@@ -9,16 +9,17 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      primaryColor: AppColors.chilliDust,
+      fontFamily: AppTextStyles.fontFamily,
+      primaryColor: AppColors.primaryRed,
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: const ColorScheme.light(
-        primary: AppColors.chilliDust,
-        secondary: AppColors.champagneToast,
+        primary: AppColors.primaryRed,
+        secondary: AppColors.primarySurface,
         surface: AppColors.surface,
         error: AppColors.error,
         onPrimary: Colors.white,
-        onSecondary: AppColors.cocoaBeanRoast,
-        onSurface: AppColors.cocoaBeanRoast,
+        onSecondary: AppColors.textMain,
+        onSurface: AppColors.textMain,
         onError: Colors.white,
       ),
 
@@ -54,7 +55,7 @@ class AppTheme {
       // Elevated Button Theme (PrimaryButton)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.chilliDust,
+          backgroundColor: AppColors.primaryRed,
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -71,14 +72,14 @@ class AppTheme {
       // Outlined Button Theme (SecondaryButton)
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.chilliDust,
-          side: const BorderSide(color: AppColors.chilliDust, width: 1.5),
+          foregroundColor: AppColors.primaryRed,
+          side: const BorderSide(color: AppColors.primaryRed, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
           textStyle: AppTextStyles.labelLarge.copyWith(
-            color: AppColors.chilliDust,
+            color: AppColors.primaryRed,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -102,7 +103,7 @@ class AppTheme {
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
-          borderSide: BorderSide(color: AppColors.chilliDust, width: 2),
+          borderSide: BorderSide(color: AppColors.primaryRed, width: 2),
         ),
         errorBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),

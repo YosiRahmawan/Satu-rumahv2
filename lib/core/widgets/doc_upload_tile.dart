@@ -89,12 +89,12 @@ class DocUploadTile extends StatelessWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.description, size: 16, color: AppColors.cocoaBeanRoast),
+                            const Icon(Icons.description, size: 16, color: AppColors.textMain),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
                                 fileName!.split(RegExp(r'[/\\]')).last,
-                                style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.cocoaBeanRoast),
+                                style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.textMain),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -129,8 +129,9 @@ class DocUploadTile extends StatelessWidget {
             ElevatedButton(
               onPressed: onUpload,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.champagneToast,
-                foregroundColor: AppColors.cocoaBeanRoast,
+                backgroundColor: AppColors.primarySurface,
+                foregroundColor: AppColors.primaryRed,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),

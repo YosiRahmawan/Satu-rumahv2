@@ -47,7 +47,7 @@ class _AppTextFieldState extends State<AppTextField> {
           widget.label,
           style: const TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             color: AppColors.textMain,
             letterSpacing: -0.1,
           ),

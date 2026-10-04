@@ -124,7 +124,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                       'Notifikasi',
                       style: AppTextStyles.h2.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: AppColors.cocoaBeanRoast,
+                        color: AppColors.textMain,
                       ),
                     ),
                     Container(
@@ -142,13 +142,13 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                           value: _selectedFilter,
                           icon: const Icon(
                             Icons.keyboard_arrow_down,
-                            color: AppColors.cocoaBeanRoast,
+                            color: AppColors.textMain,
                             size: 18,
                           ),
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.cocoaBeanRoast,
+                            color: AppColors.textMain,
                           ),
                           onChanged: (val) {
                             if (val != null) {
@@ -247,12 +247,12 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: const BoxDecoration(
-                                    color: AppColors.surfaceAttention,
+                                    color: AppColors.primarySurface,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
                                     jenis.icon,
-                                    color: AppColors.chilliDust,
+                                    color: AppColors.primaryRed,
                                     size: 20,
                                   ),
                                 ),
@@ -267,7 +267,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                                         style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.cocoaBeanRoast,
+                                          color: AppColors.textMain,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
@@ -299,7 +299,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                                     width: 8,
                                     height: 8,
                                     decoration: const BoxDecoration(
-                                      color: AppColors.chilliDust,
+                                      color: AppColors.primaryRed,
                                       shape: BoxShape.circle,
                                     ),
                                   ),

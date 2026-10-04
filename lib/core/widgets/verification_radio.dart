@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
@@ -39,8 +39,8 @@ class VerificationRadioGroup extends StatelessWidget {
         _VerificationChip(
           label: 'Tidak Sesuai',
           selected: isVerified == false,
-          selectedColor: AppColors.chilliDust,
-          selectedBackground: AppColors.surfaceAttention,
+          selectedColor: AppColors.primaryRed,
+          selectedBackground: AppColors.primarySurface,
           selectedIcon: Icons.cancel,
           onTap: onRejected,
         ),

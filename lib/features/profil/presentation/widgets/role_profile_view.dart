@@ -275,7 +275,7 @@ class RoleProfileView extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: foreground, width: 2),
-                  color: AppColors.champagneToast,
+                  color: AppColors.primarySurface,
                 ),
                 alignment: Alignment.center,
                 child: Text(

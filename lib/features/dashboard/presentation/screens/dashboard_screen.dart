@@ -26,7 +26,7 @@ class DashboardScreen extends ConsumerWidget {
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.backgroundCanvas,
       body: IndexedStack(index: currentIndex, children: tabs),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: Container(
@@ -41,9 +41,9 @@ class DashboardScreen extends ConsumerWidget {
             ref.read(pengajuanFormProvider.notifier).reset();
             context.push('/pengajuan/step1');
           },
-          child: Column(
+          child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Icon(Icons.add_rounded, color: Colors.white, size: 24),
               SizedBox(height: 1),
               Text(

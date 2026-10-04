@@ -103,7 +103,7 @@ class _CatatanPerbaikanModalState extends State<CatatanPerbaikanModal> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.cocoaBeanRoast,
+                    color: AppColors.textMain,
                   ),
                 ),
                 IconButton(
@@ -129,7 +129,7 @@ class _CatatanPerbaikanModalState extends State<CatatanPerbaikanModal> {
                   color: AppColors.textMuted,
                 ),
                 filled: true,
-                fillColor: const Color(0xFFF9F8F5),
+                fillColor: AppColors.backgroundCanvas,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(color: AppColors.grey300),
@@ -137,7 +137,7 @@ class _CatatanPerbaikanModalState extends State<CatatanPerbaikanModal> {
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: const BorderSide(
-                    color: AppColors.chilliDust,
+                    color: AppColors.primaryRed,
                     width: 1.5,
                   ),
                 ),
@@ -151,7 +151,7 @@ class _CatatanPerbaikanModalState extends State<CatatanPerbaikanModal> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
-                color: AppColors.cocoaBeanRoast,
+                color: AppColors.textMain,
               ),
             ),
             const SizedBox(height: 6),
@@ -171,7 +171,7 @@ class _CatatanPerbaikanModalState extends State<CatatanPerbaikanModal> {
 
                 return CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
-                  activeColor: AppColors.chilliDust,
+                  activeColor: AppColors.primaryRed,
                   dense: true,
                   title: Text(
                     label,
@@ -180,7 +180,7 @@ class _CatatanPerbaikanModalState extends State<CatatanPerbaikanModal> {
                       fontWeight: isChecked
                           ? FontWeight.bold
                           : FontWeight.normal,
-                      color: AppColors.cocoaBeanRoast,
+                      color: AppColors.textMain,
                     ),
                   ),
                   value: isChecked,
@@ -203,7 +203,7 @@ class _CatatanPerbaikanModalState extends State<CatatanPerbaikanModal> {
               height: 48,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.chilliDust,
+                  backgroundColor: AppColors.primaryRed,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
