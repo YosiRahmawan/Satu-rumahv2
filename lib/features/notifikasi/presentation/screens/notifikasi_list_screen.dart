@@ -11,6 +11,7 @@ import '../../../../core/widgets/route_feedback.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
 import '../../data/models/notifikasi_model.dart';
 import '../providers/notifikasi_provider.dart';
+import '../widgets/developer_notification_view.dart';
 
 /// Rewrites a notification's local target into a route valid for the active
 /// role. A null result is an explicit unavailable outcome, never a silent
@@ -86,14 +87,37 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
         ? allNotifs.where((e) => !e.isRead).toList()
         : allNotifs;
 
+    if (role == AppRole.developer) {
+      final sortedNotifs = [...filteredNotifs]
+        ..sort((a, b) => b.waktu.compareTo(a.waktu));
+      return DeveloperNotificationView(
+        items: sortedNotifs,
+        unreadCount: allNotifs.where((item) => !item.isRead).length,
+        unreadOnly: _selectedFilter == 'Belum Dibaca',
+        onFilterChanged: (unreadOnly) => setState(
+          () => _selectedFilter = unreadOnly ? 'Belum Dibaca' : 'Semua',
+        ),
+        onMarkAllRead: notifier.markAllAsRead,
+        onOpen: (item) {
+          notifier.markAsRead(item.id);
+          final route = notificationTargetForRole(item, role);
+          if (route == null) {
+            showUnavailableAction(context, 'Tujuan notifikasi ini');
+          } else {
+            context.push(route);
+          }
+        },
+      );
+    }
+
     return Scaffold(
       appBar: AppHeader(
         variant: AppHeaderVariant.roleBased,
         title: role == AppRole.admin
             ? 'Pemerintah Kota Tasikmalaya'
             : (role == AppRole.perwaskim
-                ? 'Pengawasan Lapangan'
-                : 'SATU RUMAH'),
+                  ? 'Pengawasan Lapangan'
+                  : 'SATU RUMAH'),
         subtitle: role == AppRole.admin
             ? 'SATU RUMAH - Disperwaskim'
             : (role == AppRole.perwaskim ? 'Disperwaskim' : 'Kotak Notifikasi'),
