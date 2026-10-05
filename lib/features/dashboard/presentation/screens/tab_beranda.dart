@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/data_state_view.dart';
+import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../../core/widgets/status_badge.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
@@ -109,7 +110,9 @@ class TabBeranda extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // 1. HEADER MERAH
-                  _DeveloperHeader(
+                  DeveloperHeader(
+                    avatarLabel: 'YR',
+                    showOnlineIndicator: true,
                     onAvatarTap: () => _quickDemo(context, ref),
                   ),
 
@@ -135,132 +138,6 @@ class TabBeranda extends ConsumerWidget {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-/// 1. HEADER MERAH
-class _DeveloperHeader extends StatelessWidget {
-  final VoidCallback onAvatarTap;
-
-  const _DeveloperHeader({required this.onAvatarTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.primaryRed,
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
-        ),
-      ),
-      padding: EdgeInsets.only(
-        top: topPadding + 16,
-        left: 20,
-        right: 20,
-        bottom: 32,
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Sisi Kiri: Home icon, Satu Rumah, PORTAL PENGEMBANG
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.home_rounded,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Satu Rumah',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  SizedBox(height: 2),
-                  Text(
-                    'PORTAL PENGEMBANG',
-                    style: TextStyle(
-                      color: AppColors.primarySurfaceBorder,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-
-          // Sisi Kanan: Avatar YR + Indikator online hijau
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              InkWell(
-                onTap: onAvatarTap,
-                borderRadius: BorderRadius.circular(22),
-                child: Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    'YR',
-                    style: TextStyle(
-                      color: AppColors.primaryRed,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 1,
-                bottom: 1,
-                child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
-                    color: AppColors.statusSuccessText,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }

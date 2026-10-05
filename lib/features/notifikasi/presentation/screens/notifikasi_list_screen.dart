@@ -9,6 +9,7 @@ import '../../../../core/auth/role_session.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
+import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../data/models/notifikasi_model.dart';
 import '../providers/notifikasi_provider.dart';
 import '../widgets/developer_notification_view.dart';
@@ -98,6 +99,8 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           () => _selectedFilter = unreadOnly ? 'Belum Dibaca' : 'Semua',
         ),
         onMarkAllRead: notifier.markAllAsRead,
+        onAvatarTap: () =>
+            ref.read(dashboardTabProvider.notifier).state = 3,
         onOpen: (item) {
           notifier.markAsRead(item.id);
           final route = notificationTargetForRole(item, role);

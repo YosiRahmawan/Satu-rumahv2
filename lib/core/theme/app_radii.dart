@@ -7,8 +7,8 @@ class AppRadii {
   static const BorderRadius control = BorderRadius.all(Radius.circular(12));
   static const BorderRadius card = BorderRadius.all(Radius.circular(16));
   static const BorderRadius hero = BorderRadius.only(
-    bottomLeft: Radius.circular(24),
-    bottomRight: Radius.circular(24),
+    bottomLeft: Radius.circular(28),
+    bottomRight: Radius.circular(28),
   );
   static const BorderRadius pill = BorderRadius.all(Radius.circular(999));
 }

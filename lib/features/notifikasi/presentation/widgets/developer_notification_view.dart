@@ -5,6 +5,7 @@ import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/data_state_view.dart';
+import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
 import '../../data/models/notifikasi_model.dart';
 import 'developer_notification_tile.dart';
@@ -19,6 +20,7 @@ class DeveloperNotificationView extends StatelessWidget {
     required this.onFilterChanged,
     required this.onMarkAllRead,
     required this.onOpen,
+    this.onAvatarTap,
   });
 
   final List<NotifikasiModel> items;
@@ -27,6 +29,7 @@ class DeveloperNotificationView extends StatelessWidget {
   final ValueChanged<bool> onFilterChanged;
   final VoidCallback onMarkAllRead;
   final ValueChanged<NotifikasiModel> onOpen;
+  final VoidCallback? onAvatarTap;
 
   @override
   Widget build(BuildContext context) {
@@ -39,48 +42,25 @@ class DeveloperNotificationView extends StatelessWidget {
           key: const PageStorageKey('developer-notifications'),
           slivers: [
             SliverToBoxAdapter(
-              child: Container(
-                padding: EdgeInsets.fromLTRB(
-                  AppSpacing.lg + AppSpacing.xs,
-                  MediaQuery.paddingOf(context).top + AppSpacing.lg,
-                  AppSpacing.lg + AppSpacing.xs,
-                  AppSpacing.xl,
-                ),
-                decoration: const BoxDecoration(
-                  color: AppColors.primaryRed,
-                  borderRadius: AppRadii.hero,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Notifikasi',
-                      style: AppTextStyles.headlineLarge.copyWith(
-                        color: AppColors.textOnRed,
-                        fontWeight: FontWeight.w800,
-                      ),
+              child: DeveloperHeader(
+                pageTitle: 'Notifikasi',
+                pageSubtitle:
+                    'Pantau informasi dan perkembangan pengajuan Anda',
+                avatarLabel: 'YR',
+                showOnlineIndicator: true,
+                avatarTooltip: 'Buka profil',
+                onAvatarTap: onAvatarTap,
+                child: Semantics(
+                  liveRegion: true,
+                  child: Text(
+                    unreadCount > 0
+                        ? '$unreadCount notifikasi belum dibaca'
+                        : 'Semua notifikasi sudah dibaca',
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.textOnRed,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      'Pantau informasi dan perkembangan pengajuan Anda',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textOnRedSubtle,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        unreadCount > 0
-                            ? '$unreadCount notifikasi belum dibaca'
-                            : 'Semua notifikasi sudah dibaca',
-                        style: AppTextStyles.titleMedium.copyWith(
-                          color: AppColors.textOnRed,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

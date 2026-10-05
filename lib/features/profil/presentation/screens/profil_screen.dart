@@ -6,6 +6,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
@@ -22,8 +23,6 @@ class ProfilScreen extends ConsumerWidget {
         .length;
     final dalamProses = total - selesai;
 
-    final topPadding = MediaQuery.paddingOf(context).top;
-
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
       body: SingleChildScrollView(
@@ -31,86 +30,12 @@ class ProfilScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // 1. Header Merah
-            Container(
-              decoration: const BoxDecoration(
-                color: AppColors.primaryRed,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(28),
-                  bottomRight: Radius.circular(28),
-                ),
-              ),
-              padding: EdgeInsets.only(
-                top: topPadding + 16,
-                left: 20,
-                right: 20,
-                bottom: 40,
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Profil Pengembang',
-                          style: TextStyle(
-                            fontFamily: AppTextStyles.fontFamily,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Kelola informasi perusahaan dan pengaturan akun',
-                          style: TextStyle(
-                            fontFamily: AppTextStyles.fontFamily,
-                            fontSize: 12.5,
-                            height: 1.35,
-                            color: Colors.white.withValues(alpha: 0.88),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.28),
-                        width: 1,
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          PhosphorIconsRegular.sealCheck,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Terverifikasi',
-                          style: TextStyle(
-                            fontFamily: AppTextStyles.fontFamily,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            const DeveloperHeader(
+              pageTitle: 'Profil Pengembang',
+              pageSubtitle: 'Kelola informasi perusahaan dan pengaturan akun',
+              isVerified: true,
+              showAvatar: false,
+              bottomPadding: 40,
             ),
 
             // Konten kartu yang bertumpuk halus dengan header merah

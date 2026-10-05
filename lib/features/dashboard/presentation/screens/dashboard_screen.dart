@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radii.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
@@ -17,6 +19,9 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentIndex = ref.watch(dashboardTabProvider);
     final unreadCount = ref.watch(unreadCountProvider);
+    final fabSize = MediaQuery.textScalerOf(
+      context,
+    ).scale(40).clamp(62.0, 96.0);
 
     const tabs = [
       TabBeranda(),
@@ -29,27 +34,32 @@ class DashboardScreen extends ConsumerWidget {
       backgroundColor: AppColors.backgroundCanvas,
       body: IndexedStack(index: currentIndex, children: tabs),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Container(
-        width: 62,
-        height: 62,
-        margin: const EdgeInsets.only(top: 14),
+      floatingActionButton: SizedBox(
+        width: fabSize,
+        height: fabSize,
         child: FloatingActionButton(
           elevation: 4,
           backgroundColor: AppColors.primaryRed,
-          shape: const CircleBorder(),
+          shape: const CircleBorder(
+            side: BorderSide(color: AppColors.cardSurface, width: 3),
+          ),
           onPressed: () {
             ref.read(pengajuanFormProvider.notifier).reset();
             context.push('/pengajuan/step1');
           },
-          child: const Column(
+          child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.add_rounded, color: Colors.white, size: 24),
-              SizedBox(height: 1),
+              const Icon(
+                Icons.add_rounded,
+                color: AppColors.textOnRed,
+                size: 24,
+              ),
+              const SizedBox(height: 1),
               Text(
                 'AJUKAN',
-                style: TextStyle(
-                  color: Colors.white,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textOnRed,
                   fontSize: 8.5,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
@@ -64,12 +74,12 @@ class DashboardScreen extends ConsumerWidget {
         child: BottomAppBar(
           shape: const CircularNotchedRectangle(),
           notchMargin: 8.0,
-          color: Colors.white,
+          color: AppColors.cardSurface,
           elevation: 10,
           surfaceTintColor: Colors.transparent,
           shadowColor: Colors.black26,
           padding: EdgeInsets.zero,
-          height: 64,
+          height: 64.0,
           child: Row(
             children: [
               // Sisi Kiri: Beranda & Pengajuan
@@ -77,6 +87,7 @@ class DashboardScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     _buildNavItem(
+                      context: context,
                       label: 'Beranda',
                       icon: Icons.home_outlined,
                       activeIcon: Icons.home_rounded,
@@ -85,6 +96,7 @@ class DashboardScreen extends ConsumerWidget {
                           ref.read(dashboardTabProvider.notifier).state = 0,
                     ),
                     _buildNavItem(
+                      context: context,
                       label: 'Pengajuan',
                       icon: Icons.assignment_outlined,
                       activeIcon: Icons.assignment_rounded,
@@ -97,13 +109,14 @@ class DashboardScreen extends ConsumerWidget {
               ),
 
               // Ruang tengah untuk Docked FAB
-              const SizedBox(width: 72),
+              SizedBox(width: fabSize + 10),
 
               // Sisi Kanan: Notifikasi & Profil
               Expanded(
                 child: Row(
                   children: [
                     _buildNavItem(
+                      context: context,
                       label: 'Notifikasi',
                       icon: Icons.notifications_none_rounded,
                       activeIcon: Icons.notifications_rounded,
@@ -113,6 +126,7 @@ class DashboardScreen extends ConsumerWidget {
                           ref.read(dashboardTabProvider.notifier).state = 2,
                     ),
                     _buildNavItem(
+                      context: context,
                       label: 'Profil',
                       icon: Icons.person_outline_rounded,
                       activeIcon: Icons.person_rounded,
@@ -131,6 +145,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildNavItem({
+    required BuildContext context,
     required String label,
     required IconData icon,
     required IconData activeIcon,
@@ -143,7 +158,7 @@ class DashboardScreen extends ConsumerWidget {
     return Expanded(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadii.control,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -151,18 +166,16 @@ class DashboardScreen extends ConsumerWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(
-                  isActive ? activeIcon : icon,
-                  color: color,
-                  size: 22,
-                ),
+                Icon(isActive ? activeIcon : icon, color: color, size: 22),
                 if (badgeCount > 0)
                   Positioned(
                     right: -7,
                     top: -5,
                     child: Container(
-                      constraints:
-                          const BoxConstraints(minWidth: 16, minHeight: 16),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
                       padding: const EdgeInsets.all(2),
                       decoration: const BoxDecoration(
                         color: AppColors.primaryRed,
@@ -170,8 +183,8 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                       child: Text(
                         badgeCount > 9 ? '9+' : '$badgeCount',
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: AppTextStyles.labelSmall.copyWith(
+                          color: AppColors.textOnRed,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
@@ -184,13 +197,16 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 3),
             Text(
               label,
-              style: TextStyle(
+              textScaler: MediaQuery.textScalerOf(context).clamp(
+                maxScaleFactor: 1.0,
+              ),
+              style: AppTextStyles.labelSmall.copyWith(
                 color: color,
                 fontSize: 11,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              maxLines: 2,
             ),
           ],
         ),
