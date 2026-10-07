@@ -7,6 +7,7 @@ import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../../core/widgets/status_badge.dart';
+import '../providers/dashboard_provider.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
@@ -69,7 +70,9 @@ class TabBeranda extends ConsumerWidget {
 
     ref.read(pengajuanListProvider.notifier).addPengajuan(newPengajuan);
 
-    ref.read(notifikasiProvider.notifier).addNotification(
+    ref
+        .read(notifikasiProvider.notifier)
+        .addNotification(
           NotifikasiModel(
             id: 'notif-$newId',
             jenis: JenisNotifikasi.pengajuanBaru,
@@ -112,9 +115,13 @@ class TabBeranda extends ConsumerWidget {
                   // 1. HEADER MERAH
                   DeveloperHeader(
                     avatarLabel: 'YR',
+                    avatarTooltip: 'Profil pengembang',
                     showOnlineIndicator: true,
                     avatarTooltip: 'Profil Pengembang',
                     onAvatarTap: () => _quickDemo(context, ref),
+                    notificationCount: ref.watch(unreadCountProvider),
+                    onNotificationTap: () =>
+                        ref.read(dashboardTabProvider.notifier).state = 2,
                   ),
 
                   // 2. CARD IDENTITAS PENGEMBANG (slightly overlapping header bottom curve)
@@ -123,9 +130,7 @@ class TabBeranda extends ConsumerWidget {
                   const SizedBox(height: 8),
 
                   // 3. CARD "PENGAJUAN TERAKHIR"
-                  _PengajuanTerakhirCard(
-                    submission: lastSubmission,
-                  ),
+                  _PengajuanTerakhirCard(submission: lastSubmission),
 
                   const SizedBox(height: 16),
 
@@ -268,8 +273,8 @@ class _PengajuanTerakhirCard extends StatelessWidget {
         : 'Mutiara Regency Tasik';
     final regNumber = submission?.id.isNotEmpty == true
         ? (submission!.id.startsWith('REG')
-            ? submission!.id
-            : 'REG - ${submission!.id}')
+              ? submission!.id
+              : 'REG - ${submission!.id}')
         : 'REG - TSK-2026-084';
     final targetId = submission?.id ?? 'REG-TSK-2026-084';
 
@@ -438,7 +443,9 @@ class _PengajuanTerakhirCard extends StatelessWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryDark.withValues(alpha: 0.85),
+                            color: AppColors.primaryDark.withValues(
+                              alpha: 0.85,
+                            ),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Text(
@@ -667,11 +674,7 @@ class _MenuLayananCard extends StatelessWidget {
                     color: AppColors.primarySurface,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(
-                    icon,
-                    color: AppColors.primaryRed,
-                    size: 20,
-                  ),
+                  child: Icon(icon, color: AppColors.primaryRed, size: 20),
                 ),
                 const SizedBox(height: 10),
                 Text(
