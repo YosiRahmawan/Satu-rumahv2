@@ -115,7 +115,6 @@ class TabBeranda extends ConsumerWidget {
                   // 1. HEADER MERAH
                   DeveloperHeader(
                     avatarLabel: 'YR',
-                    avatarTooltip: 'Profil pengembang',
                     showOnlineIndicator: true,
                     avatarTooltip: 'Profil Pengembang',
                     onAvatarTap: () => _quickDemo(context, ref),

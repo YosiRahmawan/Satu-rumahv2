@@ -31,9 +31,6 @@ class DeveloperHeader extends StatelessWidget {
     this.avatarTooltip,
     this.showOnlineIndicator = false,
     this.showAvatar = true,
-    this.onNotificationTap,
-    this.notificationCount,
-    this.notificationTooltip,
     this.actions = const [],
     this.bottomPadding,
     this.child,
@@ -77,15 +74,6 @@ class DeveloperHeader extends StatelessWidget {
 
   /// Whether to display the avatar button in the top action controls.
   final bool showAvatar;
-
-  /// Optional callback when the canonical notification bell icon is tapped.
-  final VoidCallback? onNotificationTap;
-
-  /// Optional unread notification count. When greater than 0, shows a warning badge.
-  final int? notificationCount;
-
-  /// Optional accessibility tooltip for the notification icon button.
-  final String? notificationTooltip;
 
   /// Additional action buttons to show in the top right control row.
   final List<Widget> actions;
@@ -249,26 +237,11 @@ class DeveloperHeader extends StatelessWidget {
         showNotification || onNotificationTap != null;
     final shouldShowAvatar =
         showAvatar && (onAvatarTap != null || avatarLabel != null);
-    final shouldShowNotification = onNotificationTap != null;
     final hasControls =
         actions.isNotEmpty || shouldShowNotification || shouldShowAvatar;
 
     final Widget? notificationButton = shouldShowNotification
-        ? IconButton(
-            tooltip: notificationTooltip ?? 'Buka notifikasi',
-            onPressed: onNotificationTap,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            icon: Badge(
-              isLabelVisible: (notificationCount ?? 0) > 0,
-              backgroundColor: AppColors.statusWarningSurface,
-              child: const Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.textOnRed,
-                size: 24,
-              ),
-            ),
-          )
+        ? _buildNotificationAction()
         : null;
 
     final controls = hasControls
@@ -280,56 +253,7 @@ class DeveloperHeader extends StatelessWidget {
               if (shouldShowAvatar) ...[
                 if (notificationButton != null || actions.isNotEmpty)
                   const SizedBox(width: AppSpacing.xs),
-                IconButton(
-                  tooltip: avatarTooltip,
-                  onPressed: onAvatarTap,
-                  padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 48, minHeight: 48),
-                  icon: Stack(
-                    children: [
-                      Container(
-                        width: avatarSize,
-                        height: avatarSize,
-                        alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          color: AppColors.cardSurface,
-                          shape: BoxShape.circle,
-                        ),
-                        child: avatarLabel == null
-                            ? const Icon(
-                                Icons.person_outline,
-                                color: AppColors.primaryRed,
-                                size: 24,
-                              )
-                            : Text(
-                                avatarLabel!,
-                                style: AppTextStyles.titleMedium.copyWith(
-                                  color: AppColors.primaryRed,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                      ),
-                      if (showOnlineIndicator)
-                        Positioned(
-                          right: 1,
-                          bottom: 1,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: AppColors.statusSuccessText,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.cardSurface,
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+                _buildAvatarButton(avatarSize),
               ],
             ],
           )

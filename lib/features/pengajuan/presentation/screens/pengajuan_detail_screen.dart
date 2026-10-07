@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -1862,29 +1861,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
     );
   }
 
-  // ─── SHARE & PREVIEW HELPERS ─────────────────────────────────────────────
-  void _handleShare(BuildContext context, Pengajuan item) {
-    final text =
-        'Detail Pengajuan SATU RUMAH\n'
-        'Nomor: ${item.id}\n'
-        'Perumahan: ${item.namaPerumahan}\n'
-        'Pengembang: ${item.namaPt}\n'
-        'Status: ${item.status}\n'
-        'Disperwaskim Kota Tasikmalaya';
-    try {
-      // ignore: deprecated_member_use
-      Share.share(text, subject: 'Pengajuan ${item.id}');
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Membagikan data pengajuan: ${item.id}'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    }
-  }
+  // ─── PREVIEW HELPERS ──────────────────────────────────────────────────────
 
   void _showFilePreview(BuildContext context, String docName, String fileName) {
     showModalBottomSheet(
