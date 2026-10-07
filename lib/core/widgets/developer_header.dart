@@ -22,6 +22,10 @@ class DeveloperHeader extends StatelessWidget {
     this.pageSubtitle,
     this.badge,
     this.isVerified = false,
+    this.showNotification = false,
+    this.notificationCount,
+    this.onNotificationTap,
+    this.notificationTooltip,
     this.onAvatarTap,
     this.avatarLabel,
     this.avatarTooltip,
@@ -43,6 +47,18 @@ class DeveloperHeader extends StatelessWidget {
 
   /// Whether to display the canonical 'Terverifikasi' badge beside the title.
   final bool isVerified;
+
+  /// Whether to display the canonical notification icon in the header controls.
+  final bool showNotification;
+
+  /// Number of unread notifications to display on the badge.
+  final int? notificationCount;
+
+  /// Callback when the notification icon button is tapped.
+  final VoidCallback? onNotificationTap;
+
+  /// Accessibility tooltip for the notification icon button.
+  final String? notificationTooltip;
 
   /// Callback when avatar is tapped.
   final VoidCallback? onAvatarTap;
@@ -70,10 +86,7 @@ class DeveloperHeader extends StatelessWidget {
 
   Widget _buildVerificationBadge() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 5,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: AppColors.cardSurface.withValues(alpha: 0.18),
         borderRadius: AppRadii.pill,
@@ -90,15 +103,82 @@ class DeveloperHeader extends StatelessWidget {
             size: 14,
             color: AppColors.textOnRed,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: AppSpacing.xs),
           Text(
             'Terverifikasi',
             style: AppTextStyles.labelSmall.copyWith(
-              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.textOnRed,
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationAction() {
+    final hasUnread = (notificationCount ?? 0) > 0;
+    return IconButton(
+      tooltip: notificationTooltip ?? 'Buka notifikasi',
+      onPressed: onNotificationTap,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      icon: Badge(
+        isLabelVisible: hasUnread,
+        backgroundColor: AppColors.statusWarningSurface,
+        child: const Icon(
+          Icons.notifications_none_rounded,
+          color: AppColors.textOnRed,
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarButton(double avatarSize) {
+    return IconButton(
+      tooltip: avatarTooltip ?? 'Buka profil',
+      onPressed: onAvatarTap,
+      padding: EdgeInsets.zero,
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      icon: Stack(
+        children: [
+          Container(
+            width: avatarSize,
+            height: avatarSize,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: AppColors.cardSurface,
+              shape: BoxShape.circle,
+            ),
+            child: avatarLabel == null
+                ? const Icon(
+                    Icons.person_outline,
+                    color: AppColors.primaryRed,
+                    size: 24,
+                  )
+                : Text(
+                    avatarLabel!,
+                    style: AppTextStyles.titleMedium.copyWith(
+                      color: AppColors.primaryRed,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+          ),
+          if (showOnlineIndicator)
+            Positioned(
+              right: 1,
+              bottom: 1,
+              child: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: AppColors.statusSuccessText,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.cardSurface, width: 2),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -153,66 +233,23 @@ class DeveloperHeader extends StatelessWidget {
     final avatarSize = MediaQuery.textScalerOf(
       context,
     ).scale(22).clamp(44.0, 64.0);
+    final shouldShowNotification =
+        showNotification || onNotificationTap != null;
     final shouldShowAvatar =
         showAvatar && (onAvatarTap != null || avatarLabel != null);
-    final hasControls = actions.isNotEmpty || shouldShowAvatar;
+    final hasControls =
+        actions.isNotEmpty || shouldShowNotification || shouldShowAvatar;
 
     final controls = hasControls
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               ...actions,
-              if (shouldShowAvatar)
-                IconButton(
-                  tooltip: avatarTooltip,
-                  onPressed: onAvatarTap,
-                  padding: EdgeInsets.zero,
-                  constraints:
-                      const BoxConstraints(minWidth: 48, minHeight: 48),
-                  icon: Stack(
-                    children: [
-                      Container(
-                        width: avatarSize,
-                        height: avatarSize,
-                        alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          color: AppColors.cardSurface,
-                          shape: BoxShape.circle,
-                        ),
-                        child: avatarLabel == null
-                            ? const Icon(
-                                Icons.person_outline,
-                                color: AppColors.primaryRed,
-                                size: 24,
-                              )
-                            : Text(
-                                avatarLabel!,
-                                style: AppTextStyles.titleMedium.copyWith(
-                                  color: AppColors.primaryRed,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                      ),
-                      if (showOnlineIndicator)
-                        Positioned(
-                          right: 1,
-                          bottom: 1,
-                          child: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: AppColors.statusSuccessText,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.cardSurface,
-                                width: 2,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+              if (shouldShowNotification) ...[
+                _buildNotificationAction(),
+                if (shouldShowAvatar) const SizedBox(width: AppSpacing.xs),
+              ],
+              if (shouldShowAvatar) _buildAvatarButton(avatarSize),
             ],
           )
         : null;
@@ -330,10 +367,7 @@ class DeveloperHeader extends StatelessWidget {
           ],
 
           // 3. Optional Extra Child
-          if (child != null) ...[
-            const SizedBox(height: AppSpacing.md),
-            child!,
-          ],
+          if (child != null) ...[const SizedBox(height: AppSpacing.md), child!],
         ],
       ),
     );
