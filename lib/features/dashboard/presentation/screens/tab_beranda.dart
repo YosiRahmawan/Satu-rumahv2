@@ -116,7 +116,7 @@ class TabBeranda extends ConsumerWidget {
                   DeveloperHeader(
                     avatarLabel: 'YR',
                     showOnlineIndicator: true,
-                    avatarTooltip: 'Profil Pengembang',
+                    avatarTooltip: 'Buka profil',
                     onAvatarTap: () => _quickDemo(context, ref),
                     notificationCount: ref.watch(unreadCountProvider),
                     onNotificationTap: () =>

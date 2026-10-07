@@ -6,13 +6,15 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/data_state_view.dart';
+import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
+import '../../../dashboard/presentation/providers/dashboard_provider.dart';
+import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 import '../providers/pengajuan_form_controller.dart';
 import '../providers/pengajuan_list_view_provider.dart';
 import '../widgets/pengajuan_list_card.dart';
 import '../widgets/pengajuan_list_filters.dart';
-import '../widgets/pengajuan_list_header.dart';
 import '../widgets/pengajuan_list_summary.dart';
 
 /// The dashboard owns bottom navigation and the single central AJUKAN action.
@@ -38,7 +40,18 @@ class PengajuanSayaListScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Column(
               children: [
-                const PengajuanListHeader(),
+                DeveloperHeader(
+                  pageTitle: 'Pengajuan',
+                  pageSubtitle: 'Daftar pengajuan site plan perumahan',
+                  avatarLabel: 'YR',
+                  showOnlineIndicator: true,
+                  avatarTooltip: 'Buka profil',
+                  onAvatarTap: () =>
+                      ref.read(dashboardTabProvider.notifier).state = 3,
+                  notificationCount: ref.watch(unreadCountProvider),
+                  onNotificationTap: () =>
+                      ref.read(dashboardTabProvider.notifier).state = 2,
+                ),
                 Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.lg,
