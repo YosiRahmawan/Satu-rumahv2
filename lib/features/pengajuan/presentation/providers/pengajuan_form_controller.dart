@@ -226,6 +226,7 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
           namaPerumahan: 'Perumahan Green Tasik',
           namaPt: 'PT. Tasik Indah Sentosa',
           namaDirektur: 'H. Rahmat Hidayat, S.T.',
+          nib: '9120003418291',
           npwpPerusahaan: '01.345.678.9-425.000',
           luasLahan: 18500.0,
           jumlahUnit: 120,

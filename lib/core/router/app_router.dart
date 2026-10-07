@@ -21,6 +21,7 @@ import '../../features/pengajuan/presentation/screens/pengajuan_step3_screen.dar
 import '../../features/pengajuan/presentation/screens/pengajuan_step4_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_step5_review_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_success_screen.dart';
+import '../../features/pengajuan/presentation/screens/perbarui_berkas_screen.dart';
 import '../auth/role_session.dart';
 import 'route_policy.dart';
 import '../widgets/route_feedback.dart';
@@ -62,10 +63,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', redirect: (_, __) => '/splash'),
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(
-        path: '/onboarding',
-        redirect: (_, __) => '/login',
-      ),
+      GoRoute(path: '/onboarding', redirect: (_, __) => '/login'),
       GoRoute(
         path: '/dashboard',
         builder: (_, state) => _withNotice(state, const DashboardScreen()),
@@ -209,6 +207,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/pengajuan/detail/:id',
         builder: (_, state) =>
             PengajuanDetailScreen(id: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: '/pengajuan/perbarui-berkas/:id',
+        builder: (_, state) =>
+            PerbaruiBerkasScreen(id: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: '/pengajuan/perbarui-berkas',
+        builder: (_, state) {
+          final id = (state.extra as String?) ?? 'REG-2026-0142';
+          return PerbaruiBerkasScreen(id: id);
+        },
       ),
     ],
   );
