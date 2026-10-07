@@ -113,6 +113,7 @@ class TabBeranda extends ConsumerWidget {
                   DeveloperHeader(
                     avatarLabel: 'YR',
                     showOnlineIndicator: true,
+                    avatarTooltip: 'Profil Pengembang',
                     onAvatarTap: () => _quickDemo(context, ref),
                   ),
 

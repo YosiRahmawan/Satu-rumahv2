@@ -27,6 +27,9 @@ class DeveloperHeader extends StatelessWidget {
     this.avatarTooltip,
     this.showOnlineIndicator = false,
     this.showAvatar = true,
+    this.onNotificationTap,
+    this.notificationCount,
+    this.notificationTooltip,
     this.actions = const [],
     this.bottomPadding,
     this.child,
@@ -58,6 +61,15 @@ class DeveloperHeader extends StatelessWidget {
 
   /// Whether to display the avatar button in the top action controls.
   final bool showAvatar;
+
+  /// Optional callback when the canonical notification bell icon is tapped.
+  final VoidCallback? onNotificationTap;
+
+  /// Optional unread notification count. When greater than 0, shows a warning badge.
+  final int? notificationCount;
+
+  /// Optional accessibility tooltip for the notification icon button.
+  final String? notificationTooltip;
 
   /// Additional action buttons to show in the top right control row.
   final List<Widget> actions;
@@ -155,14 +167,37 @@ class DeveloperHeader extends StatelessWidget {
     ).scale(22).clamp(44.0, 64.0);
     final shouldShowAvatar =
         showAvatar && (onAvatarTap != null || avatarLabel != null);
-    final hasControls = actions.isNotEmpty || shouldShowAvatar;
+    final shouldShowNotification = onNotificationTap != null;
+    final hasControls =
+        actions.isNotEmpty || shouldShowNotification || shouldShowAvatar;
+
+    final Widget? notificationButton = shouldShowNotification
+        ? IconButton(
+            tooltip: notificationTooltip ?? 'Buka notifikasi',
+            onPressed: onNotificationTap,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+            icon: Badge(
+              isLabelVisible: (notificationCount ?? 0) > 0,
+              backgroundColor: AppColors.statusWarningSurface,
+              child: const Icon(
+                Icons.notifications_none_rounded,
+                color: AppColors.textOnRed,
+                size: 24,
+              ),
+            ),
+          )
+        : null;
 
     final controls = hasControls
         ? Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (notificationButton != null) notificationButton,
               ...actions,
-              if (shouldShowAvatar)
+              if (shouldShowAvatar) ...[
+                if (notificationButton != null || actions.isNotEmpty)
+                  const SizedBox(width: AppSpacing.xs),
                 IconButton(
                   tooltip: avatarTooltip,
                   onPressed: onAvatarTap,
@@ -213,6 +248,7 @@ class DeveloperHeader extends StatelessWidget {
                     ],
                   ),
                 ),
+              ],
             ],
           )
         : null;
