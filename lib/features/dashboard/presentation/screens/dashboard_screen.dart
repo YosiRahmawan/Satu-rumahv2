@@ -47,25 +47,10 @@ class DashboardScreen extends ConsumerWidget {
             ref.read(pengajuanFormProvider.notifier).reset();
             context.push('/pengajuan/step1');
           },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.add_rounded,
-                color: AppColors.textOnRed,
-                size: 24,
-              ),
-              const SizedBox(height: 1),
-              Text(
-                'AJUKAN',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: AppColors.textOnRed,
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
+          child: const Icon(
+            Icons.add_rounded,
+            color: AppColors.textOnRed,
+            size: 28,
           ),
         ),
       ),
