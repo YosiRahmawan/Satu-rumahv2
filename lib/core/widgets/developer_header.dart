@@ -300,11 +300,15 @@ class DeveloperHeader extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    pageTitle!,
-                    style: AppTextStyles.headlineLarge.copyWith(
-                      color: AppColors.textOnRed,
-                      fontWeight: FontWeight.w800,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      pageTitle!,
+                      style: AppTextStyles.headlineLarge.copyWith(
+                        color: AppColors.textOnRed,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   if (pageSubtitle != null) ...[
@@ -352,11 +356,15 @@ class DeveloperHeader extends StatelessWidget {
                 ],
               ),
             ] else ...[
-              Text(
-                pageTitle!,
-                style: AppTextStyles.headlineLarge.copyWith(
-                  color: AppColors.textOnRed,
-                  fontWeight: FontWeight.w800,
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  pageTitle!,
+                  style: AppTextStyles.headlineLarge.copyWith(
+                    color: AppColors.textOnRed,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               if (pageSubtitle != null) ...[

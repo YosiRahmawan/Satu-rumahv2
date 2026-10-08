@@ -207,7 +207,7 @@ void main() {
       expect(find.text('1/3 Berkas'), findsOneWidget);
       expect(find.text('Perbarui Berkas'), findsWidgets);
 
-      // Tap Perbarui Berkas on card 2
+      // Tap Perbarui Berkas on card 2 (navigates to DetailPerbaruiDokumenScreen Fase 3)
       await tester.scrollUntilVisible(
         find.widgetWithText(ElevatedButton, 'Perbarui Berkas'),
         100,
@@ -216,7 +216,12 @@ void main() {
       await tester.tap(find.widgetWithText(ElevatedButton, 'Perbarui Berkas'));
       await tester.pumpAndSettle();
 
-      // Progress advances to 2/3 Berkas
+      // On DetailPerbaruiDokumenScreen, confirm with Kirim Perbaikan
+      expect(find.text('Kirim Perbaikan'), findsOneWidget);
+      await tester.tap(find.text('Kirim Perbaikan'));
+      await tester.pumpAndSettle();
+
+      // Returns to PerbaruiBerkasScreen: Progress advances to 2/3 Berkas
       expect(find.text('2/3 Berkas'), findsOneWidget);
       expect(
         find.text('Perbarui 1 berkas lagi untuk melanjutkan'),

@@ -36,6 +36,12 @@ class StatusBadge extends StatelessWidget {
         textColor = AppColors.statusSuccessText;
         icon = Icons.check_circle_outline;
         break;
+      case 'menunggu verifikasi perbaikan':
+      case 'menunggu verifikasi':
+        bgColor = AppColors.statusWarningSurface;
+        textColor = AppColors.statusWarningText;
+        icon = Icons.schedule;
+        break;
       case 'perlu perbaikan':
       case 'revisi':
         bgColor = AppColors.statusWarningSurface;

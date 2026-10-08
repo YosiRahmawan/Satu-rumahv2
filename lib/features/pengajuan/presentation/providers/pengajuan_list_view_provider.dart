@@ -6,6 +6,7 @@ import 'pengajuan_form_controller.dart';
 
 enum PengajuanFilter {
   semua('Semua'),
+  menungguVerifikasi('Menunggu Verifikasi Perbaikan'),
   perbaikan('Perlu Perbaikan'),
   proses('Dalam Proses'),
   selesai('Disetujui');
@@ -15,12 +16,87 @@ enum PengajuanFilter {
 
   bool matches(Pengajuan item) => switch (this) {
     semua => true,
-    perbaikan => item.statusTahap == StatusTahapPengajuan.perluPerbaikan,
+    menungguVerifikasi =>
+      item.status.toLowerCase() == 'menunggu verifikasi perbaikan' ||
+          (item.revisionSubmitted &&
+              item.statusTahap != StatusTahapPengajuan.selesai &&
+              item.status.toLowerCase() != 'dalam proses'),
+    perbaikan =>
+      item.statusTahap == StatusTahapPengajuan.perluPerbaikan &&
+          !item.revisionSubmitted &&
+          item.status.toLowerCase() != 'menunggu verifikasi perbaikan',
     selesai => item.statusTahap == StatusTahapPengajuan.selesai,
     proses =>
       item.statusTahap != StatusTahapPengajuan.perluPerbaikan &&
-          item.statusTahap != StatusTahapPengajuan.selesai,
+          item.statusTahap != StatusTahapPengajuan.selesai &&
+          item.status.toLowerCase() != 'menunggu verifikasi perbaikan' &&
+          !item.revisionSubmitted,
   };
+}
+
+enum PengajuanSort {
+  terbaru('Terbaru'),
+  terlama('Terlama');
+
+  const PengajuanSort(this.label);
+  final String label;
+}
+
+DateTime parsePengajuanDate(String tanggal) {
+  final matchYear = RegExp(r'\b(19|20)\d{2}\b').firstMatch(tanggal);
+  final year = matchYear != null ? int.tryParse(matchYear.group(0)!) ?? 2026 : 2026;
+
+  final lower = tanggal.toLowerCase();
+  int month = 1;
+  if (lower.contains('jan')) {
+    month = 1;
+  } else if (lower.contains('feb')) {
+    month = 2;
+  } else if (lower.contains('mar')) {
+    month = 3;
+  } else if (lower.contains('apr')) {
+    month = 4;
+  } else if (lower.contains('mei') || lower.contains('may')) {
+    month = 5;
+  } else if (lower.contains('jun')) {
+    month = 6;
+  } else if (lower.contains('jul')) {
+    month = 7;
+  } else if (lower.contains('agu') || lower.contains('aug')) {
+    month = 8;
+  } else if (lower.contains('sep')) {
+    month = 9;
+  } else if (lower.contains('okt') || lower.contains('oct')) {
+    month = 10;
+  } else if (lower.contains('nov')) {
+    month = 11;
+  } else if (lower.contains('des') || lower.contains('dec')) {
+    month = 12;
+  }
+
+  final matchDay = RegExp(r'\b\d{1,2}\b').firstMatch(tanggal);
+  final day = matchDay != null ? int.tryParse(matchDay.group(0)!) ?? 1 : 1;
+
+  return DateTime(year, month, day);
+}
+
+String pengajuanMonthYear(Pengajuan item) {
+  final dt = parsePengajuanDate(item.tanggal);
+  const months = [
+    'JANUARI',
+    'FEBRUARI',
+    'MARET',
+    'APRIL',
+    'MEI',
+    'JUNI',
+    'JULI',
+    'AGUSTUS',
+    'SEPTEMBER',
+    'OKTOBER',
+    'NOVEMBER',
+    'DESEMBER',
+  ];
+  return '${months[dt.month - 1]} ${dt.year}';
 }
 
 /// Dates in the local prototype are display strings, sometimes with a time.
@@ -36,12 +112,14 @@ class PengajuanListQuery {
     this.filter = PengajuanFilter.semua,
     this.year,
     this.limit = 3,
+    this.sort = PengajuanSort.terbaru,
   });
 
   final String search;
   final PengajuanFilter filter;
   final int? year;
   final int limit;
+  final PengajuanSort sort;
 }
 
 class PengajuanListQueryNotifier extends StateNotifier<PengajuanListQuery> {
@@ -51,18 +129,42 @@ class PengajuanListQueryNotifier extends StateNotifier<PengajuanListQuery> {
     search: value,
     filter: state.filter,
     year: state.year,
+    limit: 3,
+    sort: state.sort,
   );
 
   void filter(PengajuanFilter value) => state = PengajuanListQuery(
     search: state.search,
     filter: value,
     year: state.year,
+    limit: state.limit,
+    sort: state.sort,
   );
 
   void year(int? value) => state = PengajuanListQuery(
     search: state.search,
     filter: state.filter,
     year: value,
+    limit: state.limit,
+    sort: state.sort,
+  );
+
+  void toggleSort() => state = PengajuanListQuery(
+    search: state.search,
+    filter: state.filter,
+    year: state.year,
+    limit: state.limit,
+    sort: state.sort == PengajuanSort.terbaru
+        ? PengajuanSort.terlama
+        : PengajuanSort.terbaru,
+  );
+
+  void setSort(PengajuanSort value) => state = PengajuanListQuery(
+    search: state.search,
+    filter: state.filter,
+    year: state.year,
+    limit: state.limit,
+    sort: value,
   );
 
   void loadMore() => state = PengajuanListQuery(
@@ -70,6 +172,7 @@ class PengajuanListQueryNotifier extends StateNotifier<PengajuanListQuery> {
     filter: state.filter,
     year: state.year,
     limit: state.limit + 3,
+    sort: state.sort,
   );
 
   void reset() => state = const PengajuanListQuery();
@@ -85,7 +188,8 @@ final filteredPengajuanProvider = Provider.autoDispose<List<Pengajuan>>((ref) {
   final items = ref.watch(pengajuanListProvider);
   final query = ref.watch(pengajuanListQueryProvider);
   final search = query.search.trim().toLowerCase();
-  final groups = <int, List<Pengajuan>>{};
+  final filtered = <Pengajuan>[];
+
   for (final item in items) {
     if (!query.filter.matches(item) ||
         (query.year != null && pengajuanYear(item) != query.year) ||
@@ -93,8 +197,16 @@ final filteredPengajuanProvider = Provider.autoDispose<List<Pengajuan>>((ref) {
             item.id.toLowerCase().contains(search))) {
       continue;
     }
-    (groups[pengajuanYear(item) ?? 0] ??= []).add(item);
+    filtered.add(item);
   }
-  final years = groups.keys.toList()..sort((a, b) => b.compareTo(a));
-  return [for (final year in years) ...groups[year]!];
+
+  filtered.sort((a, b) {
+    final dateA = parsePengajuanDate(a.tanggal);
+    final dateB = parsePengajuanDate(b.tanggal);
+    return query.sort == PengajuanSort.terbaru
+        ? dateB.compareTo(dateA)
+        : dateA.compareTo(dateB);
+  });
+
+  return filtered;
 });

@@ -38,6 +38,17 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
     ) {
       if (_search.text != next) _search.text = next;
     });
+    final hasMenunggu = items.any(PengajuanFilter.menungguVerifikasi.matches) ||
+        query.filter == PengajuanFilter.menungguVerifikasi;
+    final displayFilters = [
+      PengajuanFilter.semua,
+      if (hasMenunggu) PengajuanFilter.menungguVerifikasi,
+      PengajuanFilter.perbaikan,
+      if (!hasMenunggu) PengajuanFilter.menungguVerifikasi,
+      PengajuanFilter.proses,
+      PengajuanFilter.selesai,
+    ];
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -49,7 +60,7 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                 onChanged: notifier.search,
                 style: AppTextStyles.bodySmall,
                 decoration: InputDecoration(
-                  hintText: 'Cari perumahan atau no. registrasi…',
+                  hintText: 'Cari nama perumahan atau registrasi...',
                   prefixIcon: const Icon(Icons.search, size: 20),
                   suffixIcon: query.search.isEmpty
                       ? null
@@ -60,6 +71,25 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                         ),
                   filled: true,
                   fillColor: AppColors.cardSurface,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: AppColors.primaryRed,
+                      width: 1.5,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -75,14 +105,15 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
               style: IconButton.styleFrom(
                 minimumSize: const Size(48, 48),
                 backgroundColor: AppColors.cardSurface,
-                side: const BorderSide(color: AppColors.borderSubtle),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppRadii.control,
+                side: const BorderSide(color: Color(0xFFE2E8F0)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
               icon: Badge(
-                isLabelVisible: query.year != null,
-                label: const Text('1'),
+                isLabelVisible: true,
+                label: Text(query.year != null ? '1' : '2'),
+                backgroundColor: AppColors.primaryRed,
                 child: const Icon(Icons.tune, color: AppColors.textSecondary),
               ),
             ),
@@ -93,26 +124,87 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              for (final filter in PengajuanFilter.values)
+              for (final filter in displayFilters) ...[
                 Padding(
                   padding: const EdgeInsets.only(right: AppSpacing.sm),
                   child: ChoiceChip(
                     label: Text(
-                      '${filter.label} (${items.where(filter.matches).length})',
+                      filter == PengajuanFilter.semua
+                          ? 'Semua (${items.length})'
+                          : filter == PengajuanFilter.menungguVerifikasi
+                          ? filter.label
+                          : '${filter.label} (${items.where(filter.matches).length})',
                     ),
                     selected: query.filter == filter,
                     onSelected: (_) => notifier.filter(filter),
                     showCheckmark: false,
                     selectedColor: AppColors.primaryRed,
                     backgroundColor: AppColors.cardSurface,
-                    side: const BorderSide(color: AppColors.borderSubtle),
+                    side: BorderSide(
+                      color: query.filter == filter
+                          ? AppColors.primaryRed
+                          : const Color(0xFFE2E8F0),
+                    ),
                     shape: const RoundedRectangleBorder(
                       borderRadius: AppRadii.pill,
                     ),
                     labelStyle: AppTextStyles.labelMedium.copyWith(
                       color: query.filter == filter
                           ? AppColors.textOnRed
-                          : AppColors.textSecondary,
+                          : AppColors.slate700,
+                      fontWeight: query.filter == filter
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (hasMenunggu &&
+                    filter == PengajuanFilter.menungguVerifikasi)
+                  Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    child: ActionChip(
+                      avatar: const Icon(
+                        Icons.swap_vert,
+                        size: 16,
+                        color: AppColors.slate700,
+                      ),
+                      label: Text(
+                        query.sort.label,
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: AppColors.slate700,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      onPressed: notifier.toggleSort,
+                      backgroundColor: AppColors.cardSurface,
+                      side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadii.pill,
+                      ),
+                    ),
+                  ),
+              ],
+              if (!hasMenunggu)
+                Padding(
+                  padding: const EdgeInsets.only(right: AppSpacing.sm),
+                  child: ActionChip(
+                    avatar: const Icon(
+                      Icons.swap_vert,
+                      size: 16,
+                      color: AppColors.slate700,
+                    ),
+                    label: Text(
+                      query.sort.label,
+                      style: AppTextStyles.labelMedium.copyWith(
+                        color: AppColors.slate700,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    onPressed: notifier.toggleSort,
+                    backgroundColor: AppColors.cardSurface,
+                    side: const BorderSide(color: Color(0xFFE2E8F0)),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadii.pill,
                     ),
                   ),
                 ),

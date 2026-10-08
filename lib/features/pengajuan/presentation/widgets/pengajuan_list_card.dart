@@ -45,10 +45,15 @@ class PengajuanListCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final revision = item.statusTahap == StatusTahapPengajuan.perluPerbaikan;
+    final isWaitingVerification =
+        item.status.toLowerCase() == 'menunggu verifikasi perbaikan';
+    final revision = item.statusTahap == StatusTahapPengajuan.perluPerbaikan &&
+        !isWaitingVerification;
     final complete = item.statusTahap == StatusTahapPengajuan.selesai;
     final canRevise = revision && !item.revisionSubmitted;
-    final status = revision
+    final status = isWaitingVerification
+        ? 'Menunggu Verifikasi Perbaikan'
+        : revision
         ? 'Perlu Perbaikan'
         : complete
         ? 'Disetujui'
@@ -59,18 +64,27 @@ class PengajuanListCard extends StatelessWidget {
             ? item.tipePerumahan
             : 'Pengajuan Site Plan (${item.tipePerumahan})');
 
-    return Container(
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: AppRadii.card,
+      child: InkWell(
+        onTap: onOpen,
         borderRadius: AppRadii.card,
-        border: Border.all(color: AppColors.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            borderRadius: AppRadii.card,
+            border: Border.all(color: AppColors.borderSubtle),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
           Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 8,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -105,7 +119,7 @@ class PengajuanListCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: 10),
 
                 // 2. Title: Nama Perumahan
                 Text(
@@ -152,7 +166,7 @@ class PengajuanListCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: 10),
 
                 // 4. Metrics container: Luas Lahan & Rencana Unit
                 Container(
@@ -182,10 +196,12 @@ class PengajuanListCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
+                const SizedBox(height: 10),
 
                 // 5. Middle State-Specific Area
-                if (revision) ...[
+                if (isWaitingVerification) ...[
+                  // Langsung ke bottom action bar
+                ] else if (revision) ...[
                   // Date sent & Updated row
                   Wrap(
                     alignment: WrapAlignment.spaceBetween,
@@ -248,7 +264,7 @@ class PengajuanListCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              item.nomorSk ?? '412/SK-SP/DPKP/2025',
+                              item.nomorSk ?? '648/SK-SP/DPKP/2026',
                               style: AppTextStyles.labelMedium.copyWith(
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.textMain,
@@ -355,7 +371,19 @@ class PengajuanListCard extends StatelessWidget {
               spacing: AppSpacing.sm,
               runSpacing: AppSpacing.xs,
               children: [
-                if (revision) ...[
+                if (isWaitingVerification) ...[
+                  _inlineNotice(
+                    icon: Icons.event_outlined,
+                    text: 'Dikirim ${item.tanggal}',
+                    color: AppColors.textSecondary,
+                  ),
+                  _inlineNotice(
+                    icon: Icons.schedule_outlined,
+                    text: item.diperbarui ?? 'Diperbarui 2 hari lalu',
+                    color: AppColors.statusWarningText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ] else if (revision) ...[
                   _inlineNotice(
                     icon: item.revisionSubmitted
                         ? Icons.info_outline
@@ -410,7 +438,7 @@ class PengajuanListCard extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              'Mengunduh SK Pengesahan: ${item.nomorSk ?? "412/SK-SP/DPKP/2025"} (Dummy/Local Preview)',
+                              'Mengunduh SK Pengesahan: ${item.nomorSk ?? "648/SK-SP/DPKP/2026"} (Dummy/Local Preview)',
                             ),
                             backgroundColor: AppColors.statusSuccessText,
                             duration: const Duration(seconds: 3),
@@ -419,20 +447,22 @@ class PengajuanListCard extends StatelessWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(48, 44),
-                      foregroundColor: AppColors.textOnRed,
-                      backgroundColor: AppColors.primaryRed,
+                      minimumSize: const Size(48, 40),
+                      foregroundColor: const Color(0xFF2563EB),
+                      backgroundColor: const Color(0xFFEFF6FF),
+                      side: const BorderSide(color: Color(0xFFBFDBFE)),
                       elevation: 0,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadii.small,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      textStyle: AppTextStyles.labelMedium.copyWith(
+                      textStyle: AppTextStyles.labelSmall.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                     ),
                     icon: const Icon(
                       Icons.file_download_outlined,
                       size: 16,
+                      color: Color(0xFF2563EB),
                     ),
                     label: const Text('Unduh SK (PDF)'),
                   ),
@@ -442,21 +472,31 @@ class PengajuanListCard extends StatelessWidget {
                     text: 'Dikirim ${item.tanggal}',
                     color: AppColors.textSecondary,
                   ),
-                  TextButton.icon(
-                    onPressed: onOpen,
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 44),
-                      foregroundColor: AppColors.primaryRed,
-                      backgroundColor: AppColors.primarySurfaceSoft,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadii.small,
+                  InkWell(
+                    onTap: onOpen,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 4,
                       ),
-                      textStyle: AppTextStyles.labelMedium.copyWith(
-                        fontWeight: FontWeight.w700,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Detail',
+                            style: AppTextStyles.labelMedium.copyWith(
+                              color: AppColors.primaryRed,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const Icon(
+                            Icons.chevron_right,
+                            size: 16,
+                            color: AppColors.primaryRed,
+                          ),
+                        ],
                       ),
                     ),
-                    icon: const Icon(Icons.visibility_outlined, size: 16),
-                    label: const Text('Cek Detail →'),
                   ),
                 ],
               ],
@@ -464,7 +504,9 @@ class PengajuanListCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+  ),
+);
   }
 
   Widget _metric(IconData icon, String label, String value) => Row(

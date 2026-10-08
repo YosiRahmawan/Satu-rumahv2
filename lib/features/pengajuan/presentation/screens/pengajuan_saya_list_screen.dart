@@ -8,6 +8,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
+import '../../../../core/widgets/status_badge.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
@@ -27,11 +28,7 @@ class PengajuanSayaListScreen extends ConsumerWidget {
     final query = ref.watch(pengajuanListQueryProvider);
     final filtered = ref.watch(filteredPengajuanProvider);
     final visible = filtered.take(query.limit).toList();
-    final groupCounts = <int?, int>{};
-    for (final item in filtered) {
-      final year = pengajuanYear(item);
-      groupCounts[year] = (groupCounts[year] ?? 0) + 1;
-    }
+
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
       body: CustomScrollView(
@@ -42,8 +39,11 @@ class PengajuanSayaListScreen extends ConsumerWidget {
               children: [
                 DeveloperHeader(
                   pageTitle: 'Pengajuan',
-                  pageSubtitle: 'Daftar pengajuan site plan perumahan',
-                  avatarLabel: 'YR',
+                  badge: const StatusBadge(
+                    status: 'Portal Pengembang',
+                    showIcon: false,
+                  ),
+                  avatarLabel: 'PT',
                   showOnlineIndicator: true,
                   avatarTooltip: 'Buka profil',
                   onAvatarTap: () =>
@@ -52,15 +52,16 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                   onNotificationTap: () =>
                       ref.read(dashboardTabProvider.notifier).state = 2,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.lg,
+                if (items.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.lg,
+                    ),
+                    child: Transform.translate(
+                      offset: const Offset(0, -AppSpacing.md),
+                      child: PengajuanListSummary(items: items),
+                    ),
                   ),
-                  child: Transform.translate(
-                    offset: const Offset(0, -AppSpacing.md),
-                    child: PengajuanListSummary(items: items),
-                  ),
-                ),
               ],
             ),
           ),
@@ -95,21 +96,24 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                 itemCount: visible.length,
                 itemBuilder: (context, index) {
                   final item = visible[index];
-                  final year = pengajuanYear(item);
+                  final monthYear = pengajuanMonthYear(item);
                   final firstInGroup =
-                      index == 0 || pengajuanYear(visible[index - 1]) != year;
+                      index == 0 ||
+                      pengajuanMonthYear(visible[index - 1]) != monthYear;
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       if (firstInGroup)
                         Padding(
                           padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.lg,
+                            vertical: AppSpacing.md,
                           ),
-                          child: Builder(
-                            builder: (context) {
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
                               final groupItems = filtered
-                                  .where((e) => pengajuanYear(e) == year)
+                                  .where(
+                                    (e) => pengajuanMonthYear(e) == monthYear,
+                                  )
                                   .toList();
                               final isAllCompleted =
                                   groupItems.isNotEmpty &&
@@ -118,16 +122,8 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                                         e.statusTahap ==
                                         StatusTahapPengajuan.selesai,
                                   );
-                              final hasDecember = groupItems.every(
-                                (e) => e.tanggal.toLowerCase().contains('des'),
-                              );
-                              final groupTitle = year == null
-                                  ? 'TANGGAL BELUM TERSEDIA'
-                                  : (isAllCompleted && hasDecember
-                                      ? 'DESEMBER $year'
-                                      : 'TAHUN $year');
                               final dotColor = isAllCompleted
-                                  ? AppColors.statusSuccessText
+                                  ? const Color(0xFF16A34A)
                                   : AppColors.primaryRed;
                               final countSuffix = isAllCompleted
                                   ? ' Permohonan Selesai'
@@ -139,32 +135,43 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                                 spacing: AppSpacing.sm,
                                 runSpacing: AppSpacing.xs,
                                 children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: BoxDecoration(
-                                          color: dotColor,
-                                          shape: BoxShape.circle,
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: constraints.maxWidth,
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          width: 7,
+                                          height: 7,
+                                          decoration: BoxDecoration(
+                                            color: dotColor,
+                                            shape: BoxShape.circle,
+                                          ),
                                         ),
-                                      ),
-                                      const SizedBox(width: AppSpacing.xs),
-                                      Text(
-                                        groupTitle,
-                                        style: AppTextStyles.labelMedium
-                                            .copyWith(
-                                              color: AppColors.textSecondary,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: Text(
+                                            monthYear,
+                                            style: AppTextStyles.labelMedium
+                                                .copyWith(
+                                                  color: AppColors.slate700,
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 12,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                   Text(
-                                    '${groupCounts[year]}$countSuffix',
+                                    '${groupItems.length}$countSuffix',
                                     style: AppTextStyles.labelSmall.copyWith(
-                                      color: AppColors.textSecondary,
+                                      color: AppColors.slate500,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ],
@@ -173,7 +180,7 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                           ),
                         ),
                       Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        padding: const EdgeInsets.only(bottom: 8),
                         child: PengajuanListCard(
                           key: ValueKey(item.id),
                           item: item,
@@ -190,27 +197,48 @@ class PengajuanSayaListScreen extends ConsumerWidget {
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(
               AppSpacing.lg,
-              AppSpacing.md,
+              AppSpacing.sm,
               AppSpacing.lg,
-              AppSpacing.xxl * 2,
+              110.0,
             ),
             sliver: SliverToBoxAdapter(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (visible.length < filtered.length)
-                    OutlinedButton.icon(
-                      onPressed: ref
-                          .read(pengajuanListQueryProvider.notifier)
-                          .loadMore,
-                      icon: const Icon(Icons.expand_more),
-                      label: const Text('Muat Lebih Banyak'),
+                  if (visible.length < filtered.length) ...[
+                    SizedBox(
+                      height: 44,
+                      child: OutlinedButton.icon(
+                        onPressed: ref
+                            .read(pengajuanListQueryProvider.notifier)
+                            .loadMore,
+                        icon: const Icon(
+                          Icons.expand_more,
+                          size: 18,
+                          color: AppColors.slate700,
+                        ),
+                        label: Text(
+                          'Muat Lebih Banyak',
+                          style: AppTextStyles.labelMedium.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.slate700,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
                     ),
+                    const SizedBox(height: 10),
+                  ],
                   Text(
-                    'Menampilkan ${visible.length} dari ${filtered.length} pengajuan perumahan',
+                    'Menampilkan ${visible.length} dari ${filtered.length} pengajuan terdaftar',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textSecondary,
+                      color: AppColors.slate500,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),

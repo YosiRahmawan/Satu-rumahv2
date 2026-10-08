@@ -5,10 +5,12 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/utils/file_picker_util.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../providers/pengajuan_form_controller.dart';
 import '../providers/pengajuan_verifikasi_controller.dart';
+import 'detail_perbarui_dokumen_screen.dart';
+import 'status_perbaikan_berkas_screen.dart';
+import '../widgets/konfirmasi_kirim_perbaikan_dialog.dart';
 
 /// Item model lokal untuk dokumen yang memerlukan revisi pada halaman Perbarui Berkas.
 class _DocRevisiData {
@@ -57,6 +59,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
   bool _isVerifiedExpanded = true;
   bool _isPillExpanded = false;
   String _lastSavedTime = '10:24';
+  bool _isSubmittingRevisi = false;
 
   late List<_DocRevisiData> _revisiDocs;
 
@@ -1499,7 +1502,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              onPressed: () => _handleTinjauPerbaikan(context, submission),
+              onPressed: () => _handleTinjauPerbaikan(submission),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
                 child: Row(
@@ -1543,64 +1546,64 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
     );
   }
 
-  // ─── FILE PICKER & REPLACEMENT LOGIC ───────────────────────────────────────
+  // ─── FILE PICKER & REPLACEMENT LOGIC (FASE 3 NAVIGASI) ────────────────────
   Future<void> _handlePickAndReplaceFile(
     BuildContext context,
     _DocRevisiData doc,
   ) async {
     try {
-      if (doc.isMultipleFiles) {
-        final picked = await FilePickerUtil.pickMultipleFiles(
-          allowedExtensions: ['dwg', 'pdf'],
-        );
-        final now = DateFormat('HH:mm').format(DateTime.now());
-        setState(() {
-          doc.status = 'Sudah Diperbarui';
-          doc.uploadTime = 'Diunggah $now WIB';
-          if (picked.isNotEmpty) {
-            doc.files = picked.map((f) => f.name).toList();
-            doc.fileName = '${picked.first.name} (+${picked.length - 1} file)';
-            doc.fileSize =
-                '${(picked.first.size / (1024 * 1024)).toStringAsFixed(1)} MB';
-          } else {
-            doc.fileName = 'SitePlan_Revisi_Final_2026.dwg (+2 file)';
-            doc.fileSize = '14.2 MB';
-          }
-        });
-      } else {
-        final picked = await FilePickerUtil.pickSingleFile(
-          allowedExtensions: ['pdf', 'dwg', 'jpg', 'png'],
-        );
-        final now = DateFormat('HH:mm').format(DateTime.now());
-        setState(() {
-          doc.status = 'Sudah Diperbarui';
-          doc.uploadTime = 'Diunggah $now WIB';
-          if (picked != null) {
-            doc.fileName = picked.name;
-            doc.fileSize =
-                '${(picked.size / (1024 * 1024)).toStringAsFixed(1)} MB';
-          } else {
-            doc.fileName = doc.key == 'ktp'
-                ? 'KTP_Direktur_GreenTasik_Revisi_v2.pdf'
-                : 'SHGB_No401_GreenTasik_Legalisir.pdf';
-            doc.fileSize = doc.key == 'ktp' ? '2.1 MB' : '4.5 MB';
-          }
-        });
-      }
-
-      if (!mounted || !context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Berkas "${doc.title}" berhasil diperbarui.'),
-          backgroundColor: const Color(0xFF16A34A),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+      final result = await Navigator.of(context).push<Map<String, dynamic>>(
+        MaterialPageRoute(
+          builder: (_) => DetailPerbaruiDokumenScreen(
+            pengajuanId: widget.id,
+            docKey: doc.key,
+            docData: {
+              'title': doc.title,
+              'catatan': doc.catatan,
+              'fileName': doc.fileName,
+              'fileSize': doc.fileSize,
+              'status': doc.status,
+              'isMultipleFiles': doc.isMultipleFiles,
+              'revisiFileName': doc.key == 'ktp'
+                  ? 'KTP_Direktur_Revisi_2026.pdf'
+                  : (doc.isMultipleFiles
+                      ? 'SitePlan_Revisi_Final_2026.dwg'
+                      : 'SHGB_No401_GreenTasik_Revisi.pdf'),
+              'revisiFileSize': doc.key == 'ktp'
+                  ? '2.1 MB'
+                  : (doc.isMultipleFiles ? '14.2 MB' : '4.5 MB'),
+            },
           ),
         ),
       );
+
+      if (result != null) {
+        final now = DateFormat('HH:mm').format(DateTime.now());
+        setState(() {
+          doc.status = 'Sudah Diperbarui';
+          doc.uploadTime = 'Diunggah $now WIB';
+          if (result['fileName'] != null) {
+            doc.fileName = result['fileName'] as String;
+          }
+          if (result['fileSize'] != null) {
+            doc.fileSize = result['fileSize'] as String;
+          }
+        });
+
+        if (!mounted || !context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Berkas "${doc.title}" berhasil diperbarui.'),
+            backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        );
+      }
     } catch (e) {
-      debugPrint('Error picking file: $e');
+      debugPrint('Error navigating to detail perbarui dokumen: $e');
     }
   }
 
@@ -1744,8 +1747,10 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
     );
   }
 
-  // ─── TINJAU PERBAIKAN CONFIRMATION / SUBMIT ────────────────────────────────
-  void _handleTinjauPerbaikan(BuildContext context, Pengajuan? submission) {
+  // ─── TINJAU PERBAIKAN CONFIRMATION / SUBMIT (FASE 4) ──────────────────────
+  Future<void> _handleTinjauPerbaikan(
+    Pengajuan? submission,
+  ) async {
     if (_remainingCount > 0) {
       showDialog(
         context: context,
@@ -1775,161 +1780,56 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
       return;
     }
 
-    // Semua berkas sudah diperbarui -> Tampilkan modal review & konfirmasi pengiriman
-    showModalBottomSheet(
+    if (_isSubmittingRevisi) return;
+
+    final updatedCount =
+        _revisiDocs.where((d) => d.status == 'Sudah Diperbarui').length;
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    final confirmed = await showKonfirmasiKirimPerbaikanDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          padding: EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
-            MediaQuery.of(ctx).padding.bottom + AppSpacing.lg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+      jumlahBerkas: updatedCount > 0 ? updatedCount : _revisiDocs.length,
+      onConfirm: () async {
+        _isSubmittingRevisi = true;
+        final id = submission?.id ?? widget.id;
+        final mapDocs = {
+          for (final d in _revisiDocs) d.key: d.fileName,
+        };
+        ref
+            .read(pengajuanVerifikasiControllerProvider.notifier)
+            .kirimRevisi(id, mapDocs);
+      },
+    );
+
+    if (confirmed == true && mounted) {
+      final id = submission?.id ?? widget.id;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Row(
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: AppColors.slate300,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.check_circle_outline,
-                    color: Color(0xFF16A34A),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Konfirmasi Pengiriman Revisi',
-                    style: AppTextStyles.titleMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
+              Icon(Icons.check_circle, color: Colors.white),
+              SizedBox(width: 8),
               Text(
-                'Seluruh berkas revisi telah lengkap dan siap dikirimkan kembali ke Tim Verifikator Disperwaskim Kota Tasikmalaya:',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.slate600,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ..._revisiDocs.map(
-                (d) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.check,
-                        size: 16,
-                        color: Color(0xFF16A34A),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '${d.title}: ${d.fileName}',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.slate800,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.borderSubtle),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text(
-                        'Batal',
-                        style: TextStyle(color: AppColors.slate700),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryRed,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        final id = submission?.id ?? widget.id;
-                        final mapDocs = {
-                          for (final d in _revisiDocs) d.key: d.fileName,
-                        };
-                        ref
-                            .read(
-                              pengajuanVerifikasiControllerProvider.notifier,
-                            )
-                            .kirimRevisi(id, mapDocs);
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Row(
-                              children: [
-                                Icon(Icons.check_circle, color: Colors.white),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Revisi berkas berhasil dikirim ke Verifikator!',
-                                ),
-                              ],
-                            ),
-                            backgroundColor: Color(0xFF16A34A),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(8)),
-                            ),
-                          ),
-                        );
-
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
-                        } else {
-                          context.go('/pengajuan/detail/$id');
-                        }
-                      },
-                      child: const Text('Kirim Revisi'),
-                    ),
-                  ),
-                ],
+                'Revisi berkas berhasil dikirim ke Verifikator!',
               ),
             ],
           ),
-        );
-      },
-    );
+          backgroundColor: Color(0xFF16A34A),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+        ),
+      );
+
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => StatusPerbaikanBerkasScreen(
+            pengajuanId: id,
+          ),
+        ),
+      );
+    }
   }
 }

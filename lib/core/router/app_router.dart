@@ -21,7 +21,9 @@ import '../../features/pengajuan/presentation/screens/pengajuan_step3_screen.dar
 import '../../features/pengajuan/presentation/screens/pengajuan_step4_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_step5_review_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_success_screen.dart';
+import '../../features/pengajuan/presentation/screens/detail_perbarui_dokumen_screen.dart';
 import '../../features/pengajuan/presentation/screens/perbarui_berkas_screen.dart';
+import '../../features/pengajuan/presentation/screens/status_perbaikan_berkas_screen.dart';
 import '../auth/role_session.dart';
 import 'route_policy.dart';
 import '../widgets/route_feedback.dart';
@@ -214,10 +216,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             PerbaruiBerkasScreen(id: state.pathParameters['id'] ?? ''),
       ),
       GoRoute(
+        path: '/pengajuan/perbarui-berkas/:id/dokumen/:docKey',
+        builder: (_, state) {
+          final id = state.pathParameters['id'] ?? 'REG-2026-0142';
+          final docKey = state.pathParameters['docKey'] ?? 'ktp';
+          final extra = state.extra as Map<String, dynamic>?;
+          return DetailPerbaruiDokumenScreen(
+            pengajuanId: id,
+            docKey: docKey,
+            docData: extra,
+          );
+        },
+      ),
+      GoRoute(
         path: '/pengajuan/perbarui-berkas',
         builder: (_, state) {
           final id = (state.extra as String?) ?? 'REG-2026-0142';
           return PerbaruiBerkasScreen(id: id);
+        },
+      ),
+      GoRoute(
+        path: '/pengajuan/status-perbaikan/:id',
+        builder: (_, state) {
+          final id = state.pathParameters['id'] ?? 'REG-2026-0142';
+          return StatusPerbaikanBerkasScreen(pengajuanId: id);
         },
       ),
     ],

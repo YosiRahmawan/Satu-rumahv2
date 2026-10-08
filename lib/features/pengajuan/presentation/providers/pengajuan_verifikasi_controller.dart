@@ -514,10 +514,11 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
       uploadedDocs: updatedUploaded,
       verifiedDocs: updatedVerified,
       technicalFiles: updatedTechnicalFiles,
-      status: 'Dalam Proses',
+      status: 'Menunggu Verifikasi Perbaikan',
       statusTahap: origin,
       dokumenPerluRevisi: const [],
       revisionSubmitted: true,
+      diperbarui: 'Diperbarui 2 hari lalu',
     );
     _ref.read(pengajuanListProvider.notifier).updatePengajuan(updated);
     _ref
