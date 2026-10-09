@@ -82,7 +82,13 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
   Widget build(BuildContext context) {
     final allNotifs = ref.watch(notifikasiProvider);
     final notifier = ref.read(notifikasiProvider.notifier);
-    final role = ref.watch(roleSessionProvider).role;
+    final session = ref.watch(roleSessionProvider);
+    final role = session.role;
+    final String? avatarInitials = (session.username != null && session.username!.trim().isNotEmpty)
+        ? (session.username!.trim().length >= 2
+            ? session.username!.trim().substring(0, 2).toUpperCase()
+            : session.username!.trim().toUpperCase())
+        : null;
 
     final filteredNotifs = _selectedFilter == 'Belum Dibaca'
         ? allNotifs.where((e) => !e.isRead).toList()
@@ -95,6 +101,8 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
         items: sortedNotifs,
         unreadCount: allNotifs.where((item) => !item.isRead).length,
         unreadOnly: _selectedFilter == 'Belum Dibaca',
+        avatarLabel: avatarInitials,
+        showOnlineIndicator: session.isAuthenticated,
         onFilterChanged: (unreadOnly) => setState(
           () => _selectedFilter = unreadOnly ? 'Belum Dibaca' : 'Semua',
         ),

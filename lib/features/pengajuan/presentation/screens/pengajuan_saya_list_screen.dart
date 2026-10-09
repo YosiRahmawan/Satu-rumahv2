@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -28,6 +29,13 @@ class PengajuanSayaListScreen extends ConsumerWidget {
     final filtered = ref.watch(filteredPengajuanProvider);
     final visible = filtered.take(query.limit).toList();
 
+    final session = ref.watch(roleSessionProvider);
+    final String? avatarInitials = (session.username != null && session.username!.trim().isNotEmpty)
+        ? (session.username!.trim().length >= 2
+            ? session.username!.trim().substring(0, 2).toUpperCase()
+            : session.username!.trim().toUpperCase())
+        : null;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
       body: CustomScrollView(
@@ -39,8 +47,8 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                 DeveloperHeader(
                   pageTitle: 'Pengajuan',
                   pageSubtitle: 'Daftar pengajuan site plan perumahan',
-                  avatarLabel: 'YR',
-                  showOnlineIndicator: true,
+                  avatarLabel: avatarInitials,
+                  showOnlineIndicator: session.isAuthenticated,
                   avatarTooltip: 'Buka profil',
                   onAvatarTap: () =>
                       ref.read(dashboardTabProvider.notifier).state = 3,

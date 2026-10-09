@@ -21,6 +21,8 @@ class DeveloperNotificationView extends StatelessWidget {
     required this.onMarkAllRead,
     required this.onOpen,
     this.onAvatarTap,
+    this.avatarLabel,
+    this.showOnlineIndicator = false,
   });
 
   final List<NotifikasiModel> items;
@@ -30,6 +32,8 @@ class DeveloperNotificationView extends StatelessWidget {
   final VoidCallback onMarkAllRead;
   final ValueChanged<NotifikasiModel> onOpen;
   final VoidCallback? onAvatarTap;
+  final String? avatarLabel;
+  final bool showOnlineIndicator;
 
   @override
   Widget build(BuildContext context) {
@@ -46,8 +50,8 @@ class DeveloperNotificationView extends StatelessWidget {
                 pageTitle: 'Notifikasi',
                 pageSubtitle:
                     'Pantau informasi dan perkembangan pengajuan Anda',
-                avatarLabel: 'YR',
-                showOnlineIndicator: true,
+                avatarLabel: avatarLabel,
+                showOnlineIndicator: showOnlineIndicator,
                 avatarTooltip: 'Buka profil',
                 onAvatarTap: onAvatarTap,
                 child: Semantics(

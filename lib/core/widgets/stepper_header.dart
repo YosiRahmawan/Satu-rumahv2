@@ -4,15 +4,29 @@ import '../theme/app_text_styles.dart';
 
 class StepperHeader extends StatelessWidget {
   final int currentStep; // 1 to 5
-  final List<String> stepTitles = const [
+  final List<String> stepTitles;
+
+  static const List<String> defaultTitles = [
     'Data PT',
     'Dok. Admin',
     'Dok. Legal',
     'Dok. Teknis',
-    'Review'
+    'Review',
   ];
 
-  const StepperHeader({super.key, required this.currentStep});
+  static const List<String> prototypeTitles = [
+    'Data PT',
+    'Berkas PT',
+    'Perumahan',
+    'Teknis',
+    'Review',
+  ];
+
+  const StepperHeader({
+    super.key,
+    required this.currentStep,
+    this.stepTitles = defaultTitles,
+  });
 
   @override
   Widget build(BuildContext context) {

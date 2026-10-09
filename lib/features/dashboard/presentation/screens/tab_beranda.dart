@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
@@ -102,6 +103,13 @@ class TabBeranda extends ConsumerWidget {
         data: (list) {
           final lastSubmission = latestPengajuan(list);
 
+          final session = ref.watch(roleSessionProvider);
+          final String? avatarInitials = (session.username != null && session.username!.trim().isNotEmpty)
+              ? (session.username!.trim().length >= 2
+                  ? session.username!.trim().substring(0, 2).toUpperCase()
+                  : session.username!.trim().toUpperCase())
+              : null;
+
           return RefreshIndicator(
             color: AppColors.primaryRed,
             onRefresh: () async {
@@ -114,8 +122,8 @@ class TabBeranda extends ConsumerWidget {
                 children: [
                   // 1. HEADER MERAH
                   DeveloperHeader(
-                    avatarLabel: 'YR',
-                    showOnlineIndicator: true,
+                    avatarLabel: avatarInitials,
+                    showOnlineIndicator: session.isAuthenticated,
                     avatarTooltip: 'Buka profil',
                     onAvatarTap: () => _quickDemo(context, ref),
                     notificationCount: ref.watch(unreadCountProvider),

@@ -4,7 +4,9 @@ import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 
 class PengajuanFormState {
+  final String tipePengajuan;
   final String namaPerumahan;
+  final String alamatProyek;
   final String npwpPerusahaan;
   final double luasLahan;
   final int jumlahUnit;
@@ -15,7 +17,9 @@ class PengajuanFormState {
   final bool isAgreed;
 
   PengajuanFormState({
+    this.tipePengajuan = 'Pengajuan Site Plan Baru',
     this.namaPerumahan = '',
+    this.alamatProyek = '',
     this.npwpPerusahaan = '',
     this.luasLahan = 0.0,
     this.jumlahUnit = 0,
@@ -27,7 +31,9 @@ class PengajuanFormState {
   });
 
   bool get isStep1Valid =>
+      tipePengajuan.trim().isNotEmpty &&
       namaPerumahan.trim().isNotEmpty &&
+      alamatProyek.trim().isNotEmpty &&
       npwpPerusahaan.trim().isNotEmpty &&
       luasLahan.isFinite &&
       luasLahan > 0 &&
@@ -62,7 +68,9 @@ class PengajuanFormState {
   bool _hasDocument(String key) => uploadedDocs[key]?.trim().isNotEmpty == true;
 
   PengajuanFormState copyWith({
+    String? tipePengajuan,
     String? namaPerumahan,
+    String? alamatProyek,
     String? npwpPerusahaan,
     double? luasLahan,
     int? jumlahUnit,
@@ -73,7 +81,9 @@ class PengajuanFormState {
     bool? isAgreed,
   }) {
     return PengajuanFormState(
+      tipePengajuan: tipePengajuan ?? this.tipePengajuan,
       namaPerumahan: namaPerumahan ?? this.namaPerumahan,
+      alamatProyek: alamatProyek ?? this.alamatProyek,
       npwpPerusahaan: npwpPerusahaan ?? this.npwpPerusahaan,
       luasLahan: luasLahan ?? this.luasLahan,
       jumlahUnit: jumlahUnit ?? this.jumlahUnit,
@@ -90,8 +100,12 @@ class PengajuanFormState {
 class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
   PengajuanFormNotifier() : super(PengajuanFormState());
 
+  void updateTipePengajuan(String value) =>
+      state = state.copyWith(tipePengajuan: value);
   void updateNamaPerumahan(String value) =>
       state = state.copyWith(namaPerumahan: value);
+  void updateAlamatProyek(String value) =>
+      state = state.copyWith(alamatProyek: value);
   void updateNpwp(String value) =>
       state = state.copyWith(npwpPerusahaan: value);
   void updateLuasLahan(double value) =>
@@ -166,7 +180,9 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
 
   void fillDummyData() {
     state = PengajuanFormState(
+      tipePengajuan: 'Pengajuan Site Plan Baru',
       namaPerumahan: 'Green Tasik Residence',
+      alamatProyek: 'Jl. Tamansari KM 4, Kota Tasikmalaya',
       npwpPerusahaan: '12.345.678.9-423.000',
       luasLahan: 15000,
       jumlahUnit: 85,

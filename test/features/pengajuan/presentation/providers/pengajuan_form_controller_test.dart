@@ -6,7 +6,9 @@ void main() {
   group('PengajuanFormState validation', () {
     test('requires positive finite step 1 values', () {
       final valid = PengajuanFormState(
+        tipePengajuan: 'Pengajuan Site Plan Baru',
         namaPerumahan: 'Perumahan A',
+        alamatProyek: 'Jl. Tamansari No. 1',
         npwpPerusahaan: '01.234',
         luasLahan: 1,
         jumlahUnit: 1,
@@ -17,6 +19,10 @@ void main() {
       expect(valid.copyWith(luasLahan: -1).isStep1Valid, isFalse);
       expect(valid.copyWith(luasLahan: double.nan).isStep1Valid, isFalse);
       expect(valid.copyWith(jumlahUnit: 0).isStep1Valid, isFalse);
+      expect(valid.copyWith(namaPerumahan: '').isStep1Valid, isFalse);
+      expect(valid.copyWith(alamatProyek: '').isStep1Valid, isFalse);
+      expect(valid.copyWith(tipePengajuan: '').isStep1Valid, isFalse);
+      expect(valid.copyWith(npwpPerusahaan: '').isStep1Valid, isFalse);
     });
 
     test('requires every named document for steps 2 and 3', () {

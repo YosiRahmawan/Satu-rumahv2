@@ -35,6 +35,7 @@ class Pengajuan {
   final String? tipePengajuan;
   final String? diperbarui;
   final String? nib;
+  final String? alamatProyek;
 
   Pengajuan({
     required this.id,
@@ -66,6 +67,7 @@ class Pengajuan {
     this.tipePengajuan,
     this.diperbarui,
     this.nib,
+    this.alamatProyek,
   });
 
   Pengajuan copyWith({
@@ -99,6 +101,7 @@ class Pengajuan {
     Object? tipePengajuan = _sentinel,
     Object? diperbarui = _sentinel,
     Object? nib = _sentinel,
+    Object? alamatProyek = _sentinel,
   }) {
     return Pengajuan(
       id: id ?? this.id,
@@ -143,6 +146,9 @@ class Pengajuan {
           ? this.diperbarui
           : diperbarui as String?,
       nib: nib == _sentinel ? this.nib : nib as String?,
+      alamatProyek: alamatProyek == _sentinel
+          ? this.alamatProyek
+          : alamatProyek as String?,
     );
   }
 }

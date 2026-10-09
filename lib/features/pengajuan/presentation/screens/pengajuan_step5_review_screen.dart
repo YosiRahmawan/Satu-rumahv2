@@ -44,7 +44,9 @@ class _PengajuanStep5ReviewScreenState
 
       final newPengajuan = Pengajuan(
         id: newId,
+        tipePengajuan: currentState.tipePengajuan,
         namaPerumahan: currentState.namaPerumahan.trim(),
+        alamatProyek: currentState.alamatProyek.trim(),
         namaPt: 'PT. Tasik Indah Sentosa',
         namaDirektur: 'H. Tatang Sutisna',
         npwpPerusahaan: currentState.npwpPerusahaan.trim(),
@@ -146,9 +148,18 @@ class _PengajuanStep5ReviewScreenState
                           ),
                           const Divider(height: 20),
                           _buildInfoRow(
+                            'Tipe Pengajuan',
+                            formState.tipePengajuan,
+                          ),
+                          _buildInfoRow(
                             'Nama Perumahan',
                             formState.namaPerumahan,
                           ),
+                          if (formState.alamatProyek.isNotEmpty)
+                            _buildInfoRow(
+                              'Alamat Proyek',
+                              formState.alamatProyek,
+                            ),
                           _buildInfoRow(
                             'NPWP Perusahaan',
                             formState.npwpPerusahaan,
