@@ -148,6 +148,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
   final _loading = <String>{};
   final _failures = <String, _SlotFailure>{};
 
+  int get _totalSlotCount => _slots.length;
   int get _requiredCount => _slots.where((slot) => !slot.optional).length;
 
   Future<List<PlatformFile>> _pick({required bool allowMultiple}) async {
@@ -198,6 +199,21 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
       return;
     }
 
+    final invalid = files.firstWhere(
+      (file) => !_isPdf(file),
+      orElse: () => PlatformFile(name: '', size: 0),
+    );
+    if (invalid.name.isNotEmpty) {
+      setState(() {
+        _loading.remove(slot.key);
+        _failures[slot.key] = _SlotFailure(
+          invalid.name,
+          'Format berkas harus PDF. Silakan pilih berkas PDF dan coba lagi.',
+        );
+      });
+      return;
+    }
+
     final tooLarge = files.firstWhere(
       (file) => file.size > slot.maxBytes,
       orElse: () => PlatformFile(name: '', size: 0),
@@ -230,6 +246,12 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     });
   }
 
+  bool _isPdf(PlatformFile file) {
+    final reference = file.path ?? file.name;
+    final name = reference.split(RegExp(r'[/\\]')).last.toLowerCase();
+    return name.endsWith('.pdf');
+  }
+
   void _delete(_DocSlot slot) {
     ref.read(pengajuanFormProvider.notifier).deleteDocument(slot.key);
     setState(() => _failures.remove(slot.key));
@@ -246,11 +268,14 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
   int _uploadedRequired(PengajuanFormState state) =>
       _slots.where((slot) => !slot.optional && _hasFile(slot, state)).length;
 
+  int _uploadedCount(PengajuanFormState state) =>
+      _slots.where((slot) => _hasFile(slot, state)).length;
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(pengajuanFormProvider);
-    final uploaded = _uploadedRequired(state);
-    final isComplete = uploaded == _requiredCount;
+    final uploaded = _uploadedCount(state);
+    final isComplete = _uploadedRequired(state) == _requiredCount;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
@@ -356,7 +381,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
               Text(
                 uploaded.toString() +
                     ' dari ' +
-                    _requiredCount.toString() +
+                    _totalSlotCount.toString() +
                     ' berkas telah siap',
                 style: AppTextStyles.labelMedium.copyWith(
                   color: isComplete
@@ -372,7 +397,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
             borderRadius: AppRadii.pill,
             child: LinearProgressIndicator(
               minHeight: 6,
-              value: uploaded / _requiredCount,
+              value: uploaded / _totalSlotCount,
               backgroundColor: AppColors.primarySurfaceSoft,
               valueColor: AlwaysStoppedAnimation<Color>(
                 isComplete ? AppColors.statusSuccessText : AppColors.primaryRed,
@@ -591,7 +616,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              failure.fileName + '\\n' + failure.message,
+              failure.fileName + '\n' + failure.message,
               style: AppTextStyles.bodySmall.copyWith(
                 color: AppColors.statusUrgentText,
               ),

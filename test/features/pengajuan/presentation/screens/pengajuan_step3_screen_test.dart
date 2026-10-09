@@ -164,6 +164,78 @@ void main() {
     );
 
     testWidgets(
+      'rejects non-PDF returned by picker and keeps state unchanged',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _host(
+            container: container,
+            picker: ({required bool allowMultiple, allowedExtensions}) async =>
+                [_pdf('dokumen.docx', 1024)],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final button = find.widgetWithText(
+          OutlinedButton,
+          'Unggah Dokumen Permohonan',
+        );
+        tester.widget<OutlinedButton>(button).onPressed!();
+        await tester.pumpAndSettle();
+
+        expect(container.read(pengajuanFormProvider).uploadedDocs, isEmpty);
+        expect(find.textContaining('Format berkas harus PDF.'), findsOneWidget);
+        expect(find.text('Coba Lagi'), findsOneWidget);
+      },
+    );
+
+    testWidgets('appends multi-file selections across repeated picks', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      var call = 0;
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async {
+            call++;
+            return call == 1
+                ? [_pdf('a.pdf', 1), _pdf('b.pdf', 1)]
+                : [_pdf('c.pdf', 1)];
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Tambah File Rekomendasi'),
+        400,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      Future<void> tapAdd() async {
+        final button = find.widgetWithText(
+          OutlinedButton,
+          'Tambah File Rekomendasi',
+        );
+        tester.widget<OutlinedButton>(button).onPressed!();
+        await tester.pumpAndSettle();
+      }
+
+      await tapAdd();
+      await tapAdd();
+      expect(
+        container
+            .read(pengajuanFormProvider)
+            .multiUploadedDocs['rekomendasi_lingkungan'],
+        ['a.pdf', 'b.pdf', 'c.pdf'],
+      );
+    });
+
+    testWidgets(
       'preserves state and avoids overflow at target sizes and text scale',
       (tester) async {
         for (final size in [const Size(360, 800), const Size(412, 900)]) {

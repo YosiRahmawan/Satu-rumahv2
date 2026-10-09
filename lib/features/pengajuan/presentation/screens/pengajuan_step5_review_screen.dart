@@ -23,6 +23,20 @@ class _PengajuanStep5ReviewScreenState
     extends ConsumerState<PengajuanStep5ReviewScreen> {
   bool _isSubmitting = false;
 
+  static const _step3Labels = <String, String>{
+    'surat_permohonan': 'Surat Permohonan Site Plan',
+    'info_intensitas_ruang': 'Informasi Intensitas Ruang',
+    'bukti_kepemilikan_lahan': 'Bukti Kepemilikan Lahan',
+    'bukti_tpu': 'Bukti Penyediaan Lahan TPU',
+    'rekomendasi_lingkungan': 'Rekomendasi Teknis Lingkungan',
+    'andalalin': 'Persetujuan ANDALALIN / Dishub',
+    'rekomendasi_air_bersih': 'Rekomendasi Air Bersih',
+    'rekomendasi_listrik': 'Rekomendasi Listrik PLN',
+    'pernyataan_psu': 'Pernyataan Kesanggupan Penyerahan PSU',
+    'penanggung_jawab_teknis': 'Data Penanggung Jawab Teknis',
+    'proposal_pembangunan': 'Proposal Rencana Pembangunan',
+  };
+
   @override
   Widget build(BuildContext context) {
     final formState = ref.watch(pengajuanFormProvider);
@@ -217,15 +231,11 @@ class _PengajuanStep5ReviewScreenState
                             'Legalitas Akta',
                             formState.uploadedDocs['legalitas'],
                           ),
-                          _buildDocReviewRow(
-                            'Kesesuaian Tata Ruang',
-                            formState.uploadedDocs['kkpr_doc'] ??
-                                formState.uploadedDocs['tata_ruang'],
-                          ),
-                          _buildDocReviewRow(
-                            'PBG/IMB Induk',
-                            formState.uploadedDocs['pbg_induk'] ??
-                                formState.uploadedDocs['imb_induk'],
+                          ...PengajuanStep3DocumentContract.allKeys.map(
+                            (key) => _buildDocReviewRow(
+                              _step3Labels[key] ?? key,
+                              formState.uploadedDocs[key],
+                            ),
                           ),
                           _buildDocReviewRow(
                             'File AutoCAD DWG',

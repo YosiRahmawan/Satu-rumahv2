@@ -3,6 +3,36 @@ import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 
+/// Canonical document contract shared by Step 3 validation and Review.
+class PengajuanStep3DocumentContract {
+  static const allKeys = <String>[
+    'surat_permohonan',
+    'info_intensitas_ruang',
+    'bukti_kepemilikan_lahan',
+    'bukti_tpu',
+    'rekomendasi_lingkungan',
+    'andalalin',
+    'rekomendasi_air_bersih',
+    'rekomendasi_listrik',
+    'pernyataan_psu',
+    'penanggung_jawab_teknis',
+    'proposal_pembangunan',
+  ];
+
+  static const requiredKeys = <String>[
+    'surat_permohonan',
+    'info_intensitas_ruang',
+    'bukti_kepemilikan_lahan',
+    'bukti_tpu',
+    'rekomendasi_lingkungan',
+    'andalalin',
+    'rekomendasi_air_bersih',
+    'rekomendasi_listrik',
+    'pernyataan_psu',
+    'proposal_pembangunan',
+  ];
+}
+
 class PengajuanFormState {
   final String tipePengajuan;
   final String namaPerumahan;
@@ -53,16 +83,7 @@ class PengajuanFormState {
       _hasDocument('legalitas');
 
   bool get isStep3Valid =>
-      _hasDocument('surat_permohonan') &&
-      _hasDocument('info_intensitas_ruang') &&
-      _hasDocument('bukti_kepemilikan_lahan') &&
-      _hasDocument('bukti_tpu') &&
-      _hasDocument('kkpr_doc') &&
-      _hasDocument('pbg_induk') &&
-      _hasDocument('rekomendasi_lingkungan') &&
-      _hasDocument('pernyataan_pelepasan') &&
-      _hasDocument('pernyataan_keabsahan') &&
-      _hasDocument('pernyataan_psu');
+      PengajuanStep3DocumentContract.requiredKeys.every(_hasDocument);
 
   bool get isStep4Valid =>
       _hasDocument('site_plan_dwg') ||
@@ -139,10 +160,14 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     if (key.trim().isEmpty) return;
     final clean = fileNames.where((file) => file.trim().isNotEmpty).toList();
     if (clean.isEmpty) return;
-    final updated = Map<String, String>.from(state.uploadedDocs);
-    updated[key] = clean.first;
     final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
-    multi[key] = clean;
+    final existing = List<String>.from(multi[key] ?? const <String>[]);
+    for (final file in clean) {
+      if (!existing.contains(file)) existing.add(file);
+    }
+    final updated = Map<String, String>.from(state.uploadedDocs);
+    updated[key] = existing.first;
+    multi[key] = existing;
     state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
   }
 
@@ -227,10 +252,14 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
         'kkpr_doc': 'kesesuaian_tata_ruang_2026.pdf',
         'pbg_induk': 'persetujuan_imb_induk.pdf',
         'rekomendasi_lingkungan': 'rekomendasi_amdal_sppl.pdf',
+        'andalalin': 'andalalin_dishub.pdf',
+        'rekomendasi_air_bersih': 'rekomendasi_pdam.pdf',
+        'rekomendasi_listrik': 'rekomendasi_pln.pdf',
         'pelepasan_lahan': 'rekomendasi_pelepasan_lahan.pdf',
         'pernyataan_pelepasan': 'pernyataan_pelepasan_hak.pdf',
         'pernyataan_keabsahan': 'pernyataan_keabsahan_dokumen.pdf',
         'pernyataan_psu': 'pernyataan_kesanggupan_psu.pdf',
+        'proposal_pembangunan': 'proposal_pembangunan_direktur.pdf',
         'site_plan_dwg': 'design_siteplan_layout.dwg',
       },
       technicalFiles: [

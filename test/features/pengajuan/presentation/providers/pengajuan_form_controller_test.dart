@@ -37,12 +37,12 @@ void main() {
         'info_intensitas_ruang': 'intensitas.pdf',
         'bukti_kepemilikan_lahan': 'lahan.pdf',
         'bukti_tpu': 'tpu.pdf',
-        'kkpr_doc': 'kkpr.pdf',
-        'pbg_induk': 'pbg.pdf',
         'rekomendasi_lingkungan': 'lingkungan.pdf',
-        'pernyataan_pelepasan': 'pelepasan.pdf',
-        'pernyataan_keabsahan': 'keabsahan.pdf',
+        'andalalin': 'andalalin.pdf',
+        'rekomendasi_air_bersih': 'air.pdf',
+        'rekomendasi_listrik': 'listrik.pdf',
         'pernyataan_psu': 'psu.pdf',
+        'proposal_pembangunan': 'proposal.pdf',
       };
 
       for (final entry in required.entries) {
@@ -53,6 +53,20 @@ void main() {
       expect(notifier.state.isStep3Valid, isTrue);
       notifier.deleteDocument('legalitas');
       expect(notifier.state.isStep2Valid, isFalse);
+    });
+
+    test('appends multi-file selections without dropping prior files', () {
+      final notifier = PengajuanFormNotifier();
+
+      notifier.uploadDocuments('rekomendasi_lingkungan', ['a.pdf', 'b.pdf']);
+      notifier.uploadDocuments('rekomendasi_lingkungan', ['c.pdf']);
+
+      expect(notifier.state.multiUploadedDocs['rekomendasi_lingkungan'], [
+        'a.pdf',
+        'b.pdf',
+        'c.pdf',
+      ]);
+      expect(notifier.state.uploadedDocs['rekomendasi_lingkungan'], 'a.pdf');
     });
 
     test('technical files satisfy step 4 and empty names do not', () {
