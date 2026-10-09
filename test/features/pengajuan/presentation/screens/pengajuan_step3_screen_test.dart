@@ -219,6 +219,41 @@ void main() {
       expect(find.textContaining('Format berkas harus PDF.'), findsOneWidget);
     });
 
+    testWidgets('retains previous valid file after oversized replacement', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(pengajuanFormProvider.notifier)
+          .uploadDocument('surat_permohonan', 'valid-sebelumnya.pdf');
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async => [
+            _pdf('pengganti-terlalu-besar.pdf', 11 * 1024 * 1024),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.widgetWithText(TextButton, 'Ganti');
+      tester.widget<TextButton>(button).onPressed!();
+      await tester.pumpAndSettle();
+
+      final state = container.read(pengajuanFormProvider);
+      expect(state.uploadedDocs['surat_permohonan'], 'valid-sebelumnya.pdf');
+      expect(
+        find.textContaining('File melebihi batas maksimal 10 MB.'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Berkas lama tetap tersimpan.'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('appends multi-file selections across repeated picks', (
       tester,
     ) async {

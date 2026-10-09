@@ -7,6 +7,82 @@ import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_det
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_step5_review_screen.dart';
 
 void main() {
+  testWidgets(
+    'uses the canonical Fase 3 contract and blocks review until required documents are complete',
+    (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(pengajuanFormProvider.notifier);
+      notifier.fillDummyData();
+      notifier.deleteDocument('proposal_pembangunan');
+
+      final router = GoRouter(
+        initialLocation: '/pengajuan/step5',
+        routes: [
+          GoRoute(
+            path: '/pengajuan/step5',
+            builder: (context, state) => const PengajuanStep5ReviewScreen(),
+          ),
+          GoRoute(
+            path: '/pengajuan/success',
+            builder: (context, state) =>
+                const Scaffold(body: Text('Pengajuan berhasil')),
+          ),
+          GoRoute(
+            path: '/pengajuan/detail/:id',
+            builder: (context, state) =>
+                PengajuanDetailScreen(id: state.pathParameters['id']!),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      for (final slot in PengajuanStep3DocumentContract.slots) {
+        expect(find.text(slot.label), findsOneWidget);
+      }
+      final optionalSlot = PengajuanStep3DocumentContract.slots.firstWhere(
+        (slot) => slot.isOptional,
+      );
+      final missingRequiredSlot = PengajuanStep3DocumentContract.slots
+          .firstWhere((slot) => slot.key == 'proposal_pembangunan');
+      Finder rowStatus(String label) => find.descendant(
+        of: find
+            .ancestor(of: find.text(label), matching: find.byType(Padding))
+            .first,
+        matching: find.text('Belum Ada'),
+      );
+
+      expect(rowStatus(missingRequiredSlot.label), findsOneWidget);
+      expect(rowStatus(optionalSlot.label), findsOneWidget);
+
+      final submitButton = find.widgetWithText(
+        ElevatedButton,
+        'Kirim Pengajuan',
+      );
+      expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNull);
+      expect(find.text('Pengajuan berhasil'), findsNothing);
+
+      notifier.uploadDocument('proposal_pembangunan', 'proposal-baru.pdf');
+      await tester.pumpAndSettle();
+
+      expect(rowStatus(missingRequiredSlot.label), findsNothing);
+      expect(rowStatus(optionalSlot.label), findsOneWidget);
+      expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNotNull);
+
+      await tester.tap(find.text('Kirim Pengajuan'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pengajuan berhasil'), findsOneWidget);
+    },
+  );
+
   testWidgets('submits without inventing company or director identity', (
     tester,
   ) async {
