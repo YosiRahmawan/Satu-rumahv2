@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:satu_rumah/core/theme/app_theme.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/detail_perbarui_dokumen_screen.dart';
 
@@ -10,6 +11,7 @@ void main() {
     String docKey = 'ktp',
     Map<String, dynamic>? docData,
     double textScale = 1.0,
+    DetailFilePickerSeam? pickerSeam,
   }) {
     return ProviderScope(
       child: MaterialApp(
@@ -26,6 +28,7 @@ void main() {
           pengajuanId: pengajuanId,
           docKey: docKey,
           docData: docData,
+          pickerSeam: pickerSeam,
         ),
       ),
     );
@@ -43,45 +46,49 @@ void main() {
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
     });
 
-    testWidgets('renders Card 1: Alasan Perbaikan dari Admin with badge and date', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders Card 1: Alasan Perbaikan dari Admin with badge and date',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Alasan Perbaikan dari Admin'), findsOneWidget);
-      expect(find.byIcon(Icons.error_outline), findsWidgets);
-      expect(
-        find.textContaining('Scan buram, nomor NIK dan tanda tangan'),
-        findsOneWidget,
-      );
-      expect(find.text('Oleh Tim Verifikator Disperwaskim'), findsOneWidget);
-      expect(find.text('14 Mar 2026'), findsOneWidget);
-    });
+        expect(find.text('Alasan Perbaikan dari Admin'), findsOneWidget);
+        expect(find.byIcon(Icons.error_outline), findsWidgets);
+        expect(
+          find.textContaining('Scan buram, nomor NIK dan tanda tangan'),
+          findsOneWidget,
+        );
+        expect(find.text('Oleh Tim Verifikator Disperwaskim'), findsOneWidget);
+        expect(find.text('14 Mar 2026'), findsOneWidget);
+      },
+    );
 
-    testWidgets('renders Card 2: Berkas Saat Ini (Ditolak) and handles Pratinjau', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders Card 2: Berkas Saat Ini (Ditolak) and handles Pratinjau',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
 
-      expect(find.text('BERKAS SAAT INI (DITOLAK)'), findsOneWidget);
-      expect(find.text('Versi 1'), findsOneWidget);
-      expect(find.text('KTP_Direktur_Lama.pdf'), findsOneWidget);
-      expect(find.textContaining('1.2 MB'), findsOneWidget);
+        expect(find.text('BERKAS SAAT INI (DITOLAK)'), findsOneWidget);
+        expect(find.text('Versi 1'), findsOneWidget);
+        expect(find.text('KTP_Direktur_Lama.pdf'), findsOneWidget);
+        expect(find.textContaining('1.2 MB'), findsOneWidget);
 
-      // Tap Pratinjau on old file
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Pratinjau').first);
-      await tester.pumpAndSettle();
+        // Tap Pratinjau on old file
+        await tester.tap(
+          find.widgetWithText(OutlinedButton, 'Pratinjau').first,
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Pratinjau Dokumen'), findsOneWidget);
-      expect(find.text('Pratinjau Digital Dokumen Sah'), findsOneWidget);
-      expect(find.text('Tutup Pratinjau'), findsOneWidget);
+        expect(find.text('Pratinjau Dokumen'), findsOneWidget);
+        expect(find.text('Pratinjau Digital Dokumen Sah'), findsOneWidget);
+        expect(find.text('Tutup Pratinjau'), findsOneWidget);
 
-      await tester.tap(find.text('Tutup Pratinjau'));
-      await tester.pumpAndSettle();
-      expect(find.text('Pratinjau Digital Dokumen Sah'), findsNothing);
-    });
+        await tester.tap(find.text('Tutup Pratinjau'));
+        await tester.pumpAndSettle();
+        expect(find.text('Pratinjau Digital Dokumen Sah'), findsNothing);
+      },
+    );
 
     testWidgets('renders Card 3: Unggah Berkas Pengganti and selected file', (
       tester,
@@ -132,6 +139,65 @@ void main() {
       );
       expect(kirimBtn.onPressed, isNull);
     });
+
+    testWidgets(
+      'accepts a valid PDF replacement and updates the selected file',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            pickerSeam: ({allowedExtensions}) async => PlatformFile(
+              name: 'KTP_Direktur_Baru.pdf',
+              size: 2 * 1024 * 1024,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(
+          find.text('Pilih Berkas'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('Pilih Berkas'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('KTP_Direktur_Baru.pdf'), findsOneWidget);
+        expect(find.text('2.0 MB'), findsOneWidget);
+        expect(find.text('KTP_Direktur_Revisi_2026.pdf'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'rejects an oversized valid-PDF replacement and keeps the old file',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            pickerSeam: ({allowedExtensions}) async => PlatformFile(
+              name: 'KTP_Direktur_Terlalu_Besar.pdf',
+              size: 10 * 1024 * 1024 + 1,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(
+          find.text('Pilih Berkas'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('Pilih Berkas'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('KTP_Direktur_Revisi_2026.pdf'), findsOneWidget);
+        expect(find.text('KTP_Direktur_Terlalu_Besar.pdf'), findsNothing);
+        expect(
+          find.textContaining(
+            'File melebihi batas maksimal 10 MB. Berkas lama tetap tersimpan.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('renders Card 4: Catatan untuk Admin with counter', (
       tester,

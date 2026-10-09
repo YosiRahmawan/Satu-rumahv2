@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/file_picker_util.dart';
+
+typedef DetailFilePickerSeam =
+    Future<PlatformFile?> Function({List<String>? allowedExtensions});
 
 /// Halaman Detail Penggantian Satu Dokumen (Fase 3 - Perbaikan Berkas)
 /// Sesuai spesifikasi visual Prototype/Pase 3 - Perbaikan.png & design.md.
@@ -10,12 +14,14 @@ class DetailPerbaruiDokumenScreen extends ConsumerStatefulWidget {
   final String pengajuanId;
   final String docKey;
   final Map<String, dynamic>? docData;
+  final DetailFilePickerSeam? pickerSeam;
 
   const DetailPerbaruiDokumenScreen({
     super.key,
     required this.pengajuanId,
     required this.docKey,
     this.docData,
+    this.pickerSeam,
   });
 
   @override
@@ -94,27 +100,44 @@ class _DetailPerbaruiDokumenScreenState
   Future<void> _handlePickFile() async {
     try {
       final isSitePlan = widget.docKey == 'site_plan_dwg';
-      final picked = await FilePickerUtil.pickSingleFile(
-        allowedExtensions: isSitePlan ? ['pdf', 'dwg'] : ['pdf', 'jpg', 'png'],
-      );
+      final allowedExtensions = isSitePlan
+          ? ['pdf', 'dwg']
+          : ['pdf', 'jpg', 'png'];
+      final picked = widget.pickerSeam != null
+          ? await widget.pickerSeam!(allowedExtensions: allowedExtensions)
+          : await FilePickerUtil.pickSingleFile(
+              allowedExtensions: allowedExtensions,
+            );
+
+      if (picked == null) return;
+
+      final maxBytes = isSitePlan ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+      if (picked.size > maxBytes) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'File melebihi batas maksimal ${maxBytes ~/ (1024 * 1024)} MB. Berkas lama tetap tersimpan.',
+            ),
+          ),
+        );
+        return;
+      }
 
       setState(() {
-        if (picked != null) {
-          _selectedFileName = picked.name;
-          _selectedFileSize =
-              '${(picked.size / (1024 * 1024)).toStringAsFixed(1)} MB';
-        } else {
-          _selectedFileName = isSitePlan
-              ? 'SitePlan_Revisi_Scale1000.pdf'
-              : 'KTP_Direktur_Revisi_2026.pdf';
-          _selectedFileSize = isSitePlan ? '5.4 MB' : '2.1 MB';
-        }
+        _selectedFileName = picked.name;
+        _selectedFileSize =
+            '${(picked.size / (1024 * 1024)).toStringAsFixed(1)} MB';
       });
     } catch (_) {
-      setState(() {
-        _selectedFileName = 'KTP_Direktur_Revisi_2026.pdf';
-        _selectedFileSize = '2.1 MB';
-      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Berkas tidak dapat dipilih. Berkas lama tetap tersimpan.',
+          ),
+        ),
+      );
     }
   }
 
@@ -310,8 +333,10 @@ class _DetailPerbaruiDokumenScreenState
                 badgeBg: AppColors.statusSuccessSurface,
                 badgeFg: AppColors.statusSuccessText,
                 fileName: _selectedFileName ?? 'KTP_Direktur_Revisi_2026.pdf',
-                metaText: '${_selectedFileSize ?? '2.1 MB'} • 14 Mar 2026, 10:20 WIB',
-                noteText: 'Catatan Pengembang: ${_catatanController.text.trim()}',
+                metaText:
+                    '${_selectedFileSize ?? '2.1 MB'} • 14 Mar 2026, 10:20 WIB',
+                noteText:
+                    'Catatan Pengembang: ${_catatanController.text.trim()}',
                 iconColor: AppColors.statusSuccessText,
               ),
               const SizedBox(height: 12),
@@ -557,7 +582,10 @@ class _DetailPerbaruiDokumenScreenState
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFEE2E2),
                       borderRadius: BorderRadius.circular(100),
@@ -705,7 +733,10 @@ class _DetailPerbaruiDokumenScreenState
                           'Berkas Saat Ini (Ditolak) - Versi 1',
                         ),
                         icon: const Icon(Icons.visibility_outlined, size: 16),
-                        label: const Text('Pratinjau', style: TextStyle(fontSize: 12)),
+                        label: const Text(
+                          'Pratinjau',
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ],
                   )
@@ -755,7 +786,10 @@ class _DetailPerbaruiDokumenScreenState
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.slate700,
                           side: const BorderSide(color: AppColors.slate300),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           minimumSize: const Size(0, 34),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -766,7 +800,10 @@ class _DetailPerbaruiDokumenScreenState
                           'Berkas Saat Ini (Ditolak) - Versi 1',
                         ),
                         icon: const Icon(Icons.visibility_outlined, size: 16),
-                        label: const Text('Pratinjau', style: TextStyle(fontSize: 12)),
+                        label: const Text(
+                          'Pratinjau',
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ],
                   ),
@@ -881,7 +918,10 @@ class _DetailPerbaruiDokumenScreenState
                       backgroundColor: const Color(0xFFB91C1C),
                       foregroundColor: Colors.white,
                       elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 10,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -890,7 +930,10 @@ class _DetailPerbaruiDokumenScreenState
                     icon: const Icon(Icons.folder_open, size: 18),
                     label: const Text(
                       'Pilih Berkas',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
@@ -968,7 +1011,10 @@ class _DetailPerbaruiDokumenScreenState
                         ),
                         const SizedBox(height: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFDCFCE7),
                             borderRadius: BorderRadius.circular(100),
@@ -1042,7 +1088,10 @@ class _DetailPerbaruiDokumenScreenState
                         ),
                         const SizedBox(width: 6),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFDCFCE7),
                             borderRadius: BorderRadius.circular(100),
@@ -1082,7 +1131,10 @@ class _DetailPerbaruiDokumenScreenState
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.slate700,
                           side: const BorderSide(color: AppColors.slate300),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           minimumSize: const Size(0, 32),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
@@ -1093,13 +1145,19 @@ class _DetailPerbaruiDokumenScreenState
                           'Berkas Pengganti (Siap Diunggah)',
                         ),
                         icon: const Icon(Icons.visibility_outlined, size: 14),
-                        label: const Text('Pratinjau', style: TextStyle(fontSize: 12)),
+                        label: const Text(
+                          'Pratinjau',
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                       OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFFDC2626),
                           side: const BorderSide(color: Color(0xFFFECACA)),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
                           minimumSize: const Size(0, 32),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
@@ -1112,7 +1170,10 @@ class _DetailPerbaruiDokumenScreenState
                           });
                         },
                         icon: const Icon(Icons.delete_outline, size: 14),
-                        label: const Text('Hapus', style: TextStyle(fontSize: 12)),
+                        label: const Text(
+                          'Hapus',
+                          style: TextStyle(fontSize: 12),
+                        ),
                       ),
                     ],
                   ),
@@ -1218,7 +1279,10 @@ class _DetailPerbaruiDokumenScreenState
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.primaryRed, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppColors.primaryRed,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
@@ -1236,11 +1300,7 @@ class _DetailPerbaruiDokumenScreenState
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
         child: Row(
           children: [
-            const Icon(
-              Icons.history,
-              color: Color(0xFFB91C1C),
-              size: 20,
-            ),
+            const Icon(Icons.history, color: Color(0xFFB91C1C), size: 20),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -1252,11 +1312,7 @@ class _DetailPerbaruiDokumenScreenState
                 ),
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFFB91C1C),
-              size: 20,
-            ),
+            const Icon(Icons.chevron_right, color: Color(0xFFB91C1C), size: 20),
           ],
         ),
       ),
@@ -1297,15 +1353,9 @@ class _DetailPerbaruiDokumenScreenState
             )
           : Row(
               children: [
-                Expanded(
-                  flex: 2,
-                  child: _buildBatalButton(),
-                ),
+                Expanded(flex: 2, child: _buildBatalButton()),
                 const SizedBox(width: 12),
-                Expanded(
-                  flex: 3,
-                  child: _buildKirimPerbaikanButton(),
-                ),
+                Expanded(flex: 3, child: _buildKirimPerbaikanButton()),
               ],
             ),
     );
