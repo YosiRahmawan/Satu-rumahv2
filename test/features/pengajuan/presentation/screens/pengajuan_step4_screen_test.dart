@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_step4_screen.dart';
@@ -175,6 +178,191 @@ void main() {
       deleteButton.onPressed!();
       await tester.pumpAndSettle();
       expect(container.read(pengajuanFormProvider).technicalFiles, isEmpty);
+    });
+
+    testWidgets('rejects oversized files and preserves existing valid files', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(pengajuanFormProvider.notifier).addTechnicalFiles([
+        'existing.dwg',
+      ]);
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required allowMultiple, allowedExtensions}) async => [
+            _file('too-large.pdf', 50 * 1024 * 1024 + 1),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(
+              OutlinedButton,
+              '+ Tambah File Site Plan (DWG/PDF)',
+            ),
+          )
+          .onPressed!();
+      await tester.pumpAndSettle();
+
+      expect(container.read(pengajuanFormProvider).technicalFiles, [
+        'existing.dwg',
+      ]);
+      expect(
+        find.textContaining('Ukuran melebihi batas 50 MB'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('does not add duplicate references within a group', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(pengajuanFormProvider.notifier).addTechnicalFiles([
+        'existing.dwg',
+      ]);
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required allowMultiple, allowedExtensions}) async => [
+            _file('existing.dwg', 2 * 1024 * 1024),
+            _file('new.pdf', 2 * 1024 * 1024),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(
+              OutlinedButton,
+              '+ Tambah File Site Plan (DWG/PDF)',
+            ),
+          )
+          .onPressed!();
+      await tester.pumpAndSettle();
+
+      expect(container.read(pengajuanFormProvider).technicalFiles, [
+        'existing.dwg',
+        'new.pdf',
+      ]);
+    });
+
+    testWidgets('cancelled and failed picker operations do not mutate state', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final pickerResult = Completer<List<PlatformFile>>();
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required allowMultiple, allowedExtensions}) =>
+              pickerResult.future,
+        ),
+      );
+      await tester.pumpAndSettle();
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(
+              OutlinedButton,
+              '+ Tambah File Site Plan (DWG/PDF)',
+            ),
+          )
+          .onPressed!();
+      await tester.pump();
+      final cancelButton = find.ancestor(
+        of: find.text('Batal'),
+        matching: find.byType(TextButton),
+      );
+      tester.widget<TextButton>(cancelButton).onPressed!();
+      pickerResult.complete([_file('cancelled.dwg', 2)]);
+      await tester.pumpAndSettle();
+      expect(container.read(pengajuanFormProvider).technicalFiles, isEmpty);
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required allowMultiple, allowedExtensions}) async {
+            throw StateError('picker failed');
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      tester
+          .widget<OutlinedButton>(
+            find.widgetWithText(
+              OutlinedButton,
+              '+ Tambah File Site Plan (DWG/PDF)',
+            ),
+          )
+          .onPressed!();
+      await tester.pumpAndSettle();
+      expect(container.read(pengajuanFormProvider).technicalFiles, isEmpty);
+      expect(
+        find.textContaining('Pemilih berkas tidak dapat dibuka'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('uses stack navigation between step 3, 4, and 5', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      tester.view.physicalSize = const Size(390, 844);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      late GoRouter router;
+      router = GoRouter(
+        initialLocation: '/pengajuan/step3',
+        routes: [
+          GoRoute(
+            path: '/pengajuan/step3',
+            builder: (_, __) => Scaffold(
+              body: TextButton(
+                onPressed: () => router.push('/pengajuan/step4'),
+                child: const Text('open step 4'),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/pengajuan/step4',
+            builder: (_, __) => PengajuanStep4Screen(
+              pickerSeam: ({required allowMultiple, allowedExtensions}) async =>
+                  [_file('technical.pdf', 2)],
+            ),
+          ),
+          GoRoute(
+            path: '/pengajuan/step5',
+            builder: (_, __) => const Scaffold(body: Text('step 5')),
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.tap(find.text('open step 4'));
+      await tester.pumpAndSettle();
+      expect(find.text('Langkah 4 dari 5'), findsOneWidget);
+      await tester.tap(
+        find.widgetWithText(
+          OutlinedButton,
+          '+ Tambah File Site Plan (DWG/PDF)',
+        ),
+      );
+      await tester.pumpAndSettle();
+      final next = find.text('Lanjut ke Review & Submit');
+      await tester.tap(next);
+      await tester.pumpAndSettle();
+      expect(find.text('step 5'), findsOneWidget);
     });
   });
 }

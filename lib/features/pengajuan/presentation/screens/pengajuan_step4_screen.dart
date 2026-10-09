@@ -37,6 +37,7 @@ class _FileFailure {
 }
 
 class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
+  static const _maxTechnicalFileBytes = 50 * 1024 * 1024;
   static const _sitePlanKey = 'site_plan';
   static const _otherKey = PengajuanFormState.technicalOtherDocumentsKey;
   static const _sitePlanExtensions = ['dwg', 'pdf'];
@@ -46,6 +47,7 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
   final _cancelRequested = <String>{};
   final _failures = <String, _FileFailure>{};
   final _fileSizes = <String, int>{};
+  final _selectionGenerations = <String, int>{};
 
   Future<List<PlatformFile>> _pick({
     required List<String> allowedExtensions,
@@ -72,6 +74,8 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
   Future<void> _selectGroup({required String group}) async {
     final isSitePlan = group == _sitePlanKey;
     final allowed = isSitePlan ? _sitePlanExtensions : _otherExtensions;
+    final generation = (_selectionGenerations[group] ?? 0) + 1;
+    _selectionGenerations[group] = generation;
     setState(() {
       _loadingGroups.add(group);
       _cancelRequested.remove(group);
@@ -82,7 +86,8 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
     try {
       files = await _pick(allowedExtensions: allowed);
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || generation != _selectionGenerations[group]) return;
+      if (_cancelRequested.remove(group)) return;
       setState(() {
         _loadingGroups.remove(group);
         _failures[group] = const _FileFailure(
@@ -93,7 +98,7 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
       return;
     }
 
-    if (!mounted) return;
+    if (!mounted || generation != _selectionGenerations[group]) return;
     final cancelled = _cancelRequested.remove(group);
     setState(() => _loadingGroups.remove(group));
     if (cancelled) return;
@@ -107,19 +112,21 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
     }
 
     final valid = <String>[];
-    _FileFailure? failure;
+    final failures = <String>[];
     for (final file in files) {
       final reference = FilePickerUtil.referenceOf(file);
       final extension = _extension(file.name);
       if (!allowed.contains(extension)) {
-        failure = _FileFailure(
-          file.name,
-          isSitePlan
-              ? 'Format tidak didukung. Gunakan DWG atau PDF.'
-              : 'Format tidak didukung. Gunakan PDF.',
+        failures.add(
+          '${isSitePlan ? 'Format tidak didukung. Gunakan DWG atau PDF.' : 'Format tidak didukung. Gunakan PDF.'} (${file.name})',
         );
         continue;
       }
+      if (file.size > _maxTechnicalFileBytes) {
+        failures.add('Ukuran melebihi batas 50 MB per file (${file.name})');
+        continue;
+      }
+      if (valid.contains(reference)) continue;
       valid.add(reference);
       _fileSizes[reference] = file.size;
     }
@@ -132,14 +139,25 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
         notifier.uploadDocuments(_otherKey, valid);
       }
     }
-    if (failure != null) {
-      setState(() => _failures[group] = failure!);
+    if (failures.isNotEmpty) {
+      setState(
+        () => _failures[group] = _FileFailure(
+          failures.length == 1
+              ? failures.first.split(': ').first
+              : 'Berkas teknis',
+          failures.join('\n'),
+        ),
+      );
     }
   }
 
   void _cancelSelection(String group) {
     if (_loadingGroups.contains(group)) {
-      setState(() => _cancelRequested.add(group));
+      _selectionGenerations[group] = (_selectionGenerations[group] ?? 0) + 1;
+      setState(() {
+        _cancelRequested.add(group);
+        _loadingGroups.remove(group);
+      });
     }
   }
 
@@ -152,7 +170,7 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
         preferredSize: const Size.fromHeight(184),
         child: PengajuanStepHeader(
           subtitle: 'Langkah 4 dari 5',
-          onBackPressed: () => context.go('/pengajuan/step3'),
+          onBackPressed: _backToStep3,
         ),
       ),
       body: Column(
@@ -563,15 +581,13 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
                     MediaQuery.textScalerOf(context).scale(14) > 18;
                 final back = AppButton.secondary(
                   text: 'Kembali',
-                  onPressed: () => context.go('/pengajuan/step3'),
+                  onPressed: _backToStep3,
                 );
                 final next = isCompact
                     ? _buildCompactNextButton(isValid)
                     : AppButton.primary(
                         text: 'Lanjut ke Review & Submit',
-                        onPressed: isValid
-                            ? () => context.go('/pengajuan/step5')
-                            : null,
+                        onPressed: isValid ? _continueToStep5 : null,
                       );
                 if (isCompact) {
                   return Column(
@@ -603,27 +619,35 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
+  void _backToStep3() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/pengajuan/step3');
+    }
+  }
+
+  void _continueToStep5() => context.push('/pengajuan/step5');
+
   Widget _buildCompactNextButton(bool isValid) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: isValid ? () => context.go('/pengajuan/step5') : null,
+        onPressed: isValid ? _continueToStep5 : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryRed,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.textOnRed,
           disabledBackgroundColor: AppColors.grey300,
           disabledForegroundColor: AppColors.grey600,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
         ),
         child: const Text(
           'Lanjut ke Review & Submit',
           textAlign: TextAlign.center,
           maxLines: 2,
-          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+          style: AppTextStyles.labelLarge,
         ),
       ),
     );

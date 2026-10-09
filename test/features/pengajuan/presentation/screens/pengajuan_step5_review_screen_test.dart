@@ -133,4 +133,45 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Belum tersedia'), findsAtLeastNWidgets(3));
   });
+
+  testWidgets('persists kajian technical files in the submitted record', (
+    tester,
+  ) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(pengajuanFormProvider.notifier);
+    notifier.fillDummyData();
+    notifier.uploadDocuments(PengajuanFormState.technicalOtherDocumentsKey, [
+      'kajian-geoteknik.pdf',
+    ]);
+
+    final router = GoRouter(
+      initialLocation: '/pengajuan/step5',
+      routes: [
+        GoRoute(
+          path: '/pengajuan/step5',
+          builder: (context, state) => const PengajuanStep5ReviewScreen(),
+        ),
+        GoRoute(
+          path: '/pengajuan/success',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Pengajuan berhasil')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kirim Pengajuan'));
+    await tester.pumpAndSettle();
+
+    final submitted = container.read(pengajuanListProvider).first;
+    expect(submitted.technicalFiles, contains('kajian-geoteknik.pdf'));
+  });
 }

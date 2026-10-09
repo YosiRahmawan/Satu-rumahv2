@@ -41,6 +41,14 @@ class _PengajuanStep5ReviewScreenState
 
       final now = DateTime.now();
       final newId = _newSubmissionId(now, ref.read(pengajuanListProvider));
+      final technicalOtherFiles =
+          currentState.multiUploadedDocs[PengajuanFormState
+              .technicalOtherDocumentsKey] ??
+          const <String>[];
+      final technicalFiles = <String>{
+        ...currentState.technicalFiles,
+        ...technicalOtherFiles,
+      }.toList();
 
       final newPengajuan = Pengajuan(
         id: newId,
@@ -57,7 +65,7 @@ class _PengajuanStep5ReviewScreenState
         status: 'Dalam Proses',
         tanggal: '${now.day} ${_monthName(now.month)} ${now.year}',
         uploadedDocs: Map<String, String>.from(currentState.uploadedDocs),
-        technicalFiles: List<String>.from(currentState.technicalFiles),
+        technicalFiles: technicalFiles,
         selectedCakupanGambar: currentState.selectedCakupanGambar.toList(),
       );
 
