@@ -431,21 +431,23 @@ class _PengajuanStep5ReviewScreenState
         .read(notifikasiProvider.notifier)
         .addNotification(
           NotifikasiModel(
-            id: 'notif-\$id',
+            id: 'notif-$id',
             jenis: JenisNotifikasi.pengajuanBaru,
             judul: 'Pengajuan Baru: ${state.namaPerumahan}',
             deskripsi:
-                'Pengajuan (\$id) telah diterima dan dalam verifikasi administrasi.',
+                'Pengajuan ($id) telah diterima dan dalam verifikasi administrasi.',
             waktu: DateTime.now(),
-            targetRoute: '/admin/pengajuan/detail/\$id',
+            targetRoute: '/admin/pengajuan/detail/$id',
           ),
         );
     ref.read(pengajuanFormProvider.notifier).reset();
     context.pushReplacement('/pengajuan/success', extra: id);
   }
 
-  int _companyCount(PengajuanFormState state) =>
-      PengajuanStep2DocumentContract.slots.where((d) => _has(state, d.key)).length;
+  int _companyCount(PengajuanFormState state) => PengajuanStep2DocumentContract
+      .slots
+      .where((d) => _has(state, d.key))
+      .length;
   int _housingCount(PengajuanFormState state) => PengajuanStep3DocumentContract
       .slots
       .where((s) => !s.isOptional && _has(state, s.key))
