@@ -26,6 +26,16 @@ class FilePickerUtil {
     return null;
   }
 
+  /// Returns a stable reference for a picked file, safe on every platform.
+  ///
+  /// On web [PlatformFile.path] is unavailable and throws, so the file name is
+  /// used instead. On native platforms the local path is preferred, falling
+  /// back to the file name.
+  static String referenceOf(PlatformFile file) {
+    if (kIsWeb) return file.name;
+    return file.path ?? file.name;
+  }
+
   /// Membuka pemilih berkas bawaan Android untuk memilih beberapa file sekaligus (batch upload).
   static Future<List<PlatformFile>> pickMultipleFiles({
     List<String>? allowedExtensions,

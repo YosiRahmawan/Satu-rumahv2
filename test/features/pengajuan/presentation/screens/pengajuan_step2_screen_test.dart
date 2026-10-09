@@ -216,6 +216,44 @@ void main() {
       expect(container.read(pengajuanFormProvider).uploadedDocs['ktp'], isNull);
     });
 
+    testWidgets(
+      'web-style picked file without a local path still reaches Siap Dikirim and 20%',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // On web PlatformFile.path is unavailable; only name/size are provided.
+        final webStyleKtp = PlatformFile(
+          name: 'KTP_Direktur_Web.pdf',
+          size: 1024 * 1024, // 1.0 MB
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            tester: tester,
+            container: container,
+            pickerSeam: ({allowedExtensions}) async => webStyleKtp,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
+        await tester.ensureVisible(pilihButtons.first);
+        await tester.tap(pilihButtons.first);
+        await tester.pumpAndSettle();
+
+        // Must not fall back to "Belum Unggah" when path is unavailable.
+        expect(find.text('Siap Dikirim'), findsOneWidget);
+        expect(find.text('KTP_Direktur_Web.pdf'), findsOneWidget);
+        expect(find.text('1 dari 5 berkas dipilih'), findsOneWidget);
+        expect(find.text('20%'), findsOneWidget);
+        expect(
+          container.read(pengajuanFormProvider).uploadedDocs['ktp'],
+          equals('KTP_Direktur_Web.pdf'),
+        );
+      },
+    );
+
     testWidgets('successfully uploads valid PDF, updates progress, and supports delete', (
       tester,
     ) async {

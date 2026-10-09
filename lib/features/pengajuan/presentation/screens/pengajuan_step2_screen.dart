@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -251,7 +252,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
 
     ref.read(pengajuanFormProvider.notifier).uploadDocument(
       key,
-      file.path ?? file.name,
+      FilePickerUtil.referenceOf(file),
     );
   }
 
@@ -858,7 +859,8 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     final fileName = filePath.split(RegExp(r'[/\\]')).last;
     final cachedSize = docSizes[slot.key] ?? _slotFileSizes[slot.key];
     int effectiveSize = cachedSize ?? 0;
-    if (effectiveSize == 0) {
+    // dart:io is unavailable on web; the stored reference is the file name there.
+    if (effectiveSize == 0 && !kIsWeb) {
       try {
         final f = File(filePath);
         if (f.existsSync()) {
