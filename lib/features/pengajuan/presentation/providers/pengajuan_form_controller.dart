@@ -121,6 +121,8 @@ class PengajuanStep3DocumentContract {
 }
 
 class PengajuanFormState {
+  static const String technicalOtherDocumentsKey = 'kajian_teknis';
+
   final String tipePengajuan;
   final String namaPerumahan;
   final String alamatProyek;
@@ -137,6 +139,10 @@ class PengajuanFormState {
   final List<String> technicalFiles;
   final Set<String> selectedCakupanGambar;
   final bool isAgreed;
+
+  List<String> get technicalOtherFiles => List.unmodifiable(
+    multiUploadedDocs[technicalOtherDocumentsKey] ?? const <String>[],
+  );
 
   PengajuanFormState({
     this.tipePengajuan = 'Pengajuan Site Plan Baru',
@@ -293,6 +299,22 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
       updatedDocs['site_plan_dwg'] = current.first;
     }
     state = state.copyWith(technicalFiles: current, uploadedDocs: updatedDocs);
+  }
+
+  void removeTechnicalOtherFile(int index) {
+    final current = List<String>.from(
+      state.multiUploadedDocs[PengajuanFormState.technicalOtherDocumentsKey] ??
+          const <String>[],
+    );
+    if (index < 0 || index >= current.length) return;
+    current.removeAt(index);
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    if (current.isEmpty) {
+      multi.remove(PengajuanFormState.technicalOtherDocumentsKey);
+    } else {
+      multi[PengajuanFormState.technicalOtherDocumentsKey] = current;
+    }
+    state = state.copyWith(multiUploadedDocs: multi);
   }
 
   void toggleCakupanGambar(String item) {

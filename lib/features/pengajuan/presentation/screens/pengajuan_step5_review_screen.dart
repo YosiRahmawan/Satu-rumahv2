@@ -227,6 +227,20 @@ class _PengajuanStep5ReviewScreenState
                             'File AutoCAD DWG',
                             formState.uploadedDocs['site_plan_dwg'],
                           ),
+                          ...formState.technicalFiles
+                              .skip(1)
+                              .map(
+                                (file) => _buildDocReviewRow(
+                                  'File Site Plan tambahan',
+                                  file,
+                                ),
+                              ),
+                          ...formState.technicalOtherFiles.map(
+                            (file) => _buildDocReviewRow(
+                              'Kajian teknis lainnya',
+                              file,
+                            ),
+                          ),
                         ],
                       ),
                     ),
