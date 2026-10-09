@@ -302,19 +302,25 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
   }
 
   void removeTechnicalOtherFile(int index) {
+    const key = PengajuanFormState.technicalOtherDocumentsKey;
     final current = List<String>.from(
-      state.multiUploadedDocs[PengajuanFormState.technicalOtherDocumentsKey] ??
-          const <String>[],
+      state.multiUploadedDocs[key] ?? const <String>[],
     );
     if (index < 0 || index >= current.length) return;
     current.removeAt(index);
     final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    final uploaded = Map<String, String>.from(state.uploadedDocs);
     if (current.isEmpty) {
-      multi.remove(PengajuanFormState.technicalOtherDocumentsKey);
+      multi.remove(key);
+      uploaded.remove(key);
     } else {
-      multi[PengajuanFormState.technicalOtherDocumentsKey] = current;
+      multi[key] = current;
+      uploaded[key] = current.first;
     }
-    state = state.copyWith(multiUploadedDocs: multi);
+    state = state.copyWith(
+      uploadedDocs: uploaded,
+      multiUploadedDocs: multi,
+    );
   }
 
   void toggleCakupanGambar(String item) {

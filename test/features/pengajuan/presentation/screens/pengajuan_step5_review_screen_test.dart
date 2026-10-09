@@ -174,4 +174,48 @@ void main() {
     final submitted = container.read(pengajuanListProvider).first;
     expect(submitted.technicalFiles, contains('kajian-geoteknik.pdf'));
   });
+
+  testWidgets('does not submit deleted kajian references', (tester) async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    final notifier = container.read(pengajuanFormProvider.notifier);
+    notifier.fillDummyData();
+    notifier.uploadDocuments(PengajuanFormState.technicalOtherDocumentsKey, [
+      'kajian-a.pdf',
+      'kajian-b.pdf',
+    ]);
+    notifier.removeTechnicalOtherFile(0);
+    notifier.removeTechnicalOtherFile(0);
+
+    final router = GoRouter(
+      initialLocation: '/pengajuan/step5',
+      routes: [
+        GoRoute(
+          path: '/pengajuan/step5',
+          builder: (context, state) => const PengajuanStep5ReviewScreen(),
+        ),
+        GoRoute(
+          path: '/pengajuan/success',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Pengajuan berhasil')),
+        ),
+      ],
+    );
+    addTearDown(router.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Kirim Pengajuan'));
+    await tester.pumpAndSettle();
+
+    final submitted = container.read(pengajuanListProvider).first;
+    expect(submitted.uploadedDocs.containsKey('kajian_teknis'), isFalse);
+    expect(submitted.technicalFiles, isNot(contains('kajian-a.pdf')));
+    expect(submitted.technicalFiles, isNot(contains('kajian-b.pdf')));
+  });
 }

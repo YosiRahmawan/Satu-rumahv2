@@ -122,6 +122,29 @@ void main() {
       expect(notifier.state.uploadedDocs.containsKey('site_plan_dwg'), isFalse);
     });
 
+    test('kajian deletion keeps first-file reference synchronized', () {
+      final notifier = PengajuanFormNotifier();
+
+      notifier.uploadDocuments('kajian_teknis', [
+        'kajian-a.pdf',
+        'kajian-b.pdf',
+        'kajian-c.pdf',
+      ]);
+      notifier.removeTechnicalOtherFile(0);
+
+      expect(notifier.state.technicalOtherFiles, [
+        'kajian-b.pdf',
+        'kajian-c.pdf',
+      ]);
+      expect(notifier.state.uploadedDocs['kajian_teknis'], 'kajian-b.pdf');
+
+      notifier.removeTechnicalOtherFile(0);
+      notifier.removeTechnicalOtherFile(0);
+
+      expect(notifier.state.technicalOtherFiles, isEmpty);
+      expect(notifier.state.uploadedDocs.containsKey('kajian_teknis'), isFalse);
+    });
+
     test('list notifier rejects duplicate IDs', () {
       final notifier = PengajuanListNotifier();
       final original = notifier.state.first;
