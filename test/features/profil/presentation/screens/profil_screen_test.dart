@@ -52,8 +52,8 @@ void main() {
       expect(find.text('Dalam Proses'), findsOneWidget);
       expect(find.text('Selesai'), findsOneWidget);
 
-      expect(find.text('8'), findsOneWidget);
-      expect(find.text('7'), findsOneWidget);
+      expect(find.text('6'), findsOneWidget);
+      expect(find.text('5'), findsOneWidget);
       expect(find.text('1'), findsOneWidget);
     });
 
@@ -117,8 +117,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('8'), findsOneWidget); // total
-      expect(find.text('7'), findsOneWidget); // dalam proses
+      expect(find.text('6'), findsOneWidget); // total
+      expect(find.text('5'), findsOneWidget); // dalam proses
       expect(find.text('1'), findsOneWidget); // selesai
 
       // Tambahkan pengajuan baru dengan status selesai
@@ -140,8 +140,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('9'), findsOneWidget); // total: 9
-      expect(find.text('7'), findsOneWidget); // dalam proses: 9 - 2 = 7
+      expect(find.text('7'), findsOneWidget); // total: 7
+      expect(find.text('5'), findsOneWidget); // dalam proses: 7 - 2 = 5
       expect(find.text('2'), findsOneWidget); // selesai: 2
     });
   });

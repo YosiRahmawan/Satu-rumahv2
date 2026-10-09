@@ -8,7 +8,6 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
-import '../../../../core/widgets/status_badge.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
@@ -39,11 +38,8 @@ class PengajuanSayaListScreen extends ConsumerWidget {
               children: [
                 DeveloperHeader(
                   pageTitle: 'Pengajuan',
-                  badge: const StatusBadge(
-                    status: 'Portal Pengembang',
-                    showIcon: false,
-                  ),
-                  avatarLabel: 'PT',
+                  pageSubtitle: 'Daftar pengajuan site plan perumahan',
+                  avatarLabel: 'YR',
                   showOnlineIndicator: true,
                   avatarTooltip: 'Buka profil',
                   onAvatarTap: () =>
