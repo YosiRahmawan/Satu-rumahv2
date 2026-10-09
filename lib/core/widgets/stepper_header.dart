@@ -34,7 +34,7 @@ class StepperHeader extends StatelessWidget {
             return Expanded(
               child: Container(
                 height: 3,
-                color: isPassed ? const Color(0xFF10B981) : AppColors.grey300,
+                color: isPassed ? AppColors.statusSuccess : AppColors.grey300,
               ),
             );
           } else {
@@ -52,7 +52,7 @@ class StepperHeader extends StatelessWidget {
                   height: 30,
                   decoration: BoxDecoration(
                     color: isPassed
-                        ? const Color(0xFF10B981)
+                        ? AppColors.statusSuccess
                         : isActive
                         ? AppColors.primaryRed
                         : AppColors.grey200,
@@ -86,7 +86,7 @@ class StepperHeader extends StatelessWidget {
                       style: AppTextStyles.labelSmall.copyWith(
                         fontSize: 10.5,
                         color: isPassed
-                            ? const Color(0xFF10B981)
+                            ? AppColors.statusSuccess
                             : isActive
                             ? AppColors.primaryRed
                             : AppColors.grey600,

@@ -391,5 +391,212 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Pengajuan Baru'), findsOneWidget);
     });
+
+    testWidgets(
+      'failed replacement with invalid or >10MB file preserves previously valid document and completion count',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final validKtp = PlatformFile(
+          name: 'KTP_Lama_Valid.pdf',
+          size: 2 * 1024 * 1024,
+          path: '/dummy/KTP_Lama_Valid.pdf',
+        );
+
+        // First upload valid file
+        await tester.pumpWidget(
+          createTestWidget(
+            tester: tester,
+            container: container,
+            pickerSeam: ({allowedExtensions}) async => validKtp,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
+        await tester.ensureVisible(pilihButtons.first);
+        await tester.tap(pilihButtons.first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('1 dari 5 berkas dipilih'), findsOneWidget);
+        expect(find.text('KTP_Lama_Valid.pdf'), findsOneWidget);
+        expect(container.read(pengajuanFormProvider).uploadedDocs['ktp'], isNotNull);
+
+        // Now attempt to replace with an invalid file (> 10MB)
+        final oversizedReplacement = PlatformFile(
+          name: 'KTP_Baru_Kebesaran.pdf',
+          size: 15 * 1024 * 1024,
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            tester: tester,
+            container: container,
+            pickerSeam: ({allowedExtensions}) async => oversizedReplacement,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final gantiBtn = find.byTooltip('Ganti berkas ini');
+        expect(gantiBtn, findsOneWidget);
+        await tester.ensureVisible(gantiBtn);
+        await tester.tap(gantiBtn);
+        await tester.pumpAndSettle();
+
+        // Error is shown for the failed replacement attempt
+        expect(find.text('Gagal'), findsOneWidget);
+        expect(find.text('KTP_Baru_Kebesaran.pdf'), findsOneWidget);
+        expect(find.text('File melebihi batas maksimal 10 MB.'), findsOneWidget);
+        expect(find.text('Berkas lama (KTP_Lama_Valid.pdf) tetap tersimpan.'), findsOneWidget);
+        expect(find.widgetWithText(ElevatedButton, 'Coba Lagi'), findsOneWidget);
+
+        // CRITICAL REGRESSION CHECK: old valid file is NOT deleted and completion count remains intact
+        expect(find.text('1 dari 5 berkas dipilih'), findsOneWidget);
+        expect(
+          container.read(pengajuanFormProvider).uploadedDocs['ktp'],
+          equals('/dummy/KTP_Lama_Valid.pdf'),
+        );
+
+        // Closing the error restores view to the valid document
+        final closeErrorBtn = find.byTooltip('Tutup pesan kesalahan');
+        await tester.tap(closeErrorBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Siap Dikirim'), findsOneWidget);
+        expect(find.text('KTP_Lama_Valid.pdf'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'picker exception triggers retryable Gagal state instead of being treated as cancel',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            tester: tester,
+            container: container,
+            pickerSeam: ({allowedExtensions}) async {
+              throw Exception('Permission denied accessing storage');
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
+        await tester.ensureVisible(pilihButtons.first);
+        await tester.tap(pilihButtons.first);
+        await tester.pumpAndSettle();
+
+        // Shows Gagal state with retry option
+        expect(find.text('Gagal'), findsOneWidget);
+        expect(find.text('Kendala perangkat'), findsOneWidget);
+        expect(
+          find.text('Terjadi kendala saat mengakses berkas. Silakan coba lagi.'),
+          findsOneWidget,
+        );
+        expect(find.widgetWithText(ElevatedButton, 'Ganti Berkas'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'help dialog displays truthful guidance without unconfirmed procedural requirements',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(tester: tester));
+        await tester.pumpAndSettle();
+
+        // Tap help icon button in header
+        final helpBtn = find.byTooltip('Bantuan');
+        await tester.tap(helpBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Panduan Berkas PT'), findsOneWidget);
+        expect(
+          find.text(
+            'Unggah 5 berkas legalitas perusahaan dalam format PDF dengan ukuran maksimal 10 MB per file.',
+          ),
+          findsOneWidget,
+        );
+        expect(find.textContaining('stempel'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'preserves file size metadata when navigating Step 1 -> Step 2 -> Step 3 -> back to Step 2',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final validKtp = PlatformFile(
+          name: 'KTP_Direktur.pdf',
+          size: 2 * 1024 * 1024, // 2.0 MB
+          path: '/dummy/KTP_Direktur.pdf',
+        );
+
+        final router = GoRouter(
+          initialLocation: '/pengajuan/step2',
+          routes: [
+            GoRoute(
+              path: '/pengajuan/step1',
+              builder: (context, state) => const Scaffold(body: Text('Step 1')),
+            ),
+            GoRoute(
+              path: '/pengajuan/step2',
+              builder: (context, state) => PengajuanStep2Screen(
+                pickerSeam: ({allowedExtensions}) async => validKtp,
+              ),
+            ),
+            GoRoute(
+              path: '/pengajuan/step3',
+              builder: (context, state) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () => context.pop(),
+                  child: const Text('Back to Step 2'),
+                ),
+              ),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            tester: tester,
+            container: container,
+            router: router,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Pick KTP
+        final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
+        await tester.ensureVisible(pilihButtons.first);
+        await tester.tap(pilihButtons.first);
+        await tester.pumpAndSettle();
+
+        expect(find.text('2.0 MB • PDF Siap Dikirim'), findsOneWidget);
+
+        // Pre-fill remaining 4 to allow Step 3 push
+        final notifier = container.read(pengajuanFormProvider.notifier);
+        notifier.uploadDocument('nib', 'NIB.pdf');
+        notifier.uploadDocument('npwp_doc', 'NPWP.pdf');
+        notifier.uploadDocument('asosiasi', 'Asosiasi.pdf');
+        notifier.uploadDocument('legalitas', 'Legalitas.pdf');
+        await tester.pumpAndSettle();
+
+        // Navigate to Step 3
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Lanjut ke Langkah 3'));
+        await tester.pumpAndSettle();
+        expect(find.text('Back to Step 2'), findsOneWidget);
+
+        // Pop back to Step 2
+        await tester.tap(find.text('Back to Step 2'));
+        await tester.pumpAndSettle();
+
+        // File size metadata is fully preserved
+        expect(find.text('2.0 MB • PDF Siap Dikirim'), findsOneWidget);
+      },
+    );
   });
 }

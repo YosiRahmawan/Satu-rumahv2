@@ -15,6 +15,10 @@ import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
 
+/// Persists document file size metadata across screen transitions/navigation in the session.
+final pengajuanStep2DocSizesProvider =
+    StateProvider<Map<String, int>>((ref) => {});
+
 /// Testable seam for file picking to allow deterministic widget and unit testing.
 typedef FilePickerSeam = Future<PlatformFile?> Function({
   List<String>? allowedExtensions,
@@ -116,7 +120,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
   String? _lastSavedTime;
 
   String _formatFileSize(int bytes) {
-    if (bytes <= 0) return '1.4 MB';
+    if (bytes <= 0) return 'Ukuran tidak tersedia';
     if (bytes >= 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
@@ -131,12 +135,16 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
           children: [
             Icon(Icons.help_outline, color: AppColors.primaryRed),
             SizedBox(width: AppSpacing.sm),
-            Text('Panduan Berkas PT', style: AppTextStyles.titleMedium),
+            Expanded(
+              child: Text(
+                'Panduan Berkas PT',
+                style: AppTextStyles.titleMedium,
+              ),
+            ),
           ],
         ),
         content: const Text(
-          'Unggah 5 berkas legalitas perusahaan dalam format PDF dengan ukuran maksimal 10 MB per file. '
-          'Pastikan berkas telah terlegalisir dengan stempel yang jelas.',
+          'Unggah 5 berkas legalitas perusahaan dalam format PDF dengan ukuran maksimal 10 MB per file.',
           style: AppTextStyles.bodyMedium,
         ),
         actions: [
@@ -155,6 +163,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     });
 
     PlatformFile? file;
+    Object? pickerError;
     try {
       if (widget.pickerSeam != null) {
         file = await widget.pickerSeam!(allowedExtensions: ['pdf']);
@@ -165,10 +174,23 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
       }
     } catch (e) {
       debugPrint('Error picking file for $key: $e');
-      file = null;
+      pickerError = e;
     }
 
     if (!mounted) return;
+
+    if (pickerError != null) {
+      setState(() {
+        _loadingKeys.remove(key);
+        _slotErrors[key] = const _SlotError(
+          fileName: 'Gagal memilih berkas',
+          reason: 'Kendala perangkat',
+          detailedError:
+              'Terjadi kendala saat mengakses berkas. Silakan coba lagi.',
+        );
+      });
+      return;
+    }
 
     if (file == null) {
       // Cancellation without state mutation
@@ -197,7 +219,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
           detailedError: 'Format berkas harus berupa dokumen PDF.',
         );
       });
-      ref.read(pengajuanFormProvider.notifier).deleteDocument(key);
+      // CRITICAL: Preserve existing selection so validCount does not drop
       return;
     }
 
@@ -211,7 +233,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
           detailedError: 'File melebihi batas maksimal 10 MB.',
         );
       });
-      ref.read(pengajuanFormProvider.notifier).deleteDocument(key);
+      // CRITICAL: Preserve existing selection so validCount does not drop
       return;
     }
 
@@ -221,6 +243,11 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
       _slotErrors.remove(key);
       _slotFileSizes[key] = file!.size;
     });
+
+    ref.read(pengajuanStep2DocSizesProvider.notifier).update((m) => {
+          ...m,
+          key: file!.size,
+        });
 
     ref.read(pengajuanFormProvider.notifier).uploadDocument(
       key,
@@ -233,6 +260,11 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
       _slotErrors.remove(key);
       _slotFileSizes.remove(key);
       _loadingKeys.remove(key);
+    });
+    ref.read(pengajuanStep2DocSizesProvider.notifier).update((m) {
+      final updated = Map<String, int>.from(m);
+      updated.remove(key);
+      return updated;
     });
     ref.read(pengajuanFormProvider.notifier).deleteDocument(key);
   }
@@ -588,7 +620,19 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     );
   }
 
-  Widget _buildErrorSlot(_DocSlotConfig slot, _SlotError error, bool isTextScaled) {
+  Widget _buildErrorSlot(
+    _DocSlotConfig slot,
+    _SlotError error,
+    bool isTextScaled, {
+    String? existingFilePath,
+  }) {
+    final hasExistingFile =
+        existingFilePath != null && existingFilePath.trim().isNotEmpty;
+    final previousFileName = hasExistingFile
+        ? existingFilePath.split(RegExp(r'[/\\]')).last
+        : null;
+    final retryActionLabel = hasExistingFile ? 'Coba Lagi' : 'Ganti Berkas';
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
@@ -689,6 +733,39 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                     ),
                   ],
                 ),
+                if (hasExistingFile) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardSurface,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.borderSubtle),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.check_circle_outline,
+                          size: 14,
+                          color: AppColors.statusSuccessText,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Berkas lama ($previousFileName) tetap tersimpan.',
+                            style: const TextStyle(
+                              fontFamily: AppTextStyles.fontFamily,
+                              fontSize: 11.5,
+                              color: AppColors.slate700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 10),
                 if (isTextScaled) ...[
                   Text(
@@ -714,9 +791,9 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
-                        'Ganti Berkas',
-                        style: TextStyle(
+                      child: Text(
+                        retryActionLabel,
+                        style: const TextStyle(
                           fontFamily: AppTextStyles.fontFamily,
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -752,9 +829,9 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                           ),
                           elevation: 0,
                         ),
-                        child: const Text(
-                          'Ganti Berkas',
-                          style: TextStyle(
+                        child: Text(
+                          retryActionLabel,
+                          style: const TextStyle(
                             fontFamily: AppTextStyles.fontFamily,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -772,9 +849,14 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     );
   }
 
-  Widget _buildValidSlot(_DocSlotConfig slot, String filePath, bool isTextScaled) {
+  Widget _buildValidSlot(
+    _DocSlotConfig slot,
+    String filePath,
+    bool isTextScaled,
+    Map<String, int> docSizes,
+  ) {
     final fileName = filePath.split(RegExp(r'[/\\]')).last;
-    final cachedSize = _slotFileSizes[slot.key];
+    final cachedSize = docSizes[slot.key] ?? _slotFileSizes[slot.key];
     int effectiveSize = cachedSize ?? 0;
     if (effectiveSize == 0) {
       try {
@@ -856,7 +938,9 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                       ),
                       const SizedBox(height: 3),
                       Text(
-                        '${_formatFileSize(effectiveSize)} • PDF Siap Dikirim',
+                        effectiveSize > 0
+                            ? '${_formatFileSize(effectiveSize)} • PDF Siap Dikirim'
+                            : '${_formatFileSize(0)} • PDF Siap Dikirim',
                         style: const TextStyle(
                           fontFamily: AppTextStyles.fontFamily,
                           fontSize: 11.5,
@@ -1044,7 +1128,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Format PDF terlegalisir, maksimal 10 MB per file. Pastikan stempel jelas.',
+                    'Format dokumen PDF, ukuran maksimal 10 MB per berkas.',
                     style: TextStyle(
                       fontFamily: AppTextStyles.fontFamily,
                       fontSize: 12,
@@ -1186,6 +1270,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
   @override
   Widget build(BuildContext context) {
     final formState = ref.watch(pengajuanFormProvider);
+    final docSizes = ref.watch(pengajuanStep2DocSizesProvider);
     final isTextScaled = MediaQuery.textScalerOf(context).scale(14) > 20;
 
     // Count how many of the 5 specific slots are uploaded
@@ -1230,11 +1315,21 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                       return _buildLoadingSlot(slot, isTextScaled);
                     }
                     if (_slotErrors.containsKey(slot.key)) {
-                      return _buildErrorSlot(slot, _slotErrors[slot.key]!, isTextScaled);
+                      return _buildErrorSlot(
+                        slot,
+                        _slotErrors[slot.key]!,
+                        isTextScaled,
+                        existingFilePath: formState.uploadedDocs[slot.key],
+                      );
                     }
                     final uploadedDoc = formState.uploadedDocs[slot.key];
                     if (uploadedDoc != null && uploadedDoc.trim().isNotEmpty) {
-                      return _buildValidSlot(slot, uploadedDoc, isTextScaled);
+                      return _buildValidSlot(
+                        slot,
+                        uploadedDoc,
+                        isTextScaled,
+                        docSizes,
+                      );
                     }
                     return _buildEmptySlot(slot, isTextScaled);
                   }),
