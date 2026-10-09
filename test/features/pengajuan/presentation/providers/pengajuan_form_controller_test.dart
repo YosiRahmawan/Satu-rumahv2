@@ -3,6 +3,30 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
 
 void main() {
+  test('Fase 3 canonical document contract is exact and shared by review', () {
+    expect(PengajuanStep3DocumentContract.allKeys, <String>[
+      'surat_permohonan',
+      'info_intensitas_ruang',
+      'bukti_kepemilikan_lahan',
+      'bukti_tpu',
+      'rekomendasi_lingkungan',
+      'andalalin',
+      'rekomendasi_air_bersih',
+      'rekomendasi_listrik',
+      'pernyataan_psu',
+      'penanggung_jawab_teknis',
+      'proposal_pembangunan',
+    ]);
+    expect(
+      PengajuanStep3DocumentContract.requiredKeys,
+      isNot(contains('penanggung_jawab_teknis')),
+    );
+    expect(
+      PengajuanStep3DocumentContract.slots.map((slot) => slot.key).toList(),
+      PengajuanStep3DocumentContract.allKeys,
+    );
+  });
+
   group('PengajuanFormState validation', () {
     test('requires positive finite step 1 values', () {
       final valid = PengajuanFormState(
@@ -67,6 +91,22 @@ void main() {
         'c.pdf',
       ]);
       expect(notifier.state.uploadedDocs['rekomendasi_lingkungan'], 'a.pdf');
+    });
+
+    test('step 3 and aggregate validation use only current required keys', () {
+      final notifier = PengajuanFormNotifier();
+      for (final key in PengajuanStep3DocumentContract.requiredKeys) {
+        notifier.uploadDocument(key, '$key.pdf');
+      }
+
+      expect(notifier.state.isStep3Valid, isTrue);
+      expect(notifier.state.isAllValid, isFalse);
+      notifier.fillDummyData();
+      expect(notifier.state.isStep3Valid, isTrue);
+      expect(notifier.state.isAllValid, isTrue);
+      notifier.deleteDocument('proposal_pembangunan');
+      expect(notifier.state.isStep3Valid, isFalse);
+      expect(notifier.state.isAllValid, isFalse);
     });
 
     test('technical files satisfy step 4 and empty names do not', () {

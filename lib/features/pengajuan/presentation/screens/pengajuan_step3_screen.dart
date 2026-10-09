@@ -33,28 +33,6 @@ class PengajuanStep3Screen extends ConsumerStatefulWidget {
       _PengajuanStep3ScreenState();
 }
 
-class _DocSlot {
-  const _DocSlot({
-    required this.number,
-    required this.key,
-    required this.title,
-    required this.actionLabel,
-    this.description,
-    this.optional = false,
-    this.multi = false,
-    this.maxBytes = 10 * 1024 * 1024,
-  });
-
-  final String number;
-  final String key;
-  final String title;
-  final String actionLabel;
-  final String? description;
-  final bool optional;
-  final bool multi;
-  final int maxBytes;
-}
-
 class _SlotFailure {
   const _SlotFailure(this.fileName, this.message);
   final String fileName;
@@ -62,94 +40,13 @@ class _SlotFailure {
 }
 
 class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
-  static const _slots = <_DocSlot>[
-    _DocSlot(
-      number: '1',
-      key: 'surat_permohonan',
-      title: 'Surat Permohonan Persetujuan Site Plan',
-      actionLabel: 'Unggah Dokumen Permohonan',
-    ),
-    _DocSlot(
-      number: '2',
-      key: 'info_intensitas_ruang',
-      title: 'Informasi Intensitas Pemanfaatan Ruang (IPR / KRK)',
-      actionLabel: 'Unggah Dokumen IPR / KRK',
-    ),
-    _DocSlot(
-      number: '3',
-      key: 'bukti_kepemilikan_lahan',
-      title: 'Bukti Kepemilikan Lahan / Sertifikat Induk a.n. PT',
-      actionLabel: 'Unggah Bukti Kepemilikan Lahan',
-    ),
-    _DocSlot(
-      number: '4',
-      key: 'bukti_tpu',
-      title: 'Bukti Penyediaan Lahan TPU Perumahan',
-      actionLabel: 'Unggah Dokumen TPU (PDF)',
-    ),
-    _DocSlot(
-      number: '5',
-      key: 'rekomendasi_lingkungan',
-      title: 'Rekomendasi Teknis dari Dinas Terkait',
-      actionLabel: 'Tambah File Rekomendasi',
-      description:
-          'Meliputi dokumen AMDAL/UKL-UPL, rekomendasi drainase dan teknis tapak.',
-      multi: true,
-    ),
-    _DocSlot(
-      number: '6',
-      key: 'andalalin',
-      title: 'Persetujuan ANDALALIN / Dishub',
-      actionLabel: 'Unggah Dokumen ANDALALIN',
-      description:
-          'Surat pertimbangan dampak lalu lintas ruas jalan perkotaan.',
-    ),
-    _DocSlot(
-      number: '7',
-      key: 'rekomendasi_air_bersih',
-      title: 'Rekomendasi Air Bersih (PDAM / Surat Izin)',
-      actionLabel: 'Unggah Berkas PDAM',
-      description:
-          'Kapasitas sambungan atau izin pengelolaan air tanah mandiri.',
-    ),
-    _DocSlot(
-      number: '8',
-      key: 'rekomendasi_listrik',
-      title: 'Rekomendasi Listrik PLN',
-      actionLabel: 'Unggah Surat Rekomendasi PLN',
-      description: 'Surat ketersediaan daya dan jaringan gardu perumahan.',
-    ),
-    _DocSlot(
-      number: '9',
-      key: 'pernyataan_psu',
-      title: 'Surat Pernyataan Kesanggupan Penyerahan PSU',
-      actionLabel: 'Unggah Akta Notaris PSU',
-      description:
-          'Akta notariil kesanggupan penyerahan prasarana dan utilitas umum.',
-    ),
-    _DocSlot(
-      number: '10',
-      key: 'penanggung_jawab_teknis',
-      title: 'Data Penanggung Jawab Dokumen Teknis',
-      actionLabel: 'Unggah Data Tenaga Ahli',
-      optional: true,
-      description: 'SKA/SKK Tenaga Ahli Arsitektur/Perencana Wilayah.',
-    ),
-    _DocSlot(
-      number: '11',
-      key: 'proposal_pembangunan',
-      title: 'Proposal Rencana Pembangunan Ditandatangani Direktur',
-      actionLabel: 'Unggah Proposal Direktur (PDF)',
-      description:
-          'Rencana tahapan pembangunan, spesifikasi tipe, dan jadwal kerja.',
-    ),
-  ];
+  static const _slots = PengajuanStep3DocumentContract.slots;
 
   final _loading = <String>{};
   final _failures = <String, _SlotFailure>{};
 
   int get _totalSlotCount => _slots.length;
-  int get _requiredCount => _slots.where((slot) => !slot.optional).length;
+  int get _requiredCount => _slots.where((slot) => !slot.isOptional).length;
 
   Future<List<PlatformFile>> _pick({required bool allowMultiple}) async {
     if (widget.pickerSeam != null) {
@@ -167,7 +64,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     return file == null ? const [] : [file];
   }
 
-  Future<void> _select(_DocSlot slot) async {
+  Future<void> _select(PengajuanStep3DocumentConfig slot) async {
     setState(() {
       _loading.add(slot.key);
       _failures.remove(slot.key);
@@ -175,7 +72,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
 
     List<PlatformFile> files;
     try {
-      files = await _pick(allowMultiple: slot.multi);
+      files = await _pick(allowMultiple: slot.allowsMultiple);
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -235,7 +132,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
 
     final references = files.map(FilePickerUtil.referenceOf).toList();
     final notifier = ref.read(pengajuanFormProvider.notifier);
-    if (slot.multi) {
+    if (slot.allowsMultiple) {
       notifier.uploadDocuments(slot.key, references);
     } else {
       notifier.uploadDocument(slot.key, references.first);
@@ -252,13 +149,13 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     return name.endsWith('.pdf');
   }
 
-  void _delete(_DocSlot slot) {
+  void _delete(PengajuanStep3DocumentConfig slot) {
     ref.read(pengajuanFormProvider.notifier).deleteDocument(slot.key);
     setState(() => _failures.remove(slot.key));
   }
 
-  bool _hasFile(_DocSlot slot, PengajuanFormState state) {
-    if (slot.multi) {
+  bool _hasFile(PengajuanStep3DocumentConfig slot, PengajuanFormState state) {
+    if (slot.allowsMultiple) {
       return state.multiUploadedDocs[slot.key]?.isNotEmpty == true ||
           state.uploadedDocs[slot.key]?.trim().isNotEmpty == true;
     }
@@ -266,7 +163,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
   }
 
   int _uploadedRequired(PengajuanFormState state) =>
-      _slots.where((slot) => !slot.optional && _hasFile(slot, state)).length;
+      _slots.where((slot) => !slot.isOptional && _hasFile(slot, state)).length;
 
   int _uploadedCount(PengajuanFormState state) =>
       _slots.where((slot) => _hasFile(slot, state)).length;
@@ -432,7 +329,10 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     );
   }
 
-  Widget _buildSlot(_DocSlot slot, PengajuanFormState state) {
+  Widget _buildSlot(
+    PengajuanStep3DocumentConfig slot,
+    PengajuanFormState state,
+  ) {
     final files = state.multiUploadedDocs[slot.key] ?? const <String>[];
     final singleFile = state.uploadedDocs[slot.key];
     final hasFile = _hasFile(slot, state);
@@ -466,7 +366,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
               Expanded(
                 child: _statusPill(
                   hasFile
-                      ? (slot.multi
+                      ? (slot.allowsMultiple
                             ? 'Multi-file: ' +
                                   files.length.toString() +
                                   ' Berkas Terlampir'
@@ -494,9 +394,9 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
               ),
               const SizedBox(width: AppSpacing.sm),
               Text(
-                slot.optional ? 'Opsional' : 'Wajib',
+                slot.isOptional ? 'Opsional' : 'Wajib',
                 style: AppTextStyles.labelSmall.copyWith(
-                  color: slot.optional
+                  color: slot.isOptional
                       ? AppColors.textSecondary
                       : AppColors.statusUrgentText,
                   fontWeight: FontWeight.w700,
@@ -506,7 +406,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            slot.number + '. ' + slot.title + (slot.optional ? '' : ' *'),
+            slot.number + '. ' + slot.label + (slot.isOptional ? '' : ' *'),
             style: AppTextStyles.titleMedium.copyWith(
               fontWeight: FontWeight.w700,
             ),
@@ -544,7 +444,10 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     );
   }
 
-  List<Widget> _buildFiles(_DocSlot slot, List<String> files) {
+  List<Widget> _buildFiles(
+    PengajuanStep3DocumentConfig slot,
+    List<String> files,
+  ) {
     return [
       ...files.map(
         (file) => Padding(
@@ -574,7 +477,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
                     style: AppTextStyles.bodySmall,
                   ),
                 ),
-                if (slot.multi)
+                if (slot.allowsMultiple)
                   IconButton(
                     tooltip: 'Hapus berkas',
                     icon: const Icon(Icons.close, size: 18),
@@ -590,7 +493,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
           ),
         ),
       ),
-      if (slot.multi)
+      if (slot.allowsMultiple)
         OutlinedButton.icon(
           onPressed: () => _select(slot),
           icon: const Icon(Icons.add, size: 18),
@@ -599,7 +502,10 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     ];
   }
 
-  Widget _buildFailure(_DocSlot slot, _SlotFailure failure) {
+  Widget _buildFailure(
+    PengajuanStep3DocumentConfig slot,
+    _SlotFailure failure,
+  ) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
@@ -631,7 +537,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     );
   }
 
-  Widget _uploadButton(_DocSlot slot) {
+  Widget _uploadButton(PengajuanStep3DocumentConfig slot) {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(

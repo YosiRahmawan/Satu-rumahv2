@@ -191,6 +191,34 @@ void main() {
       },
     );
 
+    testWidgets('retains previous valid file after invalid replacement', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(pengajuanFormProvider.notifier)
+          .uploadDocument('surat_permohonan', 'valid-sebelumnya.pdf');
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async => [
+            _pdf('pengganti.docx', 1024),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.widgetWithText(TextButton, 'Ganti');
+      tester.widget<TextButton>(button).onPressed!();
+      await tester.pumpAndSettle();
+
+      final state = container.read(pengajuanFormProvider);
+      expect(state.uploadedDocs['surat_permohonan'], 'valid-sebelumnya.pdf');
+      expect(find.textContaining('Format berkas harus PDF.'), findsOneWidget);
+    });
+
     testWidgets('appends multi-file selections across repeated picks', (
       tester,
     ) async {

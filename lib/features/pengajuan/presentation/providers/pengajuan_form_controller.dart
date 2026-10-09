@@ -3,34 +3,121 @@ import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 
-/// Canonical document contract shared by Step 3 validation and Review.
+/// One source of truth for the current Fase 3 document form.
+class PengajuanStep3DocumentConfig {
+  const PengajuanStep3DocumentConfig({
+    required this.number,
+    required this.key,
+    required this.label,
+    required this.actionLabel,
+    this.description,
+    this.isOptional = false,
+    this.allowsMultiple = false,
+    this.maxBytes = 10 * 1024 * 1024,
+  });
+
+  final String number;
+  final String key;
+  final String label;
+  final String actionLabel;
+  final String? description;
+  final bool isOptional;
+  final bool allowsMultiple;
+  final int maxBytes;
+}
+
+/// Canonical document contract shared by Step 3 rendering/validation and Review.
 class PengajuanStep3DocumentContract {
-  static const allKeys = <String>[
-    'surat_permohonan',
-    'info_intensitas_ruang',
-    'bukti_kepemilikan_lahan',
-    'bukti_tpu',
-    'rekomendasi_lingkungan',
-    'andalalin',
-    'rekomendasi_air_bersih',
-    'rekomendasi_listrik',
-    'pernyataan_psu',
-    'penanggung_jawab_teknis',
-    'proposal_pembangunan',
+  static const slots = <PengajuanStep3DocumentConfig>[
+    PengajuanStep3DocumentConfig(
+      number: '1',
+      key: 'surat_permohonan',
+      label: 'Surat Permohonan Persetujuan Site Plan',
+      actionLabel: 'Unggah Dokumen Permohonan',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '2',
+      key: 'info_intensitas_ruang',
+      label: 'Informasi Intensitas Pemanfaatan Ruang (IPR / KRK)',
+      actionLabel: 'Unggah Dokumen IPR / KRK',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '3',
+      key: 'bukti_kepemilikan_lahan',
+      label: 'Bukti Kepemilikan Lahan / Sertifikat Induk a.n. PT',
+      actionLabel: 'Unggah Bukti Kepemilikan Lahan',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '4',
+      key: 'bukti_tpu',
+      label: 'Bukti Penyediaan Lahan TPU Perumahan',
+      actionLabel: 'Unggah Dokumen TPU (PDF)',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '5',
+      key: 'rekomendasi_lingkungan',
+      label: 'Rekomendasi Teknis dari Dinas Terkait',
+      actionLabel: 'Tambah File Rekomendasi',
+      description:
+          'Meliputi dokumen AMDAL/UKL-UPL, rekomendasi drainase dan teknis tapak.',
+      allowsMultiple: true,
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '6',
+      key: 'andalalin',
+      label: 'Persetujuan ANDALALIN / Dishub',
+      actionLabel: 'Unggah Dokumen ANDALALIN',
+      description:
+          'Surat pertimbangan dampak lalu lintas ruas jalan perkotaan.',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '7',
+      key: 'rekomendasi_air_bersih',
+      label: 'Rekomendasi Air Bersih (PDAM / Surat Izin)',
+      actionLabel: 'Unggah Berkas PDAM',
+      description:
+          'Kapasitas sambungan atau izin pengelolaan air tanah mandiri.',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '8',
+      key: 'rekomendasi_listrik',
+      label: 'Rekomendasi Listrik PLN',
+      actionLabel: 'Unggah Surat Rekomendasi PLN',
+      description: 'Surat ketersediaan daya dan jaringan gardu perumahan.',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '9',
+      key: 'pernyataan_psu',
+      label: 'Surat Pernyataan Kesanggupan Penyerahan PSU',
+      actionLabel: 'Unggah Akta Notaris PSU',
+      description:
+          'Akta notariil kesanggupan penyerahan prasarana dan utilitas umum.',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '10',
+      key: 'penanggung_jawab_teknis',
+      label: 'Data Penanggung Jawab Dokumen Teknis',
+      actionLabel: 'Unggah Data Tenaga Ahli',
+      description: 'SKA/SKK Tenaga Ahli Arsitektur/Perencana Wilayah.',
+      isOptional: true,
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '11',
+      key: 'proposal_pembangunan',
+      label: 'Proposal Rencana Pembangunan Ditandatangani Direktur',
+      actionLabel: 'Unggah Proposal Direktur (PDF)',
+      description:
+          'Rencana tahapan pembangunan, spesifikasi tipe, dan jadwal kerja.',
+    ),
   ];
 
-  static const requiredKeys = <String>[
-    'surat_permohonan',
-    'info_intensitas_ruang',
-    'bukti_kepemilikan_lahan',
-    'bukti_tpu',
-    'rekomendasi_lingkungan',
-    'andalalin',
-    'rekomendasi_air_bersih',
-    'rekomendasi_listrik',
-    'pernyataan_psu',
-    'proposal_pembangunan',
-  ];
+  static List<String> get allKeys =>
+      slots.map((slot) => slot.key).toList(growable: false);
+
+  static List<String> get requiredKeys => slots
+      .where((slot) => !slot.isOptional)
+      .map((slot) => slot.key)
+      .toList(growable: false);
 }
 
 class PengajuanFormState {

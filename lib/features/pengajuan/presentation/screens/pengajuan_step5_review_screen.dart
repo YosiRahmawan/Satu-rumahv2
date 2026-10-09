@@ -23,20 +23,6 @@ class _PengajuanStep5ReviewScreenState
     extends ConsumerState<PengajuanStep5ReviewScreen> {
   bool _isSubmitting = false;
 
-  static const _step3Labels = <String, String>{
-    'surat_permohonan': 'Surat Permohonan Site Plan',
-    'info_intensitas_ruang': 'Informasi Intensitas Ruang',
-    'bukti_kepemilikan_lahan': 'Bukti Kepemilikan Lahan',
-    'bukti_tpu': 'Bukti Penyediaan Lahan TPU',
-    'rekomendasi_lingkungan': 'Rekomendasi Teknis Lingkungan',
-    'andalalin': 'Persetujuan ANDALALIN / Dishub',
-    'rekomendasi_air_bersih': 'Rekomendasi Air Bersih',
-    'rekomendasi_listrik': 'Rekomendasi Listrik PLN',
-    'pernyataan_psu': 'Pernyataan Kesanggupan Penyerahan PSU',
-    'penanggung_jawab_teknis': 'Data Penanggung Jawab Teknis',
-    'proposal_pembangunan': 'Proposal Rencana Pembangunan',
-  };
-
   @override
   Widget build(BuildContext context) {
     final formState = ref.watch(pengajuanFormProvider);
@@ -231,10 +217,10 @@ class _PengajuanStep5ReviewScreenState
                             'Legalitas Akta',
                             formState.uploadedDocs['legalitas'],
                           ),
-                          ...PengajuanStep3DocumentContract.allKeys.map(
-                            (key) => _buildDocReviewRow(
-                              _step3Labels[key] ?? key,
-                              formState.uploadedDocs[key],
+                          ...PengajuanStep3DocumentContract.slots.map(
+                            (slot) => _buildDocReviewRow(
+                              slot.label,
+                              formState.uploadedDocs[slot.key],
                             ),
                           ),
                           _buildDocReviewRow(
@@ -379,13 +365,19 @@ class _PengajuanStep5ReviewScreenState
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.grey600),
+          Expanded(
+            child: Text(
+              label,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.grey600,
+              ),
+            ),
           ),
+          const SizedBox(width: 12),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
               if (exists) ...[
                 const Icon(
