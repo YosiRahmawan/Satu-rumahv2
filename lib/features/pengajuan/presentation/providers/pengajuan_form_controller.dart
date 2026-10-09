@@ -12,6 +12,11 @@ class PengajuanFormState {
   final int jumlahUnit;
   final String tipePerumahan;
   final Map<String, String> uploadedDocs;
+
+  /// File references for slots that support more than one local attachment.
+  /// The legacy [uploadedDocs] map remains the first-file reference used by
+  /// existing phases and downstream review screens.
+  final Map<String, List<String>> multiUploadedDocs;
   final List<String> technicalFiles;
   final Set<String> selectedCakupanGambar;
   final bool isAgreed;
@@ -25,6 +30,7 @@ class PengajuanFormState {
     this.jumlahUnit = 0,
     this.tipePerumahan = 'Subsidi',
     this.uploadedDocs = const {},
+    this.multiUploadedDocs = const {},
     this.technicalFiles = const [],
     this.selectedCakupanGambar = const {},
     this.isAgreed = false,
@@ -76,6 +82,7 @@ class PengajuanFormState {
     int? jumlahUnit,
     String? tipePerumahan,
     Map<String, String>? uploadedDocs,
+    Map<String, List<String>>? multiUploadedDocs,
     List<String>? technicalFiles,
     Set<String>? selectedCakupanGambar,
     bool? isAgreed,
@@ -89,6 +96,11 @@ class PengajuanFormState {
       jumlahUnit: jumlahUnit ?? this.jumlahUnit,
       tipePerumahan: tipePerumahan ?? this.tipePerumahan,
       uploadedDocs: uploadedDocs ?? Map.from(this.uploadedDocs),
+      multiUploadedDocs:
+          multiUploadedDocs ??
+          this.multiUploadedDocs.map(
+            (key, value) => MapEntry(key, List<String>.from(value)),
+          ),
       technicalFiles: technicalFiles ?? List.from(this.technicalFiles),
       selectedCakupanGambar:
           selectedCakupanGambar ?? Set.from(this.selectedCakupanGambar),
@@ -118,13 +130,28 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     if (key.trim().isEmpty || fileName.trim().isEmpty) return;
     final updated = Map<String, String>.from(state.uploadedDocs);
     updated[key] = fileName;
-    state = state.copyWith(uploadedDocs: updated);
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    multi[key] = [fileName];
+    state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
+  }
+
+  void uploadDocuments(String key, List<String> fileNames) {
+    if (key.trim().isEmpty) return;
+    final clean = fileNames.where((file) => file.trim().isNotEmpty).toList();
+    if (clean.isEmpty) return;
+    final updated = Map<String, String>.from(state.uploadedDocs);
+    updated[key] = clean.first;
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    multi[key] = clean;
+    state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
   }
 
   void deleteDocument(String key) {
     final updated = Map<String, String>.from(state.uploadedDocs);
     updated.remove(key);
-    state = state.copyWith(uploadedDocs: updated);
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    multi.remove(key);
+    state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
   }
 
   void addTechnicalFiles(List<String> filePaths) {

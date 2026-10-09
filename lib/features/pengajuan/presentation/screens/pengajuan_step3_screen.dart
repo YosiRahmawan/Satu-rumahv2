@@ -1,609 +1,729 @@
+// The few string concatenations below keep this screen easy to generate and
+// readable around platform-specific file references.
+// ignore_for_file: prefer_interpolation_to_compose_strings, prefer_const_constructors, unused_element_parameter
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radii.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_header.dart';
-import '../../../../core/widgets/doc_upload_tile.dart';
-import '../../../../core/widgets/stepper_header.dart';
 import '../../../../core/utils/file_picker_util.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/pengajuan_step_header.dart';
+import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
 
-class PengajuanStep3Screen extends ConsumerWidget {
-  const PengajuanStep3Screen({super.key});
+typedef Step3FilePickerSeam =
+    Future<List<PlatformFile>> Function({
+      required bool allowMultiple,
+      List<String>? allowedExtensions,
+    });
 
-  static const List<Map<String, String>> _sec1Items = [
-    {'key': 'surat_permohonan'},
-    {'key': 'info_intensitas_ruang'},
-    {'key': 'bukti_kepemilikan_lahan'},
-    {'key': 'bukti_tpu'},
-  ];
+class PengajuanStep3Screen extends ConsumerStatefulWidget {
+  const PengajuanStep3Screen({super.key, this.pickerSeam});
 
-  static const List<Map<String, String>> _sec2Items = [
-    {'key': 'kkpr_doc'},
-    {'key': 'pbg_induk'},
-    {'key': 'rekomendasi_lingkungan'},
-    {'key': 'pelepasan_lahan'},
-  ];
-
-  static const List<Map<String, String>> _sec3Items = [
-    {'key': 'pernyataan_pelepasan'},
-    {'key': 'pernyataan_keabsahan'},
-    {'key': 'pernyataan_psu'},
-  ];
+  final Step3FilePickerSeam? pickerSeam;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final formState = ref.watch(pengajuanFormProvider);
+  ConsumerState<PengajuanStep3Screen> createState() =>
+      _PengajuanStep3ScreenState();
+}
+
+class _DocSlot {
+  const _DocSlot({
+    required this.number,
+    required this.key,
+    required this.title,
+    required this.actionLabel,
+    this.description,
+    this.optional = false,
+    this.multi = false,
+    this.maxBytes = 10 * 1024 * 1024,
+  });
+
+  final String number;
+  final String key;
+  final String title;
+  final String actionLabel;
+  final String? description;
+  final bool optional;
+  final bool multi;
+  final int maxBytes;
+}
+
+class _SlotFailure {
+  const _SlotFailure(this.fileName, this.message);
+  final String fileName;
+  final String message;
+}
+
+class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
+  static const _slots = <_DocSlot>[
+    _DocSlot(
+      number: '1',
+      key: 'surat_permohonan',
+      title: 'Surat Permohonan Persetujuan Site Plan',
+      actionLabel: 'Unggah Dokumen Permohonan',
+    ),
+    _DocSlot(
+      number: '2',
+      key: 'info_intensitas_ruang',
+      title: 'Informasi Intensitas Pemanfaatan Ruang (IPR / KRK)',
+      actionLabel: 'Unggah Dokumen IPR / KRK',
+    ),
+    _DocSlot(
+      number: '3',
+      key: 'bukti_kepemilikan_lahan',
+      title: 'Bukti Kepemilikan Lahan / Sertifikat Induk a.n. PT',
+      actionLabel: 'Unggah Bukti Kepemilikan Lahan',
+    ),
+    _DocSlot(
+      number: '4',
+      key: 'bukti_tpu',
+      title: 'Bukti Penyediaan Lahan TPU Perumahan',
+      actionLabel: 'Unggah Dokumen TPU (PDF)',
+    ),
+    _DocSlot(
+      number: '5',
+      key: 'rekomendasi_lingkungan',
+      title: 'Rekomendasi Teknis dari Dinas Terkait',
+      actionLabel: 'Tambah File Rekomendasi',
+      description:
+          'Meliputi dokumen AMDAL/UKL-UPL, rekomendasi drainase dan teknis tapak.',
+      multi: true,
+    ),
+    _DocSlot(
+      number: '6',
+      key: 'andalalin',
+      title: 'Persetujuan ANDALALIN / Dishub',
+      actionLabel: 'Unggah Dokumen ANDALALIN',
+      description:
+          'Surat pertimbangan dampak lalu lintas ruas jalan perkotaan.',
+    ),
+    _DocSlot(
+      number: '7',
+      key: 'rekomendasi_air_bersih',
+      title: 'Rekomendasi Air Bersih (PDAM / Surat Izin)',
+      actionLabel: 'Unggah Berkas PDAM',
+      description:
+          'Kapasitas sambungan atau izin pengelolaan air tanah mandiri.',
+    ),
+    _DocSlot(
+      number: '8',
+      key: 'rekomendasi_listrik',
+      title: 'Rekomendasi Listrik PLN',
+      actionLabel: 'Unggah Surat Rekomendasi PLN',
+      description: 'Surat ketersediaan daya dan jaringan gardu perumahan.',
+    ),
+    _DocSlot(
+      number: '9',
+      key: 'pernyataan_psu',
+      title: 'Surat Pernyataan Kesanggupan Penyerahan PSU',
+      actionLabel: 'Unggah Akta Notaris PSU',
+      description:
+          'Akta notariil kesanggupan penyerahan prasarana dan utilitas umum.',
+    ),
+    _DocSlot(
+      number: '10',
+      key: 'penanggung_jawab_teknis',
+      title: 'Data Penanggung Jawab Dokumen Teknis',
+      actionLabel: 'Unggah Data Tenaga Ahli',
+      optional: true,
+      description: 'SKA/SKK Tenaga Ahli Arsitektur/Perencana Wilayah.',
+    ),
+    _DocSlot(
+      number: '11',
+      key: 'proposal_pembangunan',
+      title: 'Proposal Rencana Pembangunan Ditandatangani Direktur',
+      actionLabel: 'Unggah Proposal Direktur (PDF)',
+      description:
+          'Rencana tahapan pembangunan, spesifikasi tipe, dan jadwal kerja.',
+    ),
+  ];
+
+  final _loading = <String>{};
+  final _failures = <String, _SlotFailure>{};
+
+  int get _requiredCount => _slots.where((slot) => !slot.optional).length;
+
+  Future<List<PlatformFile>> _pick({required bool allowMultiple}) async {
+    if (widget.pickerSeam != null) {
+      return widget.pickerSeam!(
+        allowMultiple: allowMultiple,
+        allowedExtensions: const ['pdf'],
+      );
+    }
+    if (allowMultiple) {
+      return FilePickerUtil.pickMultipleFiles(allowedExtensions: const ['pdf']);
+    }
+    final file = await FilePickerUtil.pickSingleFile(
+      allowedExtensions: const ['pdf'],
+    );
+    return file == null ? const [] : [file];
+  }
+
+  Future<void> _select(_DocSlot slot) async {
+    setState(() {
+      _loading.add(slot.key);
+      _failures.remove(slot.key);
+    });
+
+    List<PlatformFile> files;
+    try {
+      files = await _pick(allowMultiple: slot.multi);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _loading.remove(slot.key);
+        _failures[slot.key] = const _SlotFailure(
+          'Kendala perangkat',
+          'Terjadi kendala saat mengakses berkas. Silakan coba lagi.',
+        );
+      });
+      return;
+    }
+
+    if (!mounted) return;
+    if (files.isEmpty) {
+      setState(() => _loading.remove(slot.key));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak ada berkas dipilih. Data tetap tidak berubah.'),
+        ),
+      );
+      return;
+    }
+
+    final tooLarge = files.firstWhere(
+      (file) => file.size > slot.maxBytes,
+      orElse: () => PlatformFile(name: '', size: 0),
+    );
+    if (tooLarge.name.isNotEmpty) {
+      final old = ref.read(pengajuanFormProvider).uploadedDocs[slot.key];
+      setState(() {
+        _loading.remove(slot.key);
+        _failures[slot.key] = _SlotFailure(
+          tooLarge.name,
+          'File melebihi batas maksimal ' +
+              (slot.maxBytes ~/ (1024 * 1024)).toString() +
+              ' MB.' +
+              (old == null ? '' : ' Berkas lama tetap tersimpan.'),
+        );
+      });
+      return;
+    }
+
+    final references = files.map(FilePickerUtil.referenceOf).toList();
     final notifier = ref.read(pengajuanFormProvider.notifier);
-
-    // ponytail: pemanggil file picker tunggal untuk Android native storage
-    Future<void> pickSingle(String key) async {
-      final file = await FilePickerUtil.pickSingleFile(
-        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      );
-      if (!context.mounted) return;
-      if (file != null) {
-        notifier.uploadDocument(key, file.path ?? file.name);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Tidak ada berkas dipilih. Data tetap tidak berubah.',
-              ),
-            ),
-          );
-        }
-      }
+    if (slot.multi) {
+      notifier.uploadDocuments(slot.key, references);
+    } else {
+      notifier.uploadDocument(slot.key, references.first);
     }
+    setState(() {
+      _loading.remove(slot.key);
+      _failures.remove(slot.key);
+    });
+  }
 
-    // ponytail: pemanggil batch picker per bagian
-    Future<void> pickSectionBatch(
-      List<Map<String, String>> sectionItems,
-      String sectionTitle,
-    ) async {
-      final files = await FilePickerUtil.pickMultipleFiles(
-        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
-      );
-      if (!context.mounted) return;
-      if (files.isNotEmpty) {
-        int index = 0;
-        for (final item in sectionItems) {
-          final key = item['key']!;
-          if (formState.uploadedDocs[key]?.trim().isNotEmpty != true) {
-            if (index < files.length) {
-              notifier.uploadDocument(
-                key,
-                files[index].path ?? files[index].name,
-              );
-              index++;
-            }
-          }
-        }
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${files.length} berkas $sectionTitle berhasil dipilih untuk formulir.',
-              ),
-            ),
-          );
-        }
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Tidak ada berkas $sectionTitle yang dipilih. Data tetap tidak berubah.',
-              ),
-            ),
-          );
-        }
-      }
+  void _delete(_DocSlot slot) {
+    ref.read(pengajuanFormProvider.notifier).deleteDocument(slot.key);
+    setState(() => _failures.remove(slot.key));
+  }
+
+  bool _hasFile(_DocSlot slot, PengajuanFormState state) {
+    if (slot.multi) {
+      return state.multiUploadedDocs[slot.key]?.isNotEmpty == true ||
+          state.uploadedDocs[slot.key]?.trim().isNotEmpty == true;
     }
+    return state.uploadedDocs[slot.key]?.trim().isNotEmpty == true;
+  }
 
-    void delete(String key) {
-      notifier.deleteDocument(key);
-    }
+  int _uploadedRequired(PengajuanFormState state) =>
+      _slots.where((slot) => !slot.optional && _hasFile(slot, state)).length;
 
-    // Section 1 Keys: Legalitas & Perizinan (4 items)
-    final sec1Keys = _sec1Items.map((e) => e['key']!).toList();
-    int sec1Uploaded = sec1Keys
-        .where((k) => formState.uploadedDocs[k]?.trim().isNotEmpty == true)
-        .length;
-
-    // Section 2 Keys: Teknis & Rekomendasi (4 items)
-    final sec2Keys = _sec2Items.map((e) => e['key']!).toList();
-    int sec2Uploaded = sec2Keys
-        .where((k) => formState.uploadedDocs[k]?.trim().isNotEmpty == true)
-        .length;
-
-    // Section 3 Keys: Pernyataan (3 items)
-    final sec3Keys = _sec3Items.map((e) => e['key']!).toList();
-    int sec3Uploaded = sec3Keys
-        .where((k) => formState.uploadedDocs[k]?.trim().isNotEmpty == true)
-        .length;
-
-    // Mandatory Keys required for Step 3 validation (10 mandatory items)
-    final mandatoryKeys = [
-      'surat_permohonan',
-      'info_intensitas_ruang',
-      'bukti_kepemilikan_lahan',
-      'bukti_tpu',
-      'kkpr_doc',
-      'pbg_induk',
-      'rekomendasi_lingkungan',
-      'pernyataan_pelepasan',
-      'pernyataan_keabsahan',
-      'pernyataan_psu',
-    ];
-    int uploadedMandatory = mandatoryKeys
-        .where((k) => formState.uploadedDocs[k]?.trim().isNotEmpty == true)
-        .length;
-    int missingCount = mandatoryKeys.length - uploadedMandatory;
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(pengajuanFormProvider);
+    final uploaded = _uploadedRequired(state);
+    final isComplete = uploaded == _requiredCount;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppHeader(
-        title: 'Administrasi Perumahan (Step 3)',
-        showNotifications: false,
-        showBackButton: true,
-        actions: [
-          TextButton.icon(
-            onPressed: () {
-              ref.read(pengajuanFormProvider.notifier).fillDummyData();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Data dummy Step 3 berhasil diisi!'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            icon: const Icon(
-              Icons.auto_fix_high,
-              size: 18,
-              color: Colors.white70,
-            ),
-            label: Text(
-              'Isi Dummy',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: Colors.white70,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.backgroundCanvas,
       body: Column(
         children: [
+          PengajuanStepHeader(
+            subtitle: 'Langkah 3 dari 5',
+            onBackPressed: () => context.pop(),
+          ),
           const StepperHeader(currentStep: 3),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    'Upload Administrasi Perumahan',
-                    style: AppTextStyles.headlineMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Unggah dokumen legalitas, rekomendasi teknis, dan pernyataan (Bisa pilih 1 per 1 atau sekaligus per bagian)',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.grey600,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Group 1: Legalitas & Perizinan
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.grey300),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ExpansionTile(
-                      initiallyExpanded: true,
-                      title: Text(
-                        'Dokumen legalitas & perizinan (Bagian 1)',
-                        style: AppTextStyles.headlineSmall.copyWith(
-                          fontSize: 15,
-                        ),
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: sec1Uploaded == 4
-                              ? AppColors.primaryRed.withValues(alpha: 0.1)
-                              : AppColors.grey200,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$sec1Uploaded/4',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: sec1Uploaded == 4
-                                ? AppColors.primaryRed
-                                : AppColors.grey700,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            children: [
-                              // Tombol Unggah Sekaligus Bagian 1
-                              OutlinedButton.icon(
-                                onPressed: () => pickSectionBatch(
-                                  _sec1Items,
-                                  'Bagian 1 (Legalitas)',
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.primaryRed,
-                                  side: const BorderSide(
-                                    color: AppColors.primaryRed,
-                                  ),
-                                  minimumSize: const Size(double.infinity, 38),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                icon: const Icon(
-                                  Icons.file_upload_outlined,
-                                  size: 16,
-                                ),
-                                label: const Text(
-                                  'Unggah Sekaligus Bagian 1 (4 Dokumen)',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title: 'Surat permohonan persetujuan',
-                                subtitle: 'Format PDF, maks 10MB',
-                                fileName:
-                                    formState.uploadedDocs['surat_permohonan'],
-                                onUpload: () => pickSingle('surat_permohonan'),
-                                onDelete: () => delete('surat_permohonan'),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title: 'Informasi intensitas ruang',
-                                subtitle: 'Format PDF, maks 10MB',
-                                fileName: formState
-                                    .uploadedDocs['info_intensitas_ruang'],
-                                onUpload: () =>
-                                    pickSingle('info_intensitas_ruang'),
-                                onDelete: () => delete('info_intensitas_ruang'),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title: 'Bukti kepemilikan lahan',
-                                subtitle: 'Format PDF/Sertifikat, maks 10MB',
-                                fileName: formState
-                                    .uploadedDocs['bukti_kepemilikan_lahan'],
-                                onUpload: () =>
-                                    pickSingle('bukti_kepemilikan_lahan'),
-                                onDelete: () =>
-                                    delete('bukti_kepemilikan_lahan'),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title: 'Bukti penyediaan lahan TPU',
-                                subtitle: 'Format PDF, maks 10MB',
-                                fileName: formState.uploadedDocs['bukti_tpu'],
-                                onUpload: () => pickSingle('bukti_tpu'),
-                                onDelete: () => delete('bukti_tpu'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Group 2: Teknis & Rekomendasi
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.grey300),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ExpansionTile(
-                      initiallyExpanded: false,
-                      title: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dokumen teknis & rekomendasi (Bagian 2)',
-                            style: AppTextStyles.headlineSmall.copyWith(
-                              fontSize: 15,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'termasuk 1 dokumen kondisional',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.grey600,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: sec2Uploaded >= 3
-                              ? AppColors.primaryRed.withValues(alpha: 0.1)
-                              : AppColors.grey200,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$sec2Uploaded/4',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: sec2Uploaded >= 3
-                                ? AppColors.primaryRed
-                                : AppColors.grey700,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            children: [
-                              // Tombol Unggah Sekaligus Bagian 2
-                              OutlinedButton.icon(
-                                onPressed: () => pickSectionBatch(
-                                  _sec2Items,
-                                  'Bagian 2 (Teknis)',
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.primaryRed,
-                                  side: const BorderSide(
-                                    color: AppColors.primaryRed,
-                                  ),
-                                  minimumSize: const Size(double.infinity, 38),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                icon: const Icon(
-                                  Icons.file_upload_outlined,
-                                  size: 16,
-                                ),
-                                label: const Text(
-                                  'Unggah Sekaligus Bagian 2 (4 Dokumen)',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title:
-                                    'Persetujuan Kesesuaian Kegiatan Pemanfaatan Ruang (KKPR)',
-                                subtitle: 'Format PDF, maks 10MB',
-                                fileName: formState.uploadedDocs['kkpr_doc'],
-                                onUpload: () => pickSingle('kkpr_doc'),
-                                onDelete: () => delete('kkpr_doc'),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title:
-                                    'Persetujuan Bangunan Gedung (PBG) Induk',
-                                subtitle: 'Atau IMB Induk terdahulu',
-                                fileName: formState.uploadedDocs['pbg_induk'],
-                                onUpload: () => pickSingle('pbg_induk'),
-                                onDelete: () => delete('pbg_induk'),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title:
-                                    'Rekomendasi Dokumen Lingkungan (AMDAL/UKL-UPL/SPPL)',
-                                subtitle: 'Format PDF, maks 10MB',
-                                fileName: formState
-                                    .uploadedDocs['rekomendasi_lingkungan'],
-                                onUpload: () =>
-                                    pickSingle('rekomendasi_lingkungan'),
-                                onDelete: () =>
-                                    delete('rekomendasi_lingkungan'),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title:
-                                    'Rekomendasi Pelepasan/Penggunaan Lahan (Kondisional)',
-                                subtitle: 'Jika berlaku, format PDF, maks 10MB',
-                                fileName:
-                                    formState.uploadedDocs['pelepasan_lahan'],
-                                onUpload: () => pickSingle('pelepasan_lahan'),
-                                onDelete: () => delete('pelepasan_lahan'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Group 3: Pernyataan
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: const BorderSide(color: AppColors.grey300),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: ExpansionTile(
-                      initiallyExpanded: false,
-                      title: Text(
-                        'Dokumen pernyataan (Bagian 3)',
-                        style: AppTextStyles.headlineSmall.copyWith(
-                          fontSize: 15,
-                        ),
-                      ),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: sec3Uploaded == 3
-                              ? AppColors.primaryRed.withValues(alpha: 0.1)
-                              : AppColors.grey200,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '$sec3Uploaded/3',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: sec3Uploaded == 3
-                                ? AppColors.primaryRed
-                                : AppColors.grey700,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Column(
-                            children: [
-                              // Tombol Unggah Sekaligus Bagian 3
-                              OutlinedButton.icon(
-                                onPressed: () => pickSectionBatch(
-                                  _sec3Items,
-                                  'Bagian 3 (Pernyataan)',
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: AppColors.primaryRed,
-                                  side: const BorderSide(
-                                    color: AppColors.primaryRed,
-                                  ),
-                                  minimumSize: const Size(double.infinity, 38),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                ),
-                                icon: const Icon(
-                                  Icons.file_upload_outlined,
-                                  size: 16,
-                                ),
-                                label: const Text(
-                                  'Unggah Sekaligus Bagian 3 (3 Dokumen)',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title:
-                                    'Surat Pernyataan Pelepasan Hak Atas Tanah',
-                                subtitle: 'Format PDF bermaterai, maks 10MB',
-                                fileName: formState
-                                    .uploadedDocs['pernyataan_pelepasan'],
-                                onUpload: () =>
-                                    pickSingle('pernyataan_pelepasan'),
-                                onDelete: () => delete('pernyataan_pelepasan'),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title: 'Surat Pernyataan Keabsahan Dokumen',
-                                subtitle: 'Format PDF bermaterai, maks 10MB',
-                                fileName: formState
-                                    .uploadedDocs['pernyataan_keabsahan'],
-                                onUpload: () =>
-                                    pickSingle('pernyataan_keabsahan'),
-                                onDelete: () => delete('pernyataan_keabsahan'),
-                              ),
-                              const SizedBox(height: 12),
-                              DocUploadTile(
-                                title:
-                                    'Surat Pernyataan Kesanggupan Penyediaan PSU',
-                                subtitle: 'Format PDF bermaterai, maks 10MB',
-                                fileName:
-                                    formState.uploadedDocs['pernyataan_psu'],
-                                onUpload: () => pickSingle('pernyataan_psu'),
-                                onDelete: () => delete('pernyataan_psu'),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.md,
+                AppSpacing.lg,
+                AppSpacing.xl,
               ),
+              children: [
+                _buildVerificationBanner(uploaded, isComplete),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Daftar Berkas Persyaratan (11)',
+                        style: AppTextStyles.titleMedium.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    _statusPill(
+                      isComplete ? 'Lengkap' : 'Mandatori SIPP',
+                      isComplete
+                          ? AppColors.statusSuccessText
+                          : AppColors.textSecondary,
+                      isComplete
+                          ? AppColors.statusSuccessSurface
+                          : AppColors.slate100,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                ..._slots.map(
+                  (slot) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                    child: _buildSlot(slot, state),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: const Border(top: BorderSide(color: AppColors.grey200)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
+      bottomNavigationBar: _buildBottomBar(isComplete),
+    );
+  }
+
+  Widget _buildVerificationBanner(int uploaded, bool isComplete) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: AppRadii.control,
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _statusPill(
+                  'Fase Verifikasi Administratif',
+                  AppColors.primaryRed,
+                  AppColors.primarySurfaceSoft,
+                ),
+              ),
+              const Icon(
+                Icons.folder_copy_outlined,
+                color: AppColors.primaryRed,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Kelengkapan Dokumen Perizinan Perumahan',
+            style: AppTextStyles.headlineSmall.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Status Pengunggahan',
+                  style: AppTextStyles.labelMedium.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+              Text(
+                uploaded.toString() +
+                    ' dari ' +
+                    _requiredCount.toString() +
+                    ' berkas telah siap',
+                style: AppTextStyles.labelMedium.copyWith(
+                  color: isComplete
+                      ? AppColors.statusSuccessText
+                      : AppColors.primaryRed,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          ClipRRect(
+            borderRadius: AppRadii.pill,
+            child: LinearProgressIndicator(
+              minHeight: 6,
+              value: uploaded / _requiredCount,
+              backgroundColor: AppColors.primarySurfaceSoft,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isComplete ? AppColors.statusSuccessText : AppColors.primaryRed,
+              ),
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
+            child: Divider(height: 1),
+          ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.info_outline,
+                size: 16,
+                color: AppColors.statusUrgentText,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Format berkas PDF wajib terlegalisir pejabat berwenang / instansi teknis terkait Kota Tasikmalaya (Maks. 10 MB per file).',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlot(_DocSlot slot, PengajuanFormState state) {
+    final files = state.multiUploadedDocs[slot.key] ?? const <String>[];
+    final singleFile = state.uploadedDocs[slot.key];
+    final hasFile = _hasFile(slot, state);
+    final failure = _failures[slot.key];
+    final loading = _loading.contains(slot.key);
+
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: AppRadii.control,
+        border: Border.all(
+          color: failure != null
+              ? AppColors.statusUrgentText
+              : AppColors.borderSubtle,
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x080F172A),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _statusPill(
+                  hasFile
+                      ? (slot.multi
+                            ? 'Multi-file: ' +
+                                  files.length.toString() +
+                                  ' Berkas Terlampir'
+                            : 'Telah Terunggah')
+                      : (loading
+                            ? 'Mengunggah...'
+                            : failure != null
+                            ? 'Gagal'
+                            : 'Belum Diunggah'),
+                  hasFile
+                      ? AppColors.statusSuccessText
+                      : loading
+                      ? AppColors.statusWarningText
+                      : failure != null
+                      ? AppColors.statusUrgentText
+                      : AppColors.textSecondary,
+                  hasFile
+                      ? AppColors.statusSuccessSurface
+                      : loading
+                      ? AppColors.statusWarningSurface
+                      : failure != null
+                      ? AppColors.statusUrgentSurface
+                      : AppColors.slate100,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                slot.optional ? 'Opsional' : 'Wajib',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: slot.optional
+                      ? AppColors.textSecondary
+                      : AppColors.statusUrgentText,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            slot.number + '. ' + slot.title + (slot.optional ? '' : ' *'),
+            style: AppTextStyles.titleMedium.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          if (slot.description != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              slot.description!,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
+          if (failure != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _buildFailure(slot, failure),
+          ] else if (loading) ...[
+            const SizedBox(height: AppSpacing.sm),
+            const LinearProgressIndicator(
+              minHeight: 5,
+              color: AppColors.primaryRed,
+            ),
+          ] else if (hasFile) ...[
+            const SizedBox(height: AppSpacing.sm),
+            ..._buildFiles(
+              slot,
+              files.isEmpty && singleFile != null ? [singleFile] : files,
+            ),
+          ] else ...[
+            const SizedBox(height: AppSpacing.sm),
+            _uploadButton(slot),
+          ],
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildFiles(_DocSlot slot, List<String> files) {
+    return [
+      ...files.map(
+        (file) => Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.sm,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.slate100,
+              borderRadius: AppRadii.small,
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.picture_as_pdf_outlined,
+                  size: 18,
+                  color: AppColors.statusUrgentText,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    file.split(RegExp(r'[/\\\\]')).last,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.bodySmall,
+                  ),
+                ),
+                if (slot.multi)
+                  IconButton(
+                    tooltip: 'Hapus berkas',
+                    icon: const Icon(Icons.close, size: 18),
+                    onPressed: () => _delete(slot),
+                  )
+                else
+                  TextButton(
+                    onPressed: () => _select(slot),
+                    child: const Text('Ganti'),
+                  ),
+              ],
+            ),
+          ),
         ),
-        child: SafeArea(
+      ),
+      if (slot.multi)
+        OutlinedButton.icon(
+          onPressed: () => _select(slot),
+          icon: const Icon(Icons.add, size: 18),
+          label: Text(slot.actionLabel),
+        ),
+    ];
+  }
+
+  Widget _buildFailure(_DocSlot slot, _SlotFailure failure) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.statusUrgentSurface,
+        borderRadius: AppRadii.small,
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.error_outline,
+            color: AppColors.statusUrgentText,
+            size: 18,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              failure.fileName + '\\n' + failure.message,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.statusUrgentText,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => _select(slot),
+            child: const Text('Coba Lagi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _uploadButton(_DocSlot slot) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: () => _select(slot),
+        icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+        label: Text(
+          slot.actionLabel,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
+  }
+
+  Widget _statusPill(String text, Color foreground, Color background) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: AppRadii.tight,
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: AppTextStyles.labelSmall.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(bool isComplete) {
+    final useStackedActions =
+        MediaQuery.textScalerOf(context).scale(14) > 20 ||
+        MediaQuery.sizeOf(context).width < 370;
+    return Material(
+      color: AppColors.cardSurface,
+      elevation: 8,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.sm,
+            AppSpacing.lg,
+            AppSpacing.sm,
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (missingCount > 0) ...[
-                Text(
-                  '$missingCount dokumen wajib belum dilampirkan',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.primaryRed,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ],
               Row(
                 children: [
+                  const Icon(
+                    Icons.cloud_done_outlined,
+                    size: 14,
+                    color: AppColors.statusSuccessText,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
                   Expanded(
-                    child: AppButton.secondary(
-                      text: 'Kembali',
-                      onPressed: () => context.pop(),
+                    child: Text(
+                      'Tersimpan otomatis untuk sesi ini',
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: AppButton.primary(
-                      text: 'Selanjutnya',
-                      onPressed: formState.isStep3Valid
-                          ? () => context.push('/pengajuan/step4')
-                          : null,
+                  TextButton(
+                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Draft formulir disimpan untuk sesi ini.',
+                        ),
+                      ),
                     ),
+                    child: const Text('Simpan Draft'),
                   ),
                 ],
               ),
+              if (useStackedActions) ...[
+                AppButton.secondary(
+                  text: 'Kembali',
+                  onPressed: () => context.pop(),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                AppButton.primary(
+                  text: 'Lanjut ke Langkah 4',
+                  trailingIcon: const Icon(Icons.arrow_forward, size: 18),
+                  onPressed: isComplete
+                      ? () => context.push('/pengajuan/step4')
+                      : null,
+                ),
+              ] else
+                Row(
+                  children: [
+                    Expanded(
+                      child: AppButton.secondary(
+                        text: 'Kembali',
+                        onPressed: () => context.pop(),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: AppButton.primary(
+                        text: 'Lanjut ke Langkah 4',
+                        trailingIcon: const Icon(Icons.arrow_forward, size: 18),
+                        onPressed: isComplete
+                            ? () => context.push('/pengajuan/step4')
+                            : null,
+                      ),
+                    ),
+                  ],
+                ),
             ],
           ),
         ),
