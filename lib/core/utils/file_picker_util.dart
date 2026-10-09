@@ -2,9 +2,31 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 
+enum FilePickStatus { selected, cancelled, failed }
+
+class FilePickResult<T> {
+  const FilePickResult._({required this.status, this.value, this.error});
+
+  const FilePickResult.selected(T value)
+    : this._(status: FilePickStatus.selected, value: value);
+
+  const FilePickResult.cancelled() : this._(status: FilePickStatus.cancelled);
+
+  const FilePickResult.failed(Object error)
+    : this._(status: FilePickStatus.failed, error: error);
+
+  final FilePickStatus status;
+  final T? value;
+  final Object? error;
+
+  bool get isSelected => status == FilePickStatus.selected;
+  bool get isCancelled => status == FilePickStatus.cancelled;
+  bool get isFailed => status == FilePickStatus.failed;
+}
+
 class FilePickerUtil {
   /// Membuka pemilih berkas bawaan Android (Document Picker / Files app) untuk memilih 1 file.
-  static Future<PlatformFile?> pickSingleFile({
+  static Future<FilePickResult<PlatformFile>> pickSingleFileResult({
     List<String>? allowedExtensions,
     FileType type = FileType.any,
   }) async {
@@ -17,13 +39,25 @@ class FilePickerUtil {
         withData: kIsWeb,
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        return result.files.first;
+      if (result == null || result.files.isEmpty) {
+        return const FilePickResult.cancelled();
       }
-    } catch (e) {
-      debugPrint('Error picking single file: $e');
+      return FilePickResult.selected(result.files.first);
+    } catch (error) {
+      debugPrint('Error picking single file: $error');
+      return FilePickResult.failed(error);
     }
-    return null;
+  }
+
+  static Future<PlatformFile?> pickSingleFile({
+    List<String>? allowedExtensions,
+    FileType type = FileType.any,
+  }) async {
+    final result = await pickSingleFileResult(
+      allowedExtensions: allowedExtensions,
+      type: type,
+    );
+    return result.value;
   }
 
   /// Returns a stable reference for a picked file, safe on every platform.
@@ -33,11 +67,15 @@ class FilePickerUtil {
   /// back to the file name.
   static String referenceOf(PlatformFile file) {
     if (kIsWeb) return file.name;
-    return file.path ?? file.name;
+    try {
+      return file.path ?? file.name;
+    } catch (_) {
+      return file.name;
+    }
   }
 
   /// Membuka pemilih berkas bawaan Android untuk memilih beberapa file sekaligus (batch upload).
-  static Future<List<PlatformFile>> pickMultipleFiles({
+  static Future<FilePickResult<List<PlatformFile>>> pickMultipleFilesResult({
     List<String>? allowedExtensions,
     FileType type = FileType.any,
   }) async {
@@ -51,12 +89,24 @@ class FilePickerUtil {
         withData: kIsWeb,
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        return result.files;
+      if (result == null || result.files.isEmpty) {
+        return const FilePickResult.cancelled();
       }
-    } catch (e) {
-      debugPrint('Error picking multiple files: $e');
+      return FilePickResult.selected(result.files);
+    } catch (error) {
+      debugPrint('Error picking multiple files: $error');
+      return FilePickResult.failed(error);
     }
-    return [];
+  }
+
+  static Future<List<PlatformFile>> pickMultipleFiles({
+    List<String>? allowedExtensions,
+    FileType type = FileType.any,
+  }) async {
+    final result = await pickMultipleFilesResult(
+      allowedExtensions: allowedExtensions,
+      type: type,
+    );
+    return result.value ?? const [];
   }
 }

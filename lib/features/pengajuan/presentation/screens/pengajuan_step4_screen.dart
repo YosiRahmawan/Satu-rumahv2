@@ -643,11 +643,26 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
           elevation: 0,
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
         ),
-        child: const Text(
-          'Lanjut ke Review & Submit',
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          style: AppTextStyles.labelLarge,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Lanjut ke Review & Submit',
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: AppColors.textOnRed,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                Icons.arrow_forward,
+                size: 16,
+                color: AppColors.textOnRed,
+              ),
+            ],
+          ),
         ),
       ),
     );

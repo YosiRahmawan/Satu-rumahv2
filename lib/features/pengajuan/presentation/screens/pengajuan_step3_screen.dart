@@ -56,95 +56,103 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
       );
     }
     if (allowMultiple) {
-      return FilePickerUtil.pickMultipleFiles(allowedExtensions: const ['pdf']);
+      final result = await FilePickerUtil.pickMultipleFilesResult(
+        allowedExtensions: const ['pdf'],
+      );
+      if (result.isFailed) {
+        throw result.error ?? StateError('File picker gagal.');
+      }
+      return result.value ?? const [];
     }
-    final file = await FilePickerUtil.pickSingleFile(
+    final result = await FilePickerUtil.pickSingleFileResult(
       allowedExtensions: const ['pdf'],
     );
+    if (result.isFailed) {
+      throw result.error ?? StateError('File picker gagal.');
+    }
+    final file = result.value;
     return file == null ? const [] : [file];
   }
 
   Future<void> _select(PengajuanStep3DocumentConfig slot) async {
+    if (_loading.contains(slot.key)) return;
+
     setState(() {
       _loading.add(slot.key);
       _failures.remove(slot.key);
     });
 
-    List<PlatformFile> files;
     try {
-      files = await _pick(allowMultiple: slot.allowsMultiple);
+      final files = await _pick(allowMultiple: slot.allowsMultiple);
+      if (!mounted) return;
+      if (files.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Tidak ada berkas dipilih. Data tetap tidak berubah.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      final invalid = files.firstWhere(
+        (file) => !_isPdf(file),
+        orElse: () => PlatformFile(name: '', size: 0),
+      );
+      if (invalid.name.isNotEmpty) {
+        setState(() {
+          _failures[slot.key] = _SlotFailure(
+            invalid.name,
+            'Format berkas harus PDF. Silakan pilih berkas PDF dan coba lagi.',
+          );
+        });
+        return;
+      }
+
+      final tooLarge = files.firstWhere(
+        (file) => file.size > slot.maxBytes,
+        orElse: () => PlatformFile(name: '', size: 0),
+      );
+      if (tooLarge.name.isNotEmpty) {
+        final old = ref.read(pengajuanFormProvider).uploadedDocs[slot.key];
+        setState(() {
+          _failures[slot.key] = _SlotFailure(
+            tooLarge.name,
+            'File melebihi batas maksimal ' +
+                (slot.maxBytes ~/ (1024 * 1024)).toString() +
+                ' MB.' +
+                (old == null ? '' : ' Berkas lama tetap tersimpan.'),
+          );
+        });
+        return;
+      }
+
+      final references = files.map(FilePickerUtil.referenceOf).toList();
+      final notifier = ref.read(pengajuanFormProvider.notifier);
+      if (slot.allowsMultiple) {
+        notifier.uploadDocuments(slot.key, references);
+      } else {
+        notifier.uploadDocument(slot.key, references.first);
+      }
+      setState(() => _failures.remove(slot.key));
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _loading.remove(slot.key);
         _failures[slot.key] = const _SlotFailure(
           'Kendala perangkat',
           'Terjadi kendala saat mengakses berkas. Silakan coba lagi.',
         );
       });
-      return;
+    } finally {
+      if (mounted) {
+        setState(() => _loading.remove(slot.key));
+      }
     }
-
-    if (!mounted) return;
-    if (files.isEmpty) {
-      setState(() => _loading.remove(slot.key));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Tidak ada berkas dipilih. Data tetap tidak berubah.'),
-        ),
-      );
-      return;
-    }
-
-    final invalid = files.firstWhere(
-      (file) => !_isPdf(file),
-      orElse: () => PlatformFile(name: '', size: 0),
-    );
-    if (invalid.name.isNotEmpty) {
-      setState(() {
-        _loading.remove(slot.key);
-        _failures[slot.key] = _SlotFailure(
-          invalid.name,
-          'Format berkas harus PDF. Silakan pilih berkas PDF dan coba lagi.',
-        );
-      });
-      return;
-    }
-
-    final tooLarge = files.firstWhere(
-      (file) => file.size > slot.maxBytes,
-      orElse: () => PlatformFile(name: '', size: 0),
-    );
-    if (tooLarge.name.isNotEmpty) {
-      final old = ref.read(pengajuanFormProvider).uploadedDocs[slot.key];
-      setState(() {
-        _loading.remove(slot.key);
-        _failures[slot.key] = _SlotFailure(
-          tooLarge.name,
-          'File melebihi batas maksimal ' +
-              (slot.maxBytes ~/ (1024 * 1024)).toString() +
-              ' MB.' +
-              (old == null ? '' : ' Berkas lama tetap tersimpan.'),
-        );
-      });
-      return;
-    }
-
-    final references = files.map(FilePickerUtil.referenceOf).toList();
-    final notifier = ref.read(pengajuanFormProvider.notifier);
-    if (slot.allowsMultiple) {
-      notifier.uploadDocuments(slot.key, references);
-    } else {
-      notifier.uploadDocument(slot.key, references.first);
-    }
-    setState(() {
-      _loading.remove(slot.key);
-      _failures.remove(slot.key);
-    });
   }
 
   bool _isPdf(PlatformFile file) {
-    final reference = file.path ?? file.name;
+    final reference = FilePickerUtil.referenceOf(file);
     final name = reference.split(RegExp(r'[/\\]')).last.toLowerCase();
     return name.endsWith('.pdf');
   }

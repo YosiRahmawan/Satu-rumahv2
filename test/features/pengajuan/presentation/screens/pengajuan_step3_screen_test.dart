@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:satu_rumah/core/utils/file_picker_util.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_step3_screen.dart';
 
@@ -162,6 +165,75 @@ void main() {
         expect(container.read(pengajuanFormProvider).uploadedDocs, isEmpty);
       },
     );
+
+    testWidgets('stops loading and shows device error when picker fails', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async {
+            throw StateError('device picker unavailable');
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.widgetWithText(
+        OutlinedButton,
+        'Unggah Dokumen Permohonan',
+      );
+      tester.widget<OutlinedButton>(button).onPressed!();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gagal'), findsOneWidget);
+      expect(find.textContaining('Kendala perangkat'), findsOneWidget);
+      expect(find.text('Mengunggah...'), findsNothing);
+      expect(container.read(pengajuanFormProvider).uploadedDocs, isEmpty);
+    });
+
+    testWidgets('ignores repeated selection while the same slot is loading', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final completer = Completer<List<PlatformFile>>();
+      var calls = 0;
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) {
+            calls++;
+            return completer.future;
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.widgetWithText(
+        OutlinedButton,
+        'Unggah Dokumen Permohonan',
+      );
+      final action = tester.widget<OutlinedButton>(button).onPressed!;
+      action();
+      await tester.pump();
+      action();
+      await tester.pump();
+
+      expect(calls, 1);
+      expect(find.text('Mengunggah...'), findsOneWidget);
+
+      completer.complete(const []);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mengunggah...'), findsNothing);
+      expect(find.text('Belum Diunggah'), findsAtLeastNWidgets(1));
+      expect(container.read(pengajuanFormProvider).uploadedDocs, isEmpty);
+    });
 
     testWidgets(
       'rejects non-PDF returned by picker and keeps state unchanged',
@@ -329,5 +401,11 @@ void main() {
         }
       },
     );
+  });
+
+  test('FilePickerUtil exposes a stable reference for a web-shaped file', () {
+    final file = PlatformFile(name: 'dokumen.pdf', size: 1024);
+
+    expect(FilePickerUtil.referenceOf(file), 'dokumen.pdf');
   });
 }
