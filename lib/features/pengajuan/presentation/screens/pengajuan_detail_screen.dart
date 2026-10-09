@@ -315,14 +315,18 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
             // 2-Column Info Grid
             _buildInfoRow(
               'NAMA PT',
-              item.namaPt,
+              item.namaPt.trim().isEmpty ? 'Belum tersedia' : item.namaPt,
               'NAMA DIREKTUR',
-              item.namaDirektur,
+              item.namaDirektur.trim().isEmpty
+                  ? 'Belum tersedia'
+                  : item.namaDirektur,
             ),
             const SizedBox(height: AppSpacing.sm),
             _buildInfoRow(
               'NIB',
-              item.nib ?? '9120003418291',
+              item.nib?.trim().isNotEmpty == true
+                  ? item.nib!
+                  : 'Belum tersedia',
               'NPWP PERUSAHAAN',
               item.npwpPerusahaan,
             ),

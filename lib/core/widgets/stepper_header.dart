@@ -8,14 +8,6 @@ class StepperHeader extends StatelessWidget {
 
   static const List<String> defaultTitles = [
     'Data PT',
-    'Dok. Admin',
-    'Dok. Legal',
-    'Dok. Teknis',
-    'Review',
-  ];
-
-  static const List<String> prototypeTitles = [
-    'Data PT',
     'Berkas PT',
     'Perumahan',
     'Teknis',
@@ -62,8 +54,8 @@ class StepperHeader extends StatelessWidget {
                     color: isPassed
                         ? AppColors.primaryRed
                         : isActive
-                            ? AppColors.primaryRed
-                            : AppColors.grey200,
+                        ? AppColors.primaryRed
+                        : AppColors.grey200,
                     shape: BoxShape.circle,
                     border: isActive
                         ? Border.all(color: AppColors.primarySurface, width: 2)
@@ -75,7 +67,9 @@ class StepperHeader extends StatelessWidget {
                       : Text(
                           '$stepNum',
                           style: AppTextStyles.labelMedium.copyWith(
-                            color: isActive || isPassed ? Colors.white : AppColors.grey600,
+                            color: isActive || isPassed
+                                ? Colors.white
+                                : AppColors.grey600,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -91,8 +85,12 @@ class StepperHeader extends StatelessWidget {
                       maxLines: 1,
                       style: AppTextStyles.labelSmall.copyWith(
                         fontSize: 10.5,
-                        color: isActive ? AppColors.primaryRed : AppColors.grey600,
-                        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                        color: isActive
+                            ? AppColors.primaryRed
+                            : AppColors.grey600,
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                   ),

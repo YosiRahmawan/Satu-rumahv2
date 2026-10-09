@@ -47,8 +47,9 @@ class _PengajuanStep5ReviewScreenState
         tipePengajuan: currentState.tipePengajuan,
         namaPerumahan: currentState.namaPerumahan.trim(),
         alamatProyek: currentState.alamatProyek.trim(),
-        namaPt: 'PT. Tasik Indah Sentosa',
-        namaDirektur: 'H. Tatang Sutisna',
+        // No account company profile is available in the local prototype.
+        namaPt: '',
+        namaDirektur: '',
         npwpPerusahaan: currentState.npwpPerusahaan.trim(),
         luasLahan: currentState.luasLahan,
         jumlahUnit: currentState.jumlahUnit,
@@ -147,6 +148,8 @@ class _PengajuanStep5ReviewScreenState
                             style: AppTextStyles.titleMedium,
                           ),
                           const Divider(height: 20),
+                          _buildInfoRow('Nama PT', 'Belum tersedia'),
+                          _buildInfoRow('Nama Direktur', 'Belum tersedia'),
                           _buildInfoRow(
                             'Tipe Pengajuan',
                             formState.tipePengajuan,

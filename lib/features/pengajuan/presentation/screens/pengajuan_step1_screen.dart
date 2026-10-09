@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -63,8 +62,8 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
     _luasController = TextEditingController(
       text: state.luasLahan > 0
           ? (state.luasLahan % 1 == 0
-              ? state.luasLahan.toInt().toString()
-              : state.luasLahan.toString())
+                ? state.luasLahan.toInt().toString()
+                : state.luasLahan.toString())
           : '',
     );
     _unitController = TextEditingController(
@@ -143,9 +142,15 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                     style: TextStyle(
                       fontFamily: AppTextStyles.fontFamily,
                       fontSize: 13.5,
-                      fontWeight: isAvailable ? FontWeight.w600 : FontWeight.w400,
-                      color: isAvailable ? AppColors.textMain : AppColors.textMuted,
-                      fontStyle: isAvailable ? FontStyle.normal : FontStyle.italic,
+                      fontWeight: isAvailable
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: isAvailable
+                          ? AppColors.textMain
+                          : AppColors.textMuted,
+                      fontStyle: isAvailable
+                          ? FontStyle.normal
+                          : FontStyle.italic,
                     ),
                   ),
                 ),
@@ -163,22 +168,9 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
     );
   }
 
-  Widget _buildDataPtCard(RoleSessionState session) {
-    // Only resolve demo PT data when the current session actually owns it.
-    // Otherwise show truthful unavailable state, never faking account identity.
-    final isDemoDeveloper = session.username == 'pt_tasik_indah';
-
-    final String nibValue = isDemoDeveloper ? '912000341882' : 'Belum tersedia';
-    final String namaPtValue = isDemoDeveloper
-        ? 'PT. Tasik Indah Sentosa'
-        : (session.username != null && session.username!.isNotEmpty
-            ? 'Pengembang (${session.username})'
-            : 'Belum tersedia');
-    final String direkturValue = isDemoDeveloper ? 'H. Tatang Sutisna' : 'Belum tersedia';
-    final String emailValue = isDemoDeveloper ? 'tasikindah@developer.com' : 'Belum tersedia';
-    final String telpValue = isDemoDeveloper ? '0812-9876-5432' : 'Belum tersedia';
-    final String alamatKantorValue = isDemoDeveloper ? 'Belum diatur di profil' : 'Belum tersedia';
-
+  Widget _buildDataPtCard() {
+    // The local session has no verified company profile. Keep account identity
+    // unavailable until an actual account data source is connected.
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
@@ -230,32 +222,32 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
           const SizedBox(height: AppSpacing.md),
           _buildReadOnlyField(
             label: 'Nomor Induk Berusaha (NIB)',
-            value: nibValue,
-            isAvailable: isDemoDeveloper,
+            value: 'Belum tersedia',
+            isAvailable: false,
           ),
           _buildReadOnlyField(
             label: 'Nama Perusahaan (PT)',
-            value: namaPtValue,
-            isAvailable: isDemoDeveloper || session.username != null,
+            value: 'Belum tersedia',
+            isAvailable: false,
           ),
           _buildReadOnlyField(
             label: 'Penanggung Jawab / Direktur',
-            value: direkturValue,
-            isAvailable: isDemoDeveloper,
+            value: 'Belum tersedia',
+            isAvailable: false,
           ),
           _buildReadOnlyField(
             label: 'Email Perusahaan',
-            value: emailValue,
-            isAvailable: isDemoDeveloper,
+            value: 'Belum tersedia',
+            isAvailable: false,
           ),
           _buildReadOnlyField(
             label: 'No. Telepon / WhatsApp',
-            value: telpValue,
-            isAvailable: isDemoDeveloper,
+            value: 'Belum tersedia',
+            isAvailable: false,
           ),
           _buildReadOnlyField(
             label: 'Alamat Kantor Perusahaan',
-            value: alamatKantorValue,
+            value: 'Belum tersedia',
             isAvailable: false,
           ),
         ],
@@ -319,50 +311,50 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                   ),
                 ),
                 child: Row(
-                children: [
-                  Icon(
-                    isSelected
-                        ? Icons.radio_button_checked
-                        : Icons.radio_button_unchecked,
-                    color: isSelected
-                        ? AppColors.primaryRed
-                        : AppColors.grey400,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          opt['title']!,
-                          style: TextStyle(
-                            fontFamily: AppTextStyles.fontFamily,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            color: isSelected
-                                ? AppColors.primaryRed
-                                : AppColors.textMain,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          opt['subtitle']!,
-                          style: const TextStyle(
-                            fontFamily: AppTextStyles.fontFamily,
-                            fontSize: 11.5,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
+                  children: [
+                    Icon(
+                      isSelected
+                          ? Icons.radio_button_checked
+                          : Icons.radio_button_unchecked,
+                      color: isSelected
+                          ? AppColors.primaryRed
+                          : AppColors.grey400,
+                      size: 20,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            opt['title']!,
+                            style: TextStyle(
+                              fontFamily: AppTextStyles.fontFamily,
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? AppColors.primaryRed
+                                  : AppColors.textMain,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            opt['subtitle']!,
+                            style: const TextStyle(
+                              fontFamily: AppTextStyles.fontFamily,
+                              fontSize: 11.5,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      }),
+          );
+        }),
       ],
     );
   }
@@ -428,8 +420,9 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                         style: TextStyle(
                           fontFamily: AppTextStyles.fontFamily,
                           fontSize: 13,
-                          fontWeight:
-                              isSelected ? FontWeight.bold : FontWeight.w500,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.w500,
                           color: isSelected
                               ? AppColors.primaryRed
                               : AppColors.textSecondary,
@@ -531,17 +524,15 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
             hintText: '01.234.567.8-411.000',
             controller: _npwpController,
             prefixIcon: Icons.badge_outlined,
-            validator: (val) => val == null || val.trim().isEmpty
-                ? 'NPWP wajib diisi'
-                : null,
+            validator: (val) =>
+                val == null || val.trim().isEmpty ? 'NPWP wajib diisi' : null,
           ),
           const SizedBox(height: AppSpacing.md),
 
           // 5. Luas Lahan & Jumlah Unit
           Builder(
             builder: (context) {
-              final isScaled =
-                  MediaQuery.textScalerOf(context).scale(14) > 20;
+              final isScaled = MediaQuery.textScalerOf(context).scale(14) > 20;
 
               final luasField = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,8 +601,9 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                       ),
                     ),
                     validator: (val) {
-                      final value =
-                          val == null ? null : int.tryParse(val.trim());
+                      final value = val == null
+                          ? null
+                          : int.tryParse(val.trim());
                       return value == null || value <= 0
                           ? 'Jumlah unit harus > 0'
                           : null;
@@ -660,8 +652,6 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
 
   @override
   Widget build(BuildContext context) {
-    final session = ref.watch(roleSessionProvider);
-
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
       body: SingleChildScrollView(
@@ -683,10 +673,7 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
             ),
 
             // Stepper indicator
-            const StepperHeader(
-              currentStep: 1,
-              stepTitles: StepperHeader.prototypeTitles,
-            ),
+            const StepperHeader(currentStep: 1),
 
             Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
@@ -696,7 +683,7 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     // Card 1: Data PT (Read-Only)
-                    _buildDataPtCard(session),
+                    _buildDataPtCard(),
 
                     const SizedBox(height: AppSpacing.md),
 
@@ -784,7 +771,11 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                           ),
                         ),
                         SizedBox(width: 6),
-                        Icon(Icons.arrow_forward, size: 16, color: Colors.white),
+                        Icon(
+                          Icons.arrow_forward,
+                          size: 16,
+                          color: Colors.white,
+                        ),
                       ],
                     ),
                   ),

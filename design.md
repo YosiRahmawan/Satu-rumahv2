@@ -288,7 +288,7 @@ ID di bawah adalah indeks dokumentasi, bukan nama route baru. Struktur layar Flu
 | AUTH-02 | Admin web | Masuk Web Admin | Metode autentikasi dan pemulihan akun **OPEN QUESTION Q14** | Belum tersedia dalam audit |
 | DEV-01 | Pengembang mobile | Beranda | Ringkasan pengajuan dan akses tugas | `dashboard_screen.dart`; **EXISTING IMPLEMENTATION** |
 | DEV-02 | Pengembang mobile | Pengajuan Saya | Pencarian/filter, daftar dan akses detail | `pengajuan_saya_list_screen.dart`; pembatasan data **OPEN QUESTION Q03** |
-| DEV-03 | Pengembang mobile | Form data perumahan | Nama, NPWP perusahaan, luas, unit, tipe | `pengajuan_step1_screen.dart`; kewajiban field **OPEN QUESTION Q06** |
+| DEV-03 | Pengembang mobile | Form data perumahan | Data PT read-only; tipe pengajuan, nama dan alamat proyek, NPWP, luas, unit, tipe perumahan | `pengajuan_step1_screen.dart`; kewajiban field **OPEN QUESTION Q06** |
 | DEV-04 | Pengembang mobile | Form dokumen perusahaan | Kelompok slot upload | `pengajuan_step2_screen.dart`; pemetaan **OPEN QUESTION Q07** |
 | DEV-05 | Pengembang mobile | Form administrasi perumahan | Kelompok slot upload | `pengajuan_step3_screen.dart`; kondisi dokumen **OPEN QUESTION Q07** |
 | DEV-06 | Pengembang mobile | Form teknis | Berkas teknis dan cakupan gambar | `pengajuan_step4_screen.dart`; aturan multi-file **OPEN QUESTION Q06/Q07** |
@@ -308,6 +308,10 @@ ID di bawah adalah indeks dokumentasi, bukan nama route baru. Struktur layar Flu
 | SHARED-02 | Mobile | Profil | Identitas/session role | Implementasi tersedia; field/edit/akun **OPEN QUESTION Q03/Q14** |
 
 Nama file layar pengajuan berada di `lib/features/pengajuan/presentation/screens/`; monitoring di `lib/features/monitoring/presentation/screens/` atau `widgets/`; dashboard di `lib/features/dashboard/presentation/screens/`. Tidak ada layar yang dibuat atau diubah melalui dokumen ini.
+
+**CONFIRMED - label prototype Pengajuan Baru:** stepper Fase 1-5 berturut-turut `Data PT`, `Berkas PT`, `Perumahan`, `Teknis`, `Review`.
+
+**EXISTING IMPLEMENTATION - prototype lokal:** session hanya berisi role dan username; keduanya bukan sumber identitas perusahaan. Data PT read-only menampilkan `Belum tersedia`. Nama PT dan direktur pada pengajuan baru disimpan kosong, lalu ditampilkan sebagai `Belum tersedia`; data contoh pada daftar pengajuan lama tetap data mock dan bukan identitas akun. Sumber, kepemilikan, dan validasi identitas produksi tetap **OPEN QUESTION Q03/Q14/Q16**.
 
 ## 14. UI states, forms, upload, validation, notifications, accessibility
 
@@ -498,6 +502,7 @@ Prioritas di bawah adalah **PROPOSAL** urutan pembahasan, bukan aturan bisnis. P
 |---|---|---|---|
 | 3 Oktober 2026 | 1.0 | Mengembangkan master `Design.md` menjadi `design.md` dengan 19 bagian produk/UX; menetapkan pembagian platform dari pengguna; memisahkan implementasi prototype dari keputusan; menambahkan placeholder DOC01–DOC16, register pertanyaan dan konflik visual/workflow | Dokumentasi saja; master asli dipertahankan di Lampiran A; source code dan perubahan lokal sebelumnya tidak diubah |
 | 3 Oktober 2026 | 1.1 | Memeriksa ulang kelengkapan 19 bagian; menegaskan platform per role; membedakan konteks README dari keputusan eksplisit; mengoreksi label konfirmasi versi stack, kewenangan, placeholder dokumen, dan usulan UX yang belum disahkan | Hanya `design.md`; 16 placeholder dan lampiran master visual dipertahankan; source code tidak diubah |
+| 9 Oktober 2026 | 1.2 | Mencatat label stepper Fase 1-5 dan kondisi identitas PT yang belum tersedia pada prototype Pengajuan Baru | Dokumentasi perilaku Flutter lokal; sumber identitas produksi masih pertanyaan terbuka |
 
 ## Lampiran A — Master visual asli, dipertahankan sebagai sumber
 
