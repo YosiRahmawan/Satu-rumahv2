@@ -27,6 +27,16 @@ class PengajuanStep3DocumentConfig {
 }
 
 /// Canonical document contract shared by Step 3 rendering/validation and Review.
+class PengajuanStep2DocumentContract {
+  static const slots = <({String key, String label})>[
+    (key: 'ktp', label: 'KTP Pemohon'),
+    (key: 'nib', label: 'NIB Perusahaan'),
+    (key: 'npwp_doc', label: 'NPWP Perusahaan'),
+    (key: 'asosiasi', label: 'Keanggotaan Asosiasi'),
+    (key: 'legalitas', label: 'Legalitas Akta'),
+  ];
+}
+
 class PengajuanStep3DocumentContract {
   static const slots = <PengajuanStep3DocumentConfig>[
     PengajuanStep3DocumentConfig(

@@ -53,15 +53,18 @@ void main() {
       );
       final missingRequiredSlot = PengajuanStep3DocumentContract.slots
           .firstWhere((slot) => slot.key == 'proposal_pembangunan');
-      Finder rowStatus(String label) => find.descendant(
+      Finder rowStatus(String label, String status) => find.descendant(
         of: find
             .ancestor(of: find.text(label), matching: find.byType(Padding))
             .first,
-        matching: find.text('Belum Ada'),
+        matching: find.text(status),
       );
 
-      expect(rowStatus(missingRequiredSlot.label), findsOneWidget);
-      expect(rowStatus(optionalSlot.label), findsOneWidget);
+      expect(rowStatus(missingRequiredSlot.label, 'Belum Ada'), findsOneWidget);
+      expect(
+        rowStatus(optionalSlot.label, 'Opsional · Belum Ada'),
+        findsOneWidget,
+      );
 
       final submitButton = find.widgetWithText(
         ElevatedButton,
@@ -73,8 +76,11 @@ void main() {
       notifier.uploadDocument('proposal_pembangunan', 'proposal-baru.pdf');
       await tester.pumpAndSettle();
 
-      expect(rowStatus(missingRequiredSlot.label), findsNothing);
-      expect(rowStatus(optionalSlot.label), findsOneWidget);
+      expect(rowStatus(missingRequiredSlot.label, 'Belum Ada'), findsNothing);
+      expect(
+        rowStatus(optionalSlot.label, 'Opsional · Belum Ada'),
+        findsOneWidget,
+      );
       expect(tester.widget<ElevatedButton>(submitButton).onPressed, isNotNull);
 
       await tester.tap(find.text('Kirim Pengajuan'));
