@@ -585,19 +585,13 @@ class _TambahMonitoringStepperScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              _buildBadge(badge),
-            ],
+          _buildSectionHeader(
+            label: label,
+            badge: badge,
+            labelStyle: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 10),
           child,
@@ -698,25 +692,18 @@ class _TambahMonitoringStepperScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.lock_outline,
-                size: 18,
-                color: AppColors.enterpriseTextMuted,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'Maksud dan Tujuan',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              _buildBadge('Terkunci narasi Dinas'),
-            ],
+          _buildSectionHeader(
+            label: 'Maksud dan Tujuan',
+            badge: 'Terkunci narasi Dinas',
+            leading: const Icon(
+              Icons.lock_outline,
+              size: 18,
+              color: AppColors.enterpriseTextMuted,
+            ),
+            labelStyle: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 10),
           _buildInputSurface(
@@ -758,21 +745,14 @@ class _TambahMonitoringStepperScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  label,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              _buildBadge(badge),
-            ],
+          _buildSectionHeader(
+            label: label,
+            badge: badge,
+            leading: Icon(icon, size: 18, color: color),
+            labelStyle: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: 10),
           DynamicBulletField(
@@ -784,6 +764,41 @@ class _TambahMonitoringStepperScreenState
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String label,
+    required String badge,
+    required TextStyle labelStyle,
+    Widget? leading,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+        final stacked = textScale > 1.35 || constraints.maxWidth < 340;
+        final labelRow = Row(
+          children: [
+            if (leading != null) ...[leading, const SizedBox(width: 6)],
+            Expanded(child: Text(label, style: labelStyle)),
+          ],
+        );
+
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [labelRow, const SizedBox(height: 8), _buildBadge(badge)],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: labelRow),
+            const SizedBox(width: 8),
+            _buildBadge(badge),
+          ],
+        );
+      },
     );
   }
 

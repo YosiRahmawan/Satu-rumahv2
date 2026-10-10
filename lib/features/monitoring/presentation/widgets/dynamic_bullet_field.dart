@@ -193,7 +193,7 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
               color: AppColors.enterprisePrimary,
             ),
             label: Text(
-              '+ Tambah poin',
+              '+ Tambah Poin',
               style: AppTextStyles.labelMedium.copyWith(
                 fontFamily: AppTextStyles.enterpriseFontFamily,
                 color: AppColors.enterprisePrimary,

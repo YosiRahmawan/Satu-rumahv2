@@ -84,7 +84,7 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Perumahan Baru');
     await tester.enterText(find.byType(TextFormField).at(1), 'Lokasi Baru');
-    final addPoint = find.text('+ Tambah poin').first;
+    final addPoint = find.text('+ Tambah Poin').first;
     await tester.ensureVisible(addPoint);
     await tester.tap(addPoint);
     await tester.pump();
@@ -94,7 +94,9 @@ void main() {
     expect(state.lokasiPerumahan, 'Lokasi Baru');
     expect(state.temuanLapangan, hasLength(2));
 
-    await tester.tap(find.byTooltip('Hapus poin').first);
+    final deletePoint = find.byTooltip('Hapus poin').first;
+    await tester.ensureVisible(deletePoint);
+    await tester.tap(deletePoint);
     await tester.pump();
 
     state = container.read(monitoringFormProvider);
