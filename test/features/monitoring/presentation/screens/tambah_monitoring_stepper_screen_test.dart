@@ -214,7 +214,7 @@ void main() {
     );
 
     await pumpStep1(tester);
-    final firstDelete = find.byTooltip('Hapus Perwakilan Pengembang 1');
+    final firstDelete = find.byTooltip('Hapus Anggota 1');
     await tester.ensureVisible(firstDelete);
     await tester.tap(firstDelete);
     await tester.pump();
@@ -223,7 +223,7 @@ void main() {
     expect(state.pelaksana.single.nama, 'Pelaksana Dua');
     expect(state.pelaksana.single.jabatan, 'Jabatan Dua');
     expect(find.text('Pelaksana Dua'), findsOneWidget);
-    expect(find.byTooltip('Hapus Perwakilan Pengembang 1'), findsNothing);
+    expect(find.byTooltip('Hapus Anggota 1'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -245,7 +245,7 @@ void main() {
     );
 
     await pumpStep1(tester);
-    final firstDelete = find.byTooltip('Hapus anggota 1');
+    final firstDelete = find.byTooltip('Hapus Perwakilan Pengembang 1');
     await tester.ensureVisible(firstDelete);
     await tester.tap(firstDelete);
     await tester.pump();
@@ -254,7 +254,7 @@ void main() {
     expect(state.ditemui.single.nama, 'Ditemui Dua');
     expect(state.ditemui.single.jabatan, 'Jabatan Dua');
     expect(find.text('Ditemui Dua'), findsOneWidget);
-    expect(find.byTooltip('Hapus anggota 1'), findsNothing);
+    expect(find.byTooltip('Hapus Perwakilan Pengembang 1'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
