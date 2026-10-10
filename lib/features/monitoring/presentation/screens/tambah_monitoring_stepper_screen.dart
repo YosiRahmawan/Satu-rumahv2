@@ -240,10 +240,39 @@ class _TambahMonitoringStepperScreenState
         borderRadius: AppRadii.card,
       ),
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
-      child: Column(
-        children: [
-          // Stepper Circles & Labels Row
-          Stack(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+          final useAccessibleLayout =
+              constraints.maxWidth < 340 || textScale > 1.35;
+          final steps = [
+            (1, '1. Info Umum'),
+            (2, '2. Info Lanjutan'),
+            (3, '3. Dokumentasi Lapangan'),
+          ];
+
+          if (useAccessibleLayout) {
+            return Column(
+              children: [
+                for (var index = 0; index < steps.length; index++) ...[
+                  _buildAccessibleStepItem(
+                    steps[index].$1,
+                    steps[index].$2,
+                    currentStep,
+                  ),
+                  if (index < steps.length - 1)
+                    const Divider(
+                      height: 16,
+                      indent: 18,
+                      endIndent: 18,
+                      color: AppColors.enterpriseBorder,
+                    ),
+                ],
+              ],
+            );
+          }
+
+          return Stack(
             alignment: Alignment.topCenter,
             children: [
               Positioned(
@@ -254,27 +283,74 @@ class _TambahMonitoringStepperScreenState
               ),
               Row(
                 children: [
-                  Expanded(
-                    child: _buildStepItem(1, '1. Info Umum', currentStep),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: _buildStepItem(2, '2. Info Lanjutan', currentStep),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: _buildStepItem(
-                      3,
-                      '3. Dokumentasi Lapangan',
-                      currentStep,
+                  for (var index = 0; index < steps.length; index++) ...[
+                    Expanded(
+                      child: _buildStepItem(
+                        steps[index].$1,
+                        steps[index].$2,
+                        currentStep,
+                      ),
                     ),
-                  ),
+                    if (index < steps.length - 1) const SizedBox(width: 4),
+                  ],
                 ],
               ),
             ],
-          ),
-        ],
+          );
+        },
       ),
+    );
+  }
+
+  Widget _buildAccessibleStepItem(
+    int stepNumber,
+    String label,
+    int currentStep,
+  ) {
+    final isDone = (currentStep + 1) > stepNumber;
+    final isActive = (currentStep + 1) == stepNumber;
+    final active = isActive || isDone;
+
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: active ? AppColors.actionPrimary : Colors.white,
+            border: Border.all(
+              color: active ? AppColors.actionPrimary : AppColors.grey400,
+              width: 1.5,
+            ),
+          ),
+          child: Center(
+            child: isDone
+                ? const Icon(Icons.check, size: 18, color: Colors.white)
+                : Text(
+                    '$stepNumber',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isActive ? Colors.white : AppColors.grey600,
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+              color: isActive
+                  ? AppColors.enterprisePrimary
+                  : AppColors.enterpriseTextMuted,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -446,7 +522,8 @@ class _TambahMonitoringStepperScreenState
   );
 
   Widget _buildMetaRow(MonitoringFormState state) {
-    return Row(
+    final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+    final status = Row(
       children: [
         const Icon(
           Icons.check_circle_outline,
@@ -454,7 +531,7 @@ class _TambahMonitoringStepperScreenState
           color: AppColors.enterpriseSuccess,
         ),
         const SizedBox(width: 6),
-        Expanded(
+        Flexible(
           child: Text(
             'Perubahan tersimpan sementara di formulir ini',
             style: AppTextStyles.bodySmall.copyWith(
@@ -463,18 +540,32 @@ class _TambahMonitoringStepperScreenState
             ),
           ),
         ),
-        if (state.pengajuanId != null)
-          Flexible(
-            child: Text(
-              'ID: ${state.pengajuanId}',
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.end,
-              style: AppTextStyles.labelSmall.copyWith(
-                fontFamily: AppTextStyles.enterpriseFontFamily,
-                color: AppColors.enterpriseTextMuted,
-              ),
+      ],
+    );
+    final id = state.pengajuanId == null
+        ? null
+        : Text(
+            'ID: ${state.pengajuanId}',
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.labelSmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMuted,
             ),
-          ),
+          );
+
+    if (scale > 1.35) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          status,
+          if (id != null) ...[const SizedBox(height: 4), id],
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: status),
+        if (id != null) Flexible(child: id),
       ],
     );
   }
@@ -1017,86 +1108,83 @@ class _TambahMonitoringStepperScreenState
           ),
         );
 
-        final nextButton = SizedBox(
-          height: 48,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.enterprisePrimary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
-            ),
-            onPressed: () {
-              if (formState.currentStep == 0) {
-                if (_namaPerumahanController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nama Perumahan wajib diisi.'),
+        final nextButton = ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.enterprisePrimary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            minimumSize: const Size(0, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
+          ),
+          onPressed: () {
+            if (formState.currentStep == 0) {
+              if (_namaPerumahanController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nama Perumahan wajib diisi.')),
+                );
+                return;
+              }
+              notifier.setStep(1);
+            } else if (formState.currentStep == 1) {
+              final rtl = formState.rencanaTindakLanjut
+                  .where((e) => e.trim().isNotEmpty)
+                  .toList();
+              if (formState.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
+                  rtl.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Untuk status "${formState.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.',
                     ),
-                  );
-                  return;
-                }
-                notifier.setStep(1);
-              } else if (formState.currentStep == 1) {
-                final rtl = formState.rencanaTindakLanjut
-                    .where((e) => e.trim().isNotEmpty)
-                    .toList();
-                if (formState.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
-                    rtl.isEmpty) {
+                    backgroundColor: AppColors.actionPrimary,
+                  ),
+                );
+                return;
+              }
+              notifier.setStep(2);
+            } else {
+              // Last step -> Navigate to Preview Screen
+              final previewModel = notifier.buildPreviewModel();
+              if (previewModel != null) {
+                context.push(
+                  '/monitoring/preview',
+                  extra: {'model': previewModel, 'isDraft': true},
+                );
+              } else {
+                final err = ref.read(monitoringFormProvider).errorMessage;
+                if (err != null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text(
-                        'Untuk status "${formState.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.',
-                      ),
+                      content: Text(err),
                       backgroundColor: AppColors.actionPrimary,
                     ),
                   );
-                  return;
-                }
-                notifier.setStep(2);
-              } else {
-                // Last step -> Navigate to Preview Screen
-                final previewModel = notifier.buildPreviewModel();
-                if (previewModel != null) {
-                  context.push(
-                    '/monitoring/preview',
-                    extra: {'model': previewModel, 'isDraft': true},
-                  );
-                } else {
-                  final err = ref.read(monitoringFormProvider).errorMessage;
-                  if (err != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(err),
-                        backgroundColor: AppColors.actionPrimary,
-                      ),
-                    );
-                  }
                 }
               }
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Flexible(
-                  child: Text(
-                    formState.currentStep == 0
-                        ? 'Lanjut ke Langkah 2'
-                        : formState.currentStep == 1
-                        ? 'Lanjut ke Langkah 3'
-                        : 'Preview & Kirim',
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.labelLarge.copyWith(
-                      fontFamily: AppTextStyles.enterpriseFontFamily,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+            }
+          },
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Flexible(
+                child: Text(
+                  formState.currentStep == 0
+                      ? 'Lanjut ke Langkah 2'
+                      : formState.currentStep == 1
+                      ? 'Lanjut ke Langkah 3'
+                      : 'Preview & Kirim',
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward, size: 18),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(Icons.arrow_forward, size: 18),
+            ],
           ),
         );
 

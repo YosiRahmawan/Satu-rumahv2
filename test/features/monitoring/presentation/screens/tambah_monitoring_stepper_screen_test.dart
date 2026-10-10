@@ -13,9 +13,8 @@ void main() {
     container = ProviderContainer();
   });
 
-  tearDown(() async {
+  tearDown(() {
     container.dispose();
-    await TestWidgetsFlutterBinding.ensureInitialized().setSurfaceSize(null);
   });
 
   Widget harness({GoRouter? router, TextScaler? textScaler}) {
@@ -42,6 +41,9 @@ void main() {
     GoRouter? router,
   }) async {
     await tester.binding.setSurfaceSize(size);
+    addTearDown(() async {
+      await tester.binding.setSurfaceSize(null);
+    });
     await tester.pumpWidget(harness(router: router, textScaler: textScaler));
     await tester.pumpAndSettle();
   }
@@ -82,7 +84,9 @@ void main() {
 
     await tester.enterText(find.byType(TextFormField).at(0), 'Perumahan Baru');
     await tester.enterText(find.byType(TextFormField).at(1), 'Lokasi Baru');
-    await tester.tap(find.text('+ Tambah poin').first);
+    final addPoint = find.text('+ Tambah poin').first;
+    await tester.ensureVisible(addPoint);
+    await tester.tap(addPoint);
     await tester.pump();
 
     var state = container.read(monitoringFormProvider);
