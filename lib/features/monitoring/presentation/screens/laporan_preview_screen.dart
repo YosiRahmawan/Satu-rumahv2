@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
@@ -26,6 +27,8 @@ class LaporanPreviewScreen extends ConsumerStatefulWidget {
 }
 
 class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
+  bool _isPdfBusy = false;
+  bool _isShareBusy = false;
   String _formatFullIndonesianDate(DateTime dt) {
     const hariList = [
       'Senin',
@@ -97,12 +100,12 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
             ),
           ),
         ),
-        title: const Text(
+        title: Text(
           'Preview Berita Acara',
-          style: TextStyle(
-            color: AppColors.cocoaBeanRoast,
+          style: AppTextStyles.titleLarge.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMain,
             fontWeight: FontWeight.bold,
-            fontSize: 16,
           ),
         ),
       ),
@@ -510,31 +513,42 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.pill),
                     elevation: 0,
                   ),
-                  onPressed: () async {
-                    try {
-                      await BaPdfGenerator.printAndShare(monitoring);
-                    } catch (_) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Gagal menyiapkan PDF. Coba lagi.'),
+                  onPressed: _isPdfBusy
+                      ? null
+                      : () async {
+                          setState(() => _isPdfBusy = true);
+                          try {
+                            await BaPdfGenerator.printAndShare(monitoring);
+                          } catch (_) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Gagal menyiapkan PDF. Coba lagi.',
+                                  ),
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => _isPdfBusy = false);
+                          }
+                        },
+                  icon: _isPdfBusy
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
                           ),
-                        );
-                      }
-                    }
-                  },
-                  icon: const Icon(
-                    Icons.file_download,
-                    size: 18,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    'Download / Cetak PDF',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
+                        )
+                      : const Icon(
+                          Icons.file_download,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                  label: Text(
+                    _isPdfBusy ? 'Menyiapkan PDF...' : 'Download / Cetak PDF',
                   ),
                 ),
               ),
@@ -556,33 +570,41 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                             borderRadius: AppRadii.pill,
                           ),
                         ),
-                        onPressed: () async {
-                          final teks =
-                              'BERITA ACARA MONITORING LAPANGAN\n'
-                              'Perumahan: ${monitoring.namaPerumahan}\n'
-                              'Nomor BA: ${monitoring.nomorSuratBA}\n'
-                              'Status: ${monitoring.statusHasilEvaluasi.label}';
-                          try {
-                            await SharePlus.instance.share(
-                              ShareParams(text: teks),
-                            );
-                          } catch (_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Gagal membuka menu berbagi.'),
-                                ),
-                              );
-                            }
-                          }
-                        },
+                        onPressed: _isShareBusy
+                            ? null
+                            : () async {
+                                setState(() => _isShareBusy = true);
+                                final teks =
+                                    'BERITA ACARA MONITORING LAPANGAN\n'
+                                    'Perumahan: ${monitoring.namaPerumahan}\n'
+                                    'Nomor BA: ${monitoring.nomorSuratBA}\n'
+                                    'Status: ${monitoring.statusHasilEvaluasi.label}';
+                                try {
+                                  await SharePlus.instance.share(
+                                    ShareParams(text: teks),
+                                  );
+                                } catch (_) {
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Gagal membuka menu berbagi.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } finally {
+                                  if (mounted)
+                                    setState(() => _isShareBusy = false);
+                                }
+                              },
                         icon: const Icon(
                           Icons.near_me,
                           color: AppColors.statusSuccess,
                           size: 16,
                         ),
                         label: const Text(
-                          'Bagikan via WhatsApp',
+                          'Bagikan ringkasan',
                           style: TextStyle(
                             color: AppColors.statusSuccess,
                             fontWeight: FontWeight.bold,
