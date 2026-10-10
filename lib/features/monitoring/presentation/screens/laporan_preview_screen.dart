@@ -10,6 +10,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
+import '../widgets/berita_acara_action_buttons.dart';
 import '../../utils/ba_pdf_generator.dart';
 
 class LaporanPreviewScreen extends ConsumerStatefulWidget {
@@ -102,7 +103,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
           ),
         ),
         title: Text(
-          'Preview Berita Acara',
+          'Berita Acara Monitoring',
           style: AppTextStyles.titleLarge.copyWith(
             fontFamily: AppTextStyles.enterpriseFontFamily,
             color: AppColors.enterpriseTextMain,
@@ -133,10 +134,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
         : 'nama perumahan yang belum diisi';
 
     return DefaultTextStyle(
-      style: AppTextStyles.bodySmall.copyWith(
-        fontFamily: AppTextStyles.enterpriseFontFamily,
-        color: AppColors.enterpriseTextMain,
-      ),
+      style: _documentBodyStyle,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.xl),
         decoration: BoxDecoration(
@@ -148,46 +146,29 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Kop Surat Disperwaskim
-            const Text(
+            Text(
               'PEMERINTAH KOTA TASIKMALAYA',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
+              style: _documentHeadingStyle,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 2),
-            const Text(
+            Text(
               'DINAS PERUMAHAN DAN KAWASAN PERMUKIMAN',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
+              style: _documentHeadingStyle,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
 
             // Judul Dokumen & Nomor BA
-            const Text(
+            Text(
               'BERITA ACARA MONITORING\nDAN EVALUASI LAPANGAN',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: AppColors.enterpriseTextMain,
-                height: 1.2,
-              ),
+              style: _documentTitleStyle,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
             Text(
               'Nomor: ${item.nomorSuratBA}',
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.enterpriseTextMuted,
-                fontWeight: FontWeight.w600,
-              ),
+              style: _documentMetaStyle,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
@@ -199,7 +180,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Pada hari ini, $fullDateSentence, telah dilakukan monitoring pada $perumahanFormatted.',
-                style: const TextStyle(fontSize: 11, height: 1.5),
+                style: _documentBodyStyle,
               ),
             ),
             const SizedBox(height: 14),
@@ -287,8 +268,9 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
         padding: const EdgeInsets.only(bottom: 4),
         child: Text(
           title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
+          style: AppTextStyles.labelSmall.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            fontWeight: FontWeight.w700,
             fontSize: 11,
             color: AppColors.enterpriseTextMain,
           ),
@@ -300,9 +282,9 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
   Widget _buildBulletList(List<String> items) {
     final validItems = items.where((e) => e.trim().isNotEmpty).toList();
     if (validItems.isEmpty) {
-      return const Align(
+      return Align(
         alignment: Alignment.centerLeft,
-        child: Text('• -', style: TextStyle(fontSize: 11)),
+        child: Text('• -', style: _documentBodyStyle),
       );
     }
     return Column(
@@ -314,16 +296,13 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '• ',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                  ),
-                  Expanded(
-                    child: Text(
-                      e,
-                      style: const TextStyle(fontSize: 11, height: 1.3),
+                    style: _documentBodyStyle.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  Expanded(child: Text(e, style: _documentBodyStyle)),
                 ],
               ),
             ),
@@ -390,12 +369,12 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                           ),
                         )
                       : const Icon(Icons.send, size: 18, color: Colors.white),
-                  label: const Text(
+                  label: Text(
                     'SUBMIT LAPORAN SEKARANG',
-                    style: TextStyle(
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontFamily: AppTextStyles.enterpriseFontFamily,
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -426,12 +405,12 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                     color: AppColors.enterpriseTextMain,
                     size: 16,
                   ),
-                  label: const Text(
+                  label: Text(
                     'Kembali & Edit Form',
-                    style: TextStyle(
+                    style: AppTextStyles.labelMedium.copyWith(
+                      fontFamily: AppTextStyles.enterpriseFontFamily,
                       color: AppColors.enterpriseTextMain,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -441,7 +420,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
         ),
       );
     } else {
-      // Mode Final / Preview (Mockup 2 buttons layout)
+      // Mode Final / Preview: only expose capabilities supported locally.
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: const BoxDecoration(color: AppColors.enterpriseSurface),
@@ -449,193 +428,11 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Button 1: Download / print the locally generated PDF.
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.enterprisePrimary,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadii.pill,
-                    ),
-                    elevation: 0,
-                    minimumSize: const Size.fromHeight(46),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                    ),
-                  ),
-                  onPressed: _isBusy
-                      ? null
-                      : () async {
-                          if (_isBusy) return;
-                          setState(() => _isPdfBusy = true);
-                          try {
-                            await BaPdfGenerator.printAndShare(monitoring);
-                          } catch (_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Gagal menyiapkan PDF. Coba lagi.',
-                                  ),
-                                ),
-                              );
-                            }
-                          } finally {
-                            if (mounted) setState(() => _isPdfBusy = false);
-                          }
-                        },
-                  icon: _isPdfBusy
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(
-                          Icons.file_download,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                  label: Text(
-                    _isPdfBusy ? 'Menyiapkan PDF...' : 'Download / Cetak PDF',
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Sharing remains a general platform action; no channel is fabricated.
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      color: AppColors.enterpriseSuccess,
-                      width: 1.2,
-                    ),
-                    minimumSize: const Size.fromHeight(46),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                    ),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadii.pill,
-                    ),
-                  ),
-                  onPressed: _isBusy
-                      ? null
-                      : () async {
-                          if (_isBusy) return;
-                          setState(() => _isShareBusy = true);
-                          final teks =
-                              'RINGKASAN BERITA ACARA MONITORING (DIBUAT LOKAL)\n'
-                              'Perumahan: ${monitoring.namaPerumahan}\n'
-                              'Nomor BA: ${monitoring.nomorSuratBA}\n'
-                              'Status: ${monitoring.statusHasilEvaluasi.label}';
-                          try {
-                            await SharePlus.instance.share(
-                              ShareParams(text: teks),
-                            );
-                          } catch (_) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Gagal membuka menu berbagi.'),
-                                ),
-                              );
-                            }
-                          } finally {
-                            if (mounted) {
-                              setState(() => _isShareBusy = false);
-                            }
-                          }
-                        },
-                  icon: const Icon(
-                    Icons.near_me,
-                    color: AppColors.enterpriseSuccess,
-                    size: 16,
-                  ),
-                  label: Text(
-                    _isShareBusy
-                        ? 'Membuka menu berbagi...'
-                        : 'Bagikan ringkasan',
-                    style: AppTextStyles.labelLarge.copyWith(
-                      fontFamily: AppTextStyles.enterpriseFontFamily,
-                      color: AppColors.enterpriseSuccess,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      color: AppColors.enterpriseBorder,
-                      width: 1.2,
-                    ),
-                    minimumSize: const Size.fromHeight(42),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                    ),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadii.pill,
-                    ),
-                  ),
-                  onPressed: null,
-                  icon: const Icon(
-                    Icons.email_outlined,
-                    color: AppColors.enterpriseTextMain,
-                    size: 16,
-                  ),
-                  label: Text(
-                    'Email: Belum tersedia',
-                    style: AppTextStyles.labelLarge.copyWith(
-                      fontFamily: AppTextStyles.enterpriseFontFamily,
-                      color: AppColors.enterpriseTextMuted,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              // Button 4: Simpan ke Arsip Sistem (Red Outlined Pill)
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      color: AppColors.enterprisePrimary,
-                      width: 1.2,
-                    ),
-                    minimumSize: const Size.fromHeight(42),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                    ),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadii.pill,
-                    ),
-                  ),
-                  onPressed: null,
-                  icon: const Icon(
-                    Icons.archive_outlined,
-                    color: AppColors.enterpriseTextMuted,
-                    size: 16,
-                  ),
-                  label: const Text(
-                    'Arsip Sistem: Belum tersedia',
-                    style: TextStyle(
-                      color: AppColors.enterpriseTextMuted,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
+              BeritaAcaraActionButtons(
+                isPdfBusy: _isPdfBusy,
+                isShareBusy: _isShareBusy,
+                onPdf: () => _printPdf(context, monitoring),
+                onShare: () => _shareSummary(context, monitoring),
               ),
             ],
           ),
@@ -648,6 +445,28 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
     fontFamily: AppTextStyles.enterpriseFontFamily,
     height: 1.45,
     color: AppColors.enterpriseTextMain,
+  );
+
+  static TextStyle get _documentHeadingStyle =>
+      AppTextStyles.labelSmall.copyWith(
+        fontFamily: AppTextStyles.enterpriseFontFamily,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.5,
+        color: AppColors.enterpriseTextMain,
+      );
+
+  static TextStyle get _documentTitleStyle =>
+      AppTextStyles.titleMedium.copyWith(
+        fontFamily: AppTextStyles.enterpriseFontFamily,
+        fontWeight: FontWeight.w700,
+        height: 1.2,
+        color: AppColors.enterpriseTextMain,
+      );
+
+  static TextStyle get _documentMetaStyle => AppTextStyles.labelSmall.copyWith(
+    fontFamily: AppTextStyles.enterpriseFontFamily,
+    color: AppColors.enterpriseTextMuted,
+    fontWeight: FontWeight.w600,
   );
 
   bool _hasSignatoryData(MonitoringModel item) =>
@@ -707,4 +526,47 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
   );
 
   bool get _isBusy => _isPdfBusy || _isShareBusy;
+
+  Future<void> _printPdf(
+    BuildContext context,
+    MonitoringModel monitoring,
+  ) async {
+    if (_isBusy) return;
+    setState(() => _isPdfBusy = true);
+    try {
+      await BaPdfGenerator.printAndShare(monitoring);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menyiapkan PDF. Coba lagi.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPdfBusy = false);
+    }
+  }
+
+  Future<void> _shareSummary(
+    BuildContext context,
+    MonitoringModel monitoring,
+  ) async {
+    if (_isBusy) return;
+    setState(() => _isShareBusy = true);
+    final text =
+        'RINGKASAN BERITA ACARA MONITORING (DIBUAT LOKAL)\n'
+        'Perumahan: ${monitoring.namaPerumahan}\n'
+        'Nomor BA: ${monitoring.nomorSuratBA}\n'
+        'Status: ${monitoring.statusHasilEvaluasi.label}';
+    try {
+      await SharePlus.instance.share(ShareParams(text: text));
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal membuka menu berbagi.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isShareBusy = false);
+    }
+  }
 }

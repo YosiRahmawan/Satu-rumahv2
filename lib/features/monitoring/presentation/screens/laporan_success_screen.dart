@@ -8,6 +8,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
+import '../widgets/berita_acara_action_buttons.dart';
 import '../../utils/ba_pdf_generator.dart';
 
 class LaporanSuccessScreen extends StatefulWidget {
@@ -52,7 +53,7 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
           ),
         ),
         title: Text(
-          'Berita Acara Generated',
+          'Berita Acara Monitoring',
           style: AppTextStyles.titleLarge.copyWith(
             fontFamily: AppTextStyles.enterpriseFontFamily,
             fontWeight: FontWeight.w700,
@@ -127,7 +128,7 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Icon(
-              Icons.account_balance,
+              Icons.shield_outlined,
               color: AppColors.enterprisePrimary,
               size: 32,
             ),
@@ -146,6 +147,30 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              color: AppColors.enterpriseWarningSurface,
+              borderRadius: AppRadii.pill,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              child: Text(
+                'DOKUMEN LOKAL • BELUM DITERBITKAN',
+                style: AppTextStyles.labelSmall.copyWith(
+                  fontFamily: AppTextStyles.enterpriseFontFamily,
+                  color: AppColors.enterpriseWarning,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
         ),
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
@@ -166,7 +191,39 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
         _dataRow('Status', item.statusHasilEvaluasi.label),
         if (item.namaDeveloper.isNotEmpty)
           _dataRow('Pengembang', item.namaDeveloper),
+        if (_hasIdentityData(item)) ...[
+          const SizedBox(height: AppSpacing.sm),
+          const Divider(color: AppColors.enterpriseBorder),
+          const SizedBox(height: AppSpacing.sm),
+          Text('Identitas pihak yang tercatat', style: _labelStyle(true)),
+          if (item.pelaksanaNama.trim().isNotEmpty)
+            _identityRow(
+              'Pelaksana',
+              item.pelaksanaNama,
+              item.pelaksanaJabatan,
+            ),
+          if (item.ditemuiNama.trim().isNotEmpty)
+            _identityRow('Ditemui', item.ditemuiNama, item.ditemuiJabatan),
+        ],
       ],
+    ),
+  );
+
+  bool _hasIdentityData(MonitoringModel item) =>
+      item.pelaksanaNama.trim().isNotEmpty ||
+      item.ditemuiNama.trim().isNotEmpty;
+
+  Widget _identityRow(String label, String name, String role) => Padding(
+    padding: const EdgeInsets.only(top: AppSpacing.xs),
+    child: Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: '$label: ', style: _smallMutedStyle),
+          TextSpan(text: name, style: _valueStyle),
+          if (role.trim().isNotEmpty)
+            TextSpan(text: ' ($role)', style: _smallMutedStyle),
+        ],
+      ),
     ),
   );
 
@@ -184,55 +241,11 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
 
   Widget _buildActions(BuildContext context, MonitoringModel item) => Column(
     children: [
-      SizedBox(
-        width: double.infinity,
-        child: ElevatedButton.icon(
-          onPressed: _isBusy ? null : () => _printPdf(context, item),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.enterprisePrimary,
-            foregroundColor: Colors.white,
-            minimumSize: const Size.fromHeight(52),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
-          ),
-          icon: _isPdfBusy
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-              : const Icon(Icons.picture_as_pdf),
-          label: Text(
-            _isPdfBusy ? 'Menyiapkan PDF...' : 'Download / Cetak PDF',
-          ),
-        ),
-      ),
-      const SizedBox(height: 10),
-      SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          onPressed: _isBusy ? null : () => _shareSummary(context, item),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.enterpriseSuccess,
-            side: const BorderSide(color: AppColors.enterpriseSuccess),
-            minimumSize: const Size.fromHeight(50),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
-          ),
-          icon: _isShareBusy
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.share),
-          label: Text(
-            _isShareBusy ? 'Membuka menu berbagi...' : 'Bagikan ringkasan',
-          ),
-        ),
+      BeritaAcaraActionButtons(
+        isPdfBusy: _isPdfBusy,
+        isShareBusy: _isShareBusy,
+        onPdf: () => _printPdf(context, item),
+        onShare: () => _shareSummary(context, item),
       ),
       const SizedBox(height: 18),
       TextButton.icon(

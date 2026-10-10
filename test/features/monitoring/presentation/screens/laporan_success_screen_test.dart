@@ -63,6 +63,34 @@ void main() {
     expect(find.text('Riwayat Monitoring'), findsOneWidget);
   });
 
+  testWidgets('shows recorded identities without inventing QR or signature', (
+    tester,
+  ) async {
+    final monitoring = _monitoring().copyWith(
+      pelaksanaNama: 'Petugas Uji',
+      pelaksanaJabatan: 'Pengawas Lapangan',
+    );
+    final router = GoRouter(
+      initialLocation: '/success',
+      routes: [
+        GoRoute(
+          path: '/success',
+          builder: (_, __) => LaporanSuccessScreen(monitoring: monitoring),
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(size: Size(360, 800)),
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+
+    expect(find.text('Identitas pihak yang tercatat'), findsOneWidget);
+    expect(find.textContaining('Petugas Uji'), findsOneWidget);
+    expect(find.byIcon(Icons.qr_code), findsNothing);
+  });
+
   testWidgets('fits 360dp and 412dp at 200 percent text scale', (tester) async {
     for (final width in [360.0, 412.0]) {
       await tester.binding.setSurfaceSize(Size(width, 800));
