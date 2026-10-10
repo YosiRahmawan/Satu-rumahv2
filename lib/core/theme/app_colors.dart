@@ -48,4 +48,21 @@ class AppColors {
   static const Color surfaceSuccess = Color(0xFFE2EED7);
   static const Color surfaceInfo = Color(0xFFE8E3CB);
   static const Color surfaceMuted = Color(0xFFF0EFEA);
+
+  // Enterprise Red & White aliases used by newer mobile surfaces.
+  // Existing role screens keep their legacy aliases until they are migrated.
+  static const Color enterprisePrimary = Color(0xFFB91C1C);
+  static const Color enterprisePrimaryDark = Color(0xFF881337);
+  static const Color enterpriseCanvas = Color(0xFFF8FAFC);
+  static const Color enterpriseSurface = Color(0xFFFFFFFF);
+  static const Color enterpriseBorder = Color(0xFFE2E8F0);
+  static const Color enterpriseTextMain = Color(0xFF0F172A);
+  static const Color enterpriseTextMuted = Color(0xFF64748B);
+  static const Color enterprisePrimarySurface = Color(0xFFFEE2E2);
+  static const Color enterprisePrimarySurfaceSoft = Color(0xFFFFF1F2);
+  static const Color enterprisePrimaryBorder = Color(0xFFFECDD3);
+  static const Color enterpriseSuccess = Color(0xFF16A34A);
+  static const Color enterpriseSuccessSurface = Color(0xFFDCFCE7);
+  static const Color enterpriseWarning = Color(0xFFB45309);
+  static const Color enterpriseWarningSurface = Color(0xFFFEF3C7);
 }

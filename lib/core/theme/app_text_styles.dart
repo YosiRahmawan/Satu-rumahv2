@@ -3,6 +3,7 @@ import 'app_colors.dart';
 
 class AppTextStyles {
   static const String fontFamily = 'Inter';
+  static const String enterpriseFontFamily = 'Plus Jakarta Sans';
 
   // Display Styles
   static const TextStyle displayLarge = TextStyle(

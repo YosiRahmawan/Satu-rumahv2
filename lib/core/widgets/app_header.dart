@@ -20,6 +20,11 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   final VoidCallback? onBackPressed;
   final bool showNotifications;
   final List<Widget> actions;
+  final bool showAuthorityIcon;
+  final bool authorityGradient;
+  final bool uppercaseAuthoritySubtitle;
+  final double height;
+  final BorderRadius? bottomRadius;
 
   const AppHeader({
     super.key,
@@ -30,10 +35,15 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
     this.onBackPressed,
     this.showNotifications = true,
     this.actions = const [],
+    this.showAuthorityIcon = true,
+    this.authorityGradient = false,
+    this.uppercaseAuthoritySubtitle = true,
+    this.height = 70,
+    this.bottomRadius,
   });
 
   @override
-  Size get preferredSize => const Size.fromHeight(70);
+  Size get preferredSize => Size.fromHeight(height);
 
   void _goToNotifications(BuildContext context, WidgetRef ref) {
     switch (ref.read(roleSessionProvider).role) {
@@ -123,76 +133,107 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
     final unreadCount = ref.watch(unreadNotifikasiCountProvider);
     final authority = variant == AppHeaderVariant.authority;
 
+    final radius = bottomRadius ?? BorderRadius.zero;
+    final authorityDecoration = authorityGradient
+        ? BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppColors.enterprisePrimary,
+                AppColors.enterprisePrimaryDark,
+              ],
+            ),
+            borderRadius: radius,
+          )
+        : BoxDecoration(
+            color: authority ? AppColors.brandPrimary : AppColors.surface,
+            borderRadius: radius,
+          );
+
     return Material(
-      color: authority ? AppColors.brandPrimary : AppColors.surface,
+      color: Colors.transparent,
       elevation: authority ? 0 : 0.5,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
       child: SafeArea(
         bottom: false,
-        child: SizedBox(
-          height: 70,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Row(
-              children: [
-                if (showBackButton)
-                  IconButton(
-                    onPressed: () => _goBack(context, ref),
-                    tooltip: 'Kembali',
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: authority ? Colors.white : AppColors.textPrimary,
-                    ),
-                  )
-                else if (authority)
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.16),
-                      borderRadius: AppRadii.pill,
-                    ),
-                    child: const Icon(
-                      Icons.shield_outlined,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                if (authority || showBackButton)
-                  const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (subtitle != null && subtitle!.isNotEmpty)
-                        Text(
-                          authority ? subtitle!.toUpperCase() : subtitle!,
-                          style: authority
-                              ? AppTextStyles.labelSmall.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.88),
-                                  letterSpacing: 0.8,
-                                )
-                              : AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.textMuted,
-                                ),
-                        ),
-                      Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: authority
-                            ? AppTextStyles.headlineSmall.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              )
-                            : AppTextStyles.headlineLarge,
+        child: DecoratedBox(
+          decoration: authorityDecoration,
+          child: SizedBox(
+            height: height,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Row(
+                children: [
+                  if (showBackButton)
+                    IconButton(
+                      onPressed: () => _goBack(context, ref),
+                      tooltip: 'Kembali',
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: authority ? Colors.white : AppColors.textPrimary,
                       ),
-                    ],
+                    )
+                  else if (authority && showAuthorityIcon)
+                    Container(
+                      padding: const EdgeInsets.all(AppSpacing.sm),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: AppRadii.pill,
+                      ),
+                      child: const Icon(
+                        Icons.shield_outlined,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  if ((authority && showAuthorityIcon) || showBackButton)
+                    const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (subtitle != null && subtitle!.isNotEmpty)
+                          Text(
+                            authority && uppercaseAuthoritySubtitle
+                                ? subtitle!.toUpperCase()
+                                : subtitle!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: authority
+                                ? AppTextStyles.labelSmall.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.88),
+                                    letterSpacing: 0.2,
+                                    fontFamily:
+                                        AppTextStyles.enterpriseFontFamily,
+                                  )
+                                : AppTextStyles.bodySmall.copyWith(
+                                    color: AppColors.textMuted,
+                                  ),
+                          ),
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: authority
+                              ? AppTextStyles.headlineSmall.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontFamily:
+                                      AppTextStyles.enterpriseFontFamily,
+                                )
+                              : AppTextStyles.headlineLarge,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                ...actions,
-                if (showNotifications)
-                  _notificationAction(context, ref, unreadCount),
-              ],
+                  ...actions,
+                  if (showNotifications)
+                    _notificationAction(context, ref, unreadCount),
+                ],
+              ),
             ),
           ),
         ),
