@@ -44,6 +44,8 @@ void main() {
   ) async {
     await tester.pumpWidget(_app());
     expect(find.text('Berita Acara Generated'), findsOneWidget);
+    expect(find.text('Berita Acara Lokal Siap'), findsOneWidget);
+    expect(find.textContaining('belum diterbitkan'), findsOneWidget);
     expect(find.text('Perumahan Uji'), findsOneWidget);
     expect(find.text('Jl. Karikil, Cipari'), findsOneWidget);
     expect(find.text('BA/2026/001'), findsOneWidget);

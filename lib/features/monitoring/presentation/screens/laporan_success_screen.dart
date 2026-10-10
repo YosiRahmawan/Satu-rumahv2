@@ -23,7 +23,7 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
   bool _isPdfBusy = false;
   bool _isShareBusy = false;
 
-  TextStyle get _titleStyle => AppTextStyles.h2.copyWith(
+  TextStyle get _titleStyle => AppTextStyles.headlineLarge.copyWith(
     fontFamily: AppTextStyles.enterpriseFontFamily,
     color: AppColors.enterpriseTextMain,
   );
@@ -97,13 +97,13 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
       ),
       const SizedBox(height: 20),
       Text(
-        'Laporan Berhasil Dibuat!',
+        'Berita Acara Lokal Siap',
         style: _titleStyle,
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 8),
       Text(
-        'Berita Acara monitoring untuk ${item.namaPerumahan} telah dibuat secara lokal dan siap dipreview atau dibagikan.',
+        'Berita Acara monitoring untuk ${item.namaPerumahan} telah dibuat di perangkat ini dan siap dipreview atau dibagikan sebagai ringkasan. Dokumen belum diterbitkan atau dikonfirmasi server.',
         style: _bodyStyle,
         textAlign: TextAlign.center,
       ),
@@ -186,7 +186,7 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
         width: double.infinity,
         height: 52,
         child: ElevatedButton.icon(
-          onPressed: _isPdfBusy ? null : () => _printPdf(context, item),
+          onPressed: _isBusy ? null : () => _printPdf(context, item),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.enterprisePrimary,
             foregroundColor: Colors.white,
@@ -212,7 +212,7 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
         width: double.infinity,
         height: 50,
         child: OutlinedButton.icon(
-          onPressed: _isShareBusy ? null : () => _shareSummary(context, item),
+          onPressed: _isBusy ? null : () => _shareSummary(context, item),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.enterpriseSuccess,
             side: const BorderSide(color: AppColors.enterpriseSuccess),
@@ -247,31 +247,37 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
   );
 
   Future<void> _printPdf(BuildContext context, MonitoringModel item) async {
+    if (_isBusy) return;
     setState(() => _isPdfBusy = true);
     try {
       await BaPdfGenerator.printAndShare(item);
     } catch (_) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, 'PDF belum dapat disiapkan. Coba lagi.');
+      }
     } finally {
       if (mounted) setState(() => _isPdfBusy = false);
     }
   }
 
   Future<void> _shareSummary(BuildContext context, MonitoringModel item) async {
+    if (_isBusy) return;
     setState(() => _isShareBusy = true);
     try {
       await SharePlus.instance.share(ShareParams(text: _shareText(item)));
     } catch (_) {
-      if (context.mounted)
+      if (context.mounted) {
         _showError(context, 'Menu berbagi tidak dapat dibuka. Coba lagi.');
+      }
     } finally {
       if (mounted) setState(() => _isShareBusy = false);
     }
   }
 
   String _shareText(MonitoringModel item) =>
-      'BERITA ACARA MONITORING LAPANGAN\nPerumahan: ${item.namaPerumahan}\nNomor BA: ${item.nomorSuratBA}\nStatus: ${item.statusHasilEvaluasi.label}';
+      'RINGKASAN BERITA ACARA MONITORING (DIBUAT LOKAL)\nPerumahan: ${item.namaPerumahan}\nNomor BA: ${item.nomorSuratBA}\nStatus: ${item.statusHasilEvaluasi.label}';
+
+  bool get _isBusy => _isPdfBusy || _isShareBusy;
 
   void _showError(BuildContext context, String message) => ScaffoldMessenger.of(
     context,

@@ -70,9 +70,9 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
     final monitoring = widget.monitoring;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.enterpriseCanvas,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColors.enterpriseCanvas,
         elevation: 0,
         centerTitle: true,
         leading: Padding(
@@ -89,12 +89,12 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
             child: Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: AppColors.grey300),
-                color: Colors.white,
+                border: Border.all(color: AppColors.enterpriseBorder),
+                color: AppColors.enterpriseSurface,
               ),
               child: const Icon(
                 Icons.close,
-                color: AppColors.cocoaBeanRoast,
+                color: AppColors.enterpriseTextMain,
                 size: 18,
               ),
             ),
@@ -125,221 +125,228 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
 
   Widget _buildBeritaAcaraDocument(MonitoringModel item) {
     final fullDateSentence = _formatFullIndonesianDate(item.tanggalMonitoring);
-    final perumahanFormatted = _sanitizePerumahan(
-      item.namaPerumahan.isNotEmpty ? item.namaPerumahan : 'Perumahan Contoh',
-    );
+    final perumahanFormatted = item.namaPerumahan.isNotEmpty
+        ? _sanitizePerumahan(item.namaPerumahan)
+        : 'nama perumahan yang belum diisi';
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: AppRadii.card,
+    return DefaultTextStyle(
+      style: AppTextStyles.bodySmall.copyWith(
+        fontFamily: AppTextStyles.enterpriseFontFamily,
+        color: AppColors.enterpriseTextMain,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Kop Surat Disperwaskim
-          const Text(
-            'PEMERINTAH KOTA TASIKMALAYA',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          const Text(
-            'DINAS PERUMAHAN DAN KAWASAN PERMUKIMAN',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 8),
-
-          // Judul Dokumen & Nomor BA
-          const Text(
-            'BERITA ACARA MONITORING\nDAN EVALUASI LAPANGAN',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
-              color: AppColors.cocoaBeanRoast,
-              height: 1.2,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Nomor: ${item.nomorSuratBA}',
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.grey700,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 6),
-          const Divider(thickness: 1.5, color: AppColors.cocoaBeanRoast),
-          const SizedBox(height: 16),
-
-          // Paragraf Pembuka
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Pada hari ini, $fullDateSentence, telah dilakukan monitoring pada $perumahanFormatted.',
-              style: const TextStyle(fontSize: 11, height: 1.5),
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Poin I: Temuan di Lapangan
-          _buildSectionTitle('I. Temuan di Lapangan'),
-          _buildBulletList(item.temuanLapangan),
-          const SizedBox(height: 12),
-
-          // Poin II: Kesimpulan
-          _buildSectionTitle('II. Kesimpulan'),
-          _buildBulletList(item.kesimpulan),
-          const SizedBox(height: 12),
-
-          // Poin III: Kesepakatan
-          _buildSectionTitle('III. Kesepakatan'),
-          _buildBulletList(item.kesepakatan),
-          const SizedBox(height: 12),
-
-          // Poin IV: Rencana Tindak Lanjut
-          _buildSectionTitle('IV. Rencana Tindak Lanjut'),
-          _buildBulletList(item.rencanaTindakLanjut),
-          const SizedBox(height: 16),
-
-          // Grid Foto Evidence
-          if (item.photoPaths.isNotEmpty) ...[
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 6,
-                mainAxisSpacing: 6,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: AppColors.enterpriseSurface,
+          borderRadius: AppRadii.card,
+          border: Border.all(color: AppColors.enterpriseBorder),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Kop Surat Disperwaskim
+            const Text(
+              'PEMERINTAH KOTA TASIKMALAYA',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
               ),
-              itemCount: item.photoPaths.length,
-              itemBuilder: (context, index) {
-                final path = item.photoPaths[index];
-                final isUrl = path.startsWith('http');
-                return ClipRRect(
-                  borderRadius: AppRadii.small,
-                  child: isUrl
-                      ? Image.network(
-                          path,
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => Container(
-                            color: AppColors.grey200,
-                            child: const Icon(
-                              Icons.image,
-                              color: AppColors.textMuted,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            const Text(
+              'DINAS PERUMAHAN DAN KAWASAN PERMUKIMAN',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+
+            // Judul Dokumen & Nomor BA
+            const Text(
+              'BERITA ACARA MONITORING\nDAN EVALUASI LAPANGAN',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.enterpriseTextMain,
+                height: 1.2,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Nomor: ${item.nomorSuratBA}',
+              style: const TextStyle(
+                fontSize: 10,
+                color: AppColors.enterpriseTextMuted,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            const Divider(thickness: 1.5, color: AppColors.enterpriseTextMain),
+            const SizedBox(height: 16),
+
+            // Paragraf Pembuka
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Pada hari ini, $fullDateSentence, telah dilakukan monitoring pada $perumahanFormatted.',
+                style: const TextStyle(fontSize: 11, height: 1.5),
+              ),
+            ),
+            const SizedBox(height: 14),
+
+            // Poin I: Temuan di Lapangan
+            _buildSectionTitle('I. Temuan di Lapangan'),
+            _buildBulletList(item.temuanLapangan),
+            const SizedBox(height: 12),
+
+            // Poin II: Kesimpulan
+            _buildSectionTitle('II. Kesimpulan'),
+            _buildBulletList(item.kesimpulan),
+            const SizedBox(height: 12),
+
+            // Poin III: Kesepakatan
+            _buildSectionTitle('III. Kesepakatan'),
+            _buildBulletList(item.kesepakatan),
+            const SizedBox(height: 12),
+
+            // Poin IV: Rencana Tindak Lanjut
+            _buildSectionTitle('IV. Rencana Tindak Lanjut'),
+            _buildBulletList(item.rencanaTindakLanjut),
+            const SizedBox(height: 16),
+
+            // Grid Foto Evidence
+            if (item.photoPaths.isNotEmpty) ...[
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 6,
+                  mainAxisSpacing: 6,
+                ),
+                itemCount: item.photoPaths.length,
+                itemBuilder: (context, index) {
+                  final path = item.photoPaths[index];
+                  final isUrl = path.startsWith('http');
+                  return ClipRRect(
+                    borderRadius: AppRadii.small,
+                    child: isUrl
+                        ? Image.network(
+                            path,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, stack) => Container(
+                              color: AppColors.enterpriseBorder,
+                              child: const Icon(
+                                Icons.image,
+                                color: AppColors.enterpriseTextMuted,
+                              ),
+                            ),
+                          )
+                        : Image.asset(
+                            path,
+                            fit: BoxFit.cover,
+                            errorBuilder: (ctx, err, stack) => Container(
+                              color: AppColors.enterpriseBorder,
+                              child: const Icon(
+                                Icons.image,
+                                color: AppColors.enterpriseTextMuted,
+                              ),
                             ),
                           ),
-                        )
-                      : Image.asset(
-                          path,
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => Container(
-                            color: AppColors.grey200,
-                            child: const Icon(
-                              Icons.image,
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                        ),
-                );
-              },
-            ),
-            const SizedBox(height: 24),
-          ],
-
-          const Divider(thickness: 1, color: AppColors.grey300),
-          const SizedBox(height: 16),
-
-          // Kolom Tanda Tangan Fisik (2 Kolom Sejajar)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Yang Melaksanakan\nObservasi',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 36),
-                    Text(
-                      item.pelaksanaNama.isNotEmpty
-                          ? item.pelaksanaNama
-                          : '( _________________ )',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (item.pelaksanaJabatan.isNotEmpty)
-                      Text(
-                        item.pelaksanaJabatan,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: AppColors.grey700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                  ],
-                ),
+                  );
+                },
               ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Text(
-                      'Yang Ditemui\ndi Lapangan',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 36),
-                    Text(
-                      item.ditemuiNama.isNotEmpty
-                          ? item.ditemuiNama
-                          : '( _________________ )',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    if (item.ditemuiJabatan.isNotEmpty)
-                      Text(
-                        item.ditemuiJabatan,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: AppColors.grey700,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 24),
             ],
-          ),
-        ],
+
+            const Divider(thickness: 1, color: AppColors.enterpriseBorder),
+            const SizedBox(height: 16),
+
+            // Kolom Tanda Tangan Fisik (2 Kolom Sejajar)
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Yang Melaksanakan\nObservasi',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 36),
+                      Text(
+                        item.pelaksanaNama.isNotEmpty
+                            ? item.pelaksanaNama
+                            : 'Belum tersedia',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (item.pelaksanaJabatan.isNotEmpty)
+                        Text(
+                          item.pelaksanaJabatan,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: AppColors.enterpriseTextMuted,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Yang Ditemui\ndi Lapangan',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 36),
+                      Text(
+                        item.ditemuiNama.isNotEmpty
+                            ? item.ditemuiNama
+                            : 'Belum tersedia',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (item.ditemuiJabatan.isNotEmpty)
+                        Text(
+                          item.ditemuiJabatan,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            color: AppColors.enterpriseTextMuted,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -354,7 +361,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 11,
-            color: AppColors.cocoaBeanRoast,
+            color: AppColors.enterpriseTextMain,
           ),
         ),
       ),
@@ -402,7 +409,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
       // Mode Draft (Before submit)
       return Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(color: Colors.white),
+        decoration: const BoxDecoration(color: AppColors.enterpriseSurface),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -412,7 +419,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                 height: 48,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.actionPrimary,
+                    backgroundColor: AppColors.enterprisePrimary,
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.pill),
                   ),
                   onPressed: formState.isSubmitting
@@ -434,7 +441,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                                   result.errorMessage ??
                                       'Laporan gagal dikirim.',
                                 ),
-                                backgroundColor: AppColors.actionPrimary,
+                                backgroundColor: AppColors.enterprisePrimary,
                               ),
                             );
                           }
@@ -465,7 +472,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                 height: 42,
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.grey400),
+                    side: const BorderSide(color: AppColors.enterpriseBorder),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.pill),
                   ),
                   onPressed: () {
@@ -477,13 +484,13 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                   },
                   icon: const Icon(
                     Icons.edit,
-                    color: AppColors.cocoaBeanRoast,
+                    color: AppColors.enterpriseTextMain,
                     size: 16,
                   ),
                   label: const Text(
                     'Kembali & Edit Form',
                     style: TextStyle(
-                      color: AppColors.cocoaBeanRoast,
+                      color: AppColors.enterpriseTextMain,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -498,7 +505,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
       // Mode Final / Preview (Mockup 2 buttons layout)
       return Container(
         padding: const EdgeInsets.all(16),
-        decoration: const BoxDecoration(color: Colors.white),
+        decoration: const BoxDecoration(color: AppColors.enterpriseSurface),
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -509,13 +516,14 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                 height: 46,
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.actionPrimary,
+                    backgroundColor: AppColors.enterprisePrimary,
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.pill),
                     elevation: 0,
                   ),
-                  onPressed: _isPdfBusy
+                  onPressed: _isBusy
                       ? null
                       : () async {
+                          if (_isBusy) return;
                           setState(() => _isPdfBusy = true);
                           try {
                             await BaPdfGenerator.printAndShare(monitoring);
@@ -563,19 +571,20 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(
-                            color: AppColors.statusSuccess,
+                            color: AppColors.enterpriseSuccess,
                             width: 1.2,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: AppRadii.pill,
                           ),
                         ),
-                        onPressed: _isShareBusy
+                        onPressed: _isBusy
                             ? null
                             : () async {
+                                if (_isBusy) return;
                                 setState(() => _isShareBusy = true);
                                 final teks =
-                                    'BERITA ACARA MONITORING LAPANGAN\n'
+                                    'RINGKASAN BERITA ACARA MONITORING (DIBUAT LOKAL)\n'
                                     'Perumahan: ${monitoring.namaPerumahan}\n'
                                     'Nomor BA: ${monitoring.nomorSuratBA}\n'
                                     'Status: ${monitoring.statusHasilEvaluasi.label}';
@@ -594,19 +603,20 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                                     );
                                   }
                                 } finally {
-                                  if (mounted)
+                                  if (mounted) {
                                     setState(() => _isShareBusy = false);
+                                  }
                                 }
                               },
                         icon: const Icon(
                           Icons.near_me,
-                          color: AppColors.statusSuccess,
+                          color: AppColors.enterpriseSuccess,
                           size: 16,
                         ),
                         label: const Text(
                           'Bagikan ringkasan',
                           style: TextStyle(
-                            color: AppColors.statusSuccess,
+                            color: AppColors.enterpriseSuccess,
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                           ),
@@ -621,7 +631,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(
-                            color: AppColors.grey400,
+                            color: AppColors.enterpriseBorder,
                             width: 1.2,
                           ),
                           shape: RoundedRectangleBorder(
@@ -631,13 +641,13 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                         onPressed: null,
                         icon: const Icon(
                           Icons.email_outlined,
-                          color: AppColors.cocoaBeanRoast,
+                          color: AppColors.enterpriseTextMain,
                           size: 16,
                         ),
                         label: const Text(
                           'Email: Belum tersedia',
                           style: TextStyle(
-                            color: AppColors.textMuted,
+                            color: AppColors.enterpriseTextMuted,
                             fontWeight: FontWeight.bold,
                             fontSize: 11,
                           ),
@@ -656,7 +666,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(
-                      color: AppColors.actionPrimary,
+                      color: AppColors.enterprisePrimary,
                       width: 1.2,
                     ),
                     shape: RoundedRectangleBorder(borderRadius: AppRadii.pill),
@@ -664,13 +674,13 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                   onPressed: null,
                   icon: const Icon(
                     Icons.archive_outlined,
-                    color: AppColors.textMuted,
+                    color: AppColors.enterpriseTextMuted,
                     size: 16,
                   ),
                   label: const Text(
                     'Arsip Sistem: Belum tersedia',
                     style: TextStyle(
-                      color: AppColors.textMuted,
+                      color: AppColors.enterpriseTextMuted,
                       fontWeight: FontWeight.bold,
                       fontSize: 12,
                     ),
@@ -683,4 +693,6 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
       );
     }
   }
+
+  bool get _isBusy => _isPdfBusy || _isShareBusy;
 }
