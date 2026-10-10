@@ -51,14 +51,14 @@ void main() {
   ) async {
     await tester.pumpWidget(_app());
 
-    expect(find.text('Preview Berita Acara'), findsOneWidget);
+    expect(find.text('Berita Acara Monitoring'), findsOneWidget);
     expect(find.text('Perumahan Preview Uji'), findsOneWidget);
     expect(find.text('BA/PREVIEW/001'), findsOneWidget);
     expect(find.text('Temuan model'), findsOneWidget);
     expect(find.text('Download / Cetak PDF'), findsOneWidget);
     expect(find.text('Bagikan ringkasan'), findsOneWidget);
-    expect(find.text('Email: Belum tersedia'), findsOneWidget);
-    expect(find.text('Arsip Sistem: Belum tersedia'), findsOneWidget);
+    expect(find.text('Email: Belum tersedia'), findsNothing);
+    expect(find.text('Arsip Sistem: Belum tersedia'), findsNothing);
     expect(find.textContaining('Download Word'), findsNothing);
     expect(find.byIcon(Icons.qr_code), findsNothing);
     expect(find.textContaining('_________________'), findsNothing);
@@ -70,9 +70,23 @@ void main() {
   ) async {
     for (final width in [360.0, 412.0]) {
       await tester.binding.setSurfaceSize(Size(width, 800));
-      await tester.pumpWidget(_app(size: Size(width, 800), textScale: 2));
-      await tester.pumpAndSettle();
+      final overflowErrors = <String>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        final message = details.exceptionAsString();
+        if (message.contains('overflowed')) {
+          overflowErrors.add(message);
+        }
+        previousOnError?.call(details);
+      };
+      try {
+        await tester.pumpWidget(_app(size: Size(width, 800), textScale: 2));
+        await tester.pumpAndSettle();
+      } finally {
+        FlutterError.onError = previousOnError;
+      }
       expect(tester.takeException(), isNull);
+      expect(overflowErrors, isEmpty);
       expect(find.byType(OverflowBar), findsNothing);
     }
     await tester.binding.setSurfaceSize(null);

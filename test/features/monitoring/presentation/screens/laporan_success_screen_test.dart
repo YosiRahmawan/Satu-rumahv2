@@ -43,7 +43,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(_app());
-    expect(find.text('Berita Acara Generated'), findsOneWidget);
+    expect(find.text('Berita Acara Monitoring'), findsOneWidget);
     expect(find.text('Berita Acara Lokal Siap'), findsOneWidget);
     expect(find.textContaining('belum diterbitkan'), findsOneWidget);
     expect(find.text('Perumahan Uji'), findsOneWidget);
@@ -94,9 +94,23 @@ void main() {
   testWidgets('fits 360dp and 412dp at 200 percent text scale', (tester) async {
     for (final width in [360.0, 412.0]) {
       await tester.binding.setSurfaceSize(Size(width, 800));
-      await tester.pumpWidget(_app(size: Size(width, 800), textScale: 2));
-      await tester.pumpAndSettle();
+      final overflowErrors = <String>[];
+      final previousOnError = FlutterError.onError;
+      FlutterError.onError = (details) {
+        final message = details.exceptionAsString();
+        if (message.contains('overflowed')) {
+          overflowErrors.add(message);
+        }
+        previousOnError?.call(details);
+      };
+      try {
+        await tester.pumpWidget(_app(size: Size(width, 800), textScale: 2));
+        await tester.pumpAndSettle();
+      } finally {
+        FlutterError.onError = previousOnError;
+      }
       expect(tester.takeException(), isNull);
+      expect(overflowErrors, isEmpty);
       expect(find.byType(OverflowBar), findsNothing);
     }
     await tester.binding.setSurfaceSize(null);
