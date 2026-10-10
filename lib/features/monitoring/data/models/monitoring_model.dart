@@ -1,5 +1,24 @@
 import 'status_hasil_evaluasi.dart';
 
+/// A repeatable person captured during a field monitoring session.
+///
+/// The current local/API contract still consumes the legacy singular person
+/// fields below. These typed entries are therefore local compatibility data
+/// until a server contract for multiple identities is available.
+class MonitoringPerson {
+  final String nama;
+  final String jabatan;
+
+  const MonitoringPerson({this.nama = '', this.jabatan = ''});
+
+  MonitoringPerson copyWith({String? nama, String? jabatan}) {
+    return MonitoringPerson(
+      nama: nama ?? this.nama,
+      jabatan: jabatan ?? this.jabatan,
+    );
+  }
+}
+
 class MonitoringModel {
   static const String defaultMaksudTujuan =
       'Kegiatan ini dilaksanakan guna memastikan kesesuaian pelaksanaan dengan '
@@ -7,8 +26,18 @@ class MonitoringModel {
       'terhadap proses pembangunan perumahan beserta penyediaan PSU-nya.';
 
   static const List<String> _bulanRomawi = [
-    'I', 'II', 'III', 'IV', 'V', 'VI',
-    'VII', 'VIII', 'IX', 'X', 'XI', 'XII'
+    'I',
+    'II',
+    'III',
+    'IV',
+    'V',
+    'VI',
+    'VII',
+    'VIII',
+    'IX',
+    'X',
+    'XI',
+    'XII',
   ];
 
   /// Generate nomor surat BA: 600.2.5/BA-MON/[bulanRomawi]/[tahun]
@@ -34,6 +63,8 @@ class MonitoringModel {
   final String pelaksanaJabatan;
   final String ditemuiNama;
   final String ditemuiJabatan;
+  final List<MonitoringPerson> pelaksana;
+  final List<MonitoringPerson> ditemui;
   final List<String> photoPaths;
   final DateTime createdAt;
   final String nomorSuratBA;
@@ -56,12 +87,14 @@ class MonitoringModel {
     this.pelaksanaJabatan = '',
     this.ditemuiNama = '',
     this.ditemuiJabatan = '',
+    this.pelaksana = const [],
+    this.ditemui = const [],
     this.photoPaths = const [],
     DateTime? createdAt,
     String? nomorSuratBA,
     this.isDraft = false,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        nomorSuratBA = nomorSuratBA ?? generateNomorSuratBA(tanggalMonitoring);
+  }) : createdAt = createdAt ?? DateTime.now(),
+       nomorSuratBA = nomorSuratBA ?? generateNomorSuratBA(tanggalMonitoring);
 
   MonitoringModel copyWith({
     String? id,
@@ -80,6 +113,8 @@ class MonitoringModel {
     String? pelaksanaJabatan,
     String? ditemuiNama,
     String? ditemuiJabatan,
+    List<MonitoringPerson>? pelaksana,
+    List<MonitoringPerson>? ditemui,
     List<String>? photoPaths,
     DateTime? createdAt,
     String? nomorSuratBA,
@@ -102,6 +137,8 @@ class MonitoringModel {
       pelaksanaJabatan: pelaksanaJabatan ?? this.pelaksanaJabatan,
       ditemuiNama: ditemuiNama ?? this.ditemuiNama,
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
+      pelaksana: pelaksana ?? this.pelaksana,
+      ditemui: ditemui ?? this.ditemui,
       photoPaths: photoPaths ?? this.photoPaths,
       createdAt: createdAt ?? this.createdAt,
       nomorSuratBA: nomorSuratBA ?? this.nomorSuratBA,

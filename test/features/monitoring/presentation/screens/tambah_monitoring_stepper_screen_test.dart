@@ -136,6 +136,60 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('renders Step 2 sections and retains dynamic state', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Persisten');
+    notifier.setStep(1);
+
+    await pumpStep1(tester);
+
+    expect(
+      find.textContaining(
+        "Jika tidak diisi, bagian opsional akan dicetak dengan tanda '-'",
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Kesepakatan'), findsOneWidget);
+    expect(find.text('Rencana Tindak Lanjut'), findsOneWidget);
+    expect(find.text('Tim Pelaksana Disperwaskim'), findsOneWidget);
+    expect(find.text('Pihak Ditemui'), findsOneWidget);
+    expect(find.text('Kembali'), findsOneWidget);
+    expect(find.text('Lanjut ke Langkah 3'), findsOneWidget);
+
+    await tester.tap(find.text('+ Tambah Poin').first);
+    await tester.tap(find.text('Tambah Anggota Tim'));
+    await tester.tap(find.text('Tambah Pihak Ditemui'));
+    await tester.pump();
+
+    final state = container.read(monitoringFormProvider);
+    expect(state.kesepakatan, hasLength(2));
+    expect(find.byTooltip('Hapus anggota 1'), findsNWidgets(2));
+    expect(find.text('Anggota 2'), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Step 2 footer returns to Step 1 without resetting fields', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Persisten');
+    notifier.updateKesepakatan(['Kesepakatan tersimpan']);
+    notifier.setStep(1);
+
+    await pumpStep1(tester);
+    await tester.tap(find.text('Kembali'));
+    await tester.pump();
+
+    expect(container.read(monitoringFormProvider).currentStep, 0);
+    expect(container.read(monitoringFormProvider).kesepakatan, [
+      'Kesepakatan tersimpan',
+    ]);
+    expect(find.text('Perumahan Persisten'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'Simpan Draft is clearly disabled when no draft contract exists',
     (tester) async {

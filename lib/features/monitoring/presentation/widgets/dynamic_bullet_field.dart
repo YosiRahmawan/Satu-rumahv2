@@ -11,6 +11,7 @@ class DynamicBulletField extends StatefulWidget {
   final ValueChanged<List<String>> onItemsChanged;
   final String placeholderText;
   final Color accentColor;
+  final bool outlinedAddButton;
 
   const DynamicBulletField({
     super.key,
@@ -19,6 +20,7 @@ class DynamicBulletField extends StatefulWidget {
     required this.onItemsChanged,
     this.placeholderText = 'Masukkan poin...',
     this.accentColor = AppColors.enterprisePrimary,
+    this.outlinedAddButton = false,
   });
 
   @override
@@ -180,27 +182,55 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
         }),
         Align(
           alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () {
-              setState(() {
-                _controllers.add(TextEditingController());
-              });
-              _notifyParent();
-            },
-            icon: const Icon(
-              Icons.add_circle_outline,
-              size: 18,
-              color: AppColors.enterprisePrimary,
-            ),
-            label: Text(
-              '+ Tambah Poin',
-              style: AppTextStyles.labelMedium.copyWith(
-                fontFamily: AppTextStyles.enterpriseFontFamily,
-                color: AppColors.enterprisePrimary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
+          child: widget.outlinedAddButton
+              ? OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _controllers.add(TextEditingController());
+                    });
+                    _notifyParent();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    side: const BorderSide(
+                      color: AppColors.enterprisePrimaryBorder,
+                    ),
+                    foregroundColor: AppColors.enterprisePrimary,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadii.small,
+                    ),
+                  ),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(
+                    '+ Tambah Poin',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      fontFamily: AppTextStyles.enterpriseFontFamily,
+                      color: AppColors.enterprisePrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              : TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _controllers.add(TextEditingController());
+                    });
+                    _notifyParent();
+                  },
+                  icon: const Icon(
+                    Icons.add_circle_outline,
+                    size: 18,
+                    color: AppColors.enterprisePrimary,
+                  ),
+                  label: Text(
+                    '+ Tambah Poin',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      fontFamily: AppTextStyles.enterpriseFontFamily,
+                      color: AppColors.enterprisePrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
         ),
       ],
     );

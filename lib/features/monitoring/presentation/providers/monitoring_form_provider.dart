@@ -84,6 +84,8 @@ class MonitoringFormState {
   final String pelaksanaJabatan;
   final String ditemuiNama;
   final String ditemuiJabatan;
+  final List<MonitoringPerson> pelaksana;
+  final List<MonitoringPerson> ditemui;
   final List<String> photoPaths;
   final bool isSubmitting;
   final String? errorMessage;
@@ -105,6 +107,8 @@ class MonitoringFormState {
     this.pelaksanaJabatan = '',
     this.ditemuiNama = '',
     this.ditemuiJabatan = '',
+    this.pelaksana = const [MonitoringPerson()],
+    this.ditemui = const [MonitoringPerson()],
     this.photoPaths = const [],
     this.isSubmitting = false,
     this.errorMessage,
@@ -127,6 +131,8 @@ class MonitoringFormState {
     String? pelaksanaJabatan,
     String? ditemuiNama,
     String? ditemuiJabatan,
+    List<MonitoringPerson>? pelaksana,
+    List<MonitoringPerson>? ditemui,
     List<String>? photoPaths,
     bool? isSubmitting,
     String? errorMessage,
@@ -148,6 +154,8 @@ class MonitoringFormState {
       pelaksanaJabatan: pelaksanaJabatan ?? this.pelaksanaJabatan,
       ditemuiNama: ditemuiNama ?? this.ditemuiNama,
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
+      pelaksana: pelaksana ?? this.pelaksana,
+      ditemui: ditemui ?? this.ditemui,
       photoPaths: photoPaths ?? this.photoPaths,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: errorMessage,
@@ -193,14 +201,96 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       state = state.copyWith(rencanaTindakLanjut: val);
   void updateStatusHasilEvaluasi(StatusHasilEvaluasi val) =>
       state = state.copyWith(statusHasilEvaluasi: val);
-  void updatePelaksanaNama(String val) =>
-      state = state.copyWith(pelaksanaNama: val);
-  void updatePelaksanaJabatan(String val) =>
-      state = state.copyWith(pelaksanaJabatan: val);
-  void updateDitemuiNama(String val) =>
-      state = state.copyWith(ditemuiNama: val);
-  void updateDitemuiJabatan(String val) =>
-      state = state.copyWith(ditemuiJabatan: val);
+  void updatePelaksanaNama(String val) {
+    final people = [...state.pelaksana];
+    if (people.isEmpty) people.add(const MonitoringPerson());
+    people[0] = people.first.copyWith(nama: val);
+    state = state.copyWith(pelaksanaNama: val, pelaksana: people);
+  }
+
+  void updatePelaksanaJabatan(String val) {
+    final people = [...state.pelaksana];
+    if (people.isEmpty) people.add(const MonitoringPerson());
+    people[0] = people.first.copyWith(jabatan: val);
+    state = state.copyWith(pelaksanaJabatan: val, pelaksana: people);
+  }
+
+  void updateDitemuiNama(String val) {
+    final people = [...state.ditemui];
+    if (people.isEmpty) people.add(const MonitoringPerson());
+    people[0] = people.first.copyWith(nama: val);
+    state = state.copyWith(ditemuiNama: val, ditemui: people);
+  }
+
+  void updateDitemuiJabatan(String val) {
+    final people = [...state.ditemui];
+    if (people.isEmpty) people.add(const MonitoringPerson());
+    people[0] = people.first.copyWith(jabatan: val);
+    state = state.copyWith(ditemuiJabatan: val, ditemui: people);
+  }
+
+  void updatePelaksanaPerson(int index, {String? nama, String? jabatan}) {
+    final people = [...state.pelaksana];
+    if (index < 0 || index >= people.length) return;
+    people[index] = people[index].copyWith(nama: nama, jabatan: jabatan);
+    state = state.copyWith(
+      pelaksana: people,
+      pelaksanaNama: people.first.nama,
+      pelaksanaJabatan: people.first.jabatan,
+    );
+  }
+
+  void addPelaksana() {
+    state = state.copyWith(
+      pelaksana: [...state.pelaksana, const MonitoringPerson()],
+    );
+  }
+
+  void removePelaksana(int index) {
+    if (state.pelaksana.length <= 1 ||
+        index < 0 ||
+        index >= state.pelaksana.length) {
+      return;
+    }
+    final people = [...state.pelaksana]..removeAt(index);
+    state = state.copyWith(
+      pelaksana: people,
+      pelaksanaNama: people.first.nama,
+      pelaksanaJabatan: people.first.jabatan,
+    );
+  }
+
+  void updateDitemuiPerson(int index, {String? nama, String? jabatan}) {
+    final people = [...state.ditemui];
+    if (index < 0 || index >= people.length) return;
+    people[index] = people[index].copyWith(nama: nama, jabatan: jabatan);
+    state = state.copyWith(
+      ditemui: people,
+      ditemuiNama: people.first.nama,
+      ditemuiJabatan: people.first.jabatan,
+    );
+  }
+
+  void addDitemui() {
+    state = state.copyWith(
+      ditemui: [...state.ditemui, const MonitoringPerson()],
+    );
+  }
+
+  void removeDitemui(int index) {
+    if (state.ditemui.length <= 1 ||
+        index < 0 ||
+        index >= state.ditemui.length) {
+      return;
+    }
+    final people = [...state.ditemui]..removeAt(index);
+    state = state.copyWith(
+      ditemui: people,
+      ditemuiNama: people.first.nama,
+      ditemuiJabatan: people.first.jabatan,
+    );
+  }
+
   void updatePhotos(List<String> val) =>
       state = state.copyWith(photoPaths: val);
 
@@ -228,6 +318,18 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       pelaksanaJabatan: 'Ketua Tim Monitoring & Evaluasi Disperwaskim',
       ditemuiNama: 'Budi Santoso, S.T.',
       ditemuiJabatan: 'Site Manager PT ABC Property',
+      pelaksana: const [
+        MonitoringPerson(
+          nama: 'Drs. Rian Hidayat, M.Si',
+          jabatan: 'Ketua Tim Monitoring & Evaluasi Disperwaskim',
+        ),
+      ],
+      ditemui: const [
+        MonitoringPerson(
+          nama: 'Budi Santoso, S.T.',
+          jabatan: 'Site Manager PT ABC Property',
+        ),
+      ],
       photoPaths: const [],
     );
   }
@@ -270,6 +372,8 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       pelaksanaJabatan: state.pelaksanaJabatan,
       ditemuiNama: state.ditemuiNama,
       ditemuiJabatan: state.ditemuiJabatan,
+      pelaksana: state.pelaksana,
+      ditemui: state.ditemui,
       photoPaths: state.photoPaths,
       isDraft: true,
     );

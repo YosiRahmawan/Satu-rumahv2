@@ -6,11 +6,12 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
 import '../widgets/dynamic_bullet_field.dart';
-import '../widgets/evidence_photo_picker.dart';
 import '../widgets/status_hasil_evaluasi_selector_widget.dart';
+import '../widgets/evidence_photo_picker.dart';
 
 class TambahMonitoringStepperScreen extends ConsumerStatefulWidget {
   const TambahMonitoringStepperScreen({super.key});
@@ -811,92 +812,282 @@ class _TambahMonitoringStepperScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'LANGKAH 02',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: AppColors.actionPrimary,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Informasi lanjutan',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.cocoaBeanRoast,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Isi temuan, kesimpulan, dan status evaluasi lapangan.',
-          style: TextStyle(fontSize: 13, color: AppColors.grey600),
-        ),
-        const SizedBox(height: 20),
-
-        // Maksud & Tujuan
-        Text(
-          'Maksud dan Tujuan',
-          style: AppTextStyles.labelMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceSubtle,
-            borderRadius: AppRadii.control,
-            border: Border.all(color: AppColors.grey300),
-          ),
-          child: Text(
-            state.maksudTujuan,
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.5,
-              color: AppColors.grey800,
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        DynamicBulletField(
-          label: 'Temuan di Lapangan',
-          items: state.temuanLapangan,
-          onItemsChanged: notifier.updateTemuan,
-          placeholderText: 'Masukkan temuan di lapangan',
-        ),
-        const SizedBox(height: 20),
-
-        DynamicBulletField(
-          label: 'Kesimpulan',
-          items: state.kesimpulan,
-          onItemsChanged: notifier.updateKesimpulan,
-          placeholderText: 'Masukkan kesimpulan',
-        ),
-        const SizedBox(height: 20),
-
-        DynamicBulletField(
-          label: 'Kesepakatan',
+        _buildOptionalInfoBanner(),
+        const SizedBox(height: 16),
+        _buildPointSection(
+          title: 'Kesepakatan',
           items: state.kesepakatan,
-          onItemsChanged: notifier.updateKesepakatan,
-          placeholderText: 'Masukkan kesepakatan',
+          onChanged: notifier.updateKesepakatan,
+          placeholder: 'Tuliskan kesepakatan...',
         ),
-        const SizedBox(height: 20),
-
-        DynamicBulletField(
-          label: 'Rencana Tindak Lanjut',
+        const SizedBox(height: 16),
+        _buildPointSection(
+          title: 'Rencana Tindak Lanjut',
           items: state.rencanaTindakLanjut,
-          onItemsChanged: notifier.updateRTL,
-          placeholderText: 'Masukkan rencana tindak lanjut',
+          onChanged: notifier.updateRTL,
+          placeholder: 'Tuliskan rencana tindak lanjut...',
         ),
-        const SizedBox(height: 20),
-
+        const SizedBox(height: 16),
+        _buildPeopleSection(
+          title: 'Tim Pelaksana Disperwaskim',
+          subtitle: 'Yang Melaksanakan Monitoring',
+          icon: Icons.badge_outlined,
+          people: state.pelaksana,
+          addLabel: 'Tambah Anggota Tim',
+          onAdd: notifier.addPelaksana,
+          onRemove: notifier.removePelaksana,
+          onChanged: notifier.updatePelaksanaPerson,
+        ),
+        const SizedBox(height: 16),
+        _buildPeopleSection(
+          title: 'Pihak Ditemui',
+          subtitle: 'Yang Ditemui di Lapangan',
+          icon: Icons.groups_outlined,
+          people: state.ditemui,
+          addLabel: 'Tambah Pihak Ditemui',
+          onAdd: notifier.addDitemui,
+          onRemove: notifier.removeDitemui,
+          onChanged: notifier.updateDitemuiPerson,
+        ),
+        const SizedBox(height: 16),
         StatusHasilEvaluasiSelectorWidget(
           selectedStatus: state.statusHasilEvaluasi,
           onChanged: notifier.updateStatusHasilEvaluasi,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildOptionalInfoBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.enterprisePrimarySurfaceSoft,
+        border: Border.all(color: AppColors.enterprisePrimaryBorder),
+        borderRadius: AppRadii.control,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline,
+            size: 20,
+            color: AppColors.enterprisePrimary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Jika tidak diisi, bagian opsional akan dicetak dengan tanda '-' pada Berita Acara.",
+              style: AppTextStyles.bodySmall.copyWith(
+                fontFamily: AppTextStyles.enterpriseFontFamily,
+                color: AppColors.enterpriseTextMain,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPointSection({
+    required String title,
+    required List<String> items,
+    required ValueChanged<List<String>> onChanged,
+    required String placeholder,
+  }) {
+    return _buildFieldCard(
+      label: title,
+      badge: 'Opsional',
+      child: DynamicBulletField(
+        label: '',
+        items: items,
+        onItemsChanged: onChanged,
+        placeholderText: placeholder,
+        accentColor: AppColors.enterprisePrimary,
+        outlinedAddButton: true,
+      ),
+    );
+  }
+
+  Widget _buildPeopleSection({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required List<MonitoringPerson> people,
+    required String addLabel,
+    required VoidCallback onAdd,
+    required ValueChanged<int> onRemove,
+    required void Function(int index, {String? nama, String? jabatan})
+    onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader(
+          label: title,
+          badge: 'Opsional',
+          leading: Icon(icon, size: 18, color: AppColors.enterprisePrimary),
+          labelStyle: AppTextStyles.labelLarge.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: AppTextStyles.labelSmall.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMuted,
+          ),
+        ),
+        const SizedBox(height: 10),
+        ...people.asMap().entries.map(
+          (entry) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildPersonCard(
+              index: entry.key,
+              person: entry.value,
+              onRemove: () => onRemove(entry.key),
+              onChanged: onChanged,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+            label: Text(addLabel),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              foregroundColor: AppColors.enterprisePrimary,
+              side: const BorderSide(color: AppColors.enterprisePrimary),
+              shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
+              textStyle: AppTextStyles.labelMedium.copyWith(
+                fontFamily: AppTextStyles.enterpriseFontFamily,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPersonCard({
+    required int index,
+    required MonitoringPerson person,
+    required VoidCallback onRemove,
+    required void Function(int index, {String? nama, String? jabatan})
+    onChanged,
+  }) {
+    return Container(
+      key: ValueKey('person-$index'),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Anggota ${index + 1}',
+                  style: AppTextStyles.labelMedium.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.enterpriseTextMain,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'Hapus anggota ${index + 1}',
+                onPressed: onRemove,
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 20,
+                  color: AppColors.enterpriseTextMuted,
+                ),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+          const Divider(height: 1, color: AppColors.enterpriseBorder),
+          const SizedBox(height: 12),
+          _buildPersonTextField(
+            label: 'Nama Lengkap',
+            value: person.nama,
+            onChanged: (value) => onChanged(index, nama: value),
+          ),
+          const SizedBox(height: 12),
+          _buildPersonTextField(
+            label: 'Jabatan',
+            value: person.jabatan,
+            onChanged: (value) => onChanged(index, jabatan: value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonTextField({
+    required String label,
+    required String value,
+    required ValueChanged<String> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: AppTextStyles.labelSmall.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMain,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          initialValue: value,
+          onChanged: onChanged,
+          style: AppTextStyles.bodySmall.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMain,
+          ),
+          decoration: InputDecoration(
+            isDense: true,
+            hintText: 'Masukkan ${label.toLowerCase()}',
+            hintStyle: AppTextStyles.bodySmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMuted,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: AppRadii.small,
+              borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppRadii.small,
+              borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppRadii.small,
+              borderSide: const BorderSide(
+                color: AppColors.enterprisePrimary,
+                width: 1.5,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -1094,14 +1285,16 @@ class _TambahMonitoringStepperScreenState
 
         final cancelButton = TextButton(
           onPressed: () {
-            if (context.canPop()) {
+            if (formState.currentStep > 0) {
+              notifier.setStep(formState.currentStep - 1);
+            } else if (context.canPop()) {
               context.pop();
             } else {
               context.go('/monitoring/lapangan');
             }
           },
           child: Text(
-            'Batal',
+            formState.currentStep > 0 ? 'Kembali' : 'Batal',
             style: AppTextStyles.labelMedium.copyWith(
               fontFamily: AppTextStyles.enterpriseFontFamily,
               color: AppColors.enterpriseTextMuted,
