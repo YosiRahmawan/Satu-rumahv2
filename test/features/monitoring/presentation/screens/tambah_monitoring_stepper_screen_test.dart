@@ -298,6 +298,73 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('renders Step 3 with active step and dynamic photo progress', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Dokumentasi');
+    notifier.updatePhotos(['first.jpg', '', 'second.jpg']);
+    notifier.setStep(2);
+
+    await pumpStep1(tester);
+
+    expect(find.text('Dokumentasi Lapangan'), findsOneWidget);
+    expect(find.text('Langkah 3 dari 3: Dokumentasi Lapangan'), findsOneWidget);
+    expect(find.text('2 foto tersimpan di sesi ini'), findsOneWidget);
+    expect(find.text('2/10'), findsOneWidget);
+    expect(find.text('Ringkasan validasi'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'Data lokasi, waktu pengambilan, dan caption belum tersedia.',
+      ),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'Step 3 deletion requires confirmation and retains remaining state',
+    (tester) async {
+      final notifier = container.read(monitoringFormProvider.notifier);
+      notifier.updateNamaPerumahan('Perumahan Dokumentasi');
+      notifier.updatePhotos(['first.jpg', 'second.jpg']);
+      notifier.setStep(2);
+
+      await pumpStep1(tester);
+      await tester.tap(find.byTooltip('Hapus foto 1'));
+      await tester.pumpAndSettle();
+      expect(find.text('Hapus foto?'), findsOneWidget);
+      expect(container.read(monitoringFormProvider).photoPaths, [
+        'first.jpg',
+        'second.jpg',
+      ]);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Hapus'));
+      await tester.pumpAndSettle();
+      expect(container.read(monitoringFormProvider).photoPaths, ['second.jpg']);
+      expect(find.text('1 foto tersimpan di sesi ini'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('Step 3 remains usable at 360dp and 412dp with 200% text', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Responsif');
+    notifier.setStep(2);
+
+    for (final size in [const Size(360, 900), const Size(412, 900)]) {
+      await pumpStep1(
+        tester,
+        size: size,
+        textScaler: const TextScaler.linear(2),
+      );
+      expect(find.text('Dokumentasi Lapangan'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
+  });
+
   testWidgets('stepper remains stable at 360dp and 412dp with 200% text', (
     tester,
   ) async {

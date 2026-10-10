@@ -7,6 +7,7 @@ import 'package:satu_rumah/features/monitoring/presentation/widgets/evidence_pho
 Future<void> _pumpPicker(
   WidgetTester tester, {
   required PhotoPathPicker picker,
+  CameraPhotoPicker? cameraPicker,
   required ValueChanged<List<String>> onChanged,
 }) async {
   await tester.pumpWidget(
@@ -16,13 +17,14 @@ Future<void> _pumpPicker(
           photoPaths: const [],
           onPhotosChanged: onChanged,
           pickPhotoPaths: picker,
+          pickCameraPhoto: cameraPicker,
         ),
       ),
     ),
   );
 }
 
-Finder _addPhotoButton() => find.text('Tambah\nFoto');
+Finder _addPhotoButton() => find.text('Tambah foto');
 
 void main() {
   testWidgets('canceled picker does not add a fake photo', (tester) async {
@@ -89,5 +91,42 @@ void main() {
     await tester.pump();
 
     expect(callbackCount, 0);
+  });
+
+  testWidgets('camera picker adds a returned path', (tester) async {
+    final updates = <List<String>>[];
+    await _pumpPicker(
+      tester,
+      picker: () async => const [],
+      cameraPicker: () async => 'camera-photo.jpg',
+      onChanged: updates.add,
+    );
+
+    await tester.tap(_addPhotoButton());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ambil Foto Langsung'));
+    await tester.pumpAndSettle();
+
+    expect(updates, [<String>['camera-photo.jpg']]);
+  });
+
+  testWidgets('camera picker error keeps state unchanged and shows feedback', (
+    tester,
+  ) async {
+    var callbackCount = 0;
+    await _pumpPicker(
+      tester,
+      picker: () async => const [],
+      cameraPicker: () async => throw StateError('permission denied'),
+      onChanged: (_) => callbackCount++,
+    );
+
+    await tester.tap(_addPhotoButton());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ambil Foto Langsung'));
+    await tester.pumpAndSettle();
+
+    expect(callbackCount, 0);
+    expect(find.textContaining('Kamera tidak dapat digunakan'), findsOneWidget);
   });
 }
