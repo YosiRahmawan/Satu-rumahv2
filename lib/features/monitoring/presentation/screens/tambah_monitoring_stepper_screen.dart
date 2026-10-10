@@ -177,15 +177,28 @@ class _TambahMonitoringStepperScreenState
                     color: Colors.white.withValues(alpha: .16),
                     borderRadius: AppRadii.pill,
                   ),
-                  child: Text(
-                    'DISPERWASKIM KOTA TASIKMALAYA',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      fontFamily: AppTextStyles.enterpriseFontFamily,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.shield_outlined,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'DISPERWASKIM KOTA TASIKMALAYA',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.labelSmall.copyWith(
+                            fontFamily: AppTextStyles.enterpriseFontFamily,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -230,20 +243,33 @@ class _TambahMonitoringStepperScreenState
       child: Column(
         children: [
           // Stepper Circles & Labels Row
-          Row(
+          Stack(
+            alignment: Alignment.topCenter,
             children: [
-              Expanded(child: _buildStepItem(1, '1. Info Umum', currentStep)),
-              const SizedBox(width: 4),
-              Expanded(
-                child: _buildStepItem(2, '2. Info Lanjutan', currentStep),
+              Positioned(
+                top: 17,
+                left: 52,
+                right: 52,
+                child: Container(height: 2, color: AppColors.enterpriseBorder),
               ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: _buildStepItem(
-                  3,
-                  '3. Dokumentasi Lapangan',
-                  currentStep,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStepItem(1, '1. Info Umum', currentStep),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: _buildStepItem(2, '2. Info Lanjutan', currentStep),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: _buildStepItem(
+                      3,
+                      '3. Dokumentasi Lapangan',
+                      currentStep,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -430,7 +456,7 @@ class _TambahMonitoringStepperScreenState
         const SizedBox(width: 6),
         Expanded(
           child: Text(
-            'Perubahan tersimpan di formulir aktif',
+            'Perubahan tersimpan sementara di formulir ini',
             style: AppTextStyles.bodySmall.copyWith(
               fontFamily: AppTextStyles.enterpriseFontFamily,
               color: AppColors.enterpriseTextMuted,

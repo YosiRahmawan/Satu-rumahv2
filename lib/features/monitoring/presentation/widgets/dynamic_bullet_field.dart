@@ -94,10 +94,7 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text(
-                  '• ',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
+                const Text('• ', style: AppTextStyles.bodyLarge),
                 Expanded(
                   child: TextFormField(
                     controller: controller,
@@ -160,9 +157,9 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
               size: 18,
               color: AppColors.enterprisePrimary,
             ),
-            label: const Text(
+            label: Text(
               '+ Tambah poin',
-              style: TextStyle(
+              style: AppTextStyles.labelMedium.copyWith(
                 color: AppColors.enterprisePrimary,
                 fontWeight: FontWeight.w600,
               ),
