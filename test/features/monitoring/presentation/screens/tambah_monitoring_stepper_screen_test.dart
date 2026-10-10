@@ -416,15 +416,49 @@ void main() {
     tester,
   ) async {
     for (final size in [const Size(360, 900), const Size(412, 900)]) {
-      await pumpStep1(tester, size: size);
-      expect(find.text('Batal'), findsOneWidget);
-      expect(find.text('Simpan Draft'), findsOneWidget);
-      expect(find.text('Lanjut ke Langkah 2'), findsOneWidget);
-      expect(
-        find.byTooltip('Simpan Draft belum tersedia untuk sesi ini'),
-        findsOneWidget,
+      final flutterErrors = <FlutterErrorDetails>[];
+      final previousFlutterError = FlutterError.onError;
+      FlutterError.onError = flutterErrors.add;
+      try {
+        await pumpStep1(
+          tester,
+          size: size,
+          textScaler: const TextScaler.linear(2),
+        );
+
+        final cancel = find.text('Batal');
+        final saveDraft = find.text('Simpan Draft');
+        final next = find.text('Lanjut ke Langkah 2');
+        expect(cancel, findsOneWidget);
+        expect(saveDraft, findsOneWidget);
+        expect(next, findsOneWidget);
+        expect(
+          find.byTooltip('Simpan Draft belum tersedia untuk sesi ini'),
+          findsOneWidget,
+        );
+
+        for (final finder in [cancel, saveDraft, next]) {
+          await tester.ensureVisible(finder);
+          expect(tester.getRect(finder).bottom, lessThanOrEqualTo(size.height));
+        }
+        expect(tester.takeException(), isNull);
+      } finally {
+        FlutterError.onError = previousFlutterError;
+      }
+
+      final layoutErrors = flutterErrors.where(
+        (details) =>
+            details.exceptionAsString().contains('RenderFlex') ||
+            details.exceptionAsString().contains('overflow'),
       );
-      expect(tester.takeException(), isNull);
+      expect(
+        layoutErrors,
+        isEmpty,
+        reason: flutterErrors
+            .map((details) => details.exceptionAsString())
+            .join('\n'),
+      );
+      expect(flutterErrors, isEmpty);
     }
   });
 }
