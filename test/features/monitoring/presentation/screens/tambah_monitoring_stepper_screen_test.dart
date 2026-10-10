@@ -169,7 +169,7 @@ void main() {
 
     final state = container.read(monitoringFormProvider);
     expect(state.kesepakatan, hasLength(2));
-    expect(find.byTooltip('Hapus anggota 1'), findsOneWidget);
+    expect(find.byTooltip('Hapus Anggota 1'), findsOneWidget);
     expect(find.byTooltip('Hapus Perwakilan Pengembang 1'), findsOneWidget);
     expect(find.text('Anggota 2'), findsOneWidget);
     expect(find.text('Perwakilan Pengembang 2'), findsOneWidget);
