@@ -10,7 +10,6 @@ import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
 import '../widgets/dynamic_bullet_field.dart';
-import '../widgets/status_hasil_evaluasi_selector_widget.dart';
 import '../widgets/evidence_photo_picker.dart';
 
 class TambahMonitoringStepperScreen extends ConsumerStatefulWidget {
@@ -831,6 +830,7 @@ class _TambahMonitoringStepperScreenState
         _buildPeopleSection(
           title: 'Tim Pelaksana Disperwaskim',
           subtitle: 'Yang Melaksanakan Monitoring',
+          personLabel: 'Anggota',
           icon: Icons.badge_outlined,
           people: state.pelaksana,
           addLabel: 'Tambah Anggota Tim',
@@ -842,17 +842,13 @@ class _TambahMonitoringStepperScreenState
         _buildPeopleSection(
           title: 'Pihak Ditemui',
           subtitle: 'Yang Ditemui di Lapangan',
+          personLabel: 'Perwakilan Pengembang',
           icon: Icons.groups_outlined,
           people: state.ditemui,
           addLabel: 'Tambah Pihak Ditemui',
           onAdd: notifier.addDitemui,
           onRemove: notifier.removeDitemui,
           onChanged: notifier.updateDitemuiPerson,
-        ),
-        const SizedBox(height: 16),
-        StatusHasilEvaluasiSelectorWidget(
-          selectedStatus: state.statusHasilEvaluasi,
-          onChanged: notifier.updateStatusHasilEvaluasi,
         ),
       ],
     );
@@ -914,6 +910,7 @@ class _TambahMonitoringStepperScreenState
   Widget _buildPeopleSection({
     required String title,
     required String subtitle,
+    required String personLabel,
     required IconData icon,
     required List<MonitoringPerson> people,
     required String addLabel,
@@ -949,6 +946,7 @@ class _TambahMonitoringStepperScreenState
             child: _buildPersonCard(
               index: entry.key,
               person: entry.value,
+              personLabel: personLabel,
               canRemove: people.length > 1,
               onRemove: () => onRemove(entry.key),
               onChanged: onChanged,
@@ -980,13 +978,14 @@ class _TambahMonitoringStepperScreenState
   Widget _buildPersonCard({
     required int index,
     required MonitoringPerson person,
+    required String personLabel,
     required bool canRemove,
     required VoidCallback onRemove,
     required void Function(int index, {String? nama, String? jabatan})
     onChanged,
   }) {
     return Container(
-      key: ValueKey('person-$index'),
+      key: ValueKey(person.id),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
       decoration: BoxDecoration(
         color: AppColors.enterpriseSurface,
@@ -1000,7 +999,7 @@ class _TambahMonitoringStepperScreenState
             children: [
               Expanded(
                 child: Text(
-                  'Anggota ${index + 1}',
+                  '$personLabel ${index + 1}',
                   style: AppTextStyles.labelMedium.copyWith(
                     fontFamily: AppTextStyles.enterpriseFontFamily,
                     fontWeight: FontWeight.w700,
@@ -1010,7 +1009,7 @@ class _TambahMonitoringStepperScreenState
               ),
               if (canRemove)
                 IconButton(
-                  tooltip: 'Hapus anggota ${index + 1}',
+                  tooltip: 'Hapus $personLabel ${index + 1}',
                   onPressed: onRemove,
                   icon: const Icon(
                     Icons.delete_outline,
@@ -1314,21 +1313,6 @@ class _TambahMonitoringStepperScreenState
           ),
         );
 
-        final saveDraftButton = OutlinedButton(
-          onPressed: null,
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size(0, 44),
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
-          ),
-          child: Text(
-            'Simpan Draft',
-            style: AppTextStyles.labelMedium.copyWith(
-              fontFamily: AppTextStyles.enterpriseFontFamily,
-            ),
-          ),
-        );
-
         final nextButton = ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.enterprisePrimary,
@@ -1429,12 +1413,7 @@ class _TambahMonitoringStepperScreenState
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(child: cancelButton),
-                          Expanded(child: saveDraftButton),
-                        ],
-                      ),
+                      Row(children: [Expanded(child: cancelButton)]),
                       const SizedBox(height: 8),
                       nextButton,
                     ],
@@ -1442,8 +1421,6 @@ class _TambahMonitoringStepperScreenState
                 : Row(
                     children: [
                       cancelButton,
-                      saveDraftButton,
-                      const SizedBox(width: 8),
                       Expanded(child: nextButton),
                     ],
                   ),

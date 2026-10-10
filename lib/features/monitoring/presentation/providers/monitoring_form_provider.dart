@@ -259,6 +259,8 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
   }
 
   void removePelaksana(int index) {
+    // Keep one empty compatibility row because the current contract has no
+    // separate empty-state representation for repeatable people fields.
     if (state.pelaksana.length <= 1 ||
         index < 0 ||
         index >= state.pelaksana.length) {
@@ -290,6 +292,8 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
   }
 
   void removeDitemui(int index) {
+    // Keep one empty compatibility row because the current contract has no
+    // separate empty-state representation for repeatable people fields.
     if (state.ditemui.length <= 1 ||
         index < 0 ||
         index >= state.ditemui.length) {

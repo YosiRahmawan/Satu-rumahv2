@@ -169,8 +169,10 @@ void main() {
 
     final state = container.read(monitoringFormProvider);
     expect(state.kesepakatan, hasLength(2));
-    expect(find.byTooltip('Hapus anggota 1'), findsNWidgets(2));
-    expect(find.text('Anggota 2'), findsNWidgets(2));
+    expect(find.byTooltip('Hapus anggota 1'), findsOneWidget);
+    expect(find.byTooltip('Hapus Perwakilan Pengembang 1'), findsOneWidget);
+    expect(find.text('Anggota 2'), findsOneWidget);
+    expect(find.text('Perwakilan Pengembang 2'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -212,7 +214,7 @@ void main() {
     );
 
     await pumpStep1(tester);
-    final firstDelete = find.byTooltip('Hapus anggota 1');
+    final firstDelete = find.byTooltip('Hapus Perwakilan Pengembang 1');
     await tester.ensureVisible(firstDelete);
     await tester.tap(firstDelete);
     await tester.pump();
@@ -221,7 +223,7 @@ void main() {
     expect(state.pelaksana.single.nama, 'Pelaksana Dua');
     expect(state.pelaksana.single.jabatan, 'Jabatan Dua');
     expect(find.text('Pelaksana Dua'), findsOneWidget);
-    expect(find.byTooltip('Hapus anggota 1'), findsNothing);
+    expect(find.byTooltip('Hapus Perwakilan Pengembang 1'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
@@ -285,19 +287,16 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets(
-    'Simpan Draft is clearly disabled when no draft contract exists',
-    (tester) async {
-      await pumpStep1(tester);
+  testWidgets('Step 2 footer only exposes prototype actions', (tester) async {
+    container.read(monitoringFormProvider.notifier).setStep(1);
+    await pumpStep1(tester);
 
-      final button = tester.widget<OutlinedButton>(
-        find.widgetWithText(OutlinedButton, 'Simpan Draft'),
-      );
-      expect(button.onPressed, isNull);
-      expect(find.text('Simpan Draft'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(find.text('Kembali'), findsOneWidget);
+    expect(find.text('Lanjut ke Langkah 3'), findsOneWidget);
+    expect(find.text('Simpan Draft'), findsNothing);
+    expect(find.text('Status Hasil Evaluasi'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('stepper remains stable at 360dp and 412dp with 200% text', (
     tester,
