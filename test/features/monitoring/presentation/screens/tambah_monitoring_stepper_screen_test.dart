@@ -347,6 +347,33 @@ void main() {
     },
   );
 
+  testWidgets('Step 3 opens BA preview without implying final submission', (
+    tester,
+  ) async {
+    final router = _router();
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Preview');
+    notifier.setStep(2);
+
+    await pumpStep1(tester, router: router);
+
+    expect(find.text('Lihat Preview Berita Acara'), findsOneWidget);
+    expect(find.text('Submit & Buat Berita Acara'), findsNothing);
+
+    final previewAction = find.text('Lihat Preview Berita Acara');
+    final previewButton = find.ancestor(
+      of: previewAction,
+      matching: find.byType(ElevatedButton),
+    );
+    await tester.ensureVisible(previewButton);
+    await tester.tap(previewButton);
+    await tester.pumpAndSettle();
+
+    expect(container.read(monitoringFormProvider).errorMessage, isNull);
+    expect(find.text('Preview Berita Acara'), findsOneWidget);
+    expect(container.read(monitoringFormProvider).isSubmitting, isFalse);
+  });
+
   testWidgets('Step 3 remains usable at 360dp and 412dp with 200% text', (
     tester,
   ) async {
@@ -392,6 +419,10 @@ GoRouter _router() {
       GoRoute(
         path: '/monitoring/lapangan',
         builder: (_, __) => const Scaffold(body: Text('Monitoring')),
+      ),
+      GoRoute(
+        path: '/monitoring/preview',
+        builder: (_, __) => const Scaffold(body: Text('Preview Berita Acara')),
       ),
     ],
   );

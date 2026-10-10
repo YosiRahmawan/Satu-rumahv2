@@ -1332,7 +1332,7 @@ class _TambahMonitoringStepperScreenState
                       ? 'Lanjut ke Langkah 2'
                       : formState.currentStep == 1
                       ? 'Lanjut ke Langkah 3'
-                      : 'Submit & Buat Berita Acara',
+                      : 'Lihat Preview Berita Acara',
                   overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.labelLarge.copyWith(
                     fontFamily: AppTextStyles.enterpriseFontFamily,
