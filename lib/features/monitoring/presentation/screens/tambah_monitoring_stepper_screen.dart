@@ -533,7 +533,7 @@ class _TambahMonitoringStepperScreenState
         const SizedBox(width: 6),
         Flexible(
           child: Text(
-            'Perubahan tersimpan di sesi formulir ini',
+            'Tersimpan di sesi formulir ini',
             style: AppTextStyles.bodySmall.copyWith(
               fontFamily: AppTextStyles.enterpriseFontFamily,
               color: AppColors.enterpriseTextMuted,
@@ -1267,6 +1267,29 @@ class _TambahMonitoringStepperScreenState
           ),
         );
 
+        final saveDraftButton = Tooltip(
+          message: 'Simpan Draft belum tersedia untuk sesi ini',
+          child: OutlinedButton.icon(
+            onPressed: null,
+            icon: const Icon(Icons.save_outlined, size: 18),
+            label: Text(
+              'Simpan Draft',
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.labelMedium.copyWith(
+                fontFamily: AppTextStyles.enterpriseFontFamily,
+                fontWeight: FontWeight.w600,
+                color: AppColors.enterpriseTextMuted,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size(0, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              side: const BorderSide(color: AppColors.enterpriseBorder),
+              shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
+            ),
+          ),
+        );
+
         final nextButton = ElevatedButton(
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.enterprisePrimary,
@@ -1363,7 +1386,32 @@ class _TambahMonitoringStepperScreenState
             ],
           ),
           child: SafeArea(
-            child: useStackedActions
+            child: formState.currentStep == 0
+                ? useStackedActions
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(child: cancelButton),
+                                const SizedBox(width: 8),
+                                Expanded(child: saveDraftButton),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            nextButton,
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            cancelButton,
+                            const SizedBox(width: 4),
+                            Flexible(child: saveDraftButton),
+                            const SizedBox(width: 8),
+                            Expanded(child: nextButton),
+                          ],
+                        )
+                : useStackedActions
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [

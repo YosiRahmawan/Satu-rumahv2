@@ -72,6 +72,11 @@ void main() {
     );
     expect(find.text('Temuan tersimpan'), findsOneWidget);
     expect(find.text('Kesimpulan tersimpan'), findsOneWidget);
+    expect(find.text('Simpan Draft'), findsOneWidget);
+    expect(
+      find.byTooltip('Simpan Draft belum tersedia untuk sesi ini'),
+      findsOneWidget,
+    );
     expect(find.text('Wajib'), findsNWidgets(2));
     expect(find.text('Opsional'), findsNWidgets(3));
     expect(tester.takeException(), isNull);
@@ -403,6 +408,22 @@ void main() {
       );
       expect(find.text('Formulir Pengawasan'), findsOneWidget);
       expect(find.text('Lanjut ke Langkah 2'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    }
+  });
+
+  testWidgets('Step 1 footer remains visible at supported widths', (
+    tester,
+  ) async {
+    for (final size in [const Size(360, 900), const Size(412, 900)]) {
+      await pumpStep1(tester, size: size);
+      expect(find.text('Batal'), findsOneWidget);
+      expect(find.text('Simpan Draft'), findsOneWidget);
+      expect(find.text('Lanjut ke Langkah 2'), findsOneWidget);
+      expect(
+        find.byTooltip('Simpan Draft belum tersedia untuk sesi ini'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     }
   });
