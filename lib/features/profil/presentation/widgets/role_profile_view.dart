@@ -7,13 +7,14 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
 
-enum ProfileHeroVariant { light, authority }
+enum ProfileHeroVariant { light, authority, enterpriseAuthority }
 
 class ProfileStatData {
   final String value;
   final String label;
+  final Color? color;
 
-  const ProfileStatData(this.value, this.label);
+  const ProfileStatData(this.value, this.label, {this.color});
 }
 
 class ProfileAccountItem {
@@ -40,18 +41,35 @@ class ProfileMenuItem {
   });
 }
 
+class ProfileAssignmentData {
+  final String projectName;
+  final String developerName;
+  final String scheduleText;
+  final String instructionText;
+
+  const ProfileAssignmentData({
+    required this.projectName,
+    required this.developerName,
+    required this.scheduleText,
+    required this.instructionText,
+  });
+}
+
 /// Shared profile composition for every role.
-///
-/// The data and action lists stay role-specific, while the hero, account
-/// panels, stat rhythm, icon family, and logout treatment stay shared.
+/// Role-specific data and actions are supplied by wrappers.
 class RoleProfileView extends StatelessWidget {
   final String profileTitle;
+  final String? heroOrganizationLabel;
   final String displayName;
   final String roleLabel;
   final String initials;
   final String? identifier;
   final ProfileHeroVariant heroVariant;
   final List<ProfileStatData> stats;
+  final String? assignmentSectionTitle;
+  final ProfileAssignmentData? assignment;
+  final String assignmentEmptyText;
+  final String accountSectionTitle;
   final List<ProfileAccountItem> accountItems;
   final List<ProfileMenuItem> menuItems;
   final VoidCallback onLogout;
@@ -72,50 +90,121 @@ class RoleProfileView extends StatelessWidget {
     required this.onLogout,
     required this.footerText,
     this.identifier,
+    this.heroOrganizationLabel,
     this.stats = const [],
+    this.assignmentSectionTitle,
+    this.assignment,
+    this.assignmentEmptyText = 'Belum ada penugasan lapangan aktif.',
+    this.accountSectionTitle = 'Data akun',
     this.onNotifications,
     this.logoutLabel = 'Keluar Akun',
     this.banner = const PrototypeDataBanner(),
   });
 
-  bool get _isAuthority => heroVariant == ProfileHeroVariant.authority;
+  bool get _isAuthority => heroVariant != ProfileHeroVariant.light;
+  bool get _isEnterpriseAuthority =>
+      heroVariant == ProfileHeroVariant.enterpriseAuthority;
+
+  Color get _canvasColor => _isEnterpriseAuthority
+      ? AppColors.enterpriseCanvas
+      : AppColors.background;
+  Color get _surfaceColor =>
+      _isEnterpriseAuthority ? AppColors.enterpriseSurface : AppColors.surface;
+  Color get _borderColor => _isEnterpriseAuthority
+      ? AppColors.enterpriseBorder
+      : AppColors.borderSubtle;
+  Color get _textColor => _isEnterpriseAuthority
+      ? AppColors.enterpriseTextMain
+      : AppColors.textPrimary;
+  Color get _mutedTextColor => _isEnterpriseAuthority
+      ? AppColors.enterpriseTextMuted
+      : AppColors.textMuted;
+  Color get _primaryColor => _isEnterpriseAuthority
+      ? AppColors.enterprisePrimary
+      : AppColors.actionPrimary;
+
+  TextStyle _style(
+    TextStyle style, {
+    Color? color,
+    FontWeight? fontWeight,
+    double? height,
+  }) {
+    return style.copyWith(
+      fontFamily: _isEnterpriseAuthority
+          ? AppTextStyles.enterpriseFontFamily
+          : style.fontFamily,
+      color: color,
+      fontWeight: fontWeight,
+      height: height,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasStats = stats.isNotEmpty;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: _canvasColor,
       body: SingleChildScrollView(
         child: Column(
           children: [
-            _buildHero(context),
+            if (_isEnterpriseAuthority && hasStats) ...[
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  _buildHero(context),
+                  Positioned(
+                    left: AppSpacing.xl,
+                    right: AppSpacing.xl,
+                    bottom: -60,
+                    child: _buildStats(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 60),
+            ] else ...[
+              _buildHero(context),
+              if (hasStats) ...[
+                const SizedBox(height: AppSpacing.lg),
+                _buildStats(),
+              ],
+            ],
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.lg,
-                AppSpacing.lg,
+              padding: EdgeInsets.fromLTRB(
+                _isEnterpriseAuthority ? AppSpacing.xl : AppSpacing.lg,
+                _isEnterpriseAuthority ? 0 : AppSpacing.lg,
+                _isEnterpriseAuthority ? AppSpacing.xl : AppSpacing.lg,
                 AppSpacing.lg,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   banner,
-                  if (stats.isNotEmpty) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildStats(),
+                  if (assignmentSectionTitle != null) ...[
+                    SizedBox(
+                      height: _isEnterpriseAuthority
+                          ? AppSpacing.md
+                          : AppSpacing.xl,
+                    ),
+                    if (!_isEnterpriseAuthority) ...[
+                      _buildSectionHeader(assignmentSectionTitle!),
+                      const SizedBox(height: AppSpacing.sm),
+                    ],
+                    _buildAssignmentPanel(),
                   ],
                   const SizedBox(height: AppSpacing.xl),
-                  _buildSectionHeader('Data akun'),
+                  _buildSectionHeader(accountSectionTitle),
                   const SizedBox(height: AppSpacing.sm),
                   _buildPanel(
                     children: [
                       for (var i = 0; i < accountItems.length; i++) ...[
                         _buildAccountItem(accountItems[i]),
                         if (i < accountItems.length - 1)
-                          const Divider(
+                          Divider(
                             height: 1,
                             indent: 56,
                             endIndent: 16,
-                            color: AppColors.borderSubtle,
+                            color: _borderColor,
                           ),
                       ],
                     ],
@@ -128,48 +217,25 @@ class RoleProfileView extends StatelessWidget {
                       for (var i = 0; i < menuItems.length; i++) ...[
                         _buildMenuItem(menuItems[i]),
                         if (i < menuItems.length - 1)
-                          const Divider(
+                          Divider(
                             height: 1,
                             indent: 56,
                             endIndent: 16,
-                            color: AppColors.borderSubtle,
+                            color: _borderColor,
                           ),
                       ],
                     ],
                   ),
                   const SizedBox(height: AppSpacing.xl),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: OutlinedButton.icon(
-                      onPressed: onLogout,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.actionPrimary,
-                        side: const BorderSide(
-                          color: AppColors.actionPrimary,
-                          width: 1.2,
-                        ),
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: AppRadii.pill,
-                        ),
-                      ),
-                      icon: const Icon(PhosphorIconsRegular.signOut, size: 18),
-                      label: Text(
-                        logoutLabel,
-                        style: AppTextStyles.labelLarge.copyWith(
-                          color: AppColors.actionPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildLogoutButton(),
                   const SizedBox(height: AppSpacing.xl),
                   Center(
                     child: Text(
                       footerText,
                       textAlign: TextAlign.center,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.textMuted,
+                      style: _style(
+                        AppTextStyles.labelSmall,
+                        color: _mutedTextColor,
                         height: 1.4,
                       ),
                     ),
@@ -184,14 +250,17 @@ class RoleProfileView extends StatelessWidget {
   }
 
   Widget _buildHero(BuildContext context) {
-    final foreground = _isAuthority ? Colors.white : AppColors.textPrimary;
+    if (_isEnterpriseAuthority) {
+      return _buildEnterpriseHero(context);
+    }
+
+    final foreground = _isAuthority ? Colors.white : _textColor;
     final secondary = _isAuthority
         ? Colors.white.withValues(alpha: 0.76)
-        : AppColors.textMuted;
-    final heroColor = _isAuthority ? AppColors.brandPrimary : AppColors.surface;
+        : _mutedTextColor;
     final rolePillColor = _isAuthority
         ? Colors.white.withValues(alpha: 0.18)
-        : AppColors.brandPrimary.withValues(alpha: 0.1);
+        : _primaryColor.withValues(alpha: 0.1);
 
     return Container(
       width: double.infinity,
@@ -202,11 +271,23 @@ class RoleProfileView extends StatelessWidget {
         AppSpacing.xl,
       ),
       decoration: BoxDecoration(
-        color: heroColor,
+        gradient: _isEnterpriseAuthority
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.enterprisePrimary,
+                  AppColors.enterprisePrimaryDark,
+                ],
+              )
+            : null,
+        color: _isEnterpriseAuthority
+            ? null
+            : (_isAuthority ? AppColors.brandPrimary : _surfaceColor),
         borderRadius: AppRadii.hero,
         border: _isAuthority
             ? null
-            : const Border(bottom: BorderSide(color: AppColors.borderSubtle)),
+            : Border(bottom: BorderSide(color: _borderColor)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -216,11 +297,11 @@ class RoleProfileView extends StatelessWidget {
             children: [
               Text(
                 'AKUN SAYA',
-                style: AppTextStyles.labelSmall.copyWith(
+                style: _style(
+                  AppTextStyles.labelSmall,
                   color: secondary,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
+                ).copyWith(letterSpacing: 1.2),
               ),
               if (onNotifications != null)
                 IconButton(
@@ -252,13 +333,15 @@ class RoleProfileView extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             profileTitle,
-            style: AppTextStyles.headlineLarge.copyWith(
+            style: _style(
+              AppTextStyles.headlineLarge,
               color: foreground,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: AppSpacing.lg),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 64,
@@ -266,13 +349,16 @@ class RoleProfileView extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(color: foreground, width: 2),
-                  color: AppColors.champagneToast,
+                  color: _isEnterpriseAuthority
+                      ? AppColors.enterpriseSurface
+                      : AppColors.champagneToast,
                 ),
                 alignment: Alignment.center,
                 child: Text(
                   initials,
-                  style: AppTextStyles.titleLarge.copyWith(
-                    color: AppColors.textPrimary,
+                  style: _style(
+                    AppTextStyles.titleLarge,
+                    color: _textColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -284,7 +370,9 @@ class RoleProfileView extends StatelessWidget {
                   children: [
                     Text(
                       displayName,
-                      style: AppTextStyles.headlineMedium.copyWith(
+                      softWrap: true,
+                      style: _style(
+                        AppTextStyles.headlineMedium,
                         color: foreground,
                         fontWeight: FontWeight.bold,
                       ),
@@ -293,10 +381,10 @@ class RoleProfileView extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         identifier!,
-                        style: AppTextStyles.labelMedium.copyWith(
+                        style: _style(
+                          AppTextStyles.labelMedium,
                           color: secondary,
-                          fontFamily: 'monospace',
-                        ),
+                        ).copyWith(fontFamily: 'monospace'),
                       ),
                     ],
                     const SizedBox(height: AppSpacing.sm),
@@ -311,7 +399,8 @@ class RoleProfileView extends StatelessWidget {
                       ),
                       child: Text(
                         roleLabel,
-                        style: AppTextStyles.labelSmall.copyWith(
+                        style: _style(
+                          AppTextStyles.labelSmall,
                           color: foreground,
                           fontWeight: FontWeight.w600,
                         ),
@@ -327,34 +416,219 @@ class RoleProfileView extends StatelessWidget {
     );
   }
 
-  Widget _buildStats() {
-    return Row(
-      children: [
-        for (var i = 0; i < stats.length; i++) ...[
-          Expanded(child: _buildStatCard(stats[i])),
-          if (i < stats.length - 1) const SizedBox(width: AppSpacing.sm),
+  Widget _buildEnterpriseHero(BuildContext context) {
+    const foreground = Colors.white;
+    final secondary = Colors.white.withValues(alpha: 0.78);
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.xl,
+        MediaQuery.paddingOf(context).top + AppSpacing.lg,
+        AppSpacing.xl,
+        AppSpacing.lg,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.enterprisePrimary,
+            AppColors.enterprisePrimaryDark,
+          ],
+        ),
+        borderRadius: AppRadii.hero,
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (heroOrganizationLabel != null)
+                Flexible(
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 32),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: AppRadii.pill,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          PhosphorIconsRegular.buildings,
+                          color: Colors.white,
+                          size: 15,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                        Flexible(
+                          child: Text(
+                            heroOrganizationLabel!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: _style(
+                              AppTextStyles.labelSmall,
+                              color: foreground,
+                              fontWeight: FontWeight.bold,
+                            ).copyWith(letterSpacing: 0.2),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                const SizedBox.shrink(),
+              if (onNotifications != null)
+                IconButton(
+                  onPressed: onNotifications,
+                  tooltip: 'Buka notifikasi',
+                  constraints: const BoxConstraints.tightFor(
+                    width: 44,
+                    height: 44,
+                  ),
+                  padding: EdgeInsets.zero,
+                  icon: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      PhosphorIconsRegular.bell,
+                      color: Colors.white,
+                      size: 21,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              initials,
+              style: _style(
+                AppTextStyles.headlineMedium,
+                color: _primaryColor,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            displayName,
+            textAlign: TextAlign.center,
+            softWrap: true,
+            style: _style(
+              AppTextStyles.headlineMedium,
+              color: foreground,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (identifier != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              identifier!,
+              textAlign: TextAlign.center,
+              style: _style(AppTextStyles.labelMedium, color: secondary),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.16),
+              borderRadius: AppRadii.pill,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  PhosphorIconsRegular.identificationBadge,
+                  color: Colors.white,
+                  size: 14,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  roleLabel,
+                  style: _style(
+                    AppTextStyles.labelSmall,
+                    color: foreground,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
-      ],
+      ),
+    );
+  }
+
+  Widget _buildStats() {
+    return Container(
+      decoration: BoxDecoration(
+        color: _surfaceColor,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: _borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.enterpriseTextMain.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            for (var i = 0; i < stats.length; i++) ...[
+              Expanded(child: _buildStatCard(stats[i])),
+              if (i < stats.length - 1)
+                VerticalDivider(
+                  width: 1,
+                  thickness: 1,
+                  indent: AppSpacing.md,
+                  endIndent: AppSpacing.md,
+                  color: _borderColor,
+                ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildStatCard(ProfileStatData stat) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        vertical: AppSpacing.md,
         horizontal: AppSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: AppColors.borderSubtle),
+        vertical: AppSpacing.md,
       ),
       child: Column(
         children: [
           Text(
             stat.value,
-            style: AppTextStyles.headlineMedium.copyWith(
-              color: AppColors.actionPrimary,
+            style: _style(
+              AppTextStyles.headlineMedium,
+              color: stat.color ?? _primaryColor,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -362,8 +636,9 @@ class RoleProfileView extends StatelessWidget {
           Text(
             stat.label,
             textAlign: TextAlign.center,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: AppColors.textMuted,
+            style: _style(
+              AppTextStyles.labelSmall,
+              color: _mutedTextColor,
               height: 1.2,
             ),
           ),
@@ -372,22 +647,212 @@ class RoleProfileView extends StatelessWidget {
     );
   }
 
+  Widget _buildAssignmentPanel() {
+    final value = assignment;
+    if (_isEnterpriseAuthority) {
+      return _buildEnterpriseAssignmentPanel(value);
+    }
+
+    return _buildPanel(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: value == null
+              ? Row(
+                  children: [
+                    Icon(Icons.assignment_outlined, color: _mutedTextColor),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: Text(
+                        assignmentEmptyText,
+                        style: _style(
+                          AppTextStyles.bodyMedium,
+                          color: _mutedTextColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      value.projectName,
+                      style: _style(
+                        AppTextStyles.titleLarge,
+                        color: _textColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (value.developerName.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        value.developerName,
+                        style: _style(
+                          AppTextStyles.bodyMedium,
+                          color: _mutedTextColor,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.md),
+                    _assignmentLine(
+                      Icons.calendar_today_outlined,
+                      value.scheduleText,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    _assignmentLine(
+                      Icons.notes_outlined,
+                      value.instructionText,
+                    ),
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnterpriseAssignmentPanel(ProfileAssignmentData? value) {
+    return _buildPanel(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 3,
+                constraints: const BoxConstraints(minHeight: 46),
+                decoration: BoxDecoration(
+                  color: _primaryColor,
+                  borderRadius: AppRadii.tight,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            (assignmentSectionTitle ?? 'Penugasan Lapangan')
+                                .toUpperCase(),
+                            style: _style(
+                              AppTextStyles.labelSmall,
+                              color: _primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ).copyWith(letterSpacing: 0.35),
+                          ),
+                        ),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: _primaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    if (value == null)
+                      Text(
+                        assignmentEmptyText,
+                        style: _style(
+                          AppTextStyles.bodyMedium,
+                          color: _mutedTextColor,
+                        ),
+                      )
+                    else
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              value.projectName,
+                              softWrap: true,
+                              style: _style(
+                                AppTextStyles.titleMedium,
+                                color: _textColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 1),
+                            child: Icon(
+                              PhosphorIconsRegular.paperPlaneTilt,
+                              color: _primaryColor,
+                              size: 19,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _assignmentLine(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 18, color: _primaryColor),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            text,
+            style: _style(AppTextStyles.bodyMedium, color: _textColor),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSectionHeader(String title) {
+    if (_isEnterpriseAuthority) {
+      return Text(
+        title.toUpperCase(),
+        style: _style(
+          AppTextStyles.labelMedium,
+          color: _textColor,
+          fontWeight: FontWeight.bold,
+        ).copyWith(letterSpacing: 0.35),
+      );
+    }
+
     return Row(
       children: [
         Container(
           width: 3.5,
           height: 15,
-          decoration: const BoxDecoration(
-            color: AppColors.actionPrimary,
+          decoration: BoxDecoration(
+            color: _primaryColor,
             borderRadius: AppRadii.tight,
           ),
         ),
         const SizedBox(width: AppSpacing.sm),
-        Text(
-          title,
-          style: AppTextStyles.titleMedium.copyWith(
-            fontWeight: FontWeight.bold,
+        Expanded(
+          child: Text(
+            title,
+            softWrap: true,
+            style: _style(
+              AppTextStyles.titleMedium,
+              color: _textColor,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -397,9 +862,18 @@ class RoleProfileView extends StatelessWidget {
   Widget _buildPanel({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: _surfaceColor,
         borderRadius: AppRadii.card,
-        border: Border.all(color: AppColors.borderSubtle),
+        border: Border.all(color: _borderColor),
+        boxShadow: _isEnterpriseAuthority
+            ? [
+                BoxShadow(
+                  color: AppColors.enterpriseTextMain.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
       ),
       child: Column(children: children),
     );
@@ -414,12 +888,19 @@ class RoleProfileView extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(AppSpacing.sm),
+            width: _isEnterpriseAuthority ? 40 : null,
+            height: _isEnterpriseAuthority ? 40 : null,
+            padding: _isEnterpriseAuthority
+                ? EdgeInsets.zero
+                : const EdgeInsets.all(AppSpacing.sm),
             decoration: BoxDecoration(
-              color: AppColors.statusAttention.withValues(alpha: 0.08),
+              color: _isEnterpriseAuthority
+                  ? AppColors.enterprisePrimarySurface
+                  : _primaryColor.withValues(alpha: 0.08),
               borderRadius: AppRadii.control,
             ),
-            child: Icon(item.icon, color: AppColors.actionPrimary, size: 18),
+            alignment: Alignment.center,
+            child: Icon(item.icon, color: _primaryColor, size: 18),
           ),
           const SizedBox(width: AppSpacing.md + 2),
           Expanded(
@@ -428,16 +909,21 @@ class RoleProfileView extends StatelessWidget {
               children: [
                 Text(
                   item.label,
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.textMuted,
+                  style: _style(
+                    AppTextStyles.labelSmall,
+                    color: _mutedTextColor,
                   ),
                 ),
                 const SizedBox(height: 1),
                 Text(
                   item.value,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.titleSmall.copyWith(
+                  maxLines: _isEnterpriseAuthority ? 3 : 2,
+                  overflow: _isEnterpriseAuthority
+                      ? TextOverflow.visible
+                      : TextOverflow.ellipsis,
+                  style: _style(
+                    AppTextStyles.titleSmall,
+                    color: _textColor,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -450,29 +936,93 @@ class RoleProfileView extends StatelessWidget {
   }
 
   Widget _buildMenuItem(ProfileMenuItem item) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.xs,
-      ),
-      leading: Container(
-        padding: const EdgeInsets.all(AppSpacing.sm),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceSubtle,
-          borderRadius: AppRadii.control,
+    return Material(
+      type: MaterialType.transparency,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: AppSpacing.xs,
         ),
-        child: Icon(item.icon, color: AppColors.textPrimary, size: 18),
+        leading: Container(
+          width: _isEnterpriseAuthority ? 40 : null,
+          height: _isEnterpriseAuthority ? 40 : null,
+          padding: _isEnterpriseAuthority
+              ? EdgeInsets.zero
+              : const EdgeInsets.all(AppSpacing.sm),
+          decoration: BoxDecoration(
+            color: _isEnterpriseAuthority
+                ? AppColors.enterprisePrimarySurface
+                : AppColors.surfaceSubtle,
+            borderRadius: AppRadii.control,
+          ),
+          alignment: Alignment.center,
+          child: Icon(item.icon, color: _primaryColor, size: 18),
+        ),
+        title: Text(
+          item.title,
+          softWrap: true,
+          style: _style(
+            AppTextStyles.titleMedium,
+            color: _textColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        trailing: Icon(
+          PhosphorIconsRegular.caretRight,
+          color: _mutedTextColor,
+          size: 18,
+        ),
+        onTap: item.onTap,
       ),
-      title: Text(
-        item.title,
-        style: AppTextStyles.titleMedium.copyWith(fontWeight: FontWeight.bold),
+    );
+  }
+
+  Widget _buildLogoutButton() {
+    if (_isEnterpriseAuthority) {
+      return SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: FilledButton.icon(
+          onPressed: onLogout,
+          style: FilledButton.styleFrom(
+            foregroundColor: _primaryColor,
+            backgroundColor: AppColors.enterprisePrimarySurface,
+            elevation: 0,
+            shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
+          ),
+          icon: const Icon(PhosphorIconsRegular.signOut, size: 18),
+          label: Text(
+            logoutLabel,
+            style: _style(
+              AppTextStyles.labelLarge,
+              color: _primaryColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: OutlinedButton.icon(
+        onPressed: onLogout,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: _primaryColor,
+          side: BorderSide(color: _primaryColor, width: 1.2),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadii.pill),
+        ),
+        icon: const Icon(PhosphorIconsRegular.signOut, size: 18),
+        label: Text(
+          logoutLabel,
+          style: _style(
+            AppTextStyles.labelLarge,
+            color: _primaryColor,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
-      trailing: const Icon(
-        PhosphorIconsRegular.caretRight,
-        color: AppColors.textMuted,
-        size: 18,
-      ),
-      onTap: item.onTap,
     );
   }
 }
