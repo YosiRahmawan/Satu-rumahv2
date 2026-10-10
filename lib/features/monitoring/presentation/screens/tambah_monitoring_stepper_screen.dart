@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -95,118 +94,156 @@ class _TambahMonitoringStepperScreenState
     });
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: InkWell(
-            onTap: () {
-              if (formState.currentStep > 0) {
-                notifier.setStep(formState.currentStep - 1);
-              } else if (context.canPop()) {
-                context.pop();
-              } else {
-                context.go('/monitoring/lapangan');
-              }
-            },
-            borderRadius: AppRadii.pill,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.grey300),
-              ),
-              child: const Icon(
-                Icons.arrow_back,
-                color: AppColors.cocoaBeanRoast,
-                size: 18,
-              ),
-            ),
-          ),
-        ),
-        title: const Text(
-          'Form Monitoring Lapangan',
-          style: TextStyle(
-            color: AppColors.cocoaBeanRoast,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        actions: [
-          if (kDebugMode)
-            IconButton(
-              tooltip: 'Isi Contoh',
-              onPressed: () {
-                notifier.fillDummyData();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Data contoh berhasil diisikan!'),
-                  ),
-                );
-              },
-              icon: const Icon(
-                Icons.flash_on,
-                color: AppColors.actionPrimary,
-                size: 20,
-              ),
-            ),
-        ],
-      ),
+      backgroundColor: AppColors.enterpriseCanvas,
       body: Column(
         children: [
-          // Stepper Header Bar with Linear Progress Line
-          _buildStepperHeader(formState.currentStep),
-
           Expanded(
             child: SingleChildScrollView(
               controller: _scrollController,
-              padding: const EdgeInsets.all(20),
-              child: _buildCurrentStep(context, formState, notifier),
+              child: Column(
+                children: [
+                  _buildHero(context, formState, notifier),
+                  Transform.translate(
+                    offset: const Offset(0, -16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _buildStepperHeader(formState.currentStep),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    child: _buildCurrentStep(context, formState, notifier),
+                  ),
+                ],
+              ),
             ),
           ),
-
-          // Pinned Bottom Button Bar
           _buildBottomBar(context, formState, notifier),
         ],
       ),
     );
   }
 
-  Widget _buildStepperHeader(int currentStep) {
-    double progressPercent = (currentStep + 1) / 3.0;
-
+  Widget _buildHero(
+    BuildContext context,
+    MonitoringFormState state,
+    MonitoringFormNotifier notifier,
+  ) {
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      width: double.infinity,
+      padding: EdgeInsets.only(
+        top: MediaQuery.paddingOf(context).top + 12,
+        left: 16,
+        right: 16,
+        bottom: 32,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.enterprisePrimary,
+            AppColors.enterprisePrimaryDark,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: AppRadii.hero,
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Red linear progress bar line
-          ClipRRect(
-            borderRadius: AppRadii.tight,
-            child: LinearProgressIndicator(
-              value: progressPercent,
-              minHeight: 4,
-              backgroundColor: AppColors.grey200,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.actionPrimary,
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Kembali',
+                onPressed: () {
+                  if (state.currentStep > 0) {
+                    notifier.setStep(state.currentStep - 1);
+                  } else if (context.canPop()) {
+                    context.pop();
+                  } else {
+                    context.go('/monitoring/lapangan');
+                  }
+                },
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
               ),
-            ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: .16),
+                    borderRadius: AppRadii.pill,
+                  ),
+                  child: Text(
+                    'DISPERWASKIM KOTA TASIKMALAYA',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.labelSmall.copyWith(
+                      fontFamily: AppTextStyles.enterpriseFontFamily,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
+          Text(
+            'Formulir Pengawasan',
+            style: AppTextStyles.h2.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Langkah ${state.currentStep + 1} dari 3: ${_stepTitle(state.currentStep)}',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterprisePrimaryBorder,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  String _stepTitle(int step) => switch (step) {
+    0 => 'Info Umum',
+    1 => 'Info Lanjutan',
+    _ => 'Dokumentasi Lapangan',
+  };
+
+  Widget _buildStepperHeader(int currentStep) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      child: Column(
+        children: [
           // Stepper Circles & Labels Row
           Row(
             children: [
-              Expanded(child: _buildStepItem(1, 'Informasi Umum', currentStep)),
+              Expanded(child: _buildStepItem(1, '1. Info Umum', currentStep)),
               const SizedBox(width: 4),
               Expanded(
-                child: _buildStepItem(2, 'Informasi Lanjutan', currentStep),
+                child: _buildStepItem(2, '2. Info Lanjutan', currentStep),
               ),
               const SizedBox(width: 4),
               Expanded(
-                child: _buildStepItem(3, 'Upload Dokumentasi', currentStep),
+                child: _buildStepItem(
+                  3,
+                  '3. Dokumentasi Lapangan',
+                  currentStep,
+                ),
               ),
             ],
           ),
@@ -219,12 +256,12 @@ class _TambahMonitoringStepperScreenState
     final isDone = (currentStep + 1) > stepNumber;
     final isActive = (currentStep + 1) == stepNumber;
 
-    return Row(
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 20,
-          height: 20,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: (isActive || isDone)
@@ -239,27 +276,31 @@ class _TambahMonitoringStepperScreenState
           ),
           child: Center(
             child: isDone
-                ? const Icon(Icons.check, size: 12, color: Colors.white)
+                ? const Icon(Icons.check, size: 18, color: Colors.white)
                 : Text(
                     '$stepNumber',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                       color: isActive ? Colors.white : AppColors.grey600,
                     ),
                   ),
           ),
         ),
-        const SizedBox(width: 4),
-        Expanded(
+        const SizedBox(height: 8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 30),
           child: Text(
             label,
-            maxLines: 1,
+            maxLines: 2,
+            textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10,
+            style: AppTextStyles.labelSmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive ? AppColors.actionPrimary : AppColors.textMuted,
+              color: isActive
+                  ? AppColors.enterprisePrimary
+                  : AppColors.enterpriseTextMuted,
             ),
           ),
         ),
@@ -297,96 +338,334 @@ class _TambahMonitoringStepperScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Sub-header Uppercase Red Text
-        const Text(
-          'LANGKAH 01',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: AppColors.actionPrimary,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Informasi umum',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.cocoaBeanRoast,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Lengkapi data dasar monitoring lapangan.',
-          style: TextStyle(fontSize: 13, color: AppColors.grey600),
-        ),
-        const SizedBox(height: 24),
-
-        // Hari / Tanggal Monitoring
-        Text(
-          'Hari / Tanggal Monitoring',
-          style: AppTextStyles.labelMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: state.tanggalMonitoring,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2030),
-            );
-            if (picked != null) notifier.updateTanggal(picked);
-          },
-          borderRadius: AppRadii.card,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.grey300),
-              borderRadius: AppRadii.card,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  dateStr,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.cocoaBeanRoast,
+        _buildMetaRow(state),
+        const SizedBox(height: 16),
+        _buildFieldCard(
+          label: 'Hari/Tanggal Monitoring',
+          badge: 'Wajib',
+          child: InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: state.tanggalMonitoring,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+              );
+              if (picked != null) notifier.updateTanggal(picked);
+            },
+            borderRadius: AppRadii.small,
+            child: _buildInputSurface(
+              child: Row(
+                children: [
+                  Expanded(child: Text(dateStr, style: _inputTextStyle)),
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    color: AppColors.enterpriseTextMuted,
                   ),
-                ),
-                const Icon(
-                  Icons.calendar_today,
-                  size: 18,
-                  color: AppColors.grey600,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 20),
-
-        // Nama Perumahan
-        _buildTextField(
-          'Nama Perumahan',
-          _namaPerumahanController,
-          notifier.updateNamaPerumahan,
-          'Masukkan Nama Perumahan',
+        const SizedBox(height: 16),
+        _buildFieldCard(
+          label: 'Nama Perumahan',
+          badge: 'Wajib',
+          child: _buildTextFieldBody(
+            _namaPerumahanController,
+            notifier.updateNamaPerumahan,
+            'Masukkan nama perumahan',
+          ),
         ),
-        const SizedBox(height: 20),
-
-        // Lokasi Perumahan
-        _buildTextField(
-          'Lokasi Perumahan',
-          _lokasiController,
-          notifier.updateLokasi,
-          'Masukkan lokasi perumahan',
+        const SizedBox(height: 16),
+        _buildFieldCard(
+          label: 'Lokasi Perumahan',
+          badge: 'Opsional',
+          child: _buildTextFieldBody(
+            _lokasiController,
+            notifier.updateLokasi,
+            'Masukkan lokasi perumahan',
+            prefixIcon: Icons.location_on_outlined,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildPurposeCard(state.maksudTujuan),
+        const SizedBox(height: 16),
+        _buildBulletCard(
+          label: 'Temuan di Lapangan',
+          badge: 'Opsional',
+          icon: Icons.warning_amber_outlined,
+          color: AppColors.enterpriseWarning,
+          items: state.temuanLapangan,
+          onChanged: notifier.updateTemuan,
+          placeholder: 'Tuliskan temuan baru...',
+        ),
+        const SizedBox(height: 16),
+        _buildBulletCard(
+          label: 'Kesimpulan',
+          badge: 'Opsional',
+          icon: Icons.fact_check_outlined,
+          color: AppColors.statusInfo,
+          items: state.kesimpulan,
+          onChanged: notifier.updateKesimpulan,
+          placeholder: 'Tuliskan kesimpulan...',
         ),
       ],
+    );
+  }
+
+  TextStyle get _inputTextStyle => AppTextStyles.bodyMedium.copyWith(
+    fontFamily: AppTextStyles.enterpriseFontFamily,
+    color: AppColors.enterpriseTextMain,
+  );
+
+  Widget _buildMetaRow(MonitoringFormState state) {
+    return Row(
+      children: [
+        const Icon(
+          Icons.check_circle_outline,
+          size: 16,
+          color: AppColors.enterpriseSuccess,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            'Perubahan tersimpan di formulir aktif',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMuted,
+            ),
+          ),
+        ),
+        if (state.pengajuanId != null)
+          Flexible(
+            child: Text(
+              'ID: ${state.pengajuanId}',
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: AppTextStyles.labelSmall.copyWith(
+                fontFamily: AppTextStyles.enterpriseFontFamily,
+                color: AppColors.enterpriseTextMuted,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildFieldCard({
+    required String label,
+    required String badge,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              _buildBadge(badge),
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text) {
+    final required = text == 'Wajib';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: required
+            ? AppColors.enterprisePrimarySurfaceSoft
+            : AppColors.enterpriseCanvas,
+        borderRadius: AppRadii.small,
+        border: required
+            ? Border.all(color: AppColors.enterprisePrimaryBorder)
+            : null,
+      ),
+      child: Text(
+        text,
+        style: AppTextStyles.labelSmall.copyWith(
+          fontFamily: AppTextStyles.enterpriseFontFamily,
+          color: required
+              ? AppColors.enterprisePrimary
+              : AppColors.enterpriseTextMuted,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputSurface({required Widget child}) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.small,
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildTextFieldBody(
+    TextEditingController controller,
+    ValueChanged<String> onChanged,
+    String hint, {
+    IconData? prefixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      onChanged: onChanged,
+      style: _inputTextStyle,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: _inputTextStyle.copyWith(
+          color: AppColors.enterpriseTextMuted,
+        ),
+        prefixIcon: prefixIcon == null
+            ? null
+            : Icon(prefixIcon, color: AppColors.enterpriseTextMuted),
+        filled: true,
+        fillColor: AppColors.enterpriseSurface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: AppRadii.small,
+          borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadii.small,
+          borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadii.small,
+          borderSide: const BorderSide(
+            color: AppColors.enterprisePrimary,
+            width: 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPurposeCard(String narrative) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseCanvas,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.lock_outline,
+                size: 18,
+                color: AppColors.enterpriseTextMuted,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Maksud dan Tujuan',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              _buildBadge('Terkunci narasi Dinas'),
+            ],
+          ),
+          const SizedBox(height: 10),
+          _buildInputSurface(
+            child: Text(
+              narrative,
+              style: _inputTextStyle.copyWith(fontSize: 13, height: 1.5),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '* Bagian ini otomatis dan tidak perlu diisi',
+            style: AppTextStyles.labelSmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMuted,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBulletCard({
+    required String label,
+    required String badge,
+    required IconData icon,
+    required Color color,
+    required List<String> items,
+    required ValueChanged<List<String>> onChanged,
+    required String placeholder,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 18, color: color),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              _buildBadge(badge),
+            ],
+          ),
+          const SizedBox(height: 10),
+          DynamicBulletField(
+            label: '',
+            items: items,
+            onItemsChanged: onChanged,
+            placeholderText: placeholder,
+          ),
+        ],
+      ),
     );
   }
 
@@ -644,55 +923,6 @@ class _TambahMonitoringStepperScreenState
     );
   }
 
-  Widget _buildTextField(
-    String label,
-    TextEditingController controller,
-    ValueChanged<String> onChanged,
-    String hint,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: AppTextStyles.labelMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          onChanged: onChanged,
-          style: const TextStyle(fontSize: 14),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textMuted,
-            ),
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
-            ),
-            border: OutlineInputBorder(
-              borderRadius: AppRadii.card,
-              borderSide: const BorderSide(color: AppColors.grey300),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: AppRadii.card,
-              borderSide: const BorderSide(color: AppColors.grey300),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: AppRadii.card,
-              borderSide: const BorderSide(color: AppColors.actionPrimary),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildUnderlineField(
     String hintText,
     TextEditingController controller,
@@ -723,30 +953,52 @@ class _TambahMonitoringStepperScreenState
     MonitoringFormState formState,
     MonitoringFormNotifier notifier,
   ) {
-    final isLastStep = formState.currentStep == 2;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+        final useStackedActions =
+            constraints.maxWidth < 380 || textScale > 1.35;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
+        final cancelButton = TextButton(
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/monitoring/lapangan');
+            }
+          },
+          child: Text(
+            'Batal',
+            style: AppTextStyles.labelMedium.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMuted,
+            ),
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
+        );
+
+        final saveDraftButton = OutlinedButton(
+          onPressed: null,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 44),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
+          ),
+          child: Text(
+            'Simpan Draft',
+            style: AppTextStyles.labelMedium.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+            ),
+          ),
+        );
+
+        final nextButton = SizedBox(
           height: 48,
           child: ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.actionPrimary,
+              backgroundColor: AppColors.enterprisePrimary,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: AppRadii.pill),
+              shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
             ),
             onPressed: () {
               if (formState.currentStep == 0) {
@@ -800,12 +1052,19 @@ class _TambahMonitoringStepperScreenState
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
-                  isLastStep ? 'PREVIEW & SUBMIT' : 'LANJUTKAN',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    letterSpacing: 0.5,
+                Flexible(
+                  child: Text(
+                    formState.currentStep == 0
+                        ? 'Lanjut ke Langkah 2'
+                        : formState.currentStep == 1
+                        ? 'Lanjut ke Langkah 3'
+                        : 'Preview & Kirim',
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontFamily: AppTextStyles.enterpriseFontFamily,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -813,8 +1072,49 @@ class _TambahMonitoringStepperScreenState
               ],
             ),
           ),
-        ),
-      ),
+        );
+
+        return Container(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          decoration: BoxDecoration(
+            color: AppColors.enterpriseSurface,
+            border: const Border(
+              top: BorderSide(color: AppColors.enterpriseBorder),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: useStackedActions
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: cancelButton),
+                          Expanded(child: saveDraftButton),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      nextButton,
+                    ],
+                  )
+                : Row(
+                    children: [
+                      cancelButton,
+                      saveDraftButton,
+                      const SizedBox(width: 8),
+                      Expanded(child: nextButton),
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 }

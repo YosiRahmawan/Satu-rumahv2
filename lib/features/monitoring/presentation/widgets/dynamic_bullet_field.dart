@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 class DynamicBulletField extends StatefulWidget {
@@ -31,7 +32,9 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
 
   void _initControllers() {
     final list = widget.items.isEmpty ? [''] : widget.items;
-    _controllers = list.map((item) => TextEditingController(text: item)).toList();
+    _controllers = list
+        .map((item) => TextEditingController(text: item))
+        .toList();
   }
 
   @override
@@ -42,7 +45,9 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
       for (var c in _controllers) {
         c.dispose();
       }
-      _controllers = list.map((item) => TextEditingController(text: item)).toList();
+      _controllers = list
+          .map((item) => TextEditingController(text: item))
+          .toList();
     } else {
       for (int i = 0; i < list.length; i++) {
         if (_controllers[i].text != list[i]) {
@@ -69,14 +74,17 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: AppTextStyles.labelMedium.copyWith(
-            color: AppColors.cocoaBeanRoast,
-            fontWeight: FontWeight.bold,
+        if (widget.label.isNotEmpty) ...[
+          Text(
+            widget.label,
+            style: AppTextStyles.labelMedium.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMain,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: 8),
+        ],
         ..._controllers.asMap().entries.map((entry) {
           final index = entry.key;
           final controller = entry.value;
@@ -86,7 +94,10 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const Text('• ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text(
+                  '• ',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 Expanded(
                   child: TextFormField(
                     controller: controller,
@@ -94,14 +105,21 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
                     decoration: InputDecoration(
                       hintText: widget.placeholderText,
                       isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.grey300),
+                        borderRadius: AppRadii.small,
+                        borderSide: const BorderSide(
+                          color: AppColors.enterpriseBorder,
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.grey300),
+                        borderRadius: AppRadii.small,
+                        borderSide: const BorderSide(
+                          color: AppColors.enterpriseBorder,
+                        ),
                       ),
                     ),
                   ),
@@ -109,7 +127,12 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
                 if (_controllers.length > 1) ...[
                   const SizedBox(width: 4),
                   IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, color: AppColors.chilliDust, size: 20),
+                    tooltip: 'Hapus poin',
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: AppColors.enterpriseTextMuted,
+                      size: 20,
+                    ),
                     onPressed: () {
                       setState(() {
                         _controllers[index].dispose();
@@ -132,10 +155,17 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
               });
               _notifyParent();
             },
-            icon: const Icon(Icons.add, size: 18, color: AppColors.chilliDust),
+            icon: const Icon(
+              Icons.add_circle_outline,
+              size: 18,
+              color: AppColors.enterprisePrimary,
+            ),
             label: const Text(
-              '+ Tambah Poin',
-              style: TextStyle(color: AppColors.chilliDust, fontWeight: FontWeight.w600),
+              '+ Tambah poin',
+              style: TextStyle(
+                color: AppColors.enterprisePrimary,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ),
