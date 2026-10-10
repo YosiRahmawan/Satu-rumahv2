@@ -533,7 +533,7 @@ class _TambahMonitoringStepperScreenState
         const SizedBox(width: 6),
         Flexible(
           child: Text(
-            'Perubahan tersimpan sementara di formulir ini',
+            'Perubahan tersimpan di sesi formulir ini',
             style: AppTextStyles.bodySmall.copyWith(
               fontFamily: AppTextStyles.enterpriseFontFamily,
               color: AppColors.enterpriseTextMuted,
@@ -780,6 +780,7 @@ class _TambahMonitoringStepperScreenState
             items: items,
             onItemsChanged: onChanged,
             placeholderText: placeholder,
+            accentColor: color,
           ),
         ],
       ),
