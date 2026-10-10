@@ -6,13 +6,25 @@ import 'status_hasil_evaluasi.dart';
 /// fields below. These typed entries are therefore local compatibility data
 /// until a server contract for multiple identities is available.
 class MonitoringPerson {
+  static int _nextId = 0;
+
+  final String id;
   final String nama;
   final String jabatan;
 
-  const MonitoringPerson({this.nama = '', this.jabatan = ''});
+  const MonitoringPerson({this.id = '', this.nama = '', this.jabatan = ''});
 
-  MonitoringPerson copyWith({String? nama, String? jabatan}) {
+  factory MonitoringPerson.create({String nama = '', String jabatan = ''}) {
     return MonitoringPerson(
+      id: 'monitoring-person-${++_nextId}',
+      nama: nama,
+      jabatan: jabatan,
+    );
+  }
+
+  MonitoringPerson copyWith({String? id, String? nama, String? jabatan}) {
+    return MonitoringPerson(
+      id: id ?? this.id,
       nama: nama ?? this.nama,
       jabatan: jabatan ?? this.jabatan,
     );

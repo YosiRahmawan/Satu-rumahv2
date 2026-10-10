@@ -75,10 +75,12 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
           children: [
             const Text(
-              'Upload Foto Evidence ',
+              'Upload Foto Evidence',
               style: TextStyle(
                 color: AppColors.cocoaBeanRoast,
                 fontWeight: FontWeight.bold,

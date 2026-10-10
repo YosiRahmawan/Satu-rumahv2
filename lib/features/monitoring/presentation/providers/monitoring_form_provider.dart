@@ -24,6 +24,16 @@ typedef MonitoringBaUpload =
 
 enum MonitoringSubmitStatus { success, duplicate, failure }
 
+List<MonitoringPerson> _stablePeople(List<MonitoringPerson>? people) {
+  final source = people ?? [MonitoringPerson.create()];
+  return [
+    for (final person in source)
+      person.id.isEmpty
+          ? person.copyWith(id: MonitoringPerson.create().id)
+          : person,
+  ];
+}
+
 /// Result returned by the one canonical final-report operation.
 ///
 /// A duplicate result is successful from the caller's perspective, but marks
@@ -107,12 +117,14 @@ class MonitoringFormState {
     this.pelaksanaJabatan = '',
     this.ditemuiNama = '',
     this.ditemuiJabatan = '',
-    this.pelaksana = const [MonitoringPerson()],
-    this.ditemui = const [MonitoringPerson()],
+    List<MonitoringPerson>? pelaksana,
+    List<MonitoringPerson>? ditemui,
     this.photoPaths = const [],
     this.isSubmitting = false,
     this.errorMessage,
-  }) : tanggalMonitoring = tanggalMonitoring ?? DateTime.now();
+  }) : tanggalMonitoring = tanggalMonitoring ?? DateTime.now(),
+       pelaksana = _stablePeople(pelaksana),
+       ditemui = _stablePeople(ditemui);
 
   MonitoringFormState copyWith({
     String? pengajuanId,
@@ -242,7 +254,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
 
   void addPelaksana() {
     state = state.copyWith(
-      pelaksana: [...state.pelaksana, const MonitoringPerson()],
+      pelaksana: [...state.pelaksana, MonitoringPerson.create()],
     );
   }
 
@@ -273,7 +285,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
 
   void addDitemui() {
     state = state.copyWith(
-      ditemui: [...state.ditemui, const MonitoringPerson()],
+      ditemui: [...state.ditemui, MonitoringPerson.create()],
     );
   }
 

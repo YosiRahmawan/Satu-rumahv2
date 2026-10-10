@@ -159,8 +159,12 @@ void main() {
     expect(find.text('Lanjut ke Langkah 3'), findsOneWidget);
 
     await tester.tap(find.text('+ Tambah Poin').first);
-    await tester.tap(find.text('Tambah Anggota Tim'));
-    await tester.tap(find.text('Tambah Pihak Ditemui'));
+    final addMember = find.text('Tambah Anggota Tim');
+    await tester.ensureVisible(addMember);
+    await tester.tap(addMember);
+    final addVisitedParty = find.text('Tambah Pihak Ditemui');
+    await tester.ensureVisible(addVisitedParty);
+    await tester.tap(addVisitedParty);
     await tester.pump();
 
     final state = container.read(monitoringFormProvider);
@@ -187,6 +191,97 @@ void main() {
       'Kesepakatan tersimpan',
     ]);
     expect(find.text('Perumahan Persisten'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('deleting first team member preserves the second row values', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.setStep(1);
+    notifier.addPelaksana();
+    notifier.updatePelaksanaPerson(
+      0,
+      nama: 'Pelaksana Satu',
+      jabatan: 'Jabatan Satu',
+    );
+    notifier.updatePelaksanaPerson(
+      1,
+      nama: 'Pelaksana Dua',
+      jabatan: 'Jabatan Dua',
+    );
+
+    await pumpStep1(tester);
+    final firstDelete = find.byTooltip('Hapus anggota 1');
+    await tester.ensureVisible(firstDelete);
+    await tester.tap(firstDelete);
+    await tester.pump();
+
+    final state = container.read(monitoringFormProvider);
+    expect(state.pelaksana.single.nama, 'Pelaksana Dua');
+    expect(state.pelaksana.single.jabatan, 'Jabatan Dua');
+    expect(find.text('Pelaksana Dua'), findsOneWidget);
+    expect(find.byTooltip('Hapus anggota 1'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('deleting first visited party preserves the second row values', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.setStep(1);
+    notifier.addDitemui();
+    notifier.updateDitemuiPerson(
+      0,
+      nama: 'Ditemui Satu',
+      jabatan: 'Jabatan Satu',
+    );
+    notifier.updateDitemuiPerson(
+      1,
+      nama: 'Ditemui Dua',
+      jabatan: 'Jabatan Dua',
+    );
+
+    await pumpStep1(tester);
+    final firstDelete = find.byTooltip('Hapus anggota 1');
+    await tester.ensureVisible(firstDelete);
+    await tester.tap(firstDelete);
+    await tester.pump();
+
+    final state = container.read(monitoringFormProvider);
+    expect(state.ditemui.single.nama, 'Ditemui Dua');
+    expect(state.ditemui.single.jabatan, 'Jabatan Dua');
+    expect(find.text('Ditemui Dua'), findsOneWidget);
+    expect(find.byTooltip('Hapus anggota 1'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Step 2 to Step 3 and back retains repeatable people state', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.setStep(1);
+    notifier.updatePelaksanaPerson(
+      0,
+      nama: 'Petugas Tetap',
+      jabatan: 'Koordinator',
+    );
+    notifier.updateDitemuiPerson(
+      0,
+      nama: 'Pihak Tetap',
+      jabatan: 'Site Manager',
+    );
+
+    await pumpStep1(tester);
+    await tester.tap(find.text('Lanjut ke Langkah 3'));
+    await tester.pump();
+    expect(container.read(monitoringFormProvider).currentStep, 2);
+
+    await tester.tap(find.byTooltip('Kembali'));
+    await tester.pump();
+    expect(container.read(monitoringFormProvider).currentStep, 1);
+    expect(find.text('Petugas Tetap'), findsOneWidget);
+    expect(find.text('Pihak Tetap'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

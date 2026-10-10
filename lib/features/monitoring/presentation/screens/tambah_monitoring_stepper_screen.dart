@@ -949,6 +949,7 @@ class _TambahMonitoringStepperScreenState
             child: _buildPersonCard(
               index: entry.key,
               person: entry.value,
+              canRemove: people.length > 1,
               onRemove: () => onRemove(entry.key),
               onChanged: onChanged,
             ),
@@ -979,6 +980,7 @@ class _TambahMonitoringStepperScreenState
   Widget _buildPersonCard({
     required int index,
     required MonitoringPerson person,
+    required bool canRemove,
     required VoidCallback onRemove,
     required void Function(int index, {String? nama, String? jabatan})
     onChanged,
@@ -1006,28 +1008,34 @@ class _TambahMonitoringStepperScreenState
                   ),
                 ),
               ),
-              IconButton(
-                tooltip: 'Hapus anggota ${index + 1}',
-                onPressed: onRemove,
-                icon: const Icon(
-                  Icons.delete_outline,
-                  size: 20,
-                  color: AppColors.enterpriseTextMuted,
+              if (canRemove)
+                IconButton(
+                  tooltip: 'Hapus anggota ${index + 1}',
+                  onPressed: onRemove,
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: AppColors.enterpriseTextMuted,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
+                  ),
+                  padding: EdgeInsets.zero,
                 ),
-                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-                padding: EdgeInsets.zero,
-              ),
             ],
           ),
           const Divider(height: 1, color: AppColors.enterpriseBorder),
           const SizedBox(height: 12),
           _buildPersonTextField(
+            key: ValueKey('${person.id}-nama'),
             label: 'Nama Lengkap',
             value: person.nama,
             onChanged: (value) => onChanged(index, nama: value),
           ),
           const SizedBox(height: 12),
           _buildPersonTextField(
+            key: ValueKey('${person.id}-jabatan'),
             label: 'Jabatan',
             value: person.jabatan,
             onChanged: (value) => onChanged(index, jabatan: value),
@@ -1038,6 +1046,7 @@ class _TambahMonitoringStepperScreenState
   }
 
   Widget _buildPersonTextField({
+    required Key key,
     required String label,
     required String value,
     required ValueChanged<String> onChanged,
@@ -1055,6 +1064,7 @@ class _TambahMonitoringStepperScreenState
         ),
         const SizedBox(height: 6),
         TextFormField(
+          key: key,
           initialValue: value,
           onChanged: onChanged,
           style: AppTextStyles.bodySmall.copyWith(
@@ -1135,10 +1145,12 @@ class _TambahMonitoringStepperScreenState
         const SizedBox(height: 28),
 
         // Wet Signature Section Header
-        Row(
+        Wrap(
+          spacing: 4,
+          runSpacing: 4,
           children: [
             const Text(
-              'Tanda Tangan Basah ',
+              'Tanda Tangan Basah',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
