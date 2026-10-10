@@ -62,6 +62,7 @@ void main() {
     expect(find.textContaining('Download Word'), findsNothing);
     expect(find.byIcon(Icons.qr_code), findsNothing);
     expect(find.textContaining('_________________'), findsNothing);
+    expect(find.text('Identitas pihak yang tercatat'), findsNothing);
   });
 
   testWidgets('preview remains usable at 360dp and 412dp with 200% text', (

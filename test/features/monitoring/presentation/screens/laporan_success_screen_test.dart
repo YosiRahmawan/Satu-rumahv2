@@ -53,6 +53,7 @@ void main() {
     expect(find.text('Bagikan ringkasan'), findsOneWidget);
     expect(find.text('Download Word'), findsNothing);
     expect(find.byIcon(Icons.qr_code), findsNothing);
+    expect(find.text('Identitas pihak yang tercatat'), findsNothing);
   });
 
   testWidgets('navigates to monitoring history', (tester) async {

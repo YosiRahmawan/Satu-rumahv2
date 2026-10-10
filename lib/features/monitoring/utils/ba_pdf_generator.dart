@@ -5,12 +5,29 @@ import '../data/models/monitoring_model.dart';
 
 class BaPdfGenerator {
   static const List<String> _bulanIndonesia = [
-    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    '',
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
   ];
 
   static const List<String> _hariIndonesia = [
-    'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'
+    'Senin',
+    'Selasa',
+    'Rabu',
+    'Kamis',
+    'Jumat',
+    'Sabtu',
+    'Minggu',
   ];
 
   static String _angkaKataTanggal(DateTime dt) {
@@ -28,20 +45,45 @@ class BaPdfGenerator {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
         build: (pw.Context context) => [
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.grey600),
+            ),
+            child: pw.Text(
+              'DOKUMEN LOKAL - BELUM DITERBITKAN ATAU DIKONFIRMASI SERVER',
+              style: const pw.TextStyle(fontSize: 8),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+          pw.SizedBox(height: 10),
           // Kop Surat
           pw.Center(
             child: pw.Column(
               children: [
-                pw.Text('PEMERINTAH KOTA TASIKMALAYA',
-                    style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
-                pw.Text('DINAS PERUMAHAN DAN KAWASAN PERMUKIMAN',
-                    style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                  'PEMERINTAH KOTA TASIKMALAYA',
+                  style: const pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.Text(
+                  'DINAS PERUMAHAN DAN KAWASAN PERMUKIMAN',
+                  style: const pw.TextStyle(
+                    fontSize: 11,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
                 pw.SizedBox(height: 4),
                 pw.Divider(thickness: 2),
                 pw.SizedBox(height: 8),
                 pw.Text(
                   'BERITA ACARA MONITORING DAN EVALUASI LAPANGAN',
-                  style: const pw.TextStyle(fontSize: 13, fontWeight: pw.FontWeight.bold),
+                  style: const pw.TextStyle(
+                    fontSize: 13,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
                 ),
                 pw.Text(
                   'Nomor: ${monitoring.nomorSuratBA}',
@@ -54,10 +96,10 @@ class BaPdfGenerator {
 
           // Paragraf pembuka
           pw.Text(
-            'Pada ${_angkaKataTanggal(monitoring.tanggalMonitoring)} telah dilakukan monitoring '
-            'dan evaluasi lapangan oleh Tim dari Dinas Perumahan dan Kawasan Permukiman '
-            'Kota Tasikmalaya bertempat di ${monitoring.namaPerumahan} '
-            'yang berlokasi di ${monitoring.lokasiPerumahan.isNotEmpty ? monitoring.lokasiPerumahan : "-"}.',
+            'Data lokal ini mencatat monitoring pada ${_angkaKataTanggal(monitoring.tanggalMonitoring)} '
+            'untuk ${monitoring.namaPerumahan} yang berlokasi di '
+            '${monitoring.lokasiPerumahan.isNotEmpty ? monitoring.lokasiPerumahan : "-"}. '
+            'Dokumen ini merupakan preview/hasil lokal dan bukan bukti penerbitan resmi.',
             style: const pw.TextStyle(fontSize: 11),
           ),
           pw.SizedBox(height: 12),
@@ -67,61 +109,34 @@ class BaPdfGenerator {
           _buildPdfSection('II. Temuan Di Lapangan', monitoring.temuanLapangan),
           _buildPdfSection('III. Kesimpulan', monitoring.kesimpulan),
           _buildPdfSection('IV. Kesepakatan', monitoring.kesepakatan),
-          _buildPdfSection('V. Rencana Tindak Lanjut', monitoring.rencanaTindakLanjut),
-
-          pw.SizedBox(height: 12),
-          pw.Text(
-            'Demikian Berita Acara ini dibuat dengan sebenarnya dan ditandatangani '
-            'untuk digunakan sebagaimana mestinya.',
-            style: const pw.TextStyle(fontSize: 11, fontStyle: pw.FontStyle.italic),
+          _buildPdfSection(
+            'V. Rencana Tindak Lanjut',
+            monitoring.rencanaTindakLanjut,
           ),
-          pw.SizedBox(height: 32),
 
-          // Kolom tanda tangan
-          pw.Row(
-            children: [
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Text('Yang Melaksanakan\nObservasi/Inspeksi',
-                        style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                        textAlign: pw.TextAlign.center),
-                    pw.SizedBox(height: 48),
-                    pw.Container(width: 120, height: 1, color: PdfColors.black),
-                    pw.SizedBox(height: 4),
-                    pw.Text(monitoring.pelaksanaNama.isNotEmpty ? monitoring.pelaksanaNama : '( _________________ )',
-                        style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                        textAlign: pw.TextAlign.center),
-                    if (monitoring.pelaksanaJabatan.isNotEmpty)
-                      pw.Text(monitoring.pelaksanaJabatan,
-                          style: const pw.TextStyle(fontSize: 9),
-                          textAlign: pw.TextAlign.center),
-                  ],
-                ),
+          if (monitoring.pelaksanaNama.trim().isNotEmpty ||
+              monitoring.ditemuiNama.trim().isNotEmpty) ...[
+            pw.SizedBox(height: 24),
+            pw.Divider(),
+            pw.SizedBox(height: 8),
+            pw.Text(
+              'Identitas pihak yang tercatat',
+              style: const pw.TextStyle(
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
               ),
-              pw.Expanded(
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.center,
-                  children: [
-                    pw.Text('Yang Ditemui\ndi Lapangan',
-                        style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                        textAlign: pw.TextAlign.center),
-                    pw.SizedBox(height: 48),
-                    pw.Container(width: 120, height: 1, color: PdfColors.black),
-                    pw.SizedBox(height: 4),
-                    pw.Text(monitoring.ditemuiNama.isNotEmpty ? monitoring.ditemuiNama : '( _________________ )',
-                        style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-                        textAlign: pw.TextAlign.center),
-                    if (monitoring.ditemuiJabatan.isNotEmpty)
-                      pw.Text(monitoring.ditemuiJabatan,
-                          style: const pw.TextStyle(fontSize: 9),
-                          textAlign: pw.TextAlign.center),
-                  ],
-                ),
+            ),
+            if (monitoring.pelaksanaNama.trim().isNotEmpty)
+              pw.Text(
+                'Pelaksana: ${monitoring.pelaksanaNama}${monitoring.pelaksanaJabatan.trim().isNotEmpty ? ' (${monitoring.pelaksanaJabatan})' : ''}',
+                style: const pw.TextStyle(fontSize: 10),
               ),
-            ],
-          ),
+            if (monitoring.ditemuiNama.trim().isNotEmpty)
+              pw.Text(
+                'Ditemui: ${monitoring.ditemuiNama}${monitoring.ditemuiJabatan.trim().isNotEmpty ? ' (${monitoring.ditemuiJabatan})' : ''}',
+                style: const pw.TextStyle(fontSize: 10),
+              ),
+          ],
         ],
       ),
     );
@@ -134,12 +149,20 @@ class BaPdfGenerator {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        pw.Text(title, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold)),
+        pw.Text(
+          title,
+          style: const pw.TextStyle(
+            fontSize: 11,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
         pw.SizedBox(height: 4),
         if (valid.isEmpty)
           pw.Text('• -', style: const pw.TextStyle(fontSize: 11))
         else
-          ...valid.map((e) => pw.Text('• $e', style: const pw.TextStyle(fontSize: 11))),
+          ...valid.map(
+            (e) => pw.Text('• $e', style: const pw.TextStyle(fontSize: 11)),
+          ),
         pw.SizedBox(height: 10),
       ],
     );

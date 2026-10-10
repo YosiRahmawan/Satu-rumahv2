@@ -58,6 +58,8 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
             fontWeight: FontWeight.w700,
             color: AppColors.enterpriseTextMain,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
         centerTitle: true,
       ),
@@ -184,12 +186,13 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
     children: [
       SizedBox(
         width: double.infinity,
-        height: 52,
         child: ElevatedButton.icon(
           onPressed: _isBusy ? null : () => _printPdf(context, item),
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.enterprisePrimary,
             foregroundColor: Colors.white,
+            minimumSize: const Size.fromHeight(52),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
           ),
           icon: _isPdfBusy
@@ -210,12 +213,13 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
       const SizedBox(height: 10),
       SizedBox(
         width: double.infinity,
-        height: 50,
         child: OutlinedButton.icon(
           onPressed: _isBusy ? null : () => _shareSummary(context, item),
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.enterpriseSuccess,
             side: const BorderSide(color: AppColors.enterpriseSuccess),
+            minimumSize: const Size.fromHeight(50),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
           ),
           icon: _isShareBusy
@@ -233,6 +237,12 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
       const SizedBox(height: 18),
       TextButton.icon(
         onPressed: () => context.go('/monitoring/lapangan/riwayat'),
+        style: TextButton.styleFrom(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+        ),
         icon: const Icon(Icons.list_alt, color: AppColors.enterprisePrimary),
         label: Text(
           'Kembali ke Riwayat Monitoring',
