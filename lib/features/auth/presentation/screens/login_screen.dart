@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/route_feedback.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -357,112 +356,273 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                               const SizedBox(height: 14),
-                              Row(
-                                children: [
-                                  // Tab Pengembang
-                                  Expanded(
-                                    child: Material(
-                                      color: isDeveloper
-                                          ? AppColors.primaryRed
-                                          : AppColors.dividerLine,
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: InkWell(
-                                        onTap: () {
-                                          setState(() {
-                                            _selectedRole = AppRole.developer;
-                                          });
-                                        },
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 14,
-                                          ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.apartment_rounded,
-                                                color: isDeveloper
-                                                    ? Colors.white
-                                                    : AppColors.slate800,
-                                                size: 26,
-                                              ),
-                                              const SizedBox(height: 6),
-                                              FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Text(
-                                                  'Pengembang',
-                                                  style: TextStyle(
-                                                    fontFamily: AppTextStyles.fontFamily,
-                                                    fontSize: 13.5,
-                                                    fontWeight: isDeveloper
-                                                        ? FontWeight.w700
-                                                        : FontWeight.w600,
-                                                    color: isDeveloper
-                                                        ? Colors.white
-                                                        : AppColors.slate800,
-                                                  ),
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  const double gap = 12.0;
+                                  final itemWidth =
+                                      (constraints.maxWidth - gap) / 2;
+
+                                  return Stack(
+                                    children: [
+                                      // 1. Inactive background track for both role slots
+                                      Positioned.fill(
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.dividerLine,
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
                                                 ),
                                               ),
-                                            ],
+                                            ),
+                                            const SizedBox(width: gap),
+                                            Expanded(
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  color: AppColors.dividerLine,
+                                                  borderRadius:
+                                                      BorderRadius.circular(14),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+
+                                      // 2. Sliding animated active red indicator
+                                      Positioned.fill(
+                                        child: AnimatedAlign(
+                                          key: const ValueKey(
+                                            'role_active_indicator_align',
+                                          ),
+                                          duration: const Duration(
+                                            milliseconds: 260,
+                                          ),
+                                          curve: Curves.easeInOutCubic,
+                                          alignment: isDeveloper
+                                              ? Alignment.centerLeft
+                                              : Alignment.centerRight,
+                                          child: AnimatedContainer(
+                                            key: const ValueKey(
+                                              'role_active_indicator_container',
+                                            ),
+                                            duration: const Duration(
+                                              milliseconds: 260,
+                                            ),
+                                            curve: Curves.easeInOutCubic,
+                                            width: itemWidth,
+                                            height: double.infinity,
+                                            decoration: BoxDecoration(
+                                              color: AppColors.primaryRed,
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              boxShadow: const [
+                                                BoxShadow(
+                                                  color: Color(0x33B91C1C),
+                                                  blurRadius: 10,
+                                                  offset: Offset(0, 4),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  // Tab Pengawas Lapangan
-                                  Expanded(
-                                    child: Material(
-                                      color: !isDeveloper
-                                          ? AppColors.primaryRed
-                                          : AppColors.dividerLine,
-                                      borderRadius: BorderRadius.circular(14),
-                                      child: InkWell(
-                                        onTap: () {
-                                          setState(() {
-                                            _selectedRole = AppRole.perwaskim;
-                                          });
-                                        },
-                                        borderRadius: BorderRadius.circular(14),
-                                        child: Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 14,
-                                          ),
-                                          child: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.manage_accounts_outlined,
-                                                color: !isDeveloper
-                                                    ? Colors.white
-                                                    : AppColors.slate800,
-                                                size: 26,
-                                              ),
-                                              const SizedBox(height: 6),
-                                              FittedBox(
-                                                fit: BoxFit.scaleDown,
-                                                child: Text(
-                                                  'Pengawas Lapangan',
-                                                  style: TextStyle(
-                                                    fontFamily: AppTextStyles.fontFamily,
-                                                    fontSize: 13.5,
-                                                    fontWeight: !isDeveloper
-                                                        ? FontWeight.w700
-                                                        : FontWeight.w600,
-                                                    color: !isDeveloper
-                                                        ? Colors.white
-                                                        : AppColors.slate800,
+
+                                      // 3. Foreground interactive buttons with smooth color transitions
+                                      Row(
+                                        children: [
+                                          // Tab Pengembang
+                                          Expanded(
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              child: InkWell(
+                                                key: const ValueKey(
+                                                  'role_tab_pengembang',
+                                                ),
+                                                onTap: () {
+                                                  if (_selectedRole !=
+                                                      AppRole.developer) {
+                                                    setState(() {
+                                                      _selectedRole =
+                                                          AppRole.developer;
+                                                    });
+                                                  }
+                                                },
+                                                borderRadius:
+                                                  BorderRadius.circular(14),
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                    vertical: 14,
+                                                  ),
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      TweenAnimationBuilder<
+                                                        Color?
+                                                      >(
+                                                        duration:
+                                                            const Duration(
+                                                          milliseconds: 200,
+                                                        ),
+                                                        tween: ColorTween(
+                                                          end: isDeveloper
+                                                              ? Colors.white
+                                                              : AppColors
+                                                                  .slate800,
+                                                        ),
+                                                        builder: (
+                                                          context,
+                                                          color,
+                                                          _,
+                                                        ) {
+                                                          return Icon(
+                                                            Icons
+                                                                .apartment_rounded,
+                                                            color: color,
+                                                            size: 26,
+                                                          );
+                                                        },
+                                                      ),
+                                                      const SizedBox(height: 6),
+                                                      FittedBox(
+                                                        fit: BoxFit.scaleDown,
+                                                        child:
+                                                            AnimatedDefaultTextStyle(
+                                                          duration:
+                                                              const Duration(
+                                                            milliseconds: 200,
+                                                          ),
+                                                          style: TextStyle(
+                                                            fontFamily:
+                                                                AppTextStyles
+                                                                    .fontFamily,
+                                                            fontSize: 13.5,
+                                                            fontWeight:
+                                                                isDeveloper
+                                                                    ? FontWeight
+                                                                        .w700
+                                                                    : FontWeight
+                                                                        .w600,
+                                                            color: isDeveloper
+                                                                ? Colors.white
+                                                                : AppColors
+                                                                    .slate800,
+                                                          ),
+                                                          child: const Text(
+                                                            'Pengembang',
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
                                                 ),
                                               ),
-                                            ],
+                                            ),
                                           ),
-                                        ),
+                                          const SizedBox(width: gap),
+                                          // Tab Pengawas Lapangan
+                                          Expanded(
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                              child: InkWell(
+                                                key: const ValueKey(
+                                                  'role_tab_pengawas_lapangan',
+                                                ),
+                                                onTap: () {
+                                                  if (_selectedRole !=
+                                                      AppRole.perwaskim) {
+                                                    setState(() {
+                                                      _selectedRole =
+                                                          AppRole.perwaskim;
+                                                    });
+                                                  }
+                                                },
+                                                borderRadius:
+                                                  BorderRadius.circular(14),
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                    vertical: 14,
+                                                  ),
+                                                  child: Column(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      TweenAnimationBuilder<
+                                                        Color?
+                                                      >(
+                                                        duration:
+                                                            const Duration(
+                                                          milliseconds: 200,
+                                                        ),
+                                                        tween: ColorTween(
+                                                          end: !isDeveloper
+                                                              ? Colors.white
+                                                              : AppColors
+                                                                  .slate800,
+                                                        ),
+                                                        builder: (
+                                                          context,
+                                                          color,
+                                                          _,
+                                                        ) {
+                                                          return Icon(
+                                                            Icons
+                                                                .manage_accounts_outlined,
+                                                            color: color,
+                                                            size: 26,
+                                                          );
+                                                        },
+                                                      ),
+                                                      const SizedBox(height: 6),
+                                                      FittedBox(
+                                                        fit: BoxFit.scaleDown,
+                                                        child:
+                                                            AnimatedDefaultTextStyle(
+                                                          duration:
+                                                              const Duration(
+                                                            milliseconds: 200,
+                                                          ),
+                                                          style: TextStyle(
+                                                            fontFamily:
+                                                                AppTextStyles
+                                                                    .fontFamily,
+                                                            fontSize: 13.5,
+                                                            fontWeight:
+                                                                !isDeveloper
+                                                                    ? FontWeight
+                                                                        .w700
+                                                                    : FontWeight
+                                                                        .w600,
+                                                            color: !isDeveloper
+                                                                ? Colors.white
+                                                                : AppColors
+                                                                    .slate800,
+                                                          ),
+                                                          child: const Text(
+                                                            'Pengawas Lapangan',
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                    ),
-                                  ),
-                                ],
+                                    ],
+                                  );
+                                },
                               ),
                             ],
                           ),
@@ -471,7 +631,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                       const SizedBox(height: 14),
 
-                      // Card 2: Main Form Card
+                      // Card 2: Main Form Card (100% matching Figma prototype)
                       Container(
                         decoration: const BoxDecoration(
                           color: AppColors.cardSurface,
@@ -485,9 +645,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           boxShadow: [
                             BoxShadow(
                               color: Color(0x0C000000),
-                              blurRadius: 24.0,
-                              spreadRadius: 0.0,
-                              offset: Offset(0, 8),
+                              blurRadius: 20.0,
+                              offset: Offset(0, 4),
                             ),
                           ],
                         ),
@@ -497,199 +656,40 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         child: Form(
                           key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Sub-banner info
-                              GestureDetector(
-                                onLongPress: _showDemoSheet,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: AppColors.dividerLine,
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 10,
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Icon(
-                                        isDeveloper
-                                            ? Icons.apartment_rounded
-                                            : Icons.manage_accounts_rounded,
-                                        color: AppColors.primaryRed,
-                                        size: 22,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              isDeveloper
-                                                  ? 'Login Mitra Pengembang Terdaftar'
-                                                  : 'Login Tim Pengawas Lapangan',
-                                              style: const TextStyle(
-                                                fontFamily: AppTextStyles.fontFamily,
-                                                fontSize: 12.5,
-                                                fontWeight: FontWeight.w700,
-                                                color: AppColors.textMain,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 2),
-                                            Text(
-                                              isDeveloper
-                                                  ? 'Gunakan kredensial OSS / NIB perusahaan'
-                                                  : 'Gunakan NIP / akun dinas yang terdaftar',
-                                              style: const TextStyle(
-                                                fontFamily: AppTextStyles.fontFamily,
-                                                fontSize: 11,
-                                                color: AppColors.textSecondary,
-                                                fontWeight: FontWeight.w400,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                          child: AnimatedSwitcher(
+                            key: const ValueKey('form_animated_switcher'),
+                            duration: const Duration(milliseconds: 260),
+                            switchInCurve: Curves.easeInOut,
+                            switchOutCurve: Curves.easeInOut,
+                            transitionBuilder: (child, animation) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: Tween<Offset>(
+                                    begin: const Offset(0.0, 0.02),
+                                    end: Offset.zero,
+                                  ).animate(animation),
+                                  child: child,
                                 ),
-                              ),
-
-                              const SizedBox(height: 18),
-
-                              // Field 1: Username / NIB / Email
-                              RichText(
-                                text: TextSpan(
-                                  text: isDeveloper
-                                      ? 'Email / NIB / Username Pengembang '
-                                      : 'NIP / Username Pengawas Lapangan ',
-                                  style: const TextStyle(
-                                    fontFamily: AppTextStyles.fontFamily,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.slate800,
-                                  ),
-                                  children: const [
-                                    TextSpan(
-                                      text: '*',
-                                      style: TextStyle(
-                                        color: AppColors.primaryRed,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              TextFormField(
-                                controller: _usernameController,
-                                style: const TextStyle(
-                                  fontFamily: AppTextStyles.fontFamily,
-                                  fontSize: 13.5,
-                                  color: AppColors.textMain,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: isDeveloper
-                                      ? 'Masukkan NIB atau email resmi...'
-                                      : 'Masukkan NIP atau username resmi...',
-                                  hintStyle: const TextStyle(
-                                    fontFamily: AppTextStyles.fontFamily,
-                                    color: AppColors.textSecondary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.normal,
-                                  ),
-                                  filled: true,
-                                  fillColor: AppColors.cardSurface,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 14,
-                                  ),
-                                  prefixIcon: Icon(
-                                    isDeveloper
-                                        ? Icons.apartment_outlined
-                                        : Icons.badge_outlined,
-                                    color: AppColors.textSecondary,
-                                    size: 20,
-                                  ),
-                                  border: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.borderSubtle,
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  enabledBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.borderSubtle,
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  focusedBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.primaryRed,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  errorBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.error,
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  focusedErrorBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.error,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                ),
-                                validator: (val) {
-                                  if (val == null || val.trim().isEmpty) {
-                                    return isDeveloper
-                                        ? 'NIB atau email tidak boleh kosong'
-                                        : 'NIP atau username tidak boleh kosong';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                isDeveloper
-                                    ? 'Contoh: 123400056789 atau pt.ciptakarya@gmail.com'
-                                    : 'Contoh: 198503152010011002 atau tim_monitoring_perwaskim',
-                                style: const TextStyle(
-                                  fontFamily: AppTextStyles.fontFamily,
-                                  fontSize: 11,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Field 2: Password
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                              );
+                            },
+                            child: KeyedSubtree(
+                              key: ValueKey<AppRole>(_selectedRole),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
-                                  Flexible(
-                                    child: RichText(
-                                      text: const TextSpan(
-                                        text: 'Kata Sandi ',
-                                        style: TextStyle(
+                                  // Field 1: Username / NIB / NIP
+                                  if (isDeveloper)
+                                    Text.rich(
+                                      TextSpan(
+                                        text: 'Username / NIB Pengembang ',
+                                        style: const TextStyle(
                                           fontFamily: AppTextStyles.fontFamily,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.slate800,
                                         ),
-                                        children: [
+                                        children: const [
                                           TextSpan(
                                             text: '*',
                                             style: TextStyle(
@@ -699,307 +699,376 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           ),
                                         ],
                                       ),
-                                    ),
-                                  ),
-                                  // Enlarged touch target for "Lupa Kata Sandi?"
-                                  GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: _showAdminContact,
-                                    child: const Padding(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 8,
-                                      ),
-                                      child: Text(
-                                        'Lupa Kata Sandi?',
-                                        style: TextStyle(
-                                          fontFamily: AppTextStyles.fontFamily,
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.primaryRed,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                style: const TextStyle(
-                                  fontFamily: AppTextStyles.fontFamily,
-                                  fontSize: 13.5,
-                                  color: AppColors.textMain,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: 'Masukkan kata sandi...',
-                                  hintStyle: const TextStyle(
-                                    fontFamily: AppTextStyles.fontFamily,
-                                    color: AppColors.textSecondary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.normal,
-                                  ),
-                                  filled: true,
-                                  fillColor: AppColors.cardSurface,
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 14,
-                                  ),
-                                  prefixIcon: const Icon(
-                                    Icons.lock_outline_rounded,
-                                    color: AppColors.textSecondary,
-                                    size: 20,
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
-                                      color: AppColors.textSecondary,
-                                      size: 20,
-                                    ),
-                                    onPressed: () => setState(
-                                      () =>
-                                          _obscurePassword = !_obscurePassword,
-                                    ),
-                                  ),
-                                  border: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.borderSubtle,
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  enabledBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.borderSubtle,
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  focusedBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.primaryRed,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                  errorBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.error,
-                                      width: 1.2,
-                                    ),
-                                  ),
-                                  focusedErrorBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
-                                    borderSide: BorderSide(
-                                      color: AppColors.error,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                ),
-                                validator: (val) {
-                                  if (val == null || val.isEmpty) {
-                                    return 'Kata sandi tidak boleh kosong';
-                                  }
-                                  return null;
-                                },
-                              ),
-
-                              const SizedBox(height: 14),
-
-                              // Remember Me Checkbox
-                              InkWell(
-                                onTap: () => setState(
-                                  () => _rememberMe = !_rememberMe,
-                                ),
-                                borderRadius: BorderRadius.circular(6),
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: Checkbox(
-                                          value: _rememberMe,
-                                          activeColor: AppColors.primaryRed,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(4),
-                                          ),
-                                          side: const BorderSide(
-                                            color: AppColors.slate300,
-                                            width: 1.5,
-                                          ),
-                                          materialTapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                          onChanged: (val) => setState(
-                                            () => _rememberMe = val ?? false,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Flexible(
-                                        child: Text(
-                                          'Ingat saya di perangkat ini',
-                                          style: TextStyle(
-                                            fontFamily: AppTextStyles.fontFamily,
-                                            fontSize: 12.5,
-                                            color: AppColors.slate700,
-                                            fontWeight: FontWeight.w500,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 18),
-
-                              // Primary Action Button
-                              SizedBox(
-                                width: double.infinity,
-                                height: 48,
-                                child: ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primaryRed,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  onPressed: _login,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.login_rounded,
-                                        size: 18,
-                                        color: Colors.white,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          isDeveloper
-                                              ? 'Masuk sebagai Pengembang'
-                                              : 'Masuk sebagai Pengawas Lapangan',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontFamily: AppTextStyles.fontFamily,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 20),
-
-                              // Divider "ATAU MASUK"
-                              const Row(
-                                children: [
-                                  Expanded(
-                                    child: Divider(
-                                      color: AppColors.borderSubtle,
-                                      thickness: 1,
-                                    ),
-                                  ),
-                                  Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                    ),
-                                    child: Text(
-                                      'ATAU MASUK',
+                                    )
+                                  else
+                                    const Text(
+                                      'Username / NIP Petugas',
                                       style: TextStyle(
                                         fontFamily: AppTextStyles.fontFamily,
-                                        fontSize: 11,
+                                        fontSize: 13,
                                         fontWeight: FontWeight.w600,
-                                        color: AppColors.textSecondary,
-                                        letterSpacing: 0.5,
+                                        color: AppColors.slate800,
                                       ),
                                     ),
+                                  const SizedBox(height: 6),
+                                  TextFormField(
+                                    controller: _usernameController,
+                                    style: const TextStyle(
+                                      fontFamily: AppTextStyles.fontFamily,
+                                      fontSize: 13.5,
+                                      color: AppColors.textMain,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: isDeveloper
+                                          ? 'Masukkan 13 digit NIB...'
+                                          : 'Masukkan username / NIP...',
+                                      hintStyle: const TextStyle(
+                                        fontFamily: AppTextStyles.fontFamily,
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.normal,
+                                      ),
+                                      filled: true,
+                                      fillColor: AppColors.cardSurface,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 14,
+                                      ),
+                                      prefixIcon: const Icon(
+                                        Icons.apartment_rounded,
+                                        color: AppColors.textSecondary,
+                                        size: 20,
+                                      ),
+                                      border: const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.borderSubtle,
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      enabledBorder: const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.borderSubtle,
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      focusedBorder: const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.primaryRed,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      errorBorder: const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.error,
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      focusedErrorBorder:
+                                          const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.error,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                    validator: (val) {
+                                      if (val == null || val.trim().isEmpty) {
+                                        return isDeveloper
+                                            ? 'NIB atau email tidak boleh kosong'
+                                            : 'NIP atau username tidak boleh kosong';
+                                      }
+                                      return null;
+                                    },
                                   ),
-                                  Expanded(
-                                    child: Divider(
-                                      color: AppColors.borderSubtle,
-                                      thickness: 1,
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    isDeveloper
+                                        ? 'Contoh: 1234000567890 (NIB resmi terdaftar)'
+                                        : 'Contoh: 1234000567890 (NIP)',
+                                    style: const TextStyle(
+                                      fontFamily: AppTextStyles.fontFamily,
+                                      fontSize: 11,
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
-                                ],
-                              ),
 
-                              const SizedBox(height: 16),
+                                  const SizedBox(height: 16),
 
-                              // Google Login Button (Kept as prototype action)
-                              SizedBox(
-                                width: double.infinity,
-                                height: 46,
-                                child: OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    backgroundColor: AppColors.cardSurface,
-                                    foregroundColor: AppColors.slate800,
-                                    side: const BorderSide(
-                                      color: AppColors.borderSubtle,
-                                      width: 1.2,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  onPressed: () => showUnavailableAction(
-                                    context,
-                                    'Masuk dengan Google',
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                  // Field 2: Password
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      _GoogleLogoWidget(),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        'Masuk dengan Google',
-                                        style: TextStyle(
-                                          fontFamily: AppTextStyles.fontFamily,
-                                          fontSize: 13.5,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.slate800,
+                                      Flexible(
+                                        child: Text.rich(
+                                          TextSpan(
+                                            text: 'Kata Sandi ',
+                                            style: const TextStyle(
+                                              fontFamily:
+                                                  AppTextStyles.fontFamily,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.slate800,
+                                            ),
+                                            children: const [
+                                              TextSpan(
+                                                text: '*',
+                                                style: TextStyle(
+                                                  color: AppColors.primaryRed,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      GestureDetector(
+                                        behavior: HitTestBehavior.opaque,
+                                        onTap: _showAdminContact,
+                                        child: const Padding(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: 4,
+                                            vertical: 6,
+                                          ),
+                                          child: Text(
+                                            'Bantuan Akses?',
+                                            style: TextStyle(
+                                              fontFamily:
+                                                  AppTextStyles.fontFamily,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primaryRed,
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
+                                  const SizedBox(height: 6),
+                                  TextFormField(
+                                    controller: _passwordController,
+                                    obscureText: _obscurePassword,
+                                    style: const TextStyle(
+                                      fontFamily: AppTextStyles.fontFamily,
+                                      fontSize: 13.5,
+                                      color: AppColors.textMain,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    decoration: InputDecoration(
+                                      hintText: 'Masukkan kata sandi...',
+                                      hintStyle: const TextStyle(
+                                        fontFamily: AppTextStyles.fontFamily,
+                                        color: AppColors.textSecondary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.normal,
+                                      ),
+                                      filled: true,
+                                      fillColor: AppColors.cardSurface,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 14,
+                                      ),
+                                      prefixIcon: const Icon(
+                                        Icons.lock_outline_rounded,
+                                        color: AppColors.textSecondary,
+                                        size: 20,
+                                      ),
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                          color: AppColors.textSecondary,
+                                          size: 20,
+                                        ),
+                                        onPressed: () => setState(
+                                          () =>
+                                              _obscurePassword = !_obscurePassword,
+                                        ),
+                                      ),
+                                      border: const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.borderSubtle,
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      enabledBorder:
+                                          const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.borderSubtle,
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      focusedBorder:
+                                          const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.primaryRed,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      errorBorder: const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.error,
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      focusedErrorBorder:
+                                          const OutlineInputBorder(
+                                        borderRadius: BorderRadius.all(
+                                          Radius.circular(10),
+                                        ),
+                                        borderSide: BorderSide(
+                                          color: AppColors.error,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                    ),
+                                    validator: (val) {
+                                      if (val == null || val.isEmpty) {
+                                        return 'Kata sandi tidak boleh kosong';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+
+                                  const SizedBox(height: 14),
+
+                                  // Remember Me Checkbox
+                                  InkWell(
+                                    onTap: () => setState(
+                                      () => _rememberMe = !_rememberMe,
+                                    ),
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 2,
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: Checkbox(
+                                              value: _rememberMe,
+                                              activeColor: AppColors.primaryRed,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
+                                              ),
+                                              side: const BorderSide(
+                                                color: AppColors.slate300,
+                                                width: 1.5,
+                                              ),
+                                              materialTapTargetSize:
+                                                  MaterialTapTargetSize.shrinkWrap,
+                                              onChanged: (val) => setState(
+                                                () => _rememberMe = val ?? false,
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          const Flexible(
+                                            child: Text(
+                                              'Ingat saya di perangkat ini',
+                                              style: TextStyle(
+                                                fontFamily:
+                                                    AppTextStyles.fontFamily,
+                                                fontSize: 12.5,
+                                                color: AppColors.slate700,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 18),
+
+                                  // Primary Action Button
+                                  SizedBox(
+                                    width: double.infinity,
+                                    height: 48,
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.primaryRed,
+                                        foregroundColor: Colors.white,
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      onPressed: _login,
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          const Icon(
+                                            Icons.login_rounded,
+                                            size: 18,
+                                            color: Colors.white,
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Flexible(
+                                            child: Text(
+                                              isDeveloper
+                                                  ? 'Masuk sebagai Pengembang'
+                                                  : 'Masuk sebagai Pengawas Lapangan',
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(
+                                                fontFamily:
+                                                    AppTextStyles.fontFamily,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w700,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 28),
-
-                      // Footer (WCAG AA Compliant contrast)
-                      const Text(
-                        'Dinas Perumahan Rakyat dan Kawasan Permukiman Kota Tasikmalaya',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: AppTextStyles.fontFamily,
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
-                          height: 1.45,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 32),
                     ],
                   ),
                 ),
@@ -1010,66 +1079,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
     );
   }
-}
-
-class _GoogleLogoWidget extends StatelessWidget {
-  const _GoogleLogoWidget();
-
-  @override
-  Widget build(BuildContext context) {
-    return const CustomPaint(
-      size: Size(18, 18),
-      painter: _GoogleLogoPainter(),
-    );
-  }
-}
-
-class _GoogleLogoPainter extends CustomPainter {
-  const _GoogleLogoPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double w = size.width;
-    final double h = size.height;
-    final center = Offset(w / 2, h / 2);
-    final radius = w / 2 - 1.5;
-
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.6
-      ..strokeCap = StrokeCap.butt;
-
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    // Red arc (top)
-    paint.color = const Color(0xFFEA4335);
-    canvas.drawArc(rect, -2.6, 1.8, false, paint);
-
-    // Blue arc (right)
-    paint.color = const Color(0xFF4285F4);
-    canvas.drawArc(rect, -0.8, 1.6, false, paint);
-
-    // Green arc (bottom)
-    paint.color = const Color(0xFF34A853);
-    canvas.drawArc(rect, 0.8, 1.8, false, paint);
-
-    // Yellow arc (left)
-    paint.color = const Color(0xFFFBBC05);
-    canvas.drawArc(rect, 2.6, 1.1, false, paint);
-
-    // Blue horizontal bar
-    final barPaint = Paint()
-      ..color = const Color(0xFF4285F4)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.6
-      ..strokeCap = StrokeCap.square;
-    canvas.drawLine(
-      Offset(center.dx - 1, center.dy),
-      Offset(w - 1.5, center.dy),
-      barPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -32,7 +32,7 @@ Widget _testApp(GoRouter router) {
 }
 
 void main() {
-  testWidgets('LoginScreen renders role selectors, inputs, and footer', (
+  testWidgets('LoginScreen renders role selectors and form matching Figma prototype', (
     tester,
   ) async {
     final router = _testRouter();
@@ -44,17 +44,21 @@ void main() {
     expect(find.text('PILIH PERAN AKUN PENGGUNA'), findsOneWidget);
     expect(find.text('Pengembang'), findsOneWidget);
     expect(find.text('Pengawas Lapangan'), findsOneWidget);
-    expect(find.text('Masuk sebagai Pengembang'), findsOneWidget);
-    expect(find.text('Lupa Kata Sandi?'), findsOneWidget);
+
+    // Initial role is Pengembang
+    expect(find.textContaining('Username / NIB Pengembang'), findsOneWidget);
+    expect(find.text('Masukkan 13 digit NIB...'), findsOneWidget);
     expect(
-      find.text(
-        'Dinas Perumahan Rakyat dan Kawasan Permukiman Kota Tasikmalaya',
-      ),
+      find.text('Contoh: 1234000567890 (NIB resmi terdaftar)'),
       findsOneWidget,
     );
+    expect(find.textContaining('Kata Sandi'), findsOneWidget);
+    expect(find.text('Bantuan Akses?'), findsOneWidget);
+    expect(find.text('Ingat saya di perangkat ini'), findsOneWidget);
+    expect(find.text('Masuk sebagai Pengembang'), findsOneWidget);
   });
 
-  testWidgets('Toggling role switches role mode and action label', (
+  testWidgets('Toggling role switches form labels, placeholders, and action button', (
     tester,
   ) async {
     final router = _testRouter();
@@ -67,8 +71,18 @@ void main() {
     await tester.tap(find.text('Pengawas Lapangan'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Username / NIP Petugas'), findsOneWidget);
+    expect(find.text('Masukkan username / NIP...'), findsOneWidget);
+    expect(find.text('Contoh: 1234000567890 (NIP)'), findsOneWidget);
     expect(find.text('Masuk sebagai Pengawas Lapangan'), findsOneWidget);
-    expect(find.text('Login Tim Pengawas Lapangan'), findsOneWidget);
+
+    // Switch back to Pengembang
+    await tester.tap(find.text('Pengembang'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Username / NIB Pengembang'), findsOneWidget);
+    expect(find.text('Masukkan 13 digit NIB...'), findsOneWidget);
+    expect(find.text('Masuk sebagai Pengembang'), findsOneWidget);
   });
 
   testWidgets('Validates required fields when submitted empty', (
@@ -89,7 +103,7 @@ void main() {
     expect(find.text('Kata sandi tidak boleh kosong'), findsOneWidget);
   });
 
-  testWidgets('Tapping "Lupa Kata Sandi?" shows dialog mentioning Disperwaskim', (
+  testWidgets('Tapping "Bantuan Akses?" shows admin contact dialog', (
     tester,
   ) async {
     final router = _testRouter();
@@ -98,7 +112,7 @@ void main() {
     await tester.pumpWidget(_testApp(router));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Lupa Kata Sandi?'));
+    await tester.tap(find.text('Bantuan Akses?'));
     await tester.pumpAndSettle();
 
     expect(find.text('Hubungi Administrator'), findsOneWidget);
@@ -111,4 +125,61 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Hubungi Administrator'), findsNothing);
   });
+
+  testWidgets(
+    'Role selector animates sliding active indicator smoothly between roles',
+    (tester) async {
+      final router = _testRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_testApp(router));
+      await tester.pumpAndSettle();
+
+      // Find the animated active indicator align widget
+      final alignFinder = find.byKey(
+        const ValueKey('role_active_indicator_align'),
+      );
+      expect(alignFinder, findsOneWidget);
+
+      AnimatedAlign alignWidget = tester.widget<AnimatedAlign>(alignFinder);
+      expect(alignWidget.alignment, equals(Alignment.centerLeft));
+
+      // Verify AnimatedSwitcher for form content exists
+      final formSwitcherFinder = find.byKey(
+        const ValueKey('form_animated_switcher'),
+      );
+      expect(formSwitcherFinder, findsOneWidget);
+
+      // Verify AnimatedContainer exists with primary red background
+      final containerFinder = find.byKey(
+        const ValueKey('role_active_indicator_container'),
+      );
+      expect(containerFinder, findsOneWidget);
+      final containerWidget =
+          tester.widget<AnimatedContainer>(containerFinder);
+      final boxDec = containerWidget.decoration as BoxDecoration;
+      expect(boxDec.color, equals(const Color(0xFFB91C1C))); // AppColors.primaryRed
+      expect(boxDec.borderRadius, equals(BorderRadius.circular(14)));
+
+      // Switch to Pengawas Lapangan
+      await tester.tap(find.byKey(const ValueKey('role_tab_pengawas_lapangan')));
+      // Pump mid-animation frame
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // After settling, indicator is at centerRight
+      await tester.pumpAndSettle();
+      alignWidget = tester.widget<AnimatedAlign>(alignFinder);
+      expect(alignWidget.alignment, equals(Alignment.centerRight));
+      expect(find.text('Masuk sebagai Pengawas Lapangan'), findsOneWidget);
+
+      // Switch back to Pengembang
+      await tester.tap(find.byKey(const ValueKey('role_tab_pengembang')));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      await tester.pumpAndSettle();
+      alignWidget = tester.widget<AnimatedAlign>(alignFinder);
+      expect(alignWidget.alignment, equals(Alignment.centerLeft));
+      expect(find.text('Masuk sebagai Pengembang'), findsOneWidget);
+    },
+  );
 }
