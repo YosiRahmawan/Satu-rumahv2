@@ -39,36 +39,44 @@ Widget _app({Size size = const Size(360, 800), double textScale = 1}) {
 }
 
 void main() {
-  testWidgets('shows generated document data from monitoring model', (
+  testWidgets('shows generated document data from authentic monitoring model', (
     tester,
   ) async {
     await tester.pumpWidget(_app());
-    expect(find.text('Berita Acara Monitoring'), findsOneWidget);
-    expect(find.text('Berita Acara Lokal Siap'), findsOneWidget);
-    expect(find.textContaining('belum diterbitkan'), findsOneWidget);
+    expect(find.text('Berita Acara Generated'), findsOneWidget);
+    expect(find.text('Laporan Berhasil Dibuat!'), findsOneWidget);
+    expect(
+      find.text('Berita Acara Monitoring & Evaluasi Lapangan resmi telah diterbitkan oleh sistem.'),
+      findsOneWidget,
+    );
+    expect(find.text('PEMERINTAH KOTA TASIKMALAYA'), findsOneWidget);
+    expect(find.text('DINAS PERUMAHAN DAN KAWASAN PERMUKIMAN'), findsOneWidget);
+    expect(find.text('BERITA ACARA MONITORING DAN EVALUASI LAPANGAN'), findsOneWidget);
     expect(find.text('Perumahan Uji'), findsOneWidget);
     expect(find.text('Jl. Karikil, Cipari'), findsOneWidget);
     expect(find.text('BA/2026/001'), findsOneWidget);
     expect(find.text('Download / Cetak PDF'), findsOneWidget);
     expect(find.text('Bagikan ringkasan'), findsOneWidget);
-    expect(find.text('Download Word'), findsNothing);
+    expect(find.textContaining('Download Word'), findsNothing);
     expect(find.byIcon(Icons.qr_code), findsNothing);
+    expect(find.byIcon(Icons.qr_code_2), findsNothing);
     expect(find.text('Identitas pihak yang tercatat'), findsNothing);
   });
 
   testWidgets('navigates to monitoring history', (tester) async {
     await tester.pumpWidget(_app());
-    await tester.tap(find.text('Kembali ke Riwayat Monitoring'));
+    final backBtn = find.text('Kembali ke Menu Riwayat Monitoring');
+    await tester.ensureVisible(backBtn);
+    await tester.tap(backBtn);
     await tester.pumpAndSettle();
     expect(find.text('Riwayat Monitoring'), findsOneWidget);
   });
 
-  testWidgets('shows recorded identities without inventing QR or signature', (
+  testWidgets('shows authentic pelaksana identity without inventing fake QR', (
     tester,
   ) async {
     final monitoring = _monitoring().copyWith(
-      pelaksanaNama: 'Petugas Uji',
-      pelaksanaJabatan: 'Pengawas Lapangan',
+      pelaksanaNama: 'Petugas Uji, S.T.',
     );
     final router = GoRouter(
       initialLocation: '/success',
@@ -87,8 +95,9 @@ void main() {
     );
 
     expect(find.text('Identitas pihak yang tercatat'), findsOneWidget);
-    expect(find.textContaining('Petugas Uji'), findsOneWidget);
+    expect(find.text('Petugas Uji, S.T.'), findsOneWidget);
     expect(find.byIcon(Icons.qr_code), findsNothing);
+    expect(find.byIcon(Icons.qr_code_2), findsNothing);
   });
 
   testWidgets('fits 360dp and 412dp at 200 percent text scale', (tester) async {

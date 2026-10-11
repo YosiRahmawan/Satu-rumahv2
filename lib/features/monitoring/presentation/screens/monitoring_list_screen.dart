@@ -249,15 +249,15 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
           ),
           border: const OutlineInputBorder(
             borderRadius: AppRadii.control,
-            borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+            borderSide: BorderSide(color: AppColors.enterpriseBorder),
           ),
           enabledBorder: const OutlineInputBorder(
             borderRadius: AppRadii.control,
-            borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+            borderSide: BorderSide(color: AppColors.enterpriseBorder),
           ),
           focusedBorder: const OutlineInputBorder(
             borderRadius: AppRadii.control,
-            borderSide: const BorderSide(color: AppColors.enterprisePrimary),
+            borderSide: BorderSide(color: AppColors.enterprisePrimary),
           ),
         ),
       ),
@@ -357,6 +357,13 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
         color: AppColors.enterpriseSurface,
         borderRadius: AppRadii.card,
         border: Border.all(color: AppColors.enterpriseBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -377,12 +384,12 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
                     Expanded(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: 5,
+                          horizontal: 8.5,
+                          vertical: 3.5,
                         ),
-                        decoration: const BoxDecoration(
-                          color: AppColors.enterprisePrimarySurface,
-                          borderRadius: AppRadii.small,
+                        decoration: BoxDecoration(
+                          color: AppColors.enterprisePrimarySurfaceSoft,
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           item.nomorSuratBA,

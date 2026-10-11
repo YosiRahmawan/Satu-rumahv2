@@ -68,6 +68,13 @@ void main() {
       expect(find.byIcon(Icons.check_circle), findsWidgets);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
 
+      // Verify Header horizontal alignment: avatar (left) -> profile (center) -> notification (right)
+      final avatarDx = tester.getTopLeft(find.text('RH')).dx;
+      final profileDx = tester.getTopLeft(find.text('Drs. Rian Hidayat, M.Si')).dx;
+      final notifDx = tester.getTopLeft(find.byIcon(Icons.notifications_none_rounded)).dx;
+      expect(profileDx, greaterThan(avatarDx));
+      expect(notifDx, greaterThan(profileDx));
+
       // Verify Active Survey Task Card
       expect(find.textContaining('TUGAS SURVEY'), findsWidgets);
       expect(find.text('INSTRUKSI PENUGASAN ADMIN'), findsWidgets);
@@ -79,7 +86,7 @@ void main() {
       expect(find.textContaining('Lihat Dokumen BA'), findsWidgets);
     });
 
-    testWidgets('avoids horizontal overflow on small 360dp viewport', (
+    testWidgets('avoids horizontal overflow on small 360dp viewport and keeps notification on right', (
       WidgetTester tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(360, 640));
@@ -102,6 +109,68 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+
+      final avatarDx = tester.getTopLeft(find.text('RH')).dx;
+      final profileDx = tester.getTopLeft(find.text('Drs. Rian Hidayat, M.Si')).dx;
+      final notifDx = tester.getTopLeft(find.byIcon(Icons.notifications_none_rounded)).dx;
+      expect(profileDx, greaterThan(avatarDx));
+      expect(notifDx, greaterThan(profileDx));
     });
+
+    testWidgets('renders all monitoring card metadata fields and status badge', (
+      WidgetTester tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            roleSessionProvider.overrideWith(
+              (ref) => RoleSessionNotifier()
+                ..signIn(
+                  AppRole.perwaskim,
+                  username: 'tim_monitoring_perwaskim',
+                ),
+            ),
+          ],
+          child: const MaterialApp(home: TabBerandaMonitoring()),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Ensure Hasil Survey section is present
+      expect(find.text('Hasil Survey Terbaru'), findsOneWidget);
+      // Ensure BA number badges, housing names, developer names, and action buttons are rendered
+      expect(find.textContaining('BA-MON'), findsWidgets);
+      expect(find.textContaining('Lihat Dokumen BA'), findsWidgets);
+      expect(find.byIcon(Icons.calendar_today_outlined), findsWidgets);
+    });
+
+    for (final width in [360.0, 390.0, 412.0]) {
+      testWidgets('viewport ${width}dp renders without overflow', (
+        WidgetTester tester,
+      ) async {
+        await tester.binding.setSurfaceSize(Size(width, 844));
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              roleSessionProvider.overrideWith(
+                (ref) => RoleSessionNotifier()
+                  ..signIn(
+                    AppRole.perwaskim,
+                    username: 'tim_monitoring_perwaskim',
+                  ),
+              ),
+            ],
+            child: const MaterialApp(home: TabBerandaMonitoring()),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      });
+    }
   });
 }

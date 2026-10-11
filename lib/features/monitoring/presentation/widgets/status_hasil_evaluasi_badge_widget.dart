@@ -17,16 +17,12 @@ class StatusHasilEvaluasiBadgeWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isCompact ? 8 : 10,
-        vertical: isCompact ? 3 : 5,
+        horizontal: isCompact ? 8.5 : 10,
+        vertical: isCompact ? 3.5 : 5,
       ),
       decoration: BoxDecoration(
         color: status.backgroundColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: status.color.withValues(alpha: 0.5),
-          width: 1,
-        ),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -41,9 +37,10 @@ class StatusHasilEvaluasiBadgeWidget extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: isCompact ? 11 : 12,
-                fontWeight: FontWeight.bold,
+                fontSize: isCompact ? 10.5 : 12,
+                fontWeight: FontWeight.w700,
                 color: status.color,
+                letterSpacing: 0.2,
               ),
             ),
           ),

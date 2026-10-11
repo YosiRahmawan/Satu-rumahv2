@@ -24,20 +24,20 @@ class StatusHasilEvaluasiSelectorWidget extends StatelessWidget {
               'Status Hasil Evaluasi',
               style: AppTextStyles.bodyMedium.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.cocoaBeanRoast,
+                color: AppColors.enterpriseTextMain,
               ),
             ),
             const SizedBox(width: 4),
             const Text(
               '*',
-              style: TextStyle(color: AppColors.chilliDust, fontWeight: FontWeight.bold),
+              style: TextStyle(color: AppColors.enterprisePrimary, fontWeight: FontWeight.bold),
             ),
           ],
         ),
         const SizedBox(height: 6),
         const Text(
           'Pilih kesimpulan evaluasi kesesuaian pelaksanaan dengan siteplan.',
-          style: TextStyle(fontSize: 12, color: AppColors.grey600),
+          style: TextStyle(fontSize: 12, color: AppColors.enterpriseTextMuted),
         ),
         const SizedBox(height: 12),
         ...StatusHasilEvaluasi.values.map((status) {
@@ -51,10 +51,10 @@ class StatusHasilEvaluasiSelectorWidget extends StatelessWidget {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isSelected ? status.backgroundColor : AppColors.grey50,
+                  color: isSelected ? status.backgroundColor : AppColors.enterpriseCanvas,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isSelected ? status.color : AppColors.grey300,
+                    color: isSelected ? status.color : AppColors.enterpriseBorder,
                     width: isSelected ? 2 : 1,
                   ),
                 ),
@@ -70,7 +70,7 @@ class StatusHasilEvaluasiSelectorWidget extends StatelessWidget {
                     ),
                     Icon(
                       status.icon,
-                      color: isSelected ? status.color : AppColors.grey600,
+                      color: isSelected ? status.color : AppColors.enterpriseTextMuted,
                       size: 22,
                     ),
                     const SizedBox(width: 10),
@@ -82,7 +82,7 @@ class StatusHasilEvaluasiSelectorWidget extends StatelessWidget {
                             status.label,
                             style: AppTextStyles.bodyMedium.copyWith(
                               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? status.color : AppColors.cocoaBeanRoast,
+                              color: isSelected ? status.color : AppColors.enterpriseTextMain,
                             ),
                           ),
                           if (status.wajibRencanaTindakLanjut) ...[
@@ -91,7 +91,7 @@ class StatusHasilEvaluasiSelectorWidget extends StatelessWidget {
                               'Wajib mengisi minimal 1 poin Rencana Tindak Lanjut',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: isSelected ? status.color : AppColors.grey600,
+                                color: isSelected ? status.color : AppColors.enterpriseTextMuted,
                                 fontStyle: FontStyle.italic,
                               ),
                             ),

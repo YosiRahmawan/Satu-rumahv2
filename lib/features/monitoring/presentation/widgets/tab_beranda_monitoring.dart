@@ -5,9 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
@@ -23,12 +21,14 @@ class PerwaskimIdentity {
   final String jabatan;
   final String nip;
   final String initials;
+  final String email;
 
   const PerwaskimIdentity({
     required this.nama,
     required this.jabatan,
     required this.nip,
     required this.initials,
+    this.email = 'rian.hidayat@tasikmalayakota.go.id',
   });
 
   factory PerwaskimIdentity.fromSession(RoleSessionState session) {
@@ -42,6 +42,7 @@ class PerwaskimIdentity {
           jabatan: 'Tim Verifikator Lapangan (Perwaskim)',
           nip: 'NIP: 197805122006041008',
           initials: 'RH',
+          email: 'rian.hidayat@tasikmalayakota.go.id',
         );
       }
       if (username.contains('budi')) {
@@ -50,6 +51,7 @@ class PerwaskimIdentity {
           jabatan: 'Tim Verifikator Lapangan (Perwaskim)',
           nip: 'NIP: 19880512 201503 1 002',
           initials: 'BS',
+          email: 'budi.santoso@tasikmalayakota.go.id',
         );
       }
       final formattedName = username
@@ -62,6 +64,7 @@ class PerwaskimIdentity {
         jabatan: session.role.label,
         nip: 'NIP: Belum tersedia',
         initials: _extractInitials(formattedName),
+        email: '$username@tasikmalayakota.go.id',
       );
     }
 
@@ -70,6 +73,7 @@ class PerwaskimIdentity {
       jabatan: 'Tim Verifikator Lapangan (Perwaskim)',
       nip: 'NIP: 197805122006041008',
       initials: 'RH',
+      email: 'rian.hidayat@tasikmalayakota.go.id',
     );
   }
 
@@ -129,7 +133,7 @@ class TabBerandaMonitoring extends ConsumerWidget {
     final unreadCount = ref.watch(unreadNotifikasiCountProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.enterpriseCanvas,
       body: listState.when(
         loading: () => const DataStateView.loading(),
         error: (error, stack) => DataStateView.error(
@@ -189,177 +193,169 @@ class _PerwaskimHeader extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: Color(0xFF991B1B),
+        color: AppColors.enterprisePrimary,
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFB91C1C), Color(0xFF881337)],
+          colors: [AppColors.enterprisePrimary, AppColors.enterprisePrimaryDark],
         ),
         borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 26),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Notification button
-              Row(
-                children: [
-                  Semantics(
-                    button: true,
-                    label:
-                        'Buka notifikasi ($unreadNotifications belum dibaca)',
-                    child: InkWell(
-                      onTap: onNotificationsTap,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.25),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Icon(
-                              Icons.notifications_none_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            if (unreadNotifications > 0)
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: Container(
-                                  padding: const EdgeInsets.all(2),
-                                  decoration: const BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  constraints: const BoxConstraints(
-                                    minWidth: 15,
-                                    minHeight: 15,
-                                  ),
-                                  child: Container(
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFB91C1C),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '$unreadNotifications',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+              Container(
+                width: 52,
+                height: 52,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    identity.initials,
+                    style: const TextStyle(
+                      color: AppColors.enterprisePrimaryDark,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
-                ],
+                ),
               ),
-              const SizedBox(height: 16),
-              // Officer identity row
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            identity.nama,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 16.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.white,
+                          size: 16,
                         ),
                       ],
                     ),
-                    child: Center(
+                    const SizedBox(height: 3),
+                    Text(
+                      identity.jabatan,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.88),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Text(
-                        identity.initials,
-                        style: const TextStyle(
-                          color: Color(0xFF991B1B),
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
+                        identity.nip,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.95),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Semantics(
+                button: true,
+                label:
+                    'Buka notifikasi ($unreadNotifications belum dibaca)',
+                child: InkWell(
+                  onTap: onNotificationsTap,
+                  borderRadius: BorderRadius.circular(24),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      alignment: Alignment.center,
                       children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
-                                identity.nama,
-                                style: const TextStyle(
+                        const Icon(
+                          Icons.notifications_none_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                        if (unreadNotifications > 0)
+                          Positioned(
+                            top: 1,
+                            right: 1,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: AppColors.enterprisePrimary,
+                                shape: BoxShape.circle,
+                                border: Border.all(
                                   color: Colors.white,
-                                  fontSize: 16.5,
-                                  fontWeight: FontWeight.w700,
+                                  width: 1.5,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 17,
+                                minHeight: 17,
+                              ),
+                              child: Center(
+                                child: Text(
+                                  unreadNotifications > 9
+                                      ? '9+'
+                                      : '$unreadNotifications',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1,
+                                  ),
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            const Icon(
-                              Icons.check_circle,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          identity.jabatan,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.88),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w400,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.22),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            identity.nip,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.95),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              letterSpacing: 0.2,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
             ],
           ),
@@ -416,7 +412,7 @@ class _DashboardContent extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF0F172A),
+                  color: AppColors.enterpriseTextMain,
                 ),
               ),
             ),
@@ -434,7 +430,7 @@ class _DashboardContent extends ConsumerWidget {
                   Text(
                     'Lihat Semua',
                     style: TextStyle(
-                      color: Color(0xFFB91C1C),
+                      color: AppColors.enterprisePrimary,
                       fontWeight: FontWeight.w700,
                       fontSize: 13,
                     ),
@@ -443,7 +439,7 @@ class _DashboardContent extends ConsumerWidget {
                   Icon(
                     Icons.arrow_forward_rounded,
                     size: 14,
-                    color: Color(0xFFB91C1C),
+                    color: AppColors.enterprisePrimary,
                   ),
                 ],
               ),
@@ -496,13 +492,19 @@ class _SurveyTaskCard extends StatelessWidget {
         ? assignment.catatanSurvey!.trim()
         : 'Titik kumpul di gerbang utama. Wajib cek drainase dan ketersediaan lahan PSU bersama Site Manager.';
 
-    return Card(
-      elevation: 0,
+    return Container(
       margin: EdgeInsets.zero,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.enterpriseBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(18),
@@ -515,12 +517,12 @@ class _SurveyTaskCard extends StatelessWidget {
                 Flexible(
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
+                      horizontal: 8.5,
+                      vertical: 3.5,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF1F2),
-                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.enterprisePrimarySurfaceSoft,
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -529,7 +531,7 @@ class _SurveyTaskCard extends StatelessWidget {
                           width: 6,
                           height: 6,
                           decoration: const BoxDecoration(
-                            color: Color(0xFFB91C1C),
+                            color: AppColors.enterprisePrimary,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -538,7 +540,7 @@ class _SurveyTaskCard extends StatelessWidget {
                           child: Text(
                             badgeLabel,
                             style: const TextStyle(
-                              color: Color(0xFFB91C1C),
+                              color: AppColors.enterprisePrimary,
                               fontSize: 10.5,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 0.2,
@@ -558,13 +560,13 @@ class _SurveyTaskCard extends StatelessWidget {
                     const Icon(
                       Icons.schedule_outlined,
                       size: 13,
-                      color: Color(0xFF64748B),
+                      color: AppColors.enterpriseTextMuted,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       timeString,
                       style: const TextStyle(
-                        color: Color(0xFF64748B),
+                        color: AppColors.enterpriseTextMuted,
                         fontSize: 11.5,
                         fontWeight: FontWeight.w500,
                       ),
@@ -579,7 +581,7 @@ class _SurveyTaskCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF0F172A),
+                color: AppColors.enterpriseTextMain,
               ),
             ),
             const SizedBox(height: 4),
@@ -587,7 +589,7 @@ class _SurveyTaskCard extends StatelessWidget {
               '${assignment.namaPt} • ${assignment.id}',
               style: const TextStyle(
                 fontSize: 13,
-                color: Color(0xFF64748B),
+                color: AppColors.enterpriseTextMuted,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -596,9 +598,9 @@ class _SurveyTaskCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF1F2),
+                color: AppColors.enterprisePrimarySurfaceSoft,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFECDD3)),
+                border: Border.all(color: AppColors.enterprisePrimaryBorder),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -608,14 +610,14 @@ class _SurveyTaskCard extends StatelessWidget {
                       Icon(
                         Icons.assignment_turned_in_outlined,
                         size: 16,
-                        color: Color(0xFFB91C1C),
+                        color: AppColors.enterprisePrimary,
                       ),
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           'INSTRUKSI PENUGASAN ADMIN',
                           style: TextStyle(
-                            color: Color(0xFFB91C1C),
+                            color: AppColors.enterprisePrimary,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 0.3,
@@ -631,7 +633,7 @@ class _SurveyTaskCard extends StatelessWidget {
                     instructionText,
                     style: const TextStyle(
                       fontSize: 12.5,
-                      color: Color(0xFF475569),
+                      color: AppColors.enterpriseTextMuted,
                       height: 1.45,
                     ),
                   ),
@@ -645,7 +647,7 @@ class _SurveyTaskCard extends StatelessWidget {
               child: ElevatedButton.icon(
                 onPressed: onStartSurvey,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF991B1B),
+                  backgroundColor: AppColors.enterprisePrimary,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -681,138 +683,151 @@ class _SurveyResultCard extends StatelessWidget {
         ? item.nomorSuratBA.trim()
         : MonitoringModel.generateNomorSuratBA(item.tanggalMonitoring);
 
-    return Card(
-      elevation: 0,
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        border: Border.all(color: AppColors.enterpriseBorder),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF1F2),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        nomorBA,
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFFB91C1C),
+      child: Material(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8.5,
+                          vertical: 3.5,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                StatusHasilEvaluasiBadgeWidget(
-                  status: item.statusHasilEvaluasi,
-                  isCompact: true,
-                  showIcon: false,
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              item.namaPerumahan,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF0F172A),
-              ),
-            ),
-            if (item.namaDeveloper.isNotEmpty) ...[
-              const SizedBox(height: 3),
-              Text(
-                item.namaDeveloper,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF64748B),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.calendar_today_outlined,
-                        size: 14,
-                        color: Color(0xFF94A3B8),
-                      ),
-                      const SizedBox(width: 6),
-                      Flexible(
+                        decoration: BoxDecoration(
+                          color: AppColors.enterprisePrimarySurfaceSoft,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
                         child: Text(
-                          DateFormat(
-                            'd MMM yyyy',
-                            'id',
-                          ).format(item.tanggalMonitoring),
+                          nomorBA,
                           style: const TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.enterprisePrimary,
+                            letterSpacing: 0.2,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  StatusHasilEvaluasiBadgeWidget(
+                    status: item.statusHasilEvaluasi,
+                    isCompact: true,
+                    showIcon: false,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                item.namaPerumahan,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.enterpriseTextMain,
+                  letterSpacing: -0.2,
+                  height: 1.3,
+                ),
+              ),
+              if (item.namaDeveloper.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Text(
+                  item.namaDeveloper,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.enterpriseTextMuted,
+                    fontWeight: FontWeight.w400,
+                    height: 1.35,
                   ),
                 ),
-                const SizedBox(width: 8),
-                InkWell(
-                  onTap: item.isDraft ? null : onOpenBeritaAcara,
-                  borderRadius: BorderRadius.circular(4),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
+              ],
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          item.isDraft ? 'Dokumen Draft' : 'Lihat Dokumen BA',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: item.isDraft
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFFB91C1C),
-                          ),
+                        const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 14,
+                          color: AppColors.enterpriseTextMuted,
                         ),
-                        const SizedBox(width: 2),
-                        Icon(
-                          Icons.chevron_right,
-                          size: 16,
-                          color: item.isDraft
-                              ? const Color(0xFF94A3B8)
-                              : const Color(0xFFB91C1C),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            DateFormat(
+                              'd MMM yyyy',
+                              'id',
+                            ).format(item.tanggalMonitoring),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.enterpriseTextMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: item.isDraft ? null : onOpenBeritaAcara,
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.isDraft ? 'Dokumen Draft' : 'Lihat Dokumen BA',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: item.isDraft
+                                  ? AppColors.enterpriseTextMuted
+                                  : AppColors.enterprisePrimary,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.chevron_right,
+                            size: 16,
+                            color: item.isDraft
+                                ? AppColors.enterpriseTextMuted
+                                : AppColors.enterprisePrimary,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

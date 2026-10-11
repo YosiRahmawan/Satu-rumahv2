@@ -362,10 +362,9 @@ void main() {
 
     await pumpStep1(tester, router: router);
 
-    expect(find.text('Lihat Preview Berita Acara'), findsOneWidget);
-    expect(find.text('Submit & Buat Berita Acara'), findsNothing);
+    expect(find.text('Submit & Buat Berita Acara'), findsOneWidget);
 
-    final previewAction = find.text('Lihat Preview Berita Acara');
+    final previewAction = find.text('Submit & Buat Berita Acara');
     final previewButton = find.ancestor(
       of: previewAction,
       matching: find.byType(ElevatedButton),
@@ -459,6 +458,83 @@ void main() {
             .join('\n'),
       );
       expect(flutterErrors, isEmpty);
+    }
+  });
+
+  group('Stepper 3 Visual States & Bottom Action Bar Refinement', () {
+    testWidgets('Langkah 1 active: [1 MERAH] - [2 ABU] - [3 ABU] and correct footer actions', (
+      tester,
+    ) async {
+      container.read(monitoringFormProvider.notifier).setStep(0);
+      await pumpStep1(tester, size: const Size(390, 844));
+
+      // Stepper circles
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(find.byIcon(Icons.check), findsNothing);
+
+      // Footer actions for Langkah 1
+      expect(find.text('Batal'), findsOneWidget);
+      expect(find.text('Simpan Draft'), findsOneWidget);
+      expect(find.text('Lanjut ke Langkah 2'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+      expect(find.text('Kembali'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Langkah 2 active: [✓ HIJAU] - [2 MERAH] - [3 ABU] and correct footer actions', (
+      tester,
+    ) async {
+      container.read(monitoringFormProvider.notifier).setStep(1);
+      await pumpStep1(tester, size: const Size(390, 844));
+
+      // Step 1 completed (check icon), Step 2 active (number 2), Step 3 upcoming (number 3)
+      expect(find.byIcon(Icons.check), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      // Number 1 should not be displayed because it has check icon
+      expect(find.text('1'), findsNothing);
+
+      // Footer actions for Langkah 2
+      expect(find.text('Kembali'), findsOneWidget);
+      expect(find.text('Lanjut ke Langkah 3'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+      expect(find.text('Batal'), findsNothing);
+      expect(find.text('Simpan Draft'), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Langkah 3 active: [✓ HIJAU] - [✓ HIJAU] - [3 MERAH] and correct footer actions', (
+      tester,
+    ) async {
+      container.read(monitoringFormProvider.notifier).setStep(2);
+      await pumpStep1(tester, size: const Size(390, 844));
+
+      // Step 1 & 2 completed (2 check icons), Step 3 active (number 3)
+      expect(find.byIcon(Icons.check), findsNWidgets(2));
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('1'), findsNothing);
+      expect(find.text('2'), findsNothing);
+
+      // Footer actions for Langkah 3
+      expect(find.text('Kembali'), findsOneWidget);
+      expect(find.text('Submit & Buat Berita Acara'), findsOneWidget);
+      expect(find.byIcon(Icons.check_box_outlined), findsNothing);
+      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
+    for (final width in [360.0, 390.0, 412.0]) {
+      testWidgets('stepper and bottom action bar render without overflow on ${width}dp', (
+        tester,
+      ) async {
+        for (var step = 0; step < 3; step++) {
+          container.read(monitoringFormProvider.notifier).setStep(step);
+          await pumpStep1(tester, size: Size(width, 844));
+          expect(tester.takeException(), isNull);
+        }
+      });
     }
   });
 }

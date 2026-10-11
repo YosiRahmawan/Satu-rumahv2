@@ -32,23 +32,23 @@ class _MonitoringMainScreenState extends State<MonitoringMainScreen> {
 
     return Scaffold(
       body: IndexedStack(index: _currentIndex, children: pages),
-      bottomNavigationBar: AppBottomNavigation(
+      bottomNavigationBar: AppBottomNavigation.enterprise(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           AppBottomNavigationItem(
             icon: Icons.home_outlined,
-            activeIcon: Icons.home,
+            activeIcon: Icons.home_rounded,
             label: 'Beranda',
           ),
           AppBottomNavigationItem(
-            icon: Icons.assignment_turned_in_outlined,
-            activeIcon: Icons.assignment_turned_in,
+            icon: Icons.assignment_outlined,
+            activeIcon: Icons.assignment_rounded,
             label: 'Riwayat',
           ),
           AppBottomNavigationItem(
             icon: Icons.person_outline,
-            activeIcon: Icons.person,
+            activeIcon: Icons.person_rounded,
             label: 'Profil',
           ),
         ],

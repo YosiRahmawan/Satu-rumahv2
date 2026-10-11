@@ -1,9 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/file_picker_util.dart';
 
@@ -26,6 +24,14 @@ class EvidencePhotoPicker extends StatefulWidget {
     this.pickCameraPhoto,
   });
 
+  static final Map<String, Uint8List> _bytesCache = {};
+
+  static Uint8List? getCachedBytes(String path) => _bytesCache[path];
+
+  static void cacheBytes(String path, Uint8List bytes) {
+    _bytesCache[path] = bytes;
+  }
+
   @override
   State<EvidencePhotoPicker> createState() => _EvidencePhotoPickerState();
 }
@@ -38,28 +44,66 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
   void didUpdateWidget(covariant EvidencePhotoPicker oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!listEquals(oldWidget.photoPaths, widget.photoPaths)) {
-      // A parent update supersedes any picker result that is still pending.
       _pickRequestId++;
     }
   }
 
   @override
   void dispose() {
-    // Invalidate callbacks awaiting the native file picker before disposal.
     _pickRequestId++;
     super.dispose();
   }
 
   Future<List<String>> _pickFromDevice() async {
-    final pickedFiles = await FilePickerUtil.pickMultipleFiles(
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'heic', 'webp'],
-    );
-    return pickedFiles.map((file) => file.path ?? file.name).toList();
+    try {
+      final pickedFiles = await ImagePicker().pickMultiImage();
+      if (pickedFiles.isNotEmpty) {
+        final paths = <String>[];
+        for (final file in pickedFiles) {
+          final bytes = await file.readAsBytes();
+          final key = file.path.isNotEmpty ? file.path : file.name;
+          EvidencePhotoPicker.cacheBytes(key, bytes);
+          paths.add(key);
+        }
+        return paths;
+      }
+    } catch (e) {
+      debugPrint('ImagePicker.pickMultiImage: $e');
+    }
+
+    try {
+      final pickedFiles = await FilePickerUtil.pickMultipleFiles(
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'heic', 'webp'],
+      );
+      final paths = <String>[];
+      for (final file in pickedFiles) {
+        final key = file.path ?? file.name;
+        if (file.bytes != null) {
+          EvidencePhotoPicker.cacheBytes(key, file.bytes!);
+        } else if (file.path != null) {
+          try {
+            final xFile = XFile(file.path!);
+            final bytes = await xFile.readAsBytes();
+            EvidencePhotoPicker.cacheBytes(key, bytes);
+          } catch (_) {}
+        }
+        paths.add(key);
+      }
+      return paths;
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<String?> _pickFromCamera() async {
     final photo = await ImagePicker().pickImage(source: ImageSource.camera);
-    return photo?.path;
+    if (photo != null) {
+      final bytes = await photo.readAsBytes();
+      final key = photo.path.isNotEmpty ? photo.path : photo.name;
+      EvidencePhotoPicker.cacheBytes(key, bytes);
+      return key;
+    }
+    return null;
   }
 
   Future<void> _pickPhotos({required bool camera}) async {
@@ -112,25 +156,144 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
     }
     final choice = await showModalBottomSheet<bool>(
       context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      ),
       builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Ambil Foto Langsung'),
-              onTap: () => Navigator.pop(context, true),
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Pilih dari Galeri / Berkas'),
-              onTap: () => Navigator.pop(context, false),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD1D5DB),
+                    borderRadius: BorderRadius.circular(2.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Tambah Dokumentasi',
+                style: TextStyle(
+                  fontFamily: AppTextStyles.enterpriseFontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.enterpriseTextMain,
+                ),
+              ),
+              const SizedBox(height: 3),
+              const Text(
+                'Pilih sumber foto bukti fisik monitoring lapangan',
+                style: TextStyle(
+                  fontFamily: AppTextStyles.enterpriseFontFamily,
+                  fontSize: 12,
+                  color: AppColors.enterpriseTextMuted,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildPickerOption(
+                context: context,
+                icon: Icons.photo_camera_outlined,
+                iconColor: AppColors.enterprisePrimary,
+                iconBgColor: AppColors.enterprisePrimarySurface,
+                title: 'Ambil Foto Langsung',
+                subtitle: 'Gunakan kamera perangkat secara langsung',
+                onTap: () => Navigator.pop(context, true),
+              ),
+              const SizedBox(height: 12),
+              _buildPickerOption(
+                context: context,
+                icon: Icons.photo_library_outlined,
+                iconColor: AppColors.enterprisePrimaryDark,
+                iconBgColor: AppColors.enterprisePrimarySurfaceSoft,
+                title: 'Pilih dari Galeri / Berkas',
+                subtitle: 'Upload foto yang sudah tersedia di memori',
+                onTap: () => Navigator.pop(context, false),
+              ),
+            ],
+          ),
         ),
       ),
     );
     if (choice != null && mounted) await _pickPhotos(camera: choice);
+  }
+
+  Widget _buildPickerOption({
+    required BuildContext context,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBgColor,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: const Color(0xFFF8FAFC),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 72),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontFamily: AppTextStyles.enterpriseFontFamily,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.enterpriseTextMain,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontFamily: AppTextStyles.enterpriseFontFamily,
+                        fontSize: 11,
+                        color: AppColors.enterpriseTextMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right,
+                color: Color(0xFF9CA3AF),
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _confirmDelete(int index) async {
@@ -153,157 +316,448 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
     );
     if (confirmed != true || !mounted) return;
     _pickRequestId++;
+    final removed = widget.photoPaths[index];
+    EvidencePhotoPicker._bytesCache.remove(removed);
     final updated = List<String>.from(widget.photoPaths)..removeAt(index);
     widget.onPhotosChanged(updated);
+  }
+
+  Future<Uint8List?> _loadPhotoBytes(String path) async {
+    final cached = EvidencePhotoPicker.getCachedBytes(path);
+    if (cached != null) return cached;
+
+    if (path.isEmpty ||
+        path.startsWith('http://') ||
+        path.startsWith('https://')) {
+      return null;
+    }
+
+    try {
+      final xFile = XFile(path);
+      final bytes = await xFile.readAsBytes();
+      EvidencePhotoPicker.cacheBytes(path, bytes);
+      return bytes;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildPhotoPreview(String path) {
+    final cachedBytes = EvidencePhotoPicker.getCachedBytes(path);
+    if (cachedBytes != null) {
+      return Image.memory(
+        cachedBytes,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (ctx, err, stack) => _buildImageError(),
+      );
+    }
+
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (ctx, err, stack) => _buildImageError(),
+      );
+    }
+
+    return FutureBuilder<Uint8List?>(
+      future: _loadPhotoBytes(path),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          return Image.memory(
+            snapshot.data!,
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (ctx, err, stack) => _buildImageError(),
+          );
+        }
+        return _buildImageError();
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final photoPaths = widget.photoPaths;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Foto dokumentasi',
-                style: AppTextStyles.titleMedium.copyWith(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final content = Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFF1F5F9)),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
+            children: [
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  const Text(
+                    'Foto dokumentasi',
+                    style: TextStyle(
+                      fontFamily: AppTextStyles.enterpriseFontFamily,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.enterpriseTextMain,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.enterprisePrimarySurface,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      '${photoPaths.length}/${widget.maxPhotos}',
+                      style: const TextStyle(
+                        fontFamily: AppTextStyles.enterpriseFontFamily,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.enterprisePrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Text(
+                'Maks. 10MB/foto',
+                style: TextStyle(
                   fontFamily: AppTextStyles.enterpriseFontFamily,
-                  color: AppColors.enterpriseTextMain,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.enterpriseTextMuted,
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: LinearProgressIndicator(
+              value: photoPaths.isEmpty ? 0 : photoPaths.length / widget.maxPhotos,
+              minHeight: 4,
+              backgroundColor: const Color(0xFFF1F5F9),
+              valueColor: const AlwaysStoppedAnimation(AppColors.enterprisePrimary),
             ),
-            Text(
-              '${photoPaths.length}/${widget.maxPhotos}',
-              style: AppTextStyles.labelMedium.copyWith(
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+              childAspectRatio: 3 / 4,
+            ),
+            itemCount: (photoPaths.length < widget.maxPhotos)
+                ? photoPaths.length + 1
+                : photoPaths.length,
+            itemBuilder: (context, index) {
+              if (index == photoPaths.length &&
+                  photoPaths.length < widget.maxPhotos) {
+                return _buildAddPhotoCard();
+              }
+
+              final path = photoPaths[index];
+              return _buildPhotoCard(path, index);
+            },
+          ),
+          if (_isPicking) ...[
+            const SizedBox(height: 14),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: const LinearProgressIndicator(
+                minHeight: 4,
+                backgroundColor: Color(0xFFF1F5F9),
+                valueColor: AlwaysStoppedAnimation(AppColors.enterprisePrimary),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Memproses foto…',
+              style: TextStyle(
                 fontFamily: AppTextStyles.enterpriseFontFamily,
+                fontSize: 11,
                 color: AppColors.enterpriseTextMuted,
               ),
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(
-          value: photoPaths.isEmpty ? 0 : photoPaths.length / widget.maxPhotos,
-          minHeight: 6,
-          borderRadius: AppRadii.pill,
-          backgroundColor: AppColors.enterprisePrimarySurface,
-          valueColor: const AlwaysStoppedAnimation(AppColors.enterprisePrimary),
-        ),
-        const SizedBox(height: 12),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 1.0,
+        ],
+      ),
+    );
+
+    if (constraints.hasBoundedHeight) {
+      return SingleChildScrollView(child: content);
+    }
+    return content;
+  },
+);
+}
+
+  Widget _buildPhotoCard(String path, int index) {
+    return TweenAnimationBuilder<double>(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      tween: Tween(begin: 0.0, end: 1.0),
+      builder: (context, animValue, child) {
+        return Transform.scale(
+          scale: 0.95 + (0.05 * animValue),
+          child: Opacity(
+            opacity: animValue,
+            child: child,
           ),
-          itemCount: (photoPaths.length < widget.maxPhotos)
-              ? photoPaths.length + 1
-              : photoPaths.length,
-          itemBuilder: (context, index) {
-            if (index == photoPaths.length &&
-                photoPaths.length < widget.maxPhotos) {
-              return Semantics(
-                button: true,
-                label: 'Tambah foto dokumentasi',
-                hint: 'Pilih kamera atau galeri',
-                child: InkWell(
-                  onTap: _showPickerOptions,
-                  borderRadius: AppRadii.control,
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 120),
-                    decoration: BoxDecoration(
-                      color: AppColors.enterprisePrimarySurfaceSoft,
-                      borderRadius: AppRadii.control,
-                      border: Border.all(
-                        color: AppColors.enterprisePrimaryBorder,
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildPhotoPreview(path),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black54,
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF059669).withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: const BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Flexible(
+                              child: Text(
+                                'Tersimpan',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: AppTextStyles.enterpriseFontFamily,
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    IconButton(
+                      tooltip: 'Hapus foto ${index + 1}',
+                      onPressed: () => _confirmDelete(index),
+                      icon: const Icon(Icons.close, size: 16, color: Colors.white),
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppColors.enterprisePrimary,
+                        minimumSize: const Size(28, 28),
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(10, 20, 10, 8),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      Colors.black87,
+                      Colors.black45,
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Dokumentasi ${index + 1}',
+                      style: const TextStyle(
+                        fontFamily: AppTextStyles.enterpriseFontFamily,
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
                       children: [
-                        Icon(
-                          Icons.add_a_photo_outlined,
-                          color: AppColors.enterprisePrimary,
-                          size: 28,
+                        const Icon(
+                          Icons.location_on,
+                          size: 11,
+                          color: Color(0xFFF87171),
                         ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Tambah foto',
-                          style: TextStyle(
-                            color: AppColors.enterprisePrimary,
-                            fontWeight: FontWeight.w700,
+                        const SizedBox(width: 3),
+                        Expanded(
+                          child: Text(
+                            'Tasikmalaya • Siap',
+                            style: TextStyle(
+                              fontFamily: AppTextStyles.enterpriseFontFamily,
+                              color: Colors.grey[300],
+                              fontSize: 10,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
                 ),
-              );
-            }
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            final path = photoPaths[index];
-            final isUrl = path.startsWith('http');
-
-            return Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: AppRadii.control,
-                  child: isUrl
-                      ? Image.network(
-                          path,
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => _buildImageError(),
-                        )
-                      : Image.file(
-                          File(path),
-                          width: double.infinity,
-                          height: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => _buildImageError(),
-                        ),
-                ),
-                Positioned(
-                  top: 4,
-                  right: 4,
-                  child: Semantics(
-                    button: true,
-                    label: 'Hapus foto ${index + 1}',
-                    child: IconButton(
-                      tooltip: 'Hapus foto ${index + 1}',
-                      onPressed: () => _confirmDelete(index),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppColors.enterprisePrimary,
-                        minimumSize: const Size(44, 44),
+  Widget _buildAddPhotoCard() {
+    return Semantics(
+      button: true,
+      label: 'Tambah foto dokumentasi',
+      hint: 'Pilih kamera atau galeri',
+      child: Material(
+        color: const Color(0xFFFFF1F2).withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: _showPickerOptions,
+          borderRadius: BorderRadius.circular(16),
+          child: CustomPaint(
+            painter: const DashedRRectPainter(
+              color: Color(0xFFFCA5A5),
+              strokeWidth: 2,
+              radius: 16,
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              alignment: Alignment.center,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.enterprisePrimarySurface.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.photo_camera_outlined,
+                        size: 24,
+                        color: AppColors.enterprisePrimary,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Tambah foto',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: AppTextStyles.enterpriseFontFamily,
+                        color: AppColors.enterprisePrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Ambil kamera atau dari galeri',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontFamily: AppTextStyles.enterpriseFontFamily,
+                        color: AppColors.enterpriseTextMuted,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            );
-          },
-        ),
-        if (_isPicking) ...[
-          const SizedBox(height: 12),
-          const LinearProgressIndicator(),
-          const SizedBox(height: 6),
-          Text(
-            'Memproses foto…',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontFamily: AppTextStyles.enterpriseFontFamily,
-              color: AppColors.enterpriseTextMuted,
+              ),
             ),
           ),
-        ],
-      ],
+        ),
+      ),
     );
   }
 
@@ -325,4 +779,55 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
       ),
     );
   }
+}
+
+class DashedRRectPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double radius;
+  final double dashWidth;
+  final double dashSpace;
+
+  const DashedRRectPainter({
+    required this.color,
+    this.strokeWidth = 2.0,
+    this.radius = 16.0,
+    this.dashWidth = 5.0,
+    this.dashSpace = 3.5,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      Radius.circular(radius),
+    );
+    final path = Path()..addRRect(rrect);
+
+    final pathMetrics = path.computeMetrics();
+    for (final metric in pathMetrics) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        final len = (distance + dashWidth < metric.length)
+            ? dashWidth
+            : metric.length - distance;
+        final extractPath = metric.extractPath(distance, distance + len);
+        canvas.drawPath(extractPath, paint);
+        distance += dashWidth + dashSpace;
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant DashedRRectPainter oldDelegate) =>
+      color != oldDelegate.color ||
+      strokeWidth != oldDelegate.strokeWidth ||
+      radius != oldDelegate.radius ||
+      dashWidth != oldDelegate.dashWidth ||
+      dashSpace != oldDelegate.dashSpace;
 }

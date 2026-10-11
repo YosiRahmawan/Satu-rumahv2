@@ -261,11 +261,13 @@ class _TambahMonitoringStepperScreenState
                     currentStep,
                   ),
                   if (index < steps.length - 1)
-                    const Divider(
+                    Divider(
                       height: 16,
                       indent: 18,
                       endIndent: 18,
-                      color: AppColors.enterpriseBorder,
+                      color: currentStep > index
+                          ? AppColors.enterpriseSuccess
+                          : AppColors.enterpriseBorder,
                     ),
                 ],
               ],
@@ -277,9 +279,32 @@ class _TambahMonitoringStepperScreenState
             children: [
               Positioned(
                 top: 17,
-                left: 52,
-                right: 52,
-                child: Container(height: 2, color: AppColors.enterpriseBorder),
+                left: 0,
+                right: 0,
+                child: Row(
+                  children: [
+                    const Spacer(flex: 1),
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        height: 2.5,
+                        color: currentStep >= 1
+                            ? AppColors.enterpriseSuccess
+                            : AppColors.enterpriseBorder,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        height: 2.5,
+                        color: currentStep >= 2
+                            ? AppColors.enterpriseSuccess
+                            : AppColors.enterpriseBorder,
+                      ),
+                    ),
+                    const Spacer(flex: 1),
+                  ],
+                ),
               ),
               Row(
                 children: [
@@ -309,7 +334,30 @@ class _TambahMonitoringStepperScreenState
   ) {
     final isDone = (currentStep + 1) > stepNumber;
     final isActive = (currentStep + 1) == stepNumber;
-    final active = isActive || isDone;
+
+    final Color circleBgColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+            ? AppColors.enterprisePrimary
+            : AppColors.enterpriseSurface;
+
+    final Color circleBorderColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+            ? AppColors.enterprisePrimary
+            : AppColors.enterpriseBorder;
+
+    final Color labelColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+            ? AppColors.enterprisePrimary
+            : AppColors.enterpriseTextMuted;
+
+    final FontWeight labelWeight = isActive
+        ? FontWeight.bold
+        : isDone
+            ? FontWeight.w600
+            : FontWeight.normal;
 
     return Row(
       children: [
@@ -318,9 +366,9 @@ class _TambahMonitoringStepperScreenState
           height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: active ? AppColors.actionPrimary : Colors.white,
+            color: circleBgColor,
             border: Border.all(
-              color: active ? AppColors.actionPrimary : AppColors.grey400,
+              color: circleBorderColor,
               width: 1.5,
             ),
           ),
@@ -332,7 +380,7 @@ class _TambahMonitoringStepperScreenState
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: isActive ? Colors.white : AppColors.grey600,
+                      color: isActive ? Colors.white : AppColors.enterpriseTextMuted,
                     ),
                   ),
           ),
@@ -343,10 +391,8 @@ class _TambahMonitoringStepperScreenState
             label,
             style: AppTextStyles.labelSmall.copyWith(
               fontFamily: AppTextStyles.enterpriseFontFamily,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive
-                  ? AppColors.enterprisePrimary
-                  : AppColors.enterpriseTextMuted,
+              fontWeight: labelWeight,
+              color: labelColor,
             ),
           ),
         ),
@@ -358,6 +404,30 @@ class _TambahMonitoringStepperScreenState
     final isDone = (currentStep + 1) > stepNumber;
     final isActive = (currentStep + 1) == stepNumber;
 
+    final Color circleBgColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+            ? AppColors.enterprisePrimary
+            : AppColors.enterpriseSurface;
+
+    final Color circleBorderColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+            ? AppColors.enterprisePrimary
+            : AppColors.enterpriseBorder;
+
+    final Color labelColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+            ? AppColors.enterprisePrimary
+            : AppColors.enterpriseTextMuted;
+
+    final FontWeight labelWeight = isActive
+        ? FontWeight.bold
+        : isDone
+            ? FontWeight.w600
+            : FontWeight.normal;
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -366,13 +436,9 @@ class _TambahMonitoringStepperScreenState
           height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: (isActive || isDone)
-                ? AppColors.actionPrimary
-                : Colors.white,
+            color: circleBgColor,
             border: Border.all(
-              color: (isActive || isDone)
-                  ? AppColors.actionPrimary
-                  : AppColors.grey400,
+              color: circleBorderColor,
               width: 1.5,
             ),
           ),
@@ -384,7 +450,7 @@ class _TambahMonitoringStepperScreenState
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: isActive ? Colors.white : AppColors.grey600,
+                      color: isActive ? Colors.white : AppColors.enterpriseTextMuted,
                     ),
                   ),
           ),
@@ -399,10 +465,8 @@ class _TambahMonitoringStepperScreenState
             overflow: TextOverflow.ellipsis,
             style: AppTextStyles.labelSmall.copyWith(
               fontFamily: AppTextStyles.enterpriseFontFamily,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive
-                  ? AppColors.enterprisePrimary
-                  : AppColors.enterpriseTextMuted,
+              fontWeight: labelWeight,
+              color: labelColor,
             ),
           ),
         ),
@@ -1246,35 +1310,43 @@ class _TambahMonitoringStepperScreenState
       builder: (context, constraints) {
         final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
         final useStackedActions =
-            constraints.maxWidth < 380 || textScale > 1.35;
+            constraints.maxWidth < 350 || textScale > 1.35;
 
-        final cancelButton = TextButton(
+        // Step 0 Secondary Text Action: Batal
+        final batalButton = TextButton(
           onPressed: () {
-            if (formState.currentStep > 0) {
-              notifier.setStep(formState.currentStep - 1);
-            } else if (context.canPop()) {
+            if (context.canPop()) {
               context.pop();
             } else {
               context.go('/monitoring/lapangan');
             }
           },
+          style: TextButton.styleFrom(
+            minimumSize: const Size(0, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+            foregroundColor: AppColors.enterpriseTextMuted,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
           child: Text(
-            formState.currentStep > 0 ? 'Kembali' : 'Batal',
+            'Batal',
             style: AppTextStyles.labelMedium.copyWith(
               fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w600,
               color: AppColors.enterpriseTextMuted,
             ),
           ),
         );
 
+        // Step 0 Secondary Outlined Action: Simpan Draft
         final saveDraftButton = Tooltip(
           message: 'Simpan Draft belum tersedia untuk sesi ini',
           child: OutlinedButton.icon(
             onPressed: null,
-            icon: const Icon(Icons.save_outlined, size: 18),
+            icon: const Icon(Icons.bookmark_border_rounded, size: 16),
             label: Text(
               'Simpan Draft',
               overflow: TextOverflow.ellipsis,
+              maxLines: 1,
               style: AppTextStyles.labelMedium.copyWith(
                 fontFamily: AppTextStyles.enterpriseFontFamily,
                 fontWeight: FontWeight.w600,
@@ -1283,95 +1355,147 @@ class _TambahMonitoringStepperScreenState
             ),
             style: OutlinedButton.styleFrom(
               minimumSize: const Size(0, 48),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               side: const BorderSide(color: AppColors.enterpriseBorder),
-              shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadii.small),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
         );
 
-        final nextButton = ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.enterprisePrimary,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            minimumSize: const Size(0, 48),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
-          ),
+        // Steps 1 & 2 Secondary Outlined Action: Kembali
+        final kembaliButton = OutlinedButton(
           onPressed: () {
-            if (formState.currentStep == 0) {
-              if (_namaPerumahanController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nama Perumahan wajib diisi.')),
-                );
-                return;
-              }
-              notifier.setStep(1);
-            } else if (formState.currentStep == 1) {
-              final rtl = formState.rencanaTindakLanjut
-                  .where((e) => e.trim().isNotEmpty)
-                  .toList();
-              if (formState.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
-                  rtl.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Untuk status "${formState.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.',
-                    ),
-                    backgroundColor: AppColors.actionPrimary,
-                  ),
-                );
-                return;
-              }
-              notifier.setStep(2);
-            } else {
-              // Last step -> Navigate to Preview Screen
-              final previewModel = notifier.buildPreviewModel();
-              if (previewModel != null) {
-                context.push(
-                  '/monitoring/preview',
-                  extra: {'model': previewModel, 'isDraft': true},
-                );
-              } else {
-                final err = ref.read(monitoringFormProvider).errorMessage;
-                if (err != null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(err),
-                      backgroundColor: AppColors.actionPrimary,
-                    ),
-                  );
-                }
-              }
+            if (formState.currentStep > 0) {
+              notifier.setStep(formState.currentStep - 1);
             }
           },
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  formState.currentStep == 0
-                      ? 'Lanjut ke Langkah 2'
-                      : formState.currentStep == 1
-                      ? 'Lanjut ke Langkah 3'
-                      : 'Lihat Preview Berita Acara',
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            side: const BorderSide(color: AppColors.enterpriseBorder),
+            shape: const RoundedRectangleBorder(borderRadius: AppRadii.small),
+          ),
+          child: Text(
+            'Kembali',
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTextStyles.labelMedium.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w600,
+              color: AppColors.enterpriseTextMain,
+            ),
+          ),
+        );
+
+        void handleNextStep() {
+          if (formState.currentStep == 0) {
+            if (_namaPerumahanController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Nama Perumahan wajib diisi.')),
+              );
+              return;
+            }
+            notifier.setStep(1);
+          } else if (formState.currentStep == 1) {
+            final rtl = formState.rencanaTindakLanjut
+                .where((e) => e.trim().isNotEmpty)
+                .toList();
+            if (formState.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
+                rtl.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Untuk status "${formState.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.',
                   ),
+                  backgroundColor: AppColors.enterprisePrimary,
                 ),
-              ),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward, size: 18),
-            ],
+              );
+              return;
+            }
+            notifier.setStep(2);
+          } else {
+            // Last step -> Navigate to Preview Screen
+            final previewModel = notifier.buildPreviewModel();
+            if (previewModel != null) {
+              context.push(
+                '/monitoring/preview',
+                extra: {'model': previewModel, 'isDraft': true},
+              );
+            } else {
+              final err = ref.read(monitoringFormProvider).errorMessage;
+              if (err != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(err),
+                    backgroundColor: AppColors.enterprisePrimary,
+                  ),
+                );
+              }
+            }
+          }
+        }
+
+        final primaryButtonStyle = ElevatedButton.styleFrom(
+          backgroundColor: AppColors.enterprisePrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadii.small),
+        );
+
+        final nextButtonStep0 = ElevatedButton(
+          style: primaryButtonStyle,
+          onPressed: handleNextStep,
+          child: Text(
+            'Lanjut ke Langkah 2',
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+
+        final nextButtonStep1 = ElevatedButton(
+          style: primaryButtonStyle,
+          onPressed: handleNextStep,
+          child: Text(
+            'Lanjut ke Langkah 3',
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+
+        final submitButtonStep2 = ElevatedButton(
+          style: primaryButtonStyle,
+          onPressed: handleNextStep,
+          child: Text(
+            'Submit & Buat Berita Acara',
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         );
 
         return Container(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
           decoration: BoxDecoration(
             color: AppColors.enterpriseSurface,
             border: const Border(
@@ -1388,44 +1512,79 @@ class _TambahMonitoringStepperScreenState
           child: SafeArea(
             child: formState.currentStep == 0
                 ? useStackedActions
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(child: cancelButton),
-                                const SizedBox(width: 8),
-                                Expanded(child: saveDraftButton),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            nextButton,
-                          ],
-                        )
-                      : Row(
-                          children: [
-                            cancelButton,
-                            const SizedBox(width: 4),
-                            Flexible(child: saveDraftButton),
-                            const SizedBox(width: 8),
-                            Expanded(child: nextButton),
-                          ],
-                        )
-                : useStackedActions
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(children: [Expanded(child: cancelButton)]),
-                      const SizedBox(height: 8),
-                      nextButton,
-                    ],
-                  )
-                : Row(
-                    children: [
-                      cancelButton,
-                      Expanded(child: nextButton),
-                    ],
-                  ),
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              batalButton,
+                              const SizedBox(width: 6),
+                              Expanded(child: saveDraftButton),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          nextButtonStep0,
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          batalButton,
+                          const SizedBox(width: 6),
+                          saveDraftButton,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: nextButtonStep0,
+                          ),
+                        ],
+                      )
+                : formState.currentStep == 1
+                    ? useStackedActions
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(children: [Expanded(child: kembaliButton)]),
+                              const SizedBox(height: 8),
+                              nextButtonStep1,
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: kembaliButton,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 7,
+                                child: nextButtonStep1,
+                              ),
+                            ],
+                          )
+                    : useStackedActions
+                        ? Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(children: [Expanded(child: kembaliButton)]),
+                              const SizedBox(height: 8),
+                              submitButtonStep2,
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                flex: 3,
+                                child: kembaliButton,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                flex: 7,
+                                child: submitButtonStep2,
+                              ),
+                            ],
+                          ),
           ),
         );
       },
