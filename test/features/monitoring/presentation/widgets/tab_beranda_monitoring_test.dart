@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:satu_rumah/core/auth/role_session.dart';
+import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart';
 import 'package:satu_rumah/features/monitoring/presentation/widgets/tab_beranda_monitoring.dart';
 
 void main() {
@@ -144,7 +146,57 @@ void main() {
       // Ensure BA number badges, housing names, developer names, and action buttons are rendered
       expect(find.textContaining('BA-MON'), findsWidgets);
       expect(find.textContaining('Lihat Dokumen BA'), findsWidgets);
+      expect(find.text('Dokumen Draft'), findsOneWidget);
       expect(find.byIcon(Icons.calendar_today_outlined), findsWidgets);
+    });
+
+    testWidgets('renders Dokumen Draft button for draft items and tapping it navigates to /monitoring/draft', (
+      WidgetTester tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+
+      final router = GoRouter(
+        initialLocation: '/monitoring/lapangan',
+        routes: [
+          GoRoute(
+            path: '/monitoring/lapangan',
+            builder: (_, __) => const TabBerandaMonitoring(),
+          ),
+          GoRoute(
+            path: '/monitoring/draft',
+            builder: (_, state) {
+              final model = state.extra as MonitoringModel;
+              return Scaffold(body: Text('DRAFT_SCREEN:${model.namaPerumahan}'));
+            },
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            roleSessionProvider.overrideWith(
+              (ref) => RoleSessionNotifier()
+                ..signIn(
+                  AppRole.perwaskim,
+                  username: 'tim_monitoring_perwaskim',
+                ),
+            ),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      final draftButton = find.text('Dokumen Draft');
+      expect(draftButton, findsOneWidget);
+
+      await tester.scrollUntilVisible(draftButton, 300);
+      await tester.tap(draftButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('DRAFT_SCREEN:Griya Mangkubumi Asri'), findsOneWidget);
     });
 
     for (final width in [360.0, 390.0, 412.0]) {

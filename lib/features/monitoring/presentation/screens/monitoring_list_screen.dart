@@ -370,8 +370,8 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
         child: InkWell(
           borderRadius: AppRadii.card,
           onTap: () => context.push(
-            '/monitoring/preview',
-            extra: {'model': item, 'isDraft': item.isDraft},
+            item.isDraft ? '/monitoring/draft' : '/monitoring/preview',
+            extra: item.isDraft ? item : {'model': item, 'isDraft': item.isDraft},
           ),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -471,21 +471,26 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
                         ),
                       ],
                     ),
-                    TextButton.icon(
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.sm,
+                          vertical: AppSpacing.xs,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
                       onPressed: () => context.push(
-                        '/monitoring/preview',
-                        extra: {'model': item, 'isDraft': item.isDraft},
+                        item.isDraft ? '/monitoring/draft' : '/monitoring/preview',
+                        extra: item.isDraft ? item : {'model': item, 'isDraft': item.isDraft},
                       ),
-                      icon: const Icon(
-                        Icons.arrow_forward,
-                        size: 16,
-                        color: AppColors.enterprisePrimary,
-                      ),
-                      label: Text(
-                        'Lihat Dokumen BA',
+                      child: Text(
+                        item.isDraft ? 'Dokumen Draft' : 'Lihat Dokumen BA',
                         style: _text(
                           AppTextStyles.labelMedium,
-                          color: AppColors.enterprisePrimary,
+                          color: item.isDraft
+                              ? AppColors.enterpriseTextMuted
+                              : AppColors.enterprisePrimary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

@@ -125,6 +125,13 @@ class TabBerandaMonitoring extends ConsumerWidget {
     );
   }
 
+  void _openDraft(BuildContext context, MonitoringModel item) {
+    context.push(
+      '/monitoring/draft',
+      extra: item,
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final listState = ref.watch(monitoringListAsyncProvider);
@@ -165,6 +172,7 @@ class TabBerandaMonitoring extends ConsumerWidget {
                     identity,
                   ),
                   onOpenBeritaAcara: (item) => _openBeritaAcara(context, item),
+                  onOpenDraft: (item) => _openDraft(context, item),
                   onOpenHistory: () =>
                       context.go('/monitoring/lapangan/riwayat'),
                 ),
@@ -369,12 +377,14 @@ class _DashboardContent extends ConsumerWidget {
   final List<MonitoringModel> monitoring;
   final ValueChanged<Pengajuan> onStartSurvey;
   final ValueChanged<MonitoringModel> onOpenBeritaAcara;
+  final ValueChanged<MonitoringModel> onOpenDraft;
   final VoidCallback onOpenHistory;
 
   const _DashboardContent({
     required this.monitoring,
     required this.onStartSurvey,
     required this.onOpenBeritaAcara,
+    required this.onOpenDraft,
     required this.onOpenHistory,
   });
 
@@ -424,24 +434,13 @@ class _DashboardContent extends ConsumerWidget {
                 minimumSize: const Size(0, 36),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'Lihat Semua',
-                    style: TextStyle(
-                      color: AppColors.enterprisePrimary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                  SizedBox(width: 3),
-                  Icon(
-                    Icons.arrow_forward_rounded,
-                    size: 14,
-                    color: AppColors.enterprisePrimary,
-                  ),
-                ],
+              child: const Text(
+                'Lihat Semua',
+                style: TextStyle(
+                  color: AppColors.enterprisePrimary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
               ),
             ),
           ],
@@ -459,6 +458,7 @@ class _DashboardContent extends ConsumerWidget {
                 (item) => _SurveyResultCard(
                   item: item,
                   onOpenBeritaAcara: () => onOpenBeritaAcara(item),
+                  onOpenDraft: () => onOpenDraft(item),
                 ),
               ),
       ],
@@ -671,14 +671,17 @@ class _SurveyTaskCard extends StatelessWidget {
 class _SurveyResultCard extends StatelessWidget {
   final MonitoringModel item;
   final VoidCallback onOpenBeritaAcara;
+  final VoidCallback onOpenDraft;
 
   const _SurveyResultCard({
     required this.item,
     required this.onOpenBeritaAcara,
+    required this.onOpenDraft,
   });
 
   @override
   Widget build(BuildContext context) {
+    final actionCallback = item.isDraft ? onOpenDraft : onOpenBeritaAcara;
     final nomorBA = item.nomorSuratBA.trim().isNotEmpty
         ? item.nomorSuratBA.trim()
         : MonitoringModel.generateNomorSuratBA(item.tanggalMonitoring);
@@ -699,9 +702,12 @@ class _SurveyResultCard extends StatelessWidget {
       ),
       child: Material(
         color: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: actionCallback,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -795,32 +801,22 @@ class _SurveyResultCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   InkWell(
-                    onTap: item.isDraft ? null : onOpenBeritaAcara,
+                    onTap: actionCallback,
                     borderRadius: BorderRadius.circular(4),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            item.isDraft ? 'Dokumen Draft' : 'Lihat Dokumen BA',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: item.isDraft
-                                  ? AppColors.enterpriseTextMuted
-                                  : AppColors.enterprisePrimary,
-                            ),
-                          ),
-                          const SizedBox(width: 2),
-                          Icon(
-                            Icons.chevron_right,
-                            size: 16,
-                            color: item.isDraft
-                                ? AppColors.enterpriseTextMuted
-                                : AppColors.enterprisePrimary,
-                          ),
-                        ],
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 4,
+                      ),
+                      child: Text(
+                        item.isDraft ? 'Dokumen Draft' : 'Lihat Dokumen BA',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: item.isDraft
+                              ? AppColors.enterpriseTextMuted
+                              : AppColors.enterprisePrimary,
+                        ),
                       ),
                     ),
                   ),
@@ -830,6 +826,7 @@ class _SurveyResultCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

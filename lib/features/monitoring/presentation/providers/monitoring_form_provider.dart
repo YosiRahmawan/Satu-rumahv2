@@ -78,6 +78,7 @@ class MonitoringSubmitResult {
 }
 
 class MonitoringFormState {
+  final String? draftId;
   final String? pengajuanId;
   final int currentStep;
   final DateTime tanggalMonitoring;
@@ -101,6 +102,7 @@ class MonitoringFormState {
   final String? errorMessage;
 
   MonitoringFormState({
+    this.draftId,
     this.pengajuanId,
     this.currentStep = 0,
     DateTime? tanggalMonitoring,
@@ -127,6 +129,7 @@ class MonitoringFormState {
        ditemui = _stablePeople(ditemui);
 
   MonitoringFormState copyWith({
+    String? draftId,
     String? pengajuanId,
     int? currentStep,
     DateTime? tanggalMonitoring,
@@ -150,6 +153,7 @@ class MonitoringFormState {
     String? errorMessage,
   }) {
     return MonitoringFormState(
+      draftId: draftId ?? this.draftId,
       pengajuanId: pengajuanId ?? this.pengajuanId,
       currentStep: currentStep ?? this.currentStep,
       tanggalMonitoring: tanggalMonitoring ?? this.tanggalMonitoring,
@@ -350,6 +354,74 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     );
   }
 
+  /// Muat data dari draft MonitoringModel ke form state
+  void loadDraft(MonitoringModel draft) {
+    final pelaksanaList = draft.pelaksana.isNotEmpty
+        ? draft.pelaksana
+        : (draft.pelaksanaNama.isNotEmpty
+            ? [
+                MonitoringPerson.create(
+                  nama: draft.pelaksanaNama,
+                  jabatan: draft.pelaksanaJabatan,
+                ),
+              ]
+            : [MonitoringPerson.create()]);
+
+    final ditemuiList = draft.ditemui.isNotEmpty
+        ? draft.ditemui
+        : (draft.ditemuiNama.isNotEmpty
+            ? [
+                MonitoringPerson.create(
+                  nama: draft.ditemuiNama,
+                  jabatan: draft.ditemuiJabatan,
+                ),
+              ]
+            : [MonitoringPerson.create()]);
+
+    state = MonitoringFormState(
+      draftId: draft.id,
+      pengajuanId: draft.pengajuanId,
+      currentStep: 0,
+      tanggalMonitoring: draft.tanggalMonitoring,
+      namaPerumahan: draft.namaPerumahan,
+      namaDeveloper: draft.namaDeveloper,
+      lokasiPerumahan: draft.lokasiPerumahan,
+      maksudTujuan: draft.maksudTujuan.isNotEmpty
+          ? draft.maksudTujuan
+          : MonitoringModel.defaultMaksudTujuan,
+      temuanLapangan: draft.temuanLapangan.isNotEmpty
+          ? draft.temuanLapangan
+          : const [''],
+      kesimpulan: draft.kesimpulan.isNotEmpty
+          ? draft.kesimpulan
+          : const [''],
+      kesepakatan: draft.kesepakatan.isNotEmpty
+          ? draft.kesepakatan
+          : const [''],
+      rencanaTindakLanjut: draft.rencanaTindakLanjut.isNotEmpty
+          ? draft.rencanaTindakLanjut
+          : const [''],
+      statusHasilEvaluasi: draft.statusHasilEvaluasi,
+      pelaksanaNama: draft.pelaksanaNama.isNotEmpty
+          ? draft.pelaksanaNama
+          : pelaksanaList.first.nama,
+      pelaksanaJabatan: draft.pelaksanaJabatan.isNotEmpty
+          ? draft.pelaksanaJabatan
+          : pelaksanaList.first.jabatan,
+      ditemuiNama: draft.ditemuiNama.isNotEmpty
+          ? draft.ditemuiNama
+          : ditemuiList.first.nama,
+      ditemuiJabatan: draft.ditemuiJabatan.isNotEmpty
+          ? draft.ditemuiJabatan
+          : ditemuiList.first.jabatan,
+      pelaksana: pelaksanaList,
+      ditemui: ditemuiList,
+      photoPaths: draft.photoPaths,
+      isSubmitting: false,
+      errorMessage: null,
+    );
+  }
+
   /// Membangun MonitoringModel untuk pratinjau Berita Acara (isDraft = true)
   MonitoringModel? buildPreviewModel() {
     if (state.namaPerumahan.trim().isEmpty) {
@@ -370,7 +442,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     }
 
     return MonitoringModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: state.draftId ?? DateTime.now().millisecondsSinceEpoch.toString(),
       pengajuanId: state.pengajuanId,
       tanggalMonitoring: state.tanggalMonitoring,
       namaPerumahan: state.namaPerumahan,
