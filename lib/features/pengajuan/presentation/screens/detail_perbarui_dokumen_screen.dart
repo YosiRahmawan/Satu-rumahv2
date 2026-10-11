@@ -1389,7 +1389,7 @@ class _DetailPerbaruiDokumenScreenState
     final isEnabled = _selectedFileName != null;
     return SizedBox(
       height: 48,
-      child: ElevatedButton.icon(
+      child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFB91C1C),
           disabledBackgroundColor: AppColors.slate200,
@@ -1401,8 +1401,7 @@ class _DetailPerbaruiDokumenScreenState
           ),
         ),
         onPressed: isEnabled ? _handleKirimPerbaikan : null,
-        icon: const Icon(Icons.check, size: 20),
-        label: Text(
+        child: Text(
           'Kirim Perbaikan',
           style: AppTextStyles.labelMedium.copyWith(
             fontWeight: FontWeight.w700,

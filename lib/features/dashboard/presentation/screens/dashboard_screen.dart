@@ -37,20 +37,32 @@ class DashboardScreen extends ConsumerWidget {
       floatingActionButton: SizedBox(
         width: fabSize,
         height: fabSize,
-        child: FloatingActionButton(
-          elevation: 4,
-          backgroundColor: AppColors.primaryRed,
-          shape: const CircleBorder(
-            side: BorderSide(color: AppColors.cardSurface, width: 3),
+        child: Container(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Color(0x38B91C1C),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
           ),
-          onPressed: () {
-            ref.read(pengajuanFormProvider.notifier).reset();
-            context.push('/pengajuan/step1');
-          },
-          child: const Icon(
-            Icons.add_rounded,
-            color: AppColors.textOnRed,
-            size: 28,
+          child: FloatingActionButton(
+            elevation: 2,
+            backgroundColor: AppColors.primaryRed,
+            shape: const CircleBorder(
+              side: BorderSide(color: AppColors.cardSurface, width: 3),
+            ),
+            onPressed: () {
+              ref.read(pengajuanFormProvider.notifier).reset();
+              context.push('/pengajuan/step1');
+            },
+            child: const Icon(
+              Icons.add_rounded,
+              color: AppColors.textOnRed,
+              size: 28,
+            ),
           ),
         ),
       ),
@@ -151,11 +163,27 @@ class DashboardScreen extends ConsumerWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Icon(isActive ? activeIcon : icon, color: color, size: 22),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isActive
+                        ? const Color(0xFFFEF2F2)
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    isActive ? activeIcon : icon,
+                    color: color,
+                    size: 22,
+                  ),
+                ),
                 if (badgeCount > 0)
                   Positioned(
-                    right: -7,
-                    top: -5,
+                    right: 0,
+                    top: -4,
                     child: Container(
                       constraints: const BoxConstraints(
                         minWidth: 16,
@@ -179,7 +207,7 @@ class DashboardScreen extends ConsumerWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 3),
+            const SizedBox(height: 2),
             Text(
               label,
               textScaler: MediaQuery.textScalerOf(context).clamp(

@@ -680,16 +680,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 children: [
                                   // Field 1: Username / NIB / NIP
                                   if (isDeveloper)
-                                    Text.rich(
+                                    const Text.rich(
                                       TextSpan(
                                         text: 'Username / NIB Pengembang ',
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontFamily: AppTextStyles.fontFamily,
                                           fontSize: 13,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.slate800,
                                         ),
-                                        children: const [
+                                        children: [
                                           TextSpan(
                                             text: '*',
                                             style: TextStyle(
@@ -816,18 +816,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Flexible(
+                                      const Flexible(
                                         child: Text.rich(
                                           TextSpan(
                                             text: 'Kata Sandi ',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontFamily:
                                                   AppTextStyles.fontFamily,
                                               fontSize: 13,
                                               fontWeight: FontWeight.w600,
                                               color: AppColors.slate800,
                                             ),
-                                            children: const [
+                                            children: [
                                               TextSpan(
                                                 text: '*',
                                                 style: TextStyle(

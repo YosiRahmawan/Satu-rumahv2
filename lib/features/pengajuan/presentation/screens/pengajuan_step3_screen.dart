@@ -637,7 +637,6 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
                 const SizedBox(height: AppSpacing.sm),
                 AppButton.primary(
                   text: 'Lanjut ke Langkah 4',
-                  trailingIcon: const Icon(Icons.arrow_forward, size: 18),
                   onPressed: isComplete
                       ? () => context.push('/pengajuan/step4')
                       : null,
@@ -655,7 +654,6 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
                     Expanded(
                       child: AppButton.primary(
                         text: 'Lanjut ke Langkah 4',
-                        trailingIcon: const Icon(Icons.arrow_forward, size: 18),
                         onPressed: isComplete
                             ? () => context.push('/pengajuan/step4')
                             : null,

@@ -18,6 +18,7 @@ import '../theme/app_text_styles.dart';
 class DeveloperHeader extends StatelessWidget {
   const DeveloperHeader({
     super.key,
+    this.brandTitle,
     this.pageTitle,
     this.pageSubtitle,
     this.badge,
@@ -35,6 +36,9 @@ class DeveloperHeader extends StatelessWidget {
     this.bottomPadding,
     this.child,
   });
+
+  /// Optional brand title shown in the brand bar. Defaults to 'SATU RUMAH'.
+  final String? brandTitle;
 
   /// Optional page title shown below the brand bar (e.g. 'Pengajuan', 'Notifikasi', 'Profil Pengembang').
   final String? pageTitle;
@@ -208,7 +212,7 @@ class DeveloperHeader extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'SATU RUMAH',
+                brandTitle ?? 'SATU RUMAH',
                 style: AppTextStyles.headlineMedium.copyWith(
                   color: AppColors.textOnRed,
                   fontWeight: FontWeight.w800,

@@ -1505,25 +1505,13 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
               onPressed: () => _handleTinjauPerbaikan(submission),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Tinjau Perbaikan',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.arrow_forward,
-                      color: Colors.white,
-                      size: 18,
-                    ),
-                  ],
+                child: Text(
+                  'Tinjau Perbaikan',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
                 ),
               ),
             ),

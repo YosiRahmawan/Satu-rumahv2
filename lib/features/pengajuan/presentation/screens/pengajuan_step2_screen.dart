@@ -1245,25 +1245,14 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
       onPressed: isStep2Valid ? _onNext : null,
       child: const FittedBox(
         fit: BoxFit.scaleDown,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Lanjut ke Langkah 3',
-              style: TextStyle(
-                fontFamily: AppTextStyles.fontFamily,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-            SizedBox(width: 6),
-            Icon(
-              Icons.arrow_forward,
-              size: 16,
-              color: Colors.white,
-            ),
-          ],
+        child: Text(
+          'Lanjut ke Langkah 3',
+          style: TextStyle(
+            fontFamily: AppTextStyles.fontFamily,
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
         ),
       ),
     );

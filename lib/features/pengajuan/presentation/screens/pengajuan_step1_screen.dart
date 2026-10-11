@@ -758,25 +758,14 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                   onPressed: _onNext,
                   child: const FittedBox(
                     fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Lanjut ke Berkas',
-                          style: TextStyle(
-                            fontFamily: AppTextStyles.fontFamily,
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        SizedBox(width: 6),
-                        Icon(
-                          Icons.arrow_forward,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                      ],
+                    child: Text(
+                      'Lanjut ke Berkas',
+                      style: TextStyle(
+                        fontFamily: AppTextStyles.fontFamily,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),

@@ -7,8 +7,6 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
-import '../../../../core/widgets/status_badge.dart';
-import '../providers/dashboard_provider.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
@@ -122,13 +120,11 @@ class TabBeranda extends ConsumerWidget {
                 children: [
                   // 1. HEADER MERAH
                   DeveloperHeader(
-                    avatarLabel: avatarInitials,
-                    showOnlineIndicator: session.isAuthenticated,
+                    brandTitle: 'Satu Rumah',
+                    avatarLabel: avatarInitials ?? 'YR',
+                    showOnlineIndicator: true,
                     avatarTooltip: 'Buka profil',
                     onAvatarTap: () => _quickDemo(context, ref),
-                    notificationCount: ref.watch(unreadCountProvider),
-                    onNotificationTap: () =>
-                        ref.read(dashboardTabProvider.notifier).state = 2,
                   ),
 
                   // 2. CARD IDENTITAS PENGEMBANG (slightly overlapping header bottom curve)
@@ -139,7 +135,7 @@ class TabBeranda extends ConsumerWidget {
                   // 3. CARD "PENGAJUAN TERAKHIR"
                   _PengajuanTerakhirCard(submission: lastSubmission),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   // 4. SECTION "MENU LAYANAN PENGEMBANG"
                   const _MenuLayananPengembangSection(),
@@ -187,8 +183,12 @@ class _DeveloperIdentityCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
+                  color: const Color(0xFFFEF2F2),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFEE2E2),
+                    width: 0.8,
+                  ),
                 ),
                 child: const Icon(
                   Icons.apartment_rounded,
@@ -206,7 +206,7 @@ class _DeveloperIdentityCard extends StatelessWidget {
                     Text(
                       'PT. Tasik Indah Sentosa',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 14.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textMain,
                       ),
@@ -217,8 +217,8 @@ class _DeveloperIdentityCard extends StatelessWidget {
                     Text(
                       'ID Pengembang: Dev-2026-082',
                       style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w400,
                         color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
@@ -230,30 +230,30 @@ class _DeveloperIdentityCard extends StatelessWidget {
               const SizedBox(width: 8),
               // Badge Terverifikasi
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.statusSuccessSurface,
+                  color: const Color(0xFFECFDF5),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: AppColors.statusSuccessText.withValues(alpha: 0.25),
-                    width: 0.8,
+                    color: const Color(0xFFA7F3D0),
+                    width: 1,
                   ),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
-                      Icons.check_circle_rounded,
-                      color: AppColors.statusSuccessText,
-                      size: 13,
+                      Icons.verified_outlined,
+                      color: Color(0xFF059669),
+                      size: 14,
                     ),
                     SizedBox(width: 4),
                     Text(
                       'Terverifikasi',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.statusSuccessText,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF059669),
                       ),
                     ),
                   ],
@@ -305,19 +305,54 @@ class _PengajuanTerakhirCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Baris atas: Label & Status chip
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   'PENGAJUAN TERAKHIR',
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.textSecondary,
-                    letterSpacing: 0.8,
+                    letterSpacing: 0.6,
                   ),
                 ),
-                StatusBadge(status: 'Dalam Proses'),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF9C3),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFFDE68A),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Color(0xFFEAB308),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'Dalam Proses',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFFB45309),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -333,7 +368,7 @@ class _PengajuanTerakhirCard extends StatelessWidget {
                     projectName,
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.textMain,
                     ),
                     maxLines: 1,
@@ -356,119 +391,11 @@ class _PengajuanTerakhirCard extends StatelessWidget {
               'Tahap: Verifikasi Administrasi Dokumen (Langkah 2 dari 4)',
               style: TextStyle(
                 fontSize: 12,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w400,
                 color: AppColors.textSecondary,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 12),
-
-            // Foto perumahan dengan overlay
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Stack(
-                children: [
-                  Image.asset(
-                    'assets/images/perumahan/rumah1.jpg',
-                    height: 155,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Image.asset(
-                        'assets/images/foto_perumahan.jfif',
-                        height: 155,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 155,
-                            width: double.infinity,
-                            color: AppColors.dividerLine,
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.image_not_supported_outlined,
-                              color: AppColors.textSecondary,
-                              size: 36,
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                  // Overlay foto perumahan (Row + Flexible untuk mencegah tabrakan pada 360dp)
-                  Positioned(
-                    bottom: 10,
-                    left: 10,
-                    right: 10,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.black.withValues(alpha: 0.60),
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                width: 0.8,
-                              ),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.location_on_outlined,
-                                  color: Colors.white,
-                                  size: 14,
-                                ),
-                                SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    'Kec. Tawang, Kota Tasikmalaya',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryDark.withValues(
-                              alpha: 0.85,
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Text(
-                            '45 Unit Subsidi',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ),
             const SizedBox(height: 14),
 
@@ -480,7 +407,7 @@ class _PengajuanTerakhirCard extends StatelessWidget {
                   'Progres kelengkapan (40%)',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textMain,
                   ),
                 ),
@@ -488,7 +415,7 @@ class _PengajuanTerakhirCard extends StatelessWidget {
                   'Verifikasi Tahap 2',
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.primaryRed,
                   ),
                 ),
@@ -499,48 +426,31 @@ class _PengajuanTerakhirCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(4),
               child: const LinearProgressIndicator(
                 value: 0.40,
-                minHeight: 7,
-                backgroundColor: AppColors.dividerLine,
+                minHeight: 6,
+                backgroundColor: Color(0xFFF1F5F9),
                 valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryRed),
               ),
             ),
             const SizedBox(height: 14),
 
-            const Divider(height: 1, color: AppColors.dividerLine),
-            const SizedBox(height: 8),
-
-            // CTA: "[file_icon] Cek Detail ->"
-            InkWell(
-              onTap: () {
-                context.push('/pengajuan/detail/$targetId');
-              },
-              borderRadius: BorderRadius.circular(8),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Icon(
-                      Icons.description_outlined,
-                      size: 15,
+            // CTA: "[description_outlined] Cek Detail ->"
+            Align(
+              alignment: Alignment.centerRight,
+              child: InkWell(
+                onTap: () {
+                  context.push('/pengajuan/detail/$targetId');
+                },
+                borderRadius: BorderRadius.circular(8),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                  child: Text(
+                    'Cek Detail',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.primaryRed,
                     ),
-                    SizedBox(width: 4),
-                    Text(
-                      'Cek Detail',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryRed,
-                      ),
-                    ),
-                    SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 14,
-                      color: AppColors.primaryRed,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -570,22 +480,25 @@ class _MenuLayananPengembangSection extends ConsumerWidget {
                 'Menu Layanan Pengembang',
                 style: TextStyle(
                   fontSize: 16,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: AppColors.textMain,
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
+                  color: const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(
                   '4 Layanan',
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.primaryRed,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ),
@@ -600,10 +513,10 @@ class _MenuLayananPengembangSection extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.15,
+            childAspectRatio: 1.12,
             children: [
               _MenuLayananCard(
-                icon: Icons.folder_shared_outlined,
+                icon: Icons.description_outlined,
                 title: 'Template Berkas',
                 subtitle: 'Download 16 slot berkas resmi',
                 onTap: () => showUnavailableAction(context, 'Template Berkas'),
@@ -615,13 +528,13 @@ class _MenuLayananPengembangSection extends ConsumerWidget {
                 onTap: () => showUnavailableAction(context, 'Jadwal Survey'),
               ),
               _MenuLayananCard(
-                icon: Icons.assignment_turned_in_outlined,
+                icon: Icons.file_download_outlined,
                 title: 'Unduh SK & BA',
                 subtitle: 'File persetujuan PDF resmi',
                 onTap: () => showUnavailableAction(context, 'Unduh SK & BA'),
               ),
               _MenuLayananCard(
-                icon: Icons.headset_mic_outlined,
+                icon: Icons.help_outline_rounded,
                 title: 'Pusat Bantuan',
                 subtitle: 'SOP & Layanan Dinas Perkim',
                 onTap: () => showUnavailableAction(context, 'Pusat Bantuan'),
@@ -652,7 +565,7 @@ class _MenuLayananCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderSubtle, width: 1),
         boxShadow: [
           BoxShadow(
@@ -666,24 +579,28 @@ class _MenuLayananCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // Box icon merah muda
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
-                    borderRadius: BorderRadius.circular(10),
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFFEE2E2),
+                      width: 0.8,
+                    ),
                   ),
                   child: Icon(icon, color: AppColors.primaryRed, size: 20),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Text(
                   title,
                   style: const TextStyle(
@@ -698,9 +615,9 @@ class _MenuLayananCard extends StatelessWidget {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w400,
-                    color: AppColors.textSecondary,
+                    color: Color(0xFF64748B),
                     height: 1.25,
                   ),
                   maxLines: 2,

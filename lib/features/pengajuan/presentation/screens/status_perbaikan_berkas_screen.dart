@@ -517,28 +517,15 @@ class _StatusPerbaikanBerkasScreenState
                     ),
                   ),
                   onPressed: _handleLihatDetail,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          'Lihat Detail Pengajuan',
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.labelLarge.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.arrow_forward,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                    ],
+                  child: Text(
+                    'Lihat Detail Pengajuan',
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.labelLarge.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
