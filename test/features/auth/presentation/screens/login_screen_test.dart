@@ -182,4 +182,107 @@ void main() {
       expect(find.text('Masuk sebagai Pengembang'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'Renders Google Stitch hero header, branding, and housing illustration painter',
+    (tester) async {
+      final router = _testRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_testApp(router));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SATU RUMAH'), findsOneWidget);
+      expect(find.text('V2'), findsNothing);
+      expect(find.text('KOTA TASIKMALAYA'), findsOneWidget);
+      expect(find.text('DISPERWASKIM'), findsOneWidget);
+      expect(
+        find.text('Layanan Perumahan Terpadu Kota Tasikmalaya'),
+        findsOneWidget,
+      );
+      expect(find.text('Modul Verifikasi Lapangan'), findsNothing);
+      expect(find.byType(CustomPaint), findsWidgets);
+      expect(find.byIcon(Icons.replay_rounded), findsNothing);
+      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Submits credentials and navigates to correct role homeRoute',
+    (tester) async {
+      final router = _testRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_testApp(router));
+      await tester.pumpAndSettle();
+
+      // Enter Pengembang credentials
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan 13 digit NIB...'),
+        'pt_tasik_indah',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan kata sandi...'),
+        'demo123',
+      );
+
+      await tester.ensureVisible(find.text('Masuk sebagai Pengembang'));
+      await tester.tap(find.text('Masuk sebagai Pengembang'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('DASHBOARD'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Submits Pengawas Lapangan credentials and navigates to monitoring',
+    (tester) async {
+      final router = _testRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_testApp(router));
+      await tester.pumpAndSettle();
+
+      // Switch to Pengawas Lapangan
+      await tester.tap(find.text('Pengawas Lapangan'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan username / NIP...'),
+        'tim_monitoring_perwaskim',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan kata sandi...'),
+        'monitoring123',
+      );
+
+      await tester.ensureVisible(find.text('Masuk sebagai Pengawas Lapangan'));
+      await tester.tap(find.text('Masuk sebagai Pengawas Lapangan'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('MONITORING'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Responsive layouts without overflow across 360dp, 390dp, and 412dp widths',
+    (tester) async {
+      for (final width in [360.0, 390.0, 412.0]) {
+        tester.view.physicalSize = Size(width * 2.0, 800.0 * 2.0);
+        tester.view.devicePixelRatio = 2.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final router = _testRouter();
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(_testApp(router));
+        await tester.pumpAndSettle();
+
+        expect(find.text('SATU RUMAH'), findsOneWidget);
+        expect(find.text('PILIH PERAN AKUN PENGGUNA'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      }
+    },
+  );
 }
