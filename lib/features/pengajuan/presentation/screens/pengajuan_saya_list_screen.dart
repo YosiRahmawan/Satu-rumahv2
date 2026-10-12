@@ -41,38 +41,38 @@ class PengajuanSayaListScreen extends ConsumerWidget {
       body: CustomScrollView(
         key: const PageStorageKey('developer-submissions'),
         slivers: [
+          // 1. HEADER MERAH (Scrolls naturally with content)
           SliverToBoxAdapter(
-            child: Column(
-              children: [
-                DeveloperHeader(
-                  pageTitle: 'Pengajuan',
-                  pageSubtitle: 'Daftar pengajuan site plan perumahan',
-                  avatarLabel: avatarInitials,
-                  showOnlineIndicator: session.isAuthenticated,
-                  avatarTooltip: 'Buka profil',
-                  onAvatarTap: () =>
-                      ref.read(dashboardTabProvider.notifier).state = 3,
-                  notificationCount: ref.watch(unreadCountProvider),
-                  onNotificationTap: () =>
-                      ref.read(dashboardTabProvider.notifier).state = 2,
-                ),
+            child: DeveloperHeader(
+              pageTitle: 'Pengajuan',
+              pageSubtitle: 'Daftar pengajuan site plan perumahan',
+              avatarLabel: avatarInitials,
+              showOnlineIndicator: session.isAuthenticated,
+              avatarTooltip: 'Buka profil',
+              onAvatarTap: () =>
+                  ref.read(dashboardTabProvider.notifier).state = 3,
+              notificationCount: ref.watch(unreadCountProvider),
+              onNotificationTap: () =>
+                  ref.read(dashboardTabProvider.notifier).state = 2,
+            ),
+          ),
+          // 2. GAP 16dp antara header dan search bar / filter
+          const SliverToBoxAdapter(
+            child: SizedBox(height: 16.0),
+          ),
                 if (items.isEmpty)
-                  Padding(
+                  SliverPadding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.lg,
                     ),
-                    child: Transform.translate(
-                      offset: const Offset(0, -AppSpacing.md),
+                    sliver: SliverToBoxAdapter(
                       child: PengajuanListSummary(items: items),
                     ),
                   ),
-              ],
-            ),
-          ),
-          const SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            sliver: SliverToBoxAdapter(child: PengajuanListFilters()),
-          ),
+                const SliverPadding(
+                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                  sliver: SliverToBoxAdapter(child: PengajuanListFilters()),
+                ),
           if (filtered.isEmpty)
             SliverPadding(
               padding: const EdgeInsets.all(AppSpacing.lg),

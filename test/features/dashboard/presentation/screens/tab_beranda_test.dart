@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/core/widgets/developer_header.dart';
 import 'package:satu_rumah/features/dashboard/presentation/screens/tab_beranda.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
@@ -144,6 +145,41 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Satu Rumah'), findsOneWidget);
+    });
+
+    testWidgets('scrolling moves DeveloperHeader up with content naturally', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      final headerFinder = find.byType(DeveloperHeader);
+      expect(headerFinder, findsOneWidget);
+      expect(tester.getTopLeft(headerFinder).dy, 0.0);
+
+      final scrollFinder = find.byType(SingleChildScrollView);
+      expect(scrollFinder, findsOneWidget);
+
+      await tester.drag(scrollFinder, const Offset(0, -150));
+      await tester.pumpAndSettle();
+
+      // DeveloperHeader moves up when scrolling
+      expect(tester.getTopLeft(headerFinder).dy, lessThan(0.0));
+    });
+
+    testWidgets('gap between DeveloperHeader bottom and DeveloperIdentityCard is exactly 16dp', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      final headerFinder = find.byType(DeveloperHeader);
+      final headerRect = tester.getRect(headerFinder);
+
+      final cardFinder = find.ancestor(
+        of: find.text('PT. Tasik Indah Sentosa'),
+        matching: find.byType(Container),
+      ).first;
+      final cardRect = tester.getRect(cardFinder);
+
+      // Visual gap between header bottom and identity card top must be exactly 16dp
+      expect(cardRect.top - headerRect.bottom, 16.0);
     });
   });
 }

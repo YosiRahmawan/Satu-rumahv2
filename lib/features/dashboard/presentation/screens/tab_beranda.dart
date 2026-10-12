@@ -118,7 +118,7 @@ class TabBeranda extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // 1. HEADER MERAH
+                  // 1. HEADER MERAH (Scrolls naturally with content)
                   DeveloperHeader(
                     brandTitle: 'Satu Rumah',
                     avatarLabel: avatarInitials ?? 'YR',
@@ -127,21 +127,24 @@ class TabBeranda extends ConsumerWidget {
                     onAvatarTap: () => _quickDemo(context, ref),
                   ),
 
-                  // 2. CARD IDENTITAS PENGEMBANG (slightly overlapping header bottom curve)
+                  // 2. GAP 16dp antara header dan card identitas
+                  const SizedBox(height: 16),
+
+                  // 3. CARD IDENTITAS PENGEMBANG
                   const _DeveloperIdentityCard(),
 
                   const SizedBox(height: 8),
 
-                  // 3. CARD "PENGAJUAN TERAKHIR"
+                  // 4. CARD "PENGAJUAN TERAKHIR"
                   _PengajuanTerakhirCard(submission: lastSubmission),
 
                   const SizedBox(height: 20),
 
-                  // 4. SECTION "MENU LAYANAN PENGEMBANG"
+                  // 5. SECTION "MENU LAYANAN PENGEMBANG"
                   const _MenuLayananPengembangSection(),
 
                   // Bottom padding for docked FAB & bar
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 80),
                 ],
               ),
             ),
@@ -158,24 +161,22 @@ class _DeveloperIdentityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Transform.translate(
-      offset: const Offset(0, -16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.borderSubtle, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderSubtle, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
           child: Row(
             children: [
               // Icon gedung pada box merah muda
@@ -262,9 +263,8 @@ class _DeveloperIdentityCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
+      );
+    }
 }
 
 /// 3. CARD "PENGAJUAN TERAKHIR"

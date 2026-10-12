@@ -285,4 +285,120 @@ void main() {
       }
     },
   );
+
+  testWidgets(
+    'Failed login validation does not trigger transition animation',
+    (tester) async {
+      final router = _testRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_testApp(router));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Masuk sebagai Pengembang'));
+      await tester.tap(find.text('Masuk sebagai Pengembang'));
+      await tester.pump();
+
+      // No progress indicator should be shown because validation failed
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('NIB atau email tidak boleh kosong'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Login button displays loading spinner during authentication',
+    (tester) async {
+      final router = _testRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_testApp(router));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan 13 digit NIB...'),
+        'pt_tasik_indah',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan kata sandi...'),
+        'demo123',
+      );
+
+      await tester.ensureVisible(find.text('Masuk sebagai Pengembang'));
+      await tester.tap(find.text('Masuk sebagai Pengembang'));
+      // Pump into authenticating state
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.text('DASHBOARD'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Successful login as Pengembang executes transition to compact header',
+    (tester) async {
+      final router = _testRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_testApp(router));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan 13 digit NIB...'),
+        'pt_tasik_indah',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan kata sandi...'),
+        'demo123',
+      );
+
+      await tester.tap(find.text('Masuk sebagai Pengembang'));
+      // Pump past auth delay into transition
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // Transition reveals compact header and developer card preview
+      expect(find.text('PORTAL PENGEMBANG'), findsOneWidget);
+      expect(find.text('PT. Tasik Indah Sentosa'), findsOneWidget);
+      expect(find.text('Terverifikasi'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.text('DASHBOARD'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Successful login as Pengawas Lapangan executes transition to inspector header',
+    (tester) async {
+      final router = _testRouter();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_testApp(router));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Pengawas Lapangan'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan username / NIP...'),
+        'tim_monitoring_perwaskim',
+      );
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Masukkan kata sandi...'),
+        'monitoring123',
+      );
+
+      await tester.tap(find.text('Masuk sebagai Pengawas Lapangan'));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // Transition reveals inspector identity and role badge
+      expect(find.text('Drs. Rian Hidayat, M.Si'), findsOneWidget);
+      expect(find.text('● Tim Perwaskim Lapangan'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.text('MONITORING'), findsOneWidget);
+    },
+  );
 }

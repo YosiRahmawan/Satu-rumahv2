@@ -68,7 +68,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/onboarding', redirect: (_, __) => '/login'),
       GoRoute(
         path: '/dashboard',
-        builder: (_, state) => _withNotice(state, const DashboardScreen()),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: _withNotice(state, const DashboardScreen()),
+        ),
       ),
       GoRoute(
         path: '/admin',
@@ -102,8 +105,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/monitoring/lapangan',
-        builder: (_, state) =>
-            _withNotice(state, const MonitoringMainScreen(initialIndex: 0)),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: _withNotice(state, const MonitoringMainScreen(initialIndex: 0)),
+        ),
       ),
       GoRoute(
         path: '/monitoring/lapangan/riwayat',
