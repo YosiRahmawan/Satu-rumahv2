@@ -10,6 +10,7 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/smart_validation_bottom_sheet.dart';
 
 class PengajuanStep1Screen extends ConsumerStatefulWidget {
   const PengajuanStep1Screen({super.key});
@@ -98,13 +99,87 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
     notifier.updateTipe(_selectedTipePerumahan);
   }
 
-  void _onNext() {
+  bool _isModalShowing = false;
+
+  void _onNext() async {
     _syncState();
     final isValid = _formKey.currentState?.validate() == true;
     final isStateValid = ref.read(pengajuanFormProvider).isStep1Valid;
 
     if (isValid && isStateValid) {
       context.push('/pengajuan/step2');
+      return;
+    }
+
+    if (_isModalShowing) return;
+
+    final missing = <MissingValidationItem>[];
+    if (_namaPerumahanController.text.trim().isEmpty) {
+      missing.add(const MissingValidationItem(
+        key: 'nama',
+        title: 'Nama Perumahan *',
+        subtitle: 'Wajib diisi sesuai site plan',
+        statusText: 'Belum diisi',
+        icon: Icons.edit_note,
+      ));
+    }
+    if (_alamatProyekController.text.trim().isEmpty) {
+      missing.add(const MissingValidationItem(
+        key: 'alamat',
+        title: 'Alamat Lokasi Proyek *',
+        subtitle: 'Wajib diisi lengkap',
+        statusText: 'Belum diisi',
+        icon: Icons.location_on_outlined,
+      ));
+    }
+    final rawNpwp = _npwpController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (_npwpController.text.trim().isEmpty ||
+        (rawNpwp.length != 15 && rawNpwp.length != 16)) {
+      missing.add(const MissingValidationItem(
+        key: 'npwp',
+        title: 'NPWP Perusahaan *',
+        subtitle: 'Format 15 atau 16 digit angka',
+        statusText: 'Belum valid',
+        icon: Icons.badge_outlined,
+      ));
+    }
+    final luas = double.tryParse(_luasController.text) ?? 0.0;
+    if (luas <= 0) {
+      missing.add(const MissingValidationItem(
+        key: 'luas',
+        title: 'Luas Lahan Proyek (m²) *',
+        subtitle: 'Harus berupa angka lebih dari 0',
+        statusText: 'Belum diisi',
+        icon: Icons.square_foot_outlined,
+      ));
+    }
+    final unit = int.tryParse(_unitController.text) ?? 0;
+    if (unit <= 0) {
+      missing.add(const MissingValidationItem(
+        key: 'unit',
+        title: 'Jumlah Unit Perumahan *',
+        subtitle: 'Harus minimal 1 unit',
+        statusText: 'Belum diisi',
+        icon: Icons.home_outlined,
+      ));
+    }
+
+    _isModalShowing = true;
+    await showSmartValidationBottomSheet(
+      context: context,
+      title: 'Data Formulir Belum Lengkap',
+      subtitle: 'Lengkapi data wajib sebelum ke Langkah 2.',
+      completedCount: 5 - missing.length,
+      totalCount: 5,
+      statusBadgeText: '${5 - missing.length} dari 5 data terisi',
+      warningText: '${missing.length} data wajib belum lengkap',
+      sectionTitle: 'DAFTAR DATA YANG PERLU DILENGKAPI',
+      missingItems: missing,
+      actionButtonText: 'Lengkapi Data Sekarang',
+      cancelButtonText: 'Kembali ke Formulir',
+    );
+    if (mounted) {
+      _isModalShowing = false;
     }
   }
 

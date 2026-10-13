@@ -6,14 +6,13 @@ import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
-import '../../../../core/widgets/prototype_data_banner.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 import '../providers/pengajuan_form_controller.dart';
 import '../providers/pengajuan_list_view_provider.dart';
+import '../widgets/pengajuan_empty_state.dart';
 import '../widgets/pengajuan_list_card.dart';
 import '../widgets/pengajuan_list_filters.dart';
 import '../widgets/pengajuan_list_summary.dart';
@@ -75,19 +74,15 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                 ),
           if (filtered.isEmpty)
             SliverPadding(
-              padding: const EdgeInsets.all(AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.md,
+              ),
               sliver: SliverToBoxAdapter(
-                child: DataStateView.empty(
-                  title: items.isEmpty
-                      ? 'Belum ada pengajuan'
-                      : 'Tidak ada pengajuan ditemukan',
-                  message: items.isEmpty
-                      ? 'Gunakan tombol AJUKAN untuk membuat pengajuan perumahan.'
-                      : 'Coba kata kunci atau filter lain.',
-                  actionLabel: items.isEmpty
-                      ? null
-                      : 'Reset pencarian dan filter',
-                  onAction: items.isEmpty
+                child: PengajuanEmptyState(
+                  isFilteredEmpty: items.isNotEmpty,
+                  totalRegistered: items.length,
+                  onReset: items.isEmpty
                       ? null
                       : ref.read(pengajuanListQueryProvider.notifier).reset,
                 ),
@@ -198,59 +193,62 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                 },
               ),
             ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.sm,
-              AppSpacing.lg,
-              110.0,
-            ),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (visible.length < filtered.length) ...[
-                    SizedBox(
-                      height: 44,
-                      child: OutlinedButton.icon(
-                        onPressed: ref
-                            .read(pengajuanListQueryProvider.notifier)
-                            .loadMore,
-                        icon: const Icon(
-                          Icons.expand_more,
-                          size: 18,
-                          color: AppColors.slate700,
-                        ),
-                        label: Text(
-                          'Muat Lebih Banyak',
-                          style: AppTextStyles.labelMedium.copyWith(
-                            fontWeight: FontWeight.w700,
+          if (filtered.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                110.0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (visible.length < filtered.length) ...[
+                      SizedBox(
+                        height: 44,
+                        child: OutlinedButton.icon(
+                          onPressed: ref
+                              .read(pengajuanListQueryProvider.notifier)
+                              .loadMore,
+                          icon: const Icon(
+                            Icons.expand_more,
+                            size: 18,
                             color: AppColors.slate700,
                           ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: Color(0xFFE2E8F0)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                          label: Text(
+                            'Muat Lebih Banyak',
+                            style: AppTextStyles.labelMedium.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.slate700,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         ),
                       ),
+                      const SizedBox(height: 10),
+                    ],
+                    Text(
+                      'Menampilkan ${visible.length} dari ${filtered.length} pengajuan terdaftar',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.slate500,
+                      ),
                     ),
-                    const SizedBox(height: 10),
                   ],
-                  Text(
-                    'Menampilkan ${visible.length} dari ${filtered.length} pengajuan terdaftar',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.slate500,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  const PrototypeDataBanner(),
-                ],
+                ),
               ),
+            )
+          else
+            const SliverToBoxAdapter(
+              child: SizedBox(height: 110.0),
             ),
-          ),
         ],
       ),
     );

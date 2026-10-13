@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/pengajuan_model.dart';
@@ -55,13 +57,25 @@ class PerbaruiBerkasScreen extends ConsumerStatefulWidget {
       _PerbaruiBerkasScreenState();
 }
 
-class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
+class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen>
+    with SingleTickerProviderStateMixin {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _perluDiperbaikiKey = GlobalKey();
   bool _isVerifiedExpanded = true;
-  bool _isPillExpanded = false;
   String _lastSavedTime = '10:24';
   bool _isSubmittingRevisi = false;
 
   late List<_DocRevisiData> _revisiDocs;
+
+  // Floating Top Toast state & animation
+  AnimationController? _toastAnimController;
+  Animation<double>? _toastFadeAnim;
+  Animation<Offset>? _toastSlideAnim;
+  Timer? _toastDismissTimer;
+  bool _showToast = false;
+  String _toastTitle = 'Draft Berhasil Disimpan';
+  String _toastSubtitle = 'Perubahan berkas tersimpan sementara.';
+  bool _toastIsSuccess = true;
 
   // Daftar 17 dokumen yang sudah terverifikasi dan terkunci
   static const List<String> _lockedVerifiedDocs = [
@@ -87,6 +101,27 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
   @override
   void initState() {
     super.initState();
+    _toastAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+      reverseDuration: const Duration(milliseconds: 220),
+    );
+    _toastFadeAnim = CurvedAnimation(
+      parent: _toastAnimController!,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    _toastSlideAnim = Tween<Offset>(
+      begin: const Offset(0, -0.35),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _toastAnimController!,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      ),
+    );
+
     _revisiDocs = [
       _DocRevisiData(
         key: 'ktp',
@@ -127,6 +162,75 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
     ];
   }
 
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _toastDismissTimer?.cancel();
+    _toastAnimController?.dispose();
+    super.dispose();
+  }
+
+  void _showTopToast({
+    required String title,
+    required String subtitle,
+    bool isSuccess = true,
+  }) {
+    _toastDismissTimer?.cancel();
+    if (!mounted) return;
+
+    setState(() {
+      _toastTitle = title;
+      _toastSubtitle = subtitle;
+      _toastIsSuccess = isSuccess;
+      _showToast = true;
+    });
+
+    _toastAnimController?.forward(from: 0.0);
+
+    _toastDismissTimer = Timer(const Duration(milliseconds: 2800), () {
+      if (!mounted) return;
+      _toastAnimController?.reverse().then((_) {
+        if (mounted) {
+          setState(() {
+            _showToast = false;
+          });
+        }
+      });
+    });
+  }
+
+  void _dismissToast() {
+    _toastDismissTimer?.cancel();
+    if (!mounted) return;
+    _toastAnimController?.reverse().then((_) {
+      if (mounted) {
+        setState(() {
+          _showToast = false;
+        });
+      }
+    });
+  }
+
+  void _handleSimpanSementara() {
+    try {
+      final now = DateFormat('HH:mm').format(DateTime.now());
+      setState(() {
+        _lastSavedTime = now;
+      });
+      _showTopToast(
+        title: 'Draft Berhasil Disimpan',
+        subtitle: 'Perubahan berkas tersimpan sementara.',
+        isSuccess: true,
+      );
+    } catch (e) {
+      _showTopToast(
+        title: 'Gagal Menyimpan Draft',
+        subtitle: 'Terjadi kesalahan saat menyimpan perubahan berkas.',
+        isSuccess: false,
+      );
+    }
+  }
+
   Pengajuan? _findSubmission() {
     final list = ref.watch(pengajuanListProvider);
     final targetId = widget.id.trim();
@@ -163,41 +267,58 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
         child: Column(
           children: [
             // ─── 1. HEADER MERAH BRAND SATU RUMAH ────────────────────────────
-            _buildHeader(context, namaPerumahan, regId),
+            _buildHeader(context, regId),
 
-            // ─── KONTEN SCROLLABLE ───────────────────────────────────────────
+            // ─── KONTEN SCROLLABLE DENGAN FLOATING TOAST ─────────────────────
             Expanded(
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ─── 2. PROGRESS PERBAIKAN BERKAS ────────────────────────
-                    _buildProgressCard(),
+              child: Stack(
+                children: [
+                  SingleChildScrollView(
+                    controller: _scrollController,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // ─── HOUSING IDENTITY CARD ────────────────────────────
+                        _buildHousingIdentityCard(namaPerumahan, regId),
 
-                    // ─── 3. CATATAN DARI ADMIN VERIFIKATOR ───────────────────
-                    _buildCatatanVerifikatorBox(context),
+                        // ─── 2. PROGRESS PERBAIKAN BERKAS ────────────────────
+                        _buildProgressCard(),
 
-                    // ─── 4. SECTION PERLU DIPERBAIKI (3) ─────────────────────
-                    _buildSectionPerluDiperbaikiHeader(),
+                        // ─── 3. CATATAN DARI ADMIN VERIFIKATOR ───────────────
+                        _buildCatatanVerifikatorBox(context),
 
-                    // Kartu 1: KTP Direktur (Sudah Diperbarui)
-                    _buildDocCardItem(context, _revisiDocs[0]),
+                        // ─── 4. SECTION PERLU DIPERBAIKI (3) ─────────────────
+                        _buildSectionPerluDiperbaikiHeader(),
 
-                    // Kartu 2: Sertifikat Hak Atas Tanah (Perlu Perbaikan)
-                    _buildDocCardItem(context, _revisiDocs[1]),
+                        // Kartu 1: KTP Direktur (Sudah Diperbarui)
+                        _buildDocCardItem(context, _revisiDocs[0]),
 
-                    // Kartu 3: Dokumen Perencanaan Site Plan (Multi-file)
-                    _buildDocCardItem(context, _revisiDocs[2]),
+                        // Kartu 2: Sertifikat Hak Atas Tanah (Perlu Perbaikan)
+                        _buildDocCardItem(context, _revisiDocs[1]),
 
-                    // ─── 5. SECTION TERVERIFIKASI DAN TERKUNCI (17) ──────────
-                    _buildSectionTerverifikasiTerkunci(),
+                        // Kartu 3: Dokumen Perencanaan Site Plan (Multi-file)
+                        _buildDocCardItem(context, _revisiDocs[2]),
 
-                    const SizedBox(
-                      height: 100,
-                    ), // Spacing for sticky bottom bar
-                  ],
-                ),
+                        // ─── 5. SECTION TERVERIFIKASI DAN TERKUNCI (17) ──────
+                        _buildSectionTerverifikasiTerkunci(),
+
+                        const SizedBox(
+                          height: 100,
+                        ), // Spacing for sticky bottom bar
+                      ],
+                    ),
+                  ),
+
+                  // ─── FLOATING TOP TOAST FEEDBACK ─────────────────────────
+                  if (_showToast)
+                    Positioned(
+                      top: 10,
+                      left: AppSpacing.lg,
+                      right: AppSpacing.lg,
+                      child: _buildFloatingToast(),
+                    ),
+                ],
               ),
             ),
 
@@ -210,17 +331,19 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
   }
 
   // ─── HEADER ────────────────────────────────────────────────────────────────
-  Widget _buildHeader(BuildContext context, String perumahan, String regId) {
+  Widget _buildHeader(BuildContext context, String regId) {
     return Container(
+      width: double.infinity,
       decoration: const BoxDecoration(
         gradient: AppColors.heroGradient,
-        borderRadius: BorderRadius.zero,
+        borderRadius: AppRadii.hero,
       ),
+      clipBehavior: Clip.antiAlias,
       padding: EdgeInsets.fromLTRB(
         AppSpacing.sm,
-        MediaQuery.of(context).padding.top + 8,
+        MediaQuery.paddingOf(context).top + 8,
         AppSpacing.lg,
-        AppSpacing.lg,
+        AppSpacing.xl,
       ),
       child: Row(
         children: [
@@ -242,61 +365,199 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
               style: AppTextStyles.headlineSmall.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
+                fontSize: 18,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: AppSpacing.xs),
-          // Right Pill: "Perumahan Green Tasik • REG-2026-0142" (Interactive tap to reveal continuation)
-          Flexible(
-            child: Tooltip(
-              message: _isPillExpanded
-                  ? 'Ketuk untuk meringkas'
-                  : '$perumahan • $regId',
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () {
-                    setState(() {
-                      _isPillExpanded = !_isPillExpanded;
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(
-                        alpha: _isPillExpanded ? 0.32 : 0.22,
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withValues(
-                          alpha: _isPillExpanded ? 0.35 : 0.15,
-                        ),
-                      ),
-                    ),
-                    child: Text(
-                      '$perumahan • $regId',
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                      maxLines: _isPillExpanded ? 3 : 1,
-                      overflow: _isPillExpanded
-                          ? TextOverflow.visible
-                          : TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
+        ],
+      ),
+    );
+  }
+
+  // ─── HOUSING IDENTITY CARD ──────────────────────────────────────────────────
+  Widget _buildHousingIdentityCard(String namaPerumahan, String regId) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.lg,
+        AppSpacing.lg,
+        0,
+      ),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x060F172A),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFEF2F2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFFECACA).withValues(alpha: 0.6),
+              ),
+            ),
+            child: const Center(
+              child: Icon(
+                Icons.home_work_outlined,
+                color: AppColors.primaryRed,
+                size: 20,
               ),
             ),
           ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  namaPerumahan,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.titleMedium.copyWith(
+                    color: AppColors.slate900,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                    height: 1.3,
+                  ),
+                ),
+                if (regId.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    regId,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.slate500,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  // ─── FLOATING TOP TOAST WIDGET ─────────────────────────────────────────────
+  Widget _buildFloatingToast() {
+    if (_toastFadeAnim == null || _toastSlideAnim == null) {
+      return const SizedBox.shrink();
+    }
+
+    return FadeTransition(
+      opacity: _toastFadeAnim!,
+      child: SlideTransition(
+        position: _toastSlideAnim!,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: _toastIsSuccess
+                    ? const Color(0xFFE2E8F0)
+                    : AppColors.primaryRed.withValues(alpha: 0.3),
+              ),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x140F172A),
+                  blurRadius: 16,
+                  offset: Offset(0, 6),
+                ),
+                BoxShadow(
+                  color: Color(0x0A0F172A),
+                  blurRadius: 4,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: _toastIsSuccess
+                        ? const Color(0xFFDCFCE7)
+                        : AppColors.primarySurface,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Icon(
+                      _toastIsSuccess
+                          ? Icons.check_circle_rounded
+                          : Icons.error_outline_rounded,
+                      size: 20,
+                      color: _toastIsSuccess
+                          ? const Color(0xFF16A34A)
+                          : AppColors.primaryRed,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _toastTitle,
+                        style: AppTextStyles.labelMedium.copyWith(
+                          color: AppColors.slate900,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        _toastSubtitle,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.slate600,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: _dismissToast,
+                  borderRadius: BorderRadius.circular(12),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: AppColors.slate400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -306,7 +567,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
     return Container(
       margin: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        AppSpacing.lg,
+        AppSpacing.md,
         AppSpacing.lg,
         0,
       ),
@@ -343,7 +604,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
@@ -351,14 +612,6 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
               minHeight: 7,
               backgroundColor: AppColors.primarySurface,
               valueColor: const AlwaysStoppedAnimation(AppColors.primaryRed),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Perbarui semua berkas yang ditandai sebelum mengirim',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.slate500,
-              fontSize: 12,
             ),
           ),
         ],
@@ -483,53 +736,380 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
   }
 
   void _showFullNoteDialog(BuildContext context, String note) {
-    showDialog(
+    showGeneralDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.rate_review_outlined, color: AppColors.primaryRed),
-            SizedBox(width: 8),
-            Text('Catatan Verifikator', style: TextStyle(fontSize: 16)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              note,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.slate800,
-              ),
+      barrierDismissible: true,
+      barrierLabel: 'Tutup Catatan Verifikator',
+      barrierColor: const Color(0x990F172A), // Slate 950 / 60% opacity backdrop
+      transitionDuration: const Duration(milliseconds: 250),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return const SizedBox.shrink();
+      },
+      transitionBuilder: (dialogContext, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+
+        return FadeTransition(
+          opacity: curvedAnimation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.96, end: 1.0).animate(curvedAnimation),
+            child: _buildCatatanVerifikatorDialog(dialogContext, note),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCatatanVerifikatorDialog(
+    BuildContext dialogContext,
+    String note,
+  ) {
+    final submission = _findSubmission();
+    const verifikatorName = 'Hendra Wijaya, S.T.';
+    final dateStr = submission?.tanggal.isNotEmpty == true
+        ? '${submission!.tanggal}, 09:30 WIB'
+        : '18 Maret 2026, 09:30 WIB';
+    const instansiName =
+        'Dinas Perumahan dan Kawasan Permukiman Kota Tasikmalaya';
+
+    return Center(
+      child: Material(
+        color: Colors.transparent,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: 360,
+            maxHeight: MediaQuery.sizeOf(dialogContext).height * 0.88,
+          ),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x330F172A),
+                  blurRadius: 32,
+                  offset: Offset(0, 16),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            Text(
-              'Verifikator: Hendra Wijaya, S.T.\nTanggal: 18 Maret 2026, 09:30 WIB\nInstansi: Dinas Perumahan dan Kawasan Permukiman Kota Tasikmalaya',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.slate500,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text(
-              'Tutup',
-              style: TextStyle(color: AppColors.primaryRed),
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Header
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.description_outlined,
+                                color: Color(0xFFB91C1C),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 28),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Catatan Verifikator',
+                                    style: AppTextStyles.titleMedium.copyWith(
+                                      color: AppColors.slate900,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 17,
+                                      letterSpacing: -0.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Informasi perbaikan dokumen',
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.slate500,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Scrollable Note Content & Metadata
+                      Flexible(
+                        child: SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFE2E8F0),
+                                  ),
+                                ),
+                                child: Text(
+                                  note,
+                                  style: AppTextStyles.bodySmall.copyWith(
+                                    color: const Color(0xFF1E293B),
+                                    fontSize: 13,
+                                    height: 1.55,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: const Color(0xFFF1F5F9),
+                                  ),
+                                ),
+                                child: Column(
+                                  children: [
+                                    _buildMetaRow(
+                                      label: 'Verifikator',
+                                      value: verifikatorName,
+                                      showDivider: true,
+                                    ),
+                                    _buildMetaRow(
+                                      label: 'Tanggal',
+                                      value: dateStr,
+                                      showDivider: true,
+                                    ),
+                                    _buildMetaRow(
+                                      label: 'Instansi',
+                                      value: instansiName,
+                                      showDivider: false,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+
+                      // Action Buttons
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            height: 46,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryRed,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              onPressed: () =>
+                                  _handlePerbaikiDokumenSekarang(dialogContext),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'Perbaiki Dokumen Sekarang',
+                                  style: AppTextStyles.labelMedium.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 38,
+                            child: TextButton(
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.slate500,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              onPressed: () => Navigator.of(dialogContext).pop(),
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                child: Text(
+                                  'Tutup',
+                                  style: AppTextStyles.labelMedium.copyWith(
+                                    color: AppColors.slate500,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Top Right Close Button
+                Positioned(
+                  top: 14,
+                  right: 14,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () => Navigator.of(dialogContext).pop(),
+                      child: const Padding(
+                        padding: EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 18,
+                          color: AppColors.slate400,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 
+  Widget _buildMetaRow({
+    required String label,
+    required String value,
+    required bool showDivider,
+  }) {
+    return Builder(
+      builder: (context) {
+        final isLargeText = MediaQuery.textScalerOf(context).scale(1) > 1.3;
+        final content = isLargeText
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.slate500,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: const Color(0xFF1E293B),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.slate500,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      value,
+                      textAlign: TextAlign.end,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: const Color(0xFF1E293B),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11.5,
+                      ),
+                    ),
+                  ),
+                ],
+              );
+
+        return Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: content,
+            ),
+            if (showDivider)
+              const Divider(
+                height: 1,
+                thickness: 1,
+                color: Color(0xFFF1F5F9),
+              ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _handlePerbaikiDokumenSekarang(BuildContext dialogContext) {
+    Navigator.of(dialogContext).pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_perluDiperbaikiKey.currentContext != null) {
+        Scrollable.ensureVisible(
+          _perluDiperbaikiKey.currentContext!,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOutCubic,
+          alignment: 0.08,
+        );
+      } else if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          180.0,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOutCubic,
+        );
+      }
+    });
+  }
+
   // ─── 4. SECTION PERLU DIPERBAIKI (3) HEADER ────────────────────────────────
   Widget _buildSectionPerluDiperbaikiHeader() {
-    return Builder(
+    return Container(
+      key: _perluDiperbaikiKey,
+      child: Builder(
       builder: (context) {
         final isLargeScale = MediaQuery.textScalerOf(context).scale(1) > 1.2;
 
@@ -616,8 +1196,9 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 
   // ─── DOCUMENT CARD ITEM (GENERIC UNTUK DOKUMEN 1, 2, 3) ───────────────────
   Widget _buildDocCardItem(BuildContext context, _DocRevisiData doc) {
@@ -1093,7 +1674,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
             width: double.infinity,
             height: 44,
             child: isSudahDiperbarui
-                ? OutlinedButton.icon(
+                ? OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primaryRed,
                       side: const BorderSide(
@@ -1105,8 +1686,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
                       ),
                     ),
                     onPressed: () => _handlePickAndReplaceFile(context, doc),
-                    icon: const Icon(Icons.file_upload_outlined, size: 18),
-                    label: FittedBox(
+                    child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
                         doc.isMultipleFiles
@@ -1120,7 +1700,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
                       ),
                     ),
                   )
-                : ElevatedButton.icon(
+                : ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryRed,
                       foregroundColor: Colors.white,
@@ -1130,8 +1710,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
                       ),
                     ),
                     onPressed: () => _handlePickAndReplaceFile(context, doc),
-                    icon: const Icon(Icons.file_upload_outlined, size: 18),
-                    label: FittedBox(
+                    child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
                         doc.isMultipleFiles
@@ -1417,36 +1996,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen> {
             children: [
               Flexible(
                 child: InkWell(
-                  onTap: () {
-                    final now = DateFormat('HH:mm').format(DateTime.now());
-                    setState(() {
-                      _lastSavedTime = now;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: const Row(
-                          children: [
-                            Icon(
-                              Icons.check_circle_outline,
-                              color: Colors.white,
-                              size: 18,
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Draft perbaikan berkas berhasil disimpan sementara.',
-                              ),
-                            ),
-                          ],
-                        ),
-                        backgroundColor: const Color(0xFF1E293B),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    );
-                  },
+                  onTap: _handleSimpanSementara,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

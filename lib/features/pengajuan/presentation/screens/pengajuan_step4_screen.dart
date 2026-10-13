@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/smart_validation_bottom_sheet.dart';
 
 typedef Step4FilePickerSeam =
     Future<List<PlatformFile>> Function({
@@ -587,7 +588,7 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
                     ? _buildCompactNextButton(isValid)
                     : AppButton.primary(
                         text: 'Lanjut ke Review & Submit',
-                        onPressed: isValid ? _continueToStep5 : null,
+                        onPressed: _onNext,
                       );
                 if (isCompact) {
                   return Column(
@@ -629,17 +630,55 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
 
   void _continueToStep5() => context.push('/pengajuan/step5');
 
+  bool _isModalShowing = false;
+
+  void _onNext() async {
+    final isValid = ref.read(pengajuanFormProvider).isStep4Valid;
+    if (isValid) {
+      _continueToStep5();
+      return;
+    }
+
+    if (_isModalShowing) return;
+
+    final missing = [
+      const MissingValidationItem(
+        key: 'site_plan',
+        title: '1. Dokumen Perencanaan & Perancangan Site Plan *',
+        subtitle: 'Format DWG atau PDF maksimal 50 MB',
+        statusText: 'Belum diunggah',
+        icon: Icons.architecture_outlined,
+      ),
+    ];
+
+    _isModalShowing = true;
+    await showSmartValidationBottomSheet(
+      context: context,
+      title: 'Berkas Teknis Belum Diunggah',
+      subtitle: 'Unggah berkas site plan teknis sebelum ke Review.',
+      completedCount: 0,
+      totalCount: 1,
+      statusBadgeText: '0 dari 1 berkas lengkap',
+      warningText: '1 berkas site plan wajib belum diunggah',
+      sectionTitle: 'DAFTAR DOKUMEN YANG PERLU DIUNGGAH',
+      missingItems: missing,
+      actionButtonText: 'Lengkapi Berkas Sekarang',
+      cancelButtonText: 'Kembali ke Formulir',
+    );
+    if (mounted) {
+      _isModalShowing = false;
+    }
+  }
+
   Widget _buildCompactNextButton(bool isValid) {
     return SizedBox(
       width: double.infinity,
       height: 50,
       child: ElevatedButton(
-        onPressed: isValid ? _continueToStep5 : null,
+        onPressed: _onNext,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryRed,
           foregroundColor: AppColors.textOnRed,
-          disabledBackgroundColor: AppColors.grey300,
-          disabledForegroundColor: AppColors.grey600,
           elevation: 0,
           shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
         ),

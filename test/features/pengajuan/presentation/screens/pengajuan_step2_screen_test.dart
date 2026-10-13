@@ -109,11 +109,11 @@ void main() {
       // 5 "Belum Unggah" badges initially
       expect(find.text('Belum Unggah'), findsNWidgets(5));
 
-      // Next button is disabled initially
+      // Next button is clickable and primary red initially
       final nextButton = tester.widget<ElevatedButton>(
         find.widgetWithText(ElevatedButton, 'Lanjut ke Langkah 3'),
       );
-      expect(nextButton.onPressed, isNull);
+      expect(nextButton.onPressed, isNotNull);
     });
 
     testWidgets('canceling file picker does not mutate state or show false selection', (

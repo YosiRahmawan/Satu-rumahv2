@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/core/theme/app_colors.dart';
+import 'package:satu_rumah/core/theme/app_radii.dart';
 import 'package:satu_rumah/core/theme/app_theme.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/perbarui_berkas_screen.dart';
 
@@ -26,14 +28,21 @@ void main() {
   }
 
   group('PerbaruiBerkasScreen Tests', () {
-    testWidgets('renders header and project pill correctly', (tester) async {
+    testWidgets('renders header without pill and renders Housing Identity Card below header', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
+      // Header has title and back button only
       expect(find.text('Perbarui Berkas'), findsWidgets);
-      expect(find.textContaining('REG-2026-0142'), findsOneWidget);
-      expect(find.textContaining('Perumahan Green Tasik'), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+
+      // Old combined header pill is no longer rendered
+      expect(find.textContaining('Perumahan Green Tasik • REG-2026-0142'), findsNothing);
+
+      // Housing Identity Card is rendered with icon, housing name, and registration number
+      expect(find.byIcon(Icons.home_work_outlined), findsOneWidget);
+      expect(find.text('Perumahan Green Tasik'), findsOneWidget);
+      expect(find.text('REG-2026-0142'), findsOneWidget);
     });
 
     testWidgets('renders progress card with 1/3 Berkas initial progress', (
@@ -47,7 +56,7 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(
         find.text('Perbarui semua berkas yang ditandai sebelum mengirim'),
-        findsOneWidget,
+        findsNothing,
       );
     });
 
@@ -150,7 +159,7 @@ void main() {
     });
 
     testWidgets(
-      'renders sticky bottom action bar and handles Simpan Sementara',
+      'renders sticky bottom action bar and handles Simpan Sementara with custom top toast',
       (tester) async {
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
@@ -166,11 +175,21 @@ void main() {
         // Tap Simpan Sementara
         await tester.tap(find.text('Simpan Sementara'));
         await tester.pump();
-        expect(find.byType(SnackBar), findsOneWidget);
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Verifikasi floating top toast muncul, bukan SnackBar
+        expect(find.byType(SnackBar), findsNothing);
+        expect(find.text('Draft Berhasil Disimpan'), findsOneWidget);
         expect(
-          find.textContaining('Draft perbaikan berkas berhasil disimpan'),
+          find.text('Perubahan berkas tersimpan sementara.'),
           findsOneWidget,
         );
+        expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+
+        // Verifikasi auto-dismiss setelah durasi
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpAndSettle();
+        expect(find.text('Draft Berhasil Disimpan'), findsNothing);
       },
     );
 
@@ -229,8 +248,88 @@ void main() {
       );
     });
 
+    testWidgets(
+      'header renders with AppColors.heroGradient and AppRadii.hero rounded corners',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        // Cari header container
+        final headerFinder = find.byWidgetPredicate((widget) {
+          if (widget is Container && widget.decoration is BoxDecoration) {
+            final deco = widget.decoration as BoxDecoration;
+            return deco.gradient == AppColors.heroGradient &&
+                deco.borderRadius == AppRadii.hero;
+          }
+          return false;
+        });
+
+        expect(headerFinder, findsOneWidget);
+      },
+    );
+
+    testWidgets('custom top toast can be dismissed manually via close button', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Simpan Sementara'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Draft Berhasil Disimpan'), findsOneWidget);
+
+      // Tap ikon close X pada toast
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Draft Berhasil Disimpan'), findsNothing);
+    });
+
+    testWidgets(
+      'rapid repeated tap on Simpan Sementara does not produce duplicate toasts',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        // Rapid double tap
+        await tester.tap(find.text('Simpan Sementara'));
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(find.text('Simpan Sementara'));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Toast tetap tepat 1 instance
+        expect(find.text('Draft Berhasil Disimpan'), findsOneWidget);
+
+        // Auto dismiss cleanly
+        await tester.pump(const Duration(seconds: 3));
+        await tester.pumpAndSettle();
+        expect(find.text('Draft Berhasil Disimpan'), findsNothing);
+      },
+    );
+
     testWidgets('responsive at 360dp without overflow', (tester) async {
       await tester.binding.setSurfaceSize(const Size(360, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      await tester.drag(
+        find.byType(SingleChildScrollView),
+        const Offset(0, -300),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Tinjau Perbaikan'), findsOneWidget);
+    });
+
+    testWidgets('responsive at 390dp without overflow', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await tester.pumpWidget(buildTestWidget());
@@ -278,6 +377,162 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
       expect(find.text('Tinjau Perbaikan'), findsOneWidget);
+    });
+
+    group('Catatan Verifikator Modal Redesign Tests', () {
+      testWidgets(
+        'opens modal via Selengkapnya with full Google Stitch header, content, metadata & actions',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget());
+          await tester.pumpAndSettle();
+
+          // Open dialog via Selengkapnya
+          await tester.tap(find.text('Selengkapnya'));
+          await tester.pumpAndSettle();
+
+          // 1. Header elements
+          expect(find.text('Catatan Verifikator'), findsOneWidget);
+          expect(find.text('Informasi perbaikan dokumen'), findsOneWidget);
+          expect(find.byIcon(Icons.description_outlined), findsWidgets);
+          expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+
+          // 2. Note content verbatim
+          expect(
+            find.textContaining('Mohon lakukan revisi pada KTP Penanggung Jawab'),
+            findsWidgets,
+          );
+
+          // 3. Verifier metadata rows
+          expect(find.text('Verifikator'), findsOneWidget);
+          expect(find.text('Hendra Wijaya, S.T.'), findsOneWidget);
+          expect(find.text('Tanggal'), findsOneWidget);
+          expect(find.textContaining('09:30 WIB'), findsOneWidget);
+          expect(find.text('Instansi'), findsOneWidget);
+          expect(
+            find.text('Dinas Perumahan dan Kawasan Permukiman Kota Tasikmalaya'),
+            findsOneWidget,
+          );
+
+          // 4. Footer buttons
+          expect(find.text('Perbaiki Dokumen Sekarang'), findsOneWidget);
+          expect(find.text('Tutup'), findsOneWidget);
+        },
+      );
+
+      testWidgets('closes modal cleanly via top-right X button', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Selengkapnya'));
+        await tester.pumpAndSettle();
+        expect(find.text('Catatan Verifikator'), findsOneWidget);
+
+        // Tap close X icon
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.pumpAndSettle();
+
+        // Modal closed
+        expect(find.text('Informasi perbaikan dokumen'), findsNothing);
+        expect(find.text('Perbaiki Dokumen Sekarang'), findsNothing);
+      });
+
+      testWidgets('closes modal cleanly via Tutup button', (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Selengkapnya'));
+        await tester.pumpAndSettle();
+        expect(find.text('Catatan Verifikator'), findsOneWidget);
+
+        // Tap Tutup button
+        await tester.tap(find.text('Tutup'));
+        await tester.pumpAndSettle();
+
+        // Modal closed
+        expect(find.text('Informasi perbaikan dokumen'), findsNothing);
+        expect(find.text('Perbaiki Dokumen Sekarang'), findsNothing);
+      });
+
+      testWidgets(
+        'tapping Perbaiki Dokumen Sekarang closes modal and scrolls smoothly to Perlu Diperbaiki section',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget());
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.text('Selengkapnya'));
+          await tester.pumpAndSettle();
+          expect(find.text('Catatan Verifikator'), findsOneWidget);
+
+          // Tap primary action button
+          await tester.tap(find.text('Perbaiki Dokumen Sekarang'));
+          await tester.pumpAndSettle();
+
+          // Modal is closed
+          expect(find.text('Informasi perbaikan dokumen'), findsNothing);
+
+          // Remains on Perbarui Berkas screen and Perlu Diperbaiki section is visible
+          expect(find.text('Perlu Diperbaiki (3)'), findsOneWidget);
+          expect(find.text('1. KTP Direktur / Penanggung Jawab'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'modal renders responsively across 360dp, 390dp, 412dp and 200% text scale without overflow',
+        (tester) async {
+          final testSizes = [
+            const Size(360, 640),
+            const Size(390, 844),
+            const Size(412, 915),
+          ];
+
+          for (final size in testSizes) {
+            await tester.binding.setSurfaceSize(size);
+
+            await tester.pumpWidget(buildTestWidget(textScale: 1.0));
+            await tester.pumpAndSettle();
+
+            await tester.scrollUntilVisible(
+              find.text('Selengkapnya'),
+              50,
+              scrollable: find.byType(Scrollable).first,
+            );
+            await tester.tap(find.text('Selengkapnya'));
+            await tester.pumpAndSettle();
+
+            expect(tester.takeException(), isNull);
+            expect(find.text('Catatan Verifikator'), findsOneWidget);
+            expect(find.text('Perbaiki Dokumen Sekarang'), findsOneWidget);
+
+            // Close dialog
+            await tester.tap(find.text('Tutup'));
+            await tester.pumpAndSettle();
+          }
+
+          // Test with 200% text scale on 360x800
+          await tester.binding.setSurfaceSize(const Size(360, 800));
+          await tester.pumpWidget(buildTestWidget(textScale: 2.0));
+          await tester.pumpAndSettle();
+
+          await tester.scrollUntilVisible(
+            find.text('Selengkapnya'),
+            50,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.tap(find.text('Selengkapnya'));
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Catatan Verifikator'), findsOneWidget);
+          expect(find.text('Perbaiki Dokumen Sekarang'), findsOneWidget);
+
+          await tester.tap(find.text('Tutup'));
+          await tester.pumpAndSettle();
+
+          await tester.binding.setSurfaceSize(null);
+        },
+      );
     });
   });
 }

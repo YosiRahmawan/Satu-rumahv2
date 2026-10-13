@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -15,6 +16,7 @@ import '../../../../core/utils/file_picker_util.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/smart_validation_bottom_sheet.dart';
 
 /// Persists document file size metadata across screen transitions/navigation in the session.
 final pengajuanStep2DocSizesProvider =
@@ -119,6 +121,21 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
   final Map<String, int> _slotFileSizes = {};
   final Set<String> _loadingKeys = {};
   String? _lastSavedTime;
+
+  final ScrollController _scrollController = ScrollController();
+  late final Map<String, GlobalKey> _slotKeys = {
+    for (final slot in _slots) slot.key: GlobalKey(),
+  };
+  String? _highlightedSlotKey;
+  Timer? _highlightTimer;
+  bool _isModalShowing = false;
+
+  @override
+  void dispose() {
+    _highlightTimer?.cancel();
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   String _formatFileSize(int bytes) {
     if (bytes <= 0) return 'Ukuran tidak tersedia';
@@ -300,18 +317,91 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     }
   }
 
-  void _onNext() {
-    final isValid = ref.read(pengajuanFormProvider).isStep2Valid;
-    if (isValid) {
+  void _highlightAndScrollTo(String? slotKey) {
+    if (slotKey == null) return;
+    setState(() {
+      _highlightedSlotKey = slotKey;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final key = _slotKeys[slotKey];
+      if (key?.currentContext != null) {
+        Scrollable.ensureVisible(
+          key!.currentContext!,
+          duration: const Duration(milliseconds: 380),
+          curve: Curves.easeOutCubic,
+          alignment: 0.15,
+        );
+      } else if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 380),
+          curve: Curves.easeOutCubic,
+        );
+      }
+    });
+
+    _highlightTimer?.cancel();
+    _highlightTimer = Timer(const Duration(milliseconds: 2500), () {
+      if (mounted && _highlightedSlotKey == slotKey) {
+        setState(() {
+          _highlightedSlotKey = null;
+        });
+      }
+    });
+  }
+
+  Future<void> _onNext() async {
+    if (_isModalShowing) return;
+
+    final formState = ref.read(pengajuanFormProvider);
+    final isStep2Valid = formState.isStep2Valid && _slotErrors.isEmpty;
+
+    if (isStep2Valid) {
       context.push('/pengajuan/step3');
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Lengkapi 5 berkas legalitas perusahaan sebelum melanjutkan ke Langkah 3.',
-          ),
-        ),
+      return;
+    }
+
+    final missingSlots = _slots.where((slot) {
+      if (_slotErrors.containsKey(slot.key)) return true;
+      final doc = formState.uploadedDocs[slot.key];
+      return doc == null || doc.trim().isEmpty;
+    }).toList();
+
+    final validCount = _slots.length - missingSlots.length;
+    final remainingCount = missingSlots.length;
+
+    final missingItems = missingSlots.map((slot) {
+      final hasError = _slotErrors.containsKey(slot.key);
+      final errorReason = hasError ? _slotErrors[slot.key]!.reason : null;
+      return MissingValidationItem(
+        key: slot.key,
+        title: slot.title,
+        subtitle: hasError ? errorReason : 'PDF maks 10MB',
+        statusText: hasError ? 'Format Gagal' : 'Belum diunggah',
+        icon: Icons.description_outlined,
       );
+    }).toList();
+
+    _isModalShowing = true;
+    await showSmartValidationBottomSheet(
+      context: context,
+      title: 'Berkas Belum Lengkap',
+      subtitle: 'Lengkapi dokumen wajib sebelum ke Langkah 3.',
+      completedCount: validCount,
+      totalCount: _slots.length,
+      statusBadgeText: '$validCount dari ${_slots.length} berkas lengkap',
+      warningText: '$remainingCount berkas wajib belum diunggah',
+      sectionTitle: 'DAFTAR DOKUMEN YANG PERLU DIUNGGAH',
+      missingItems: missingItems,
+      actionButtonText: 'Lengkapi Berkas Sekarang',
+      cancelButtonText: 'Kembali ke Formulir',
+      onActionPressed: (firstKey) {
+        _highlightAndScrollTo(firstKey);
+      },
+    );
+    if (mounted) {
+      _isModalShowing = false;
     }
   }
 
@@ -1234,15 +1324,14 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
-        backgroundColor: isStep2Valid
-            ? AppColors.primaryRed
-            : AppColors.grey300,
+        backgroundColor: AppColors.primaryRed,
+        foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
         elevation: 0,
       ),
-      onPressed: isStep2Valid ? _onNext : null,
+      onPressed: _onNext,
       child: const FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(
@@ -1275,6 +1364,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
       body: SingleChildScrollView(
+        controller: _scrollController,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1302,27 +1392,57 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
 
                   // The 5 document slots
                   ..._slots.map((slot) {
+                    Widget slotWidget;
                     if (_loadingKeys.contains(slot.key)) {
-                      return _buildLoadingSlot(slot, isTextScaled);
-                    }
-                    if (_slotErrors.containsKey(slot.key)) {
-                      return _buildErrorSlot(
+                      slotWidget = _buildLoadingSlot(slot, isTextScaled);
+                    } else if (_slotErrors.containsKey(slot.key)) {
+                      slotWidget = _buildErrorSlot(
                         slot,
                         _slotErrors[slot.key]!,
                         isTextScaled,
                         existingFilePath: formState.uploadedDocs[slot.key],
                       );
+                    } else {
+                      final uploadedDoc = formState.uploadedDocs[slot.key];
+                      if (uploadedDoc != null && uploadedDoc.trim().isNotEmpty) {
+                        slotWidget = _buildValidSlot(
+                          slot,
+                          uploadedDoc,
+                          isTextScaled,
+                          docSizes,
+                        );
+                      } else {
+                        slotWidget = _buildEmptySlot(slot, isTextScaled);
+                      }
                     }
-                    final uploadedDoc = formState.uploadedDocs[slot.key];
-                    if (uploadedDoc != null && uploadedDoc.trim().isNotEmpty) {
-                      return _buildValidSlot(
-                        slot,
-                        uploadedDoc,
-                        isTextScaled,
-                        docSizes,
-                      );
-                    }
-                    return _buildEmptySlot(slot, isTextScaled);
+
+                    final isHighlighted = _highlightedSlotKey == slot.key;
+                    return KeyedSubtree(
+                      key: _slotKeys[slot.key],
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: isHighlighted
+                              ? Border.all(
+                                  color: AppColors.primaryRed,
+                                  width: 2.0,
+                                )
+                              : null,
+                          boxShadow: isHighlighted
+                              ? [
+                                  BoxShadow(
+                                    color: AppColors.primaryRed
+                                        .withValues(alpha: 0.18),
+                                    blurRadius: 10,
+                                    spreadRadius: 2,
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: slotWidget,
+                      ),
+                    );
                   }),
 
                   const SizedBox(height: AppSpacing.xl),

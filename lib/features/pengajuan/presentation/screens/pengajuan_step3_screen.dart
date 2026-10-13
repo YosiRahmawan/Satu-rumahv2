@@ -16,6 +16,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/smart_validation_bottom_sheet.dart';
 
 typedef Step3FilePickerSeam =
     Future<List<PlatformFile>> Function({
@@ -175,6 +176,58 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
 
   int _uploadedCount(PengajuanFormState state) =>
       _slots.where((slot) => _hasFile(slot, state)).length;
+
+  bool _isModalShowing = false;
+
+  void _onNext() async {
+    final formState = ref.read(pengajuanFormProvider);
+    final isStep3Valid = formState.isStep3Valid;
+
+    if (isStep3Valid) {
+      context.push('/pengajuan/step4');
+      return;
+    }
+
+    if (_isModalShowing) return;
+
+    final missingSlots = _slots.where((slot) {
+      if (slot.isOptional) return false;
+      final doc = formState.uploadedDocs[slot.key];
+      return doc == null || doc.trim().isEmpty;
+    }).toList();
+
+    final completedCount = _requiredCount - missingSlots.length;
+
+    final missingItems = missingSlots.map((slot) {
+      final hasFailure = _failures.containsKey(slot.key);
+      final failureMessage = hasFailure ? _failures[slot.key]!.message : null;
+      return MissingValidationItem(
+        key: slot.key,
+        title: '${slot.number}. ${slot.label} *',
+        subtitle: failureMessage ?? slot.description ?? 'Format PDF maks 10MB',
+        statusText: hasFailure ? 'Format Gagal' : 'Belum diunggah',
+        icon: Icons.description_outlined,
+      );
+    }).toList();
+
+    _isModalShowing = true;
+    await showSmartValidationBottomSheet(
+      context: context,
+      title: 'Berkas Belum Lengkap',
+      subtitle: 'Lengkapi dokumen wajib sebelum ke Langkah 4.',
+      completedCount: completedCount,
+      totalCount: _requiredCount,
+      statusBadgeText: '$completedCount dari $_requiredCount berkas lengkap',
+      warningText: '${missingSlots.length} berkas wajib belum diunggah',
+      sectionTitle: 'DAFTAR DOKUMEN YANG PERLU DIUNGGAH',
+      missingItems: missingItems,
+      actionButtonText: 'Lengkapi Berkas Sekarang',
+      cancelButtonText: 'Kembali ke Formulir',
+    );
+    if (mounted) {
+      _isModalShowing = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -637,9 +690,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
                 const SizedBox(height: AppSpacing.sm),
                 AppButton.primary(
                   text: 'Lanjut ke Langkah 4',
-                  onPressed: isComplete
-                      ? () => context.push('/pengajuan/step4')
-                      : null,
+                  onPressed: _onNext,
                 ),
               ] else
                 Row(
@@ -654,9 +705,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
                     Expanded(
                       child: AppButton.primary(
                         text: 'Lanjut ke Langkah 4',
-                        onPressed: isComplete
-                            ? () => context.push('/pengajuan/step4')
-                            : null,
+                        onPressed: _onNext,
                       ),
                     ),
                   ],

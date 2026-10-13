@@ -211,7 +211,9 @@ void main() {
     final container = await _pump(tester);
     await tester.tap(find.byTooltip('Filter tahun'));
     await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(ChoiceChip, '2025'));
+    await tester.tap(find.text('Tahun 2025'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Terapkan Filter'));
     await tester.pumpAndSettle();
     expect(find.text('Grand Tasik Harmoni'), findsOneWidget);
     expect(find.text('Perumahan Green Tasik'), findsNothing);

@@ -1615,7 +1615,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
         child: SizedBox(
           width: double.infinity,
           height: 48,
-          child: ElevatedButton.icon(
+          child: ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryRed,
               foregroundColor: Colors.white,
@@ -1629,12 +1629,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
               ),
             ),
             onPressed: () => _showRevisionBottomSheet(context, item),
-            icon: const Icon(
-              Icons.file_upload_outlined,
-              size: 20,
-              color: Colors.white,
-            ),
-            label: FittedBox(
+            child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 item.revisionSubmitted
