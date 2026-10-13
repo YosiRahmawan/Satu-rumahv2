@@ -25,6 +25,7 @@ import '../../features/pengajuan/presentation/screens/detail_perbarui_dokumen_sc
 import '../../features/pengajuan/presentation/screens/jadwal_survey_screen.dart';
 import '../../features/pengajuan/presentation/screens/perbarui_berkas_screen.dart';
 import '../../features/pengajuan/presentation/screens/status_perbaikan_berkas_screen.dart';
+import '../../features/pengajuan/presentation/screens/unduh_sk_ba_screen.dart';
 import '../auth/role_session.dart';
 import 'route_policy.dart';
 import '../widgets/route_feedback.dart';
@@ -252,6 +253,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/jadwal-survey',
         builder: (_, state) =>
             _withNotice(state, const JadwalSurveyScreen()),
+      ),
+      GoRoute(
+        path: '/unduh-sk-ba',
+        builder: (_, state) =>
+            _withNotice(state, const UnduhSkBaScreen()),
       ),
     ],
   );

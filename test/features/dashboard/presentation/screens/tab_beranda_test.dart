@@ -154,10 +154,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Menu Layanan Pengembang'), findsOneWidget);
 
-      // 2. The other 3 services show unavailable action safe feedback
+      // 2. Tapping 'Unduh SK & BA' opens UnduhSkBaScreen and can navigate back
+      final unduhCard = find.text('Unduh SK & BA');
+      await tester.ensureVisible(unduhCard);
+      await tester.pumpAndSettle();
+      await tester.tap(unduhCard);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dokumen resmi pengajuan perumahan'), findsOneWidget);
+
+      // Tap back button
+      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Menu Layanan Pengembang'), findsOneWidget);
+
+      // 3. The other 2 services show unavailable action safe feedback
       for (final title in [
         'Template Berkas',
-        'Unduh SK & BA',
         'Pusat Bantuan',
       ]) {
         final card = find.text(title);
