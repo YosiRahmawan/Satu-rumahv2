@@ -1,3 +1,4 @@
+import '../../../../core/widgets/app_loading_spinner.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -434,13 +435,9 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
       ),
       child: Row(
         children: [
-          const SizedBox(
-            width: 22,
-            height: 22,
-            child: CircularProgressIndicator(
-              strokeWidth: 2.5,
-              color: AppColors.primaryRed,
-            ),
+          const AppLoadingSpinner.medium(
+            customDimension: 22,
+            color: AppColors.primaryRed,
           ),
           const SizedBox(width: AppSpacing.md),
           Expanded(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satu_rumah/core/widgets/developer_header.dart';
+import 'package:satu_rumah/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:satu_rumah/features/dashboard/presentation/screens/tab_beranda.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
@@ -118,6 +119,62 @@ void main() {
 
       expect(find.text('Pusat Bantuan'), findsOneWidget);
       expect(find.text('SOP & Layanan Dinas Perkim'), findsOneWidget);
+
+      // Verify each card height is at least 162dp
+      for (final title in [
+        'Template Berkas',
+        'Jadwal Survey',
+        'Unduh SK & BA',
+        'Pusat Bantuan',
+      ]) {
+        final cardFinder = find.ancestor(
+          of: find.text(title),
+          matching: find.byType(AnimatedScale),
+        ).first;
+        final cardSize = tester.getSize(cardFinder);
+        expect(cardSize.height, greaterThanOrEqualTo(162.0));
+      }
+    });
+
+    testWidgets('tapping each service card invokes its callback safely', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      // 1. Tapping 'Jadwal Survey' opens JadwalSurveyScreen and can navigate back
+      final jadwalCard = find.text('Jadwal Survey');
+      await tester.ensureVisible(jadwalCard);
+      await tester.pumpAndSettle();
+      await tester.tap(jadwalCard);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Daftar jadwal survey lapangan perumahan'), findsOneWidget);
+
+      // Tap back button
+      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Menu Layanan Pengembang'), findsOneWidget);
+
+      // 2. The other 3 services show unavailable action safe feedback
+      for (final title in [
+        'Template Berkas',
+        'Unduh SK & BA',
+        'Pusat Bantuan',
+      ]) {
+        final card = find.text(title);
+        await tester.ensureVisible(card);
+        await tester.pumpAndSettle();
+        await tester.tap(card);
+        await tester.pumpAndSettle();
+
+        expect(find.text('$title belum tersedia di prototipe lokal.'), findsOneWidget);
+
+        // Dismiss snackbar before next tap
+        tester.binding.scheduleFrame();
+        ScaffoldMessenger.of(
+          tester.element(card),
+        ).hideCurrentSnackBar();
+        await tester.pumpAndSettle();
+      }
     });
 
     testWidgets('renders without overflow on 360px viewport', (tester) async {
@@ -180,6 +237,38 @@ void main() {
 
       // Visual gap between header bottom and identity card top must be exactly 16dp
       expect(cardRect.top - headerRect.bottom, 16.0);
+    });
+
+    testWidgets('tapping header avatar switches dashboardTabProvider to 3 (Profil)', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: TabBeranda(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(container.read(dashboardTabProvider), 0);
+
+      // Find the avatar widget inside DeveloperHeader
+      final avatarFinder = find.descendant(
+        of: find.byType(DeveloperHeader),
+        matching: find.byType(InkWell),
+      );
+      expect(avatarFinder, findsOneWidget);
+
+      await tester.tap(avatarFinder);
+      await tester.pump();
+
+      // State switches to 3 (Profil tab) without navigating to success screen
+      expect(container.read(dashboardTabProvider), 3);
     });
   });
 }

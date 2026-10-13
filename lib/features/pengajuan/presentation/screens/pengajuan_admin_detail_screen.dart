@@ -1,3 +1,4 @@
+import '../../../../core/widgets/app_loading_spinner.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -621,7 +622,11 @@ class _PengajuanAdminDetailScreenState
       future: file.readAsBytes(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return const Center(
+            child: AppLoadingSpinner.large(
+              color: AppColors.primaryRed,
+            ),
+          );
         }
         if (snapshot.hasError ||
             snapshot.data == null ||

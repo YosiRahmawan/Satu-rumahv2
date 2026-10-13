@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../providers/pengajuan_form_controller.dart';
@@ -130,39 +129,73 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
           child: Row(
             children: [
               for (final filter in displayFilters) ...[
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: ChoiceChip(
-                    label: Text(
-                      filter == PengajuanFilter.semua
-                          ? 'Semua (${items.length})'
-                          : filter == PengajuanFilter.menungguVerifikasi
-                          ? filter.label
-                          : '${filter.label} (${items.where(filter.matches).length})',
+                () {
+                  final isSelected = query.filter == filter;
+                  final isSoftActive = isSelected &&
+                      filter == PengajuanFilter.menungguVerifikasi;
+
+                  return Padding(
+                    padding: const EdgeInsets.only(right: AppSpacing.sm),
+                    child: ChoiceChip(
+                      label: Text(
+                        filter == PengajuanFilter.semua
+                            ? 'Semua (${items.length})'
+                            : filter == PengajuanFilter.menungguVerifikasi
+                            ? filter.label
+                            : '${filter.label} (${items.where(filter.matches).length})',
+                      ),
+                      selected: isSelected,
+                      onSelected: (_) => notifier.filter(filter),
+                      showCheckmark: false,
+                      elevation: 0,
+                      pressElevation: 0,
+                      shadowColor: Colors.transparent,
+                      surfaceTintColor: Colors.transparent,
+                      selectedShadowColor: Colors.transparent,
+                      selectedColor: isSoftActive
+                          ? const Color(0xFFFEF2F2)
+                          : const Color(0xFFB91C1C),
+                      backgroundColor: Colors.white,
+                      side: isSoftActive
+                          ? const BorderSide(
+                              color: Color(0xFFFECACA),
+                              width: 1,
+                            )
+                          : isSelected
+                              ? BorderSide.none
+                              : const BorderSide(
+                                  color: Color(0xFFE2E8F0),
+                                  width: 1,
+                                ),
+                      shape: const StadiumBorder(),
+                      materialTapTargetSize: MaterialTapTargetSize.padded,
+                      visualDensity: const VisualDensity(
+                        horizontal: 0,
+                        vertical: -1,
+                      ),
+                      labelPadding: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 0,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 0,
+                      ),
+                      labelStyle: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        color: isSoftActive
+                            ? const Color(0xFFB91C1C)
+                            : isSelected
+                                ? Colors.white
+                                : const Color(0xFF64748B),
+                        height: 1.25,
+                      ),
                     ),
-                    selected: query.filter == filter,
-                    onSelected: (_) => notifier.filter(filter),
-                    showCheckmark: false,
-                    selectedColor: AppColors.primaryRed,
-                    backgroundColor: AppColors.cardSurface,
-                    side: BorderSide(
-                      color: query.filter == filter
-                          ? AppColors.primaryRed
-                          : const Color(0xFFE2E8F0),
-                    ),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadii.pill,
-                    ),
-                    labelStyle: AppTextStyles.labelMedium.copyWith(
-                      color: query.filter == filter
-                          ? AppColors.textOnRed
-                          : AppColors.slate700,
-                      fontWeight: query.filter == filter
-                          ? FontWeight.w700
-                          : FontWeight.w600,
-                    ),
-                  ),
-                ),
+                  );
+                }(),
                 if (hasMenunggu &&
                     filter == PengajuanFilter.menungguVerifikasi)
                   Padding(
@@ -171,20 +204,41 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                       avatar: const Icon(
                         Icons.swap_vert,
                         size: 16,
-                        color: AppColors.slate700,
+                        color: Color(0xFF64748B),
                       ),
                       label: Text(
                         query.sort.label,
-                        style: AppTextStyles.labelMedium.copyWith(
-                          color: AppColors.slate700,
-                          fontWeight: FontWeight.w700,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                          height: 1.25,
                         ),
                       ),
                       onPressed: notifier.toggleSort,
-                      backgroundColor: AppColors.cardSurface,
-                      side: const BorderSide(color: Color(0xFFE2E8F0)),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadii.pill,
+                      elevation: 0,
+                      pressElevation: 0,
+                      shadowColor: Colors.transparent,
+                      surfaceTintColor: Colors.transparent,
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(
+                        color: Color(0xFFE2E8F0),
+                        width: 1,
+                      ),
+                      shape: const StadiumBorder(),
+                      materialTapTargetSize: MaterialTapTargetSize.padded,
+                      visualDensity: const VisualDensity(
+                        horizontal: 0,
+                        vertical: -1,
+                      ),
+                      labelPadding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 0,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 0,
                       ),
                     ),
                   ),
@@ -196,20 +250,41 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                     avatar: const Icon(
                       Icons.swap_vert,
                       size: 16,
-                      color: AppColors.slate700,
+                      color: Color(0xFF64748B),
                     ),
                     label: Text(
                       query.sort.label,
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: AppColors.slate700,
-                        fontWeight: FontWeight.w700,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF64748B),
+                        height: 1.25,
                       ),
                     ),
                     onPressed: notifier.toggleSort,
-                    backgroundColor: AppColors.cardSurface,
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: AppRadii.pill,
+                    elevation: 0,
+                    pressElevation: 0,
+                    shadowColor: Colors.transparent,
+                    surfaceTintColor: Colors.transparent,
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(
+                      color: Color(0xFFE2E8F0),
+                      width: 1,
+                    ),
+                    shape: const StadiumBorder(),
+                    materialTapTargetSize: MaterialTapTargetSize.padded,
+                    visualDensity: const VisualDensity(
+                      horizontal: 0,
+                      vertical: -1,
+                    ),
+                    labelPadding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 0,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 0,
                     ),
                   ),
                 ),

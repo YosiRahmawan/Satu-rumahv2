@@ -22,6 +22,7 @@ import '../../features/pengajuan/presentation/screens/pengajuan_step4_screen.dar
 import '../../features/pengajuan/presentation/screens/pengajuan_step5_review_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_success_screen.dart';
 import '../../features/pengajuan/presentation/screens/detail_perbarui_dokumen_screen.dart';
+import '../../features/pengajuan/presentation/screens/jadwal_survey_screen.dart';
 import '../../features/pengajuan/presentation/screens/perbarui_berkas_screen.dart';
 import '../../features/pengajuan/presentation/screens/status_perbaikan_berkas_screen.dart';
 import '../auth/role_session.dart';
@@ -246,6 +247,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final id = state.pathParameters['id'] ?? 'REG-2026-0142';
           return StatusPerbaikanBerkasScreen(pengajuanId: id);
         },
+      ),
+      GoRoute(
+        path: '/jadwal-survey',
+        builder: (_, state) =>
+            _withNotice(state, const JadwalSurveyScreen()),
       ),
     ],
   );

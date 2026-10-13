@@ -1,3 +1,4 @@
+import '../../../../core/widgets/app_loading_spinner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -425,13 +426,9 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                           }
                         },
                   icon: formState.isSubmitting
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
+                      ? const AppLoadingSpinner.buttonWhite(
+                          customDimension: 18,
+                          strokeWidth: 2.0,
                         )
                       : const Icon(Icons.send, size: 18, color: Colors.white),
                   label: const Text(

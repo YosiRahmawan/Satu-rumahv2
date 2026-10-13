@@ -1,3 +1,4 @@
+import '../../../../core/widgets/app_loading_spinner.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -184,13 +185,9 @@ class _KonfirmasiKirimPerbaikanDialogState
         ),
         onPressed: _isSubmitting ? null : _handleKirim,
         child: _isSubmitting
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
+            ? const AppLoadingSpinner.buttonWhite(
+                customDimension: 20,
+                strokeWidth: 2.0,
               )
             : Text(
                 'Ya, Kirim',

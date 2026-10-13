@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import 'app_loading_spinner.dart';
 
 class AppButton extends StatelessWidget {
   final String text;
@@ -54,13 +55,8 @@ class AppButton extends StatelessWidget {
           );
 
     final child = isLoading
-        ? const SizedBox(
-            height: 20,
-            width: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
+        ? AppLoadingSpinner.small(
+            color: isPrimary ? Colors.white : AppColors.primaryRed,
           )
         : Row(
             mainAxisAlignment: MainAxisAlignment.center,

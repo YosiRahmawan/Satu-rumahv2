@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_loading_spinner.dart';
 
 /// Screen Login SATU RUMAH V2 dengan desain hero food-grade visual & motion entrance
 /// terkoordinasi sesuai spesifikasi Google Stitch.
@@ -1578,13 +1579,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                                   ),
                                                   onPressed: _isAuthenticating || _isTransitioning ? null : _login,
                                                   child: _isAuthenticating
-                                                      ? const SizedBox(
-                                                          width: 22,
-                                                          height: 22,
-                                                          child: CircularProgressIndicator(
-                                                            strokeWidth: 2.2,
-                                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                                          ),
+                                                      ? const AppLoadingSpinner.buttonWhite(
+                                                          customDimension: 22,
+                                                          strokeWidth: 2.2,
                                                         )
                                                       : Text(
                                                           isDeveloper

@@ -1,3 +1,4 @@
+import '../../../../core/widgets/app_loading_spinner.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
@@ -657,13 +658,8 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
               children: [
                 Row(
                   children: [
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(AppColors.primaryRed),
-                      ),
+                    const AppLoadingSpinner.small(
+                      color: AppColors.primaryRed,
                     ),
                     const SizedBox(width: 10),
                     const Expanded(

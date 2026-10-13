@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,10 +6,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
-import '../../../notifikasi/data/models/notifikasi_model.dart';
-import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
+import '../../../pengajuan/presentation/screens/jadwal_survey_screen.dart';
+import '../providers/dashboard_provider.dart';
 
 Pengajuan? latestPengajuan(List<Pengajuan> submissions) {
   return submissions.isEmpty ? null : submissions.first;
@@ -41,51 +40,6 @@ int? dashboardShortcutTab(String title) {
 
 class TabBeranda extends ConsumerWidget {
   const TabBeranda({super.key});
-
-  void _quickDemo(BuildContext context, WidgetRef ref) {
-    ref.read(pengajuanFormProvider.notifier).fillDummyData();
-
-    final formState = ref.read(pengajuanFormProvider);
-    final randomNum = Random().nextInt(900) + 100;
-    final newId = 'REG-TSK-2026-$randomNum';
-
-    final newPengajuan = Pengajuan(
-      id: newId,
-      namaPerumahan: formState.namaPerumahan.isNotEmpty
-          ? formState.namaPerumahan
-          : 'Mutiara Regency Tasik',
-      namaPt: 'PT. Tasik Indah Sentosa',
-      namaDirektur: 'H. Tatang Sutisna',
-      npwpPerusahaan: formState.npwpPerusahaan.isNotEmpty
-          ? formState.npwpPerusahaan
-          : '09.123.456.7-423.000',
-      luasLahan: formState.luasLahan > 0 ? formState.luasLahan : 12500.0,
-      jumlahUnit: formState.jumlahUnit > 0 ? formState.jumlahUnit : 45,
-      tipePerumahan: formState.tipePerumahan,
-      status: 'Dalam Proses',
-      tanggal: '20 Juli 2026',
-      uploadedDocs: formState.uploadedDocs,
-    );
-
-    ref.read(pengajuanListProvider.notifier).addPengajuan(newPengajuan);
-
-    ref
-        .read(notifikasiProvider.notifier)
-        .addNotification(
-          NotifikasiModel(
-            id: 'notif-$newId',
-            jenis: JenisNotifikasi.pengajuanBaru,
-            judul: 'Pengajuan Berhasil Dikirim',
-            deskripsi:
-                'Pengajuan "${newPengajuan.namaPerumahan}" ($newId) telah diterima dan sedang dalam proses verifikasi administrasi.',
-            waktu: DateTime.now(),
-            targetRoute: '/pengajuan/detail/$newId',
-          ),
-        );
-
-    ref.read(pengajuanFormProvider.notifier).reset();
-    context.push('/pengajuan/success', extra: newId);
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -124,7 +78,8 @@ class TabBeranda extends ConsumerWidget {
                     avatarLabel: avatarInitials ?? 'YR',
                     showOnlineIndicator: true,
                     avatarTooltip: 'Buka profil',
-                    onAvatarTap: () => _quickDemo(context, ref),
+                    onAvatarTap: () =>
+                        ref.read(dashboardTabProvider.notifier).state = 3,
                   ),
 
                   // 2. GAP 16dp antara header dan card identitas
@@ -472,74 +427,103 @@ class _MenuLayananPengembangSection extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Row
+          // Section Header
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
                 'Menu Layanan Pengembang',
                 style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.textMain,
+                  color: Color(0xFF0F172A),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
-                  vertical: 4,
+                  vertical: 2,
                 ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(999),
                 ),
                 child: const Text(
                   '4 Layanan',
                   style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                     color: Color(0xFF64748B),
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
-          // Grid 2 kolom
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.12,
-            children: [
-              _MenuLayananCard(
-                icon: Icons.description_outlined,
-                title: 'Template Berkas',
-                subtitle: 'Download 16 slot berkas resmi',
-                onTap: () => showUnavailableAction(context, 'Template Berkas'),
-              ),
-              _MenuLayananCard(
-                icon: Icons.calendar_month_outlined,
-                title: 'Jadwal Survey',
-                subtitle: 'Jadwal aktif & petugas Perwaskim',
-                onTap: () => showUnavailableAction(context, 'Jadwal Survey'),
-              ),
-              _MenuLayananCard(
-                icon: Icons.file_download_outlined,
-                title: 'Unduh SK & BA',
-                subtitle: 'File persetujuan PDF resmi',
-                onTap: () => showUnavailableAction(context, 'Unduh SK & BA'),
-              ),
-              _MenuLayananCard(
-                icon: Icons.help_outline_rounded,
-                title: 'Pusat Bantuan',
-                subtitle: 'SOP & Layanan Dinas Perkim',
-                onTap: () => showUnavailableAction(context, 'Pusat Bantuan'),
-              ),
-            ],
+          // Grid 2 Kolom (Row 1)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _MenuLayananCard(
+                    icon: Icons.description_outlined,
+                    title: 'Template Berkas',
+                    subtitle: 'Download 16 slot berkas resmi',
+                    onTap: () => showUnavailableAction(context, 'Template Berkas'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MenuLayananCard(
+                    icon: Icons.calendar_today_outlined,
+                    title: 'Jadwal Survey',
+                    subtitle: 'Jadwal aktif & petugas Perwaskim',
+                    onTap: () {
+                      try {
+                        context.push('/jadwal-survey');
+                      } catch (_) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const JadwalSurveyScreen(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Grid 2 Kolom (Row 2)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _MenuLayananCard(
+                    icon: Icons.file_download_outlined,
+                    title: 'Unduh SK & BA',
+                    subtitle: 'File persetujuan PDF resmi',
+                    onTap: () => showUnavailableAction(context, 'Unduh SK & BA'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MenuLayananCard(
+                    icon: Icons.help_outline_rounded,
+                    title: 'Pusat Bantuan',
+                    subtitle: 'SOP & Layanan Dinas Perkim',
+                    onTap: () => showUnavailableAction(context, 'Pusat Bantuan'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -547,7 +531,7 @@ class _MenuLayananPengembangSection extends ConsumerWidget {
   }
 }
 
-class _MenuLayananCard extends StatelessWidget {
+class _MenuLayananCard extends StatefulWidget {
   final IconData icon;
   final String title;
   final String subtitle;
@@ -561,69 +545,94 @@ class _MenuLayananCard extends StatelessWidget {
   });
 
   @override
+  State<_MenuLayananCard> createState() => _MenuLayananCardState();
+}
+
+class _MenuLayananCardState extends State<_MenuLayananCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
+    return AnimatedScale(
+      scale: _isPressed ? 0.98 : 1.0,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeInOut,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 162),
+        decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Box icon merah muda
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFFEE2E2),
-                      width: 0.8,
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(15, 23, 42, 0.04),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            onHighlightChanged: (highlighted) {
+              setState(() {
+                _isPressed = highlighted;
+              });
+            },
+            borderRadius: BorderRadius.circular(16),
+            splashColor: const Color(0xFFB91C1C).withValues(alpha: 0.08),
+            highlightColor: const Color(0xFFF1F5F9).withValues(alpha: 0.6),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  // Icon container 52x52
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      widget.icon,
+                      color: const Color(0xFFB91C1C),
+                      size: 26,
                     ),
                   ),
-                  child: Icon(icon, color: AppColors.primaryRed, size: 20),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMain,
+                  const SizedBox(height: 14),
+                  // Title
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0F172A),
+                      height: 1.25,
+                    ),
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xFF64748B),
-                    height: 1.25,
+                  const SizedBox(height: 4),
+                  // Subtitle / Description
+                  Text(
+                    widget.subtitle,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF64748B),
+                      height: 1.35,
+                    ),
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
