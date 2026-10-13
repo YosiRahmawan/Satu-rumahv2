@@ -10,6 +10,7 @@ import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../../pengajuan/presentation/screens/jadwal_survey_screen.dart';
 import '../../../pengajuan/presentation/screens/unduh_sk_ba_screen.dart';
+import '../../../pengajuan/presentation/screens/template_berkas_screen.dart';
 import '../providers/dashboard_provider.dart';
 
 Pengajuan? latestPengajuan(List<Pengajuan> submissions) {
@@ -474,7 +475,17 @@ class _MenuLayananPengembangSection extends ConsumerWidget {
                     icon: Icons.description_outlined,
                     title: 'Template Berkas',
                     subtitle: 'Download 16 slot berkas resmi',
-                    onTap: () => showUnavailableAction(context, 'Template Berkas'),
+                    onTap: () {
+                      try {
+                        context.push('/template-berkas');
+                      } catch (_) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const TemplateBerkasScreen(),
+                          ),
+                        );
+                      }
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),

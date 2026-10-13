@@ -26,6 +26,7 @@ import '../../features/pengajuan/presentation/screens/jadwal_survey_screen.dart'
 import '../../features/pengajuan/presentation/screens/perbarui_berkas_screen.dart';
 import '../../features/pengajuan/presentation/screens/status_perbaikan_berkas_screen.dart';
 import '../../features/pengajuan/presentation/screens/unduh_sk_ba_screen.dart';
+import '../../features/pengajuan/presentation/screens/template_berkas_screen.dart';
 import '../auth/role_session.dart';
 import 'route_policy.dart';
 import '../widgets/route_feedback.dart';
@@ -258,6 +259,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/unduh-sk-ba',
         builder: (_, state) =>
             _withNotice(state, const UnduhSkBaScreen()),
+      ),
+      GoRoute(
+        path: '/template-berkas',
+        builder: (_, state) =>
+            _withNotice(state, const TemplateBerkasScreen()),
       ),
     ],
   );

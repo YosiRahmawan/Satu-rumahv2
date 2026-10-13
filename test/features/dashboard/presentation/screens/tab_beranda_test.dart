@@ -168,26 +168,28 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Menu Layanan Pengembang'), findsOneWidget);
 
-      // 3. The other 2 services show unavailable action safe feedback
-      for (final title in [
-        'Template Berkas',
-        'Pusat Bantuan',
-      ]) {
-        final card = find.text(title);
-        await tester.ensureVisible(card);
-        await tester.pumpAndSettle();
-        await tester.tap(card);
-        await tester.pumpAndSettle();
+      // 3. Tapping 'Template Berkas' opens TemplateBerkasScreen and can navigate back
+      final templateCard = find.text('Template Berkas');
+      await tester.ensureVisible(templateCard);
+      await tester.pumpAndSettle();
+      await tester.tap(templateCard);
+      await tester.pumpAndSettle();
 
-        expect(find.text('$title belum tersedia di prototipe lokal.'), findsOneWidget);
+      expect(find.text('Panduan persyaratan pengajuan'), findsOneWidget);
 
-        // Dismiss snackbar before next tap
-        tester.binding.scheduleFrame();
-        ScaffoldMessenger.of(
-          tester.element(card),
-        ).hideCurrentSnackBar();
-        await tester.pumpAndSettle();
-      }
+      // Tap back button
+      await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+      await tester.pumpAndSettle();
+      expect(find.text('Menu Layanan Pengembang'), findsOneWidget);
+
+      // 4. Pusat Bantuan shows unavailable action safe feedback
+      final bantuanCard = find.text('Pusat Bantuan');
+      await tester.ensureVisible(bantuanCard);
+      await tester.pumpAndSettle();
+      await tester.tap(bantuanCard);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Pusat Bantuan belum tersedia di prototipe lokal.'), findsOneWidget);
     });
 
     testWidgets('renders without overflow on 360px viewport', (tester) async {
@@ -282,6 +284,21 @@ void main() {
 
       // State switches to 3 (Profil tab) without navigating to success screen
       expect(container.read(dashboardTabProvider), 3);
+    });
+
+    testWidgets('renders and taps Template Berkas menu card', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      final cardFinder = find.text('Template Berkas');
+      expect(cardFinder, findsOneWidget);
+      expect(find.text('Download 16 slot berkas resmi'), findsOneWidget);
+
+      await tester.ensureVisible(cardFinder);
+      await tester.tap(cardFinder);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
     });
   });
 }
