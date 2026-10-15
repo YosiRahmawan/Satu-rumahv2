@@ -27,25 +27,27 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Profil Pengembang'), findsOneWidget);
-      expect(
-        find.text('Kelola informasi perusahaan dan pengaturan akun'),
-        findsOneWidget,
-      );
+      expect(find.text('Kelola informasi perusahaan dan akun'), findsOneWidget);
     });
 
-    testWidgets('renders identity card with initials, Terverifikasi badge, company name, and ID without Aktif badge', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders identity card with initials, Terverifikasi badge, company name, and ID without Aktif badge',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      expect(find.text('TI'), findsOneWidget);
-      expect(find.text('Terverifikasi'), findsOneWidget);
-      expect(find.byIcon(Icons.verified_rounded), findsOneWidget);
-      expect(find.text('PT. Tasik Indah Sentosa'), findsOneWidget);
-      expect(find.text('ID: Dev-2026-082'), findsOneWidget);
-      expect(find.text('Aktif'), findsNothing);
-    });
+        expect(find.text('TI'), findsOneWidget);
+        expect(find.text('Terverifikasi'), findsOneWidget);
+        expect(find.byIcon(Icons.verified_rounded), findsOneWidget);
+        expect(find.text('PT. Tasik Indah Sentosa'), findsOneWidget);
+        expect(find.text('ID: Dev-2026-082'), findsOneWidget);
+        expect(find.text('Aktif'), findsNothing);
+      },
+    );
 
-    testWidgets('renders statistics: Total Pengajuan, Dalam Proses, Selesai', (tester) async {
+    testWidgets('renders statistics: Total Pengajuan, Dalam Proses, Selesai', (
+      tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -58,48 +60,57 @@ void main() {
       expect(find.text('1'), findsOneWidget);
     });
 
-    testWidgets('renders Section Data Akun & Perusahaan with email and contact', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders Section Data Akun & Perusahaan with email and contact',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Data Akun & Perusahaan'), findsOneWidget);
-      expect(find.text('Email Terdaftar'), findsOneWidget);
-      expect(find.text('tasikindah@developer.com'), findsOneWidget);
-      expect(find.text('No. Kontak Pengembang'), findsOneWidget);
-      expect(find.text('0812-9876-5432'), findsOneWidget);
-    });
+        expect(find.text('Data Akun & Perusahaan'), findsOneWidget);
+        expect(find.text('Email Terdaftar'), findsOneWidget);
+        expect(find.text('tasikindah@developer.com'), findsOneWidget);
+        expect(find.text('No. Kontak Pengembang'), findsOneWidget);
+        expect(find.text('0812-9876-5432'), findsOneWidget);
+      },
+    );
 
-    testWidgets('renders Section Pengaturan & Bantuan with menu options (without Ubah Kata Sandi)', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders Section Pengaturan & Bantuan with menu options (without Ubah Kata Sandi)',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      expect(find.text('Pengaturan & Bantuan'), findsOneWidget);
-      expect(find.text('Profil Perusahaan & Dokumen NIB'), findsOneWidget);
-      expect(find.text('Pusat Bantuan'), findsOneWidget);
-      expect(find.text('Tentang Aplikasi Satu Rumah'), findsOneWidget);
-      expect(find.text('Ubah Kata Sandi'), findsNothing);
-    });
+        expect(find.text('Pengaturan & Bantuan'), findsOneWidget);
+        expect(find.text('Profil Perusahaan & Dokumen NIB'), findsOneWidget);
+        expect(find.text('Pusat Bantuan'), findsOneWidget);
+        expect(find.text('Tentang Aplikasi Satu Rumah'), findsOneWidget);
+        expect(find.text('Ubah Kata Sandi'), findsNothing);
+      },
+    );
 
-    testWidgets('tapping Pusat Bantuan opens PusatBantuanScreen and can navigate back', (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'tapping Pusat Bantuan opens PusatBantuanScreen and can navigate back',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      final bantuanMenu = find.text('Pusat Bantuan');
-      await tester.ensureVisible(bantuanMenu);
-      await tester.pumpAndSettle();
-      await tester.tap(bantuanMenu);
-      await tester.pumpAndSettle();
+        final bantuanMenu = find.text('Pusat Bantuan');
+        await tester.ensureVisible(bantuanMenu);
+        await tester.pumpAndSettle();
+        await tester.tap(bantuanMenu);
+        await tester.pumpAndSettle();
 
-      expect(
-        find.text('Panduan dan kontak layanan Disperwaskim'),
-        findsOneWidget,
-      );
+        expect(
+          find.text('Panduan dan kontak layanan Disperwaskim'),
+          findsOneWidget,
+        );
 
-      // Tap back button
-      await tester.tap(find.bySemanticsLabel('Kembali'));
-      await tester.pumpAndSettle();
-      expect(find.text('Pengaturan & Bantuan'), findsOneWidget);
-    });
+        // Tap back button
+        await tester.tap(find.bySemanticsLabel('Kembali'));
+        await tester.pumpAndSettle();
+        expect(find.text('Pengaturan & Bantuan'), findsOneWidget);
+      },
+    );
 
     testWidgets('renders logout button and footer text', (tester) async {
       await tester.pumpWidget(createWidgetUnderTest());
@@ -108,64 +119,95 @@ void main() {
       expect(find.text('Keluar Akun'), findsOneWidget);
       expect(find.text('SATU RUMAH • v1.0.0 (Build 2026)'), findsOneWidget);
       expect(
-        find.text('Dinas Perumahan Rakyat dan Kawasan Permukiman Kota Tasikmalaya'),
+        find.text(
+          'Dinas Perumahan Rakyat dan Kawasan Permukiman Kota Tasikmalaya',
+        ),
         findsOneWidget,
       );
     });
 
-    testWidgets('is responsive without overflow at 360dp and 412dp screen widths', (tester) async {
-      // 360dp width
-      await tester.pumpWidget(createWidgetUnderTest(width: 360, height: 780));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
+    testWidgets(
+      'is responsive without overflow at 360dp, 390dp, and 420dp screen widths and with text scaling',
+      (tester) async {
+        for (final width in [360.0, 390.0, 420.0]) {
+          await tester.pumpWidget(
+            createWidgetUnderTest(width: width, height: 800),
+          );
+          await tester.pumpAndSettle();
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'Failed at width $width',
+          );
+        }
 
-      // 412dp width
-      await tester.pumpWidget(createWidgetUnderTest(width: 412, height: 915));
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('updates statistics reactively when pengajuanListProvider updates', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            home: ProfilScreen(),
+        // Test with high text scaler
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              home: MediaQuery(
+                data: const MediaQueryData(
+                  size: Size(360, 800),
+                  textScaler: TextScaler.linear(1.4),
+                  padding: EdgeInsets.only(top: 44, bottom: 34),
+                ),
+                child: const ProfilScreen(),
+              ),
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: 'Failed with text scaling',
+        );
+      },
+    );
 
-      expect(find.text('6'), findsOneWidget); // total
-      expect(find.text('5'), findsOneWidget); // dalam proses
-      expect(find.text('1'), findsOneWidget); // selesai
+    testWidgets(
+      'updates statistics reactively when pengajuanListProvider updates',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      // Tambahkan pengajuan baru dengan status selesai
-      container.read(pengajuanListProvider.notifier).addPengajuan(
-        Pengajuan(
-          id: 'TEST-REACTIVE-01',
-          namaPerumahan: 'Test Reactive Residence',
-          namaPt: 'PT. Tasik Indah Sentosa',
-          namaDirektur: 'H. Tatang Sutisna',
-          npwpPerusahaan: '09.123.456.7-423.000',
-          luasLahan: 10000,
-          jumlahUnit: 50,
-          tipePerumahan: 'Subsidi',
-          status: 'Selesai',
-          statusTahap: StatusTahapPengajuan.selesai,
-          tanggal: '21 Juli 2026',
-          uploadedDocs: const {},
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: ProfilScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('7'), findsOneWidget); // total: 7
-      expect(find.text('5'), findsOneWidget); // dalam proses: 7 - 2 = 5
-      expect(find.text('2'), findsOneWidget); // selesai: 2
-    });
+        expect(find.text('6'), findsOneWidget); // total
+        expect(find.text('5'), findsOneWidget); // dalam proses
+        expect(find.text('1'), findsOneWidget); // selesai
+
+        // Tambahkan pengajuan baru dengan status selesai
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'TEST-REACTIVE-01',
+                namaPerumahan: 'Test Reactive Residence',
+                namaPt: 'PT. Tasik Indah Sentosa',
+                namaDirektur: 'H. Tatang Sutisna',
+                npwpPerusahaan: '09.123.456.7-423.000',
+                luasLahan: 10000,
+                jumlahUnit: 50,
+                tipePerumahan: 'Subsidi',
+                status: 'Selesai',
+                statusTahap: StatusTahapPengajuan.selesai,
+                tanggal: '21 Juli 2026',
+                uploadedDocs: const {},
+              ),
+            );
+        await tester.pumpAndSettle();
+
+        expect(find.text('7'), findsOneWidget); // total: 7
+        expect(find.text('5'), findsOneWidget); // dalam proses: 7 - 2 = 5
+        expect(find.text('2'), findsOneWidget); // selesai: 2
+      },
+    );
   });
 }
-

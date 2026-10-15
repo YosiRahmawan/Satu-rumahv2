@@ -12,46 +12,81 @@ import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../../bantuan/presentation/screens/pusat_bantuan_screen.dart';
 
-const double profileCardOverlap = 34.0;
+const double profileCardOverlap = 0.0;
 
 enum VerificationStatus { verified, pending }
 
-/// Badge status verifikasi perusahaan (gaya glass terang).
+/// Badge status verifikasi perusahaan.
 class VerifiedBadge extends StatelessWidget {
-  const VerifiedBadge({super.key, this.status = VerificationStatus.verified});
+  const VerifiedBadge({
+    super.key,
+    this.status = VerificationStatus.verified,
+    this.inHeader = false,
+  });
 
   final VerificationStatus status;
+  final bool inHeader;
 
   @override
   Widget build(BuildContext context) {
     final verified = status == VerificationStatus.verified;
-    const emeraldColor = Color(0xFF059669);
-    const amberColor = Color(0xFFF59E0B);
-    const amberTextColor = Color(0xFFB45309);
-    final color = verified ? emeraldColor : amberColor;
-    final textColor = verified ? emeraldColor : amberTextColor;
-    final label = verified ? 'Terverifikasi' : 'Menunggu Verifikasi';
-    final icon = verified ? Icons.verified_rounded : Icons.schedule_rounded;
+    if (!verified) return const SizedBox.shrink();
 
+    if (inHeader) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0x3310B981), // emerald-500/20
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: const Color(0x4D34D399), // emerald-400/30
+            width: 1,
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.verified_rounded,
+              size: 11,
+              color: Color(0xFFA7F3D0), // emerald-200
+            ),
+            SizedBox(width: 4),
+            Text(
+              'Terverifikasi',
+              style: TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
+                color: Color(0xFFA7F3D0), // emerald-200
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    const emeraldColor = Color(0xFF059669);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: emeraldColor.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.28)),
+        border: Border.all(color: emeraldColor.withValues(alpha: 0.28)),
       ),
-      child: Row(
+      child: const Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
+          Icon(Icons.verified_rounded, size: 13, color: emeraldColor),
+          SizedBox(width: 4),
           Text(
-            label,
+            'Terverifikasi',
             style: TextStyle(
               fontFamily: AppTextStyles.fontFamily,
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: textColor,
+              color: emeraldColor,
             ),
           ),
         ],
@@ -97,66 +132,62 @@ class ProfilScreen extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Header Merah Kanonis
-            const DeveloperHeader(
+            // 1. Header Merah Kanonis dengan Corporate Identity Terintegrasi
+            DeveloperHeader(
               pageTitle: 'Profil Pengembang',
-              pageSubtitle: 'Kelola informasi perusahaan dan pengaturan akun',
+              pageSubtitle: 'Kelola informasi perusahaan dan akun',
+              showBrandBar: false,
               showAvatar: false,
-              bottomPadding: 52,
+              bottomPadding: 24,
+              child: _buildHeaderIdentity(
+                companyName: companyName,
+                developerId: developerId,
+                status: verificationStatus,
+              ),
             ),
 
-            // Konten kartu yang overlap 34dp dengan header merah
-            Transform.translate(
-              offset: const Offset(0, -34), // profileCardOverlap = 34.0
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 2. Card Identitas Pengembang (Badge verifikasi di atas nama PT, tanpa chip Aktif)
-                    _buildIdentityCard(
-                      companyName: companyName,
-                      developerId: developerId,
-                      status: verificationStatus,
-                    ),
+            // Konten tubuh (tanpa floating card / offset translate)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
 
-                    const SizedBox(height: 12),
+                  // 2. Ringkasan Statistik Horizontal (3 Kolom dengan Divider Halus)
+                  _buildStatsCard(
+                    total: total,
+                    dalamProses: dalamProses,
+                    selesai: selesai,
+                  ),
 
-                    // 3. Statistik (3 kolom: Total, Dalam Proses, Selesai)
-                    _buildStatsCard(
-                      total: total,
-                      dalamProses: dalamProses,
-                      selesai: selesai,
-                    ),
+                  const SizedBox(height: 20),
 
-                    const SizedBox(height: 20),
+                  // 3. Section Data Akun & Perusahaan
+                  _buildSectionHeader('Data Akun & Perusahaan'),
+                  const SizedBox(height: 8),
+                  _buildAccountCard(),
 
-                    // 4. Section "Data Akun & Perusahaan"
-                    _buildSectionHeader('Data Akun & Perusahaan'),
-                    const SizedBox(height: 10),
-                    _buildAccountCard(),
+                  const SizedBox(height: 20),
 
-                    const SizedBox(height: 20),
+                  // 4. Section Pengaturan & Bantuan
+                  _buildSectionHeader('Pengaturan & Bantuan'),
+                  const SizedBox(height: 8),
+                  _buildMenuCard(context),
 
-                    // 5. Section "Pengaturan & Bantuan"
-                    _buildSectionHeader('Pengaturan & Bantuan'),
-                    const SizedBox(height: 10),
-                    _buildMenuCard(context),
+                  const SizedBox(height: 24),
 
-                    const SizedBox(height: 20),
+                  // 5. Tombol Keluar Akun (Soft Red Outlined)
+                  _buildLogoutButton(context, ref),
 
-                    // 6. Tombol "Keluar Akun"
-                    _buildLogoutButton(context, ref),
+                  const SizedBox(height: 28),
 
-                    const SizedBox(height: 20),
+                  // 6. Footer Institusi
+                  _buildFooter(),
 
-                    // 7. Footer
-                    _buildFooter(),
-
-                    // Spacing ekstra di bawah agar footer tidak tertutup bottom bar & docked FAB
-                    const SizedBox(height: 96),
-                  ],
-                ),
+                  // Spacing ekstra di bawah agar konten tidak terpotong navbar
+                  const SizedBox(height: 96),
+                ],
               ),
             ),
           ],
@@ -165,73 +196,87 @@ class ProfilScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildIdentityCard({
+  Widget _buildHeaderIdentity({
     required String companyName,
     required String developerId,
-    VerificationStatus status = VerificationStatus.verified,
+    required VerificationStatus status,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderSubtle),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 26,
-            backgroundColor: AppColors.primarySurface,
-            child: Text(
-              _initials(companyName),
-              style: const TextStyle(
-                fontFamily: AppTextStyles.fontFamily,
-                color: AppColors.primaryDarkAlt,
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Initials Avatar: Lingkaran putih bersih dengan inisial merah maroon
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
               ),
+            ],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            _initials(companyName),
+            style: const TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
+              color: Color(0xFF881337), // rose-900 / primaryDarkAlt
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                VerifiedBadge(status: status),
-                const SizedBox(height: 6),
-                Text(
-                  companyName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    color: AppColors.textMain,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                  ),
+        ),
+        const SizedBox(width: 14),
+        // Company Details
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                companyName,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: AppTextStyles.fontFamily,
+                  color: AppColors.textOnRed,
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  'ID: $developerId',
-                  style: const TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  Text(
+                    'ID: $developerId',
+                    style: TextStyle(
+                      fontFamily: AppTextStyles.fontFamily,
+                      color: AppColors.textOnRed.withValues(alpha: 0.85),
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.2,
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  if (status == VerificationStatus.verified)
+                    const VerifiedBadge(
+                      status: VerificationStatus.verified,
+                      inHeader: true,
+                    ),
+                ],
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -241,51 +286,83 @@ class ProfilScreen extends ConsumerWidget {
     required int selesai,
   }) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderSubtle),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)), // slate-200
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          _buildStatBox(value: total, label: 'Total Pengajuan'),
-          const SizedBox(width: 8),
-          _buildStatBox(value: dalamProses, label: 'Dalam Proses'),
-          const SizedBox(width: 8),
-          _buildStatBox(value: selesai, label: 'Selesai'),
+          _buildStatItem(
+            value: total,
+            label: 'Total Pengajuan',
+            valueColor: const Color(0xFF0F172A), // slate-900
+          ),
+          Container(
+            width: 1,
+            height: 32,
+            color: const Color(0xFFF1F5F9), // slate-100 vertical divider
+          ),
+          _buildStatItem(
+            value: dalamProses,
+            label: 'Dalam Proses',
+            valueColor: const Color(0xFFD97706), // amber-600
+          ),
+          Container(
+            width: 1,
+            height: 32,
+            color: const Color(0xFFF1F5F9), // slate-100 vertical divider
+          ),
+          _buildStatItem(
+            value: selesai,
+            label: 'Selesai',
+            valueColor: const Color(0xFF059669), // emerald-600
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatBox({required int value, required String label}) {
+  Widget _buildStatItem({
+    required int value,
+    required String label,
+    required Color valueColor,
+  }) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-        decoration: BoxDecoration(
-          color: AppColors.backgroundCanvas,
-          borderRadius: BorderRadius.circular(14),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               '$value',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: AppTextStyles.fontFamily,
-                color: AppColors.textMain,
+                color: valueColor,
                 fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w700,
+                height: 1.1,
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Text(
               label,
               textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontFamily: AppTextStyles.fontFamily,
-                color: AppColors.textSecondary,
+                color: AppColors.slate500,
                 fontSize: 11,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -295,13 +372,16 @@ class ProfilScreen extends ConsumerWidget {
   }
 
   Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontFamily: AppTextStyles.fontFamily,
-        fontSize: 14.5,
-        fontWeight: FontWeight.w700,
-        color: AppColors.slate800,
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontFamily: AppTextStyles.fontFamily,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: AppColors.slate500,
+        ),
       ),
     );
   }
@@ -311,7 +391,7 @@ class ProfilScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -330,9 +410,9 @@ class ProfilScreen extends ConsumerWidget {
           const Divider(
             height: 1,
             thickness: 1,
-            color: AppColors.borderSubtle,
-            indent: 16,
-            endIndent: 16,
+            color: Color(0xFFF1F5F9), // slate-100
+            indent: 14,
+            endIndent: 14,
           ),
           _buildAccountRow(
             icon: PhosphorIconsRegular.phone,
@@ -350,21 +430,18 @@ class ProfilScreen extends ConsumerWidget {
     required String value,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
-              color: AppColors.primarySurface,
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFF8FAFC), // slate-50
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFFF1F5F9)), // slate-100
             ),
-            child: Icon(
-              icon,
-              color: AppColors.primaryRed,
-              size: 20,
-            ),
+            child: Icon(icon, color: AppColors.slate500, size: 16),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -376,9 +453,9 @@ class ProfilScreen extends ConsumerWidget {
                   label,
                   style: const TextStyle(
                     fontFamily: AppTextStyles.fontFamily,
-                    fontSize: 11.5,
+                    fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
+                    color: Color(0xFF94A3B8), // slate-400
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -387,8 +464,8 @@ class ProfilScreen extends ConsumerWidget {
                   style: const TextStyle(
                     fontFamily: AppTextStyles.fontFamily,
                     fontSize: 13.5,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textMain,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.slate800,
                   ),
                 ),
               ],
@@ -404,7 +481,7 @@ class ProfilScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.03),
@@ -426,9 +503,9 @@ class ProfilScreen extends ConsumerWidget {
           const Divider(
             height: 1,
             thickness: 1,
-            color: AppColors.borderSubtle,
-            indent: 16,
-            endIndent: 16,
+            color: Color(0xFFF1F5F9), // slate-100
+            indent: 14,
+            endIndent: 14,
           ),
           _buildMenuRow(
             icon: PhosphorIconsRegular.lifebuoy,
@@ -438,9 +515,7 @@ class ProfilScreen extends ConsumerWidget {
                 context.push('/bantuan');
               } catch (_) {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const PusatBantuanScreen(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const PusatBantuanScreen()),
                 );
               }
             },
@@ -448,17 +523,15 @@ class ProfilScreen extends ConsumerWidget {
           const Divider(
             height: 1,
             thickness: 1,
-            color: AppColors.borderSubtle,
-            indent: 16,
-            endIndent: 16,
+            color: Color(0xFFF1F5F9), // slate-100
+            indent: 14,
+            endIndent: 14,
           ),
           _buildMenuRow(
             icon: PhosphorIconsRegular.info,
             title: 'Tentang Aplikasi Satu Rumah',
-            onTap: () => showUnavailableAction(
-              context,
-              'Tentang Aplikasi Satu Rumah',
-            ),
+            onTap: () =>
+                showUnavailableAction(context, 'Tentang Aplikasi Satu Rumah'),
           ),
         ],
       ),
@@ -476,20 +549,21 @@ class ProfilScreen extends ConsumerWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
-                  borderRadius: BorderRadius.circular(12),
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
                 ),
                 child: Icon(
                   icon,
-                  color: AppColors.primaryRed,
-                  size: 20,
+                  color: const Color(0xFF475569), // slate-600
+                  size: 16,
                 ),
               ),
               const SizedBox(width: 14),
@@ -499,14 +573,14 @@ class ProfilScreen extends ConsumerWidget {
                   style: const TextStyle(
                     fontFamily: AppTextStyles.fontFamily,
                     fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMain,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.slate800,
                   ),
                 ),
               ),
               const Icon(
                 PhosphorIconsRegular.caretRight,
-                color: AppColors.textTertiary,
+                color: Color(0xFF94A3B8), // slate-400
                 size: 16,
               ),
             ],
@@ -518,19 +592,19 @@ class ProfilScreen extends ConsumerWidget {
 
   Widget _buildLogoutButton(BuildContext context, WidgetRef ref) {
     return Material(
-      color: AppColors.primarySurfaceSoft,
-      borderRadius: BorderRadius.circular(14),
+      color: const Color(0xFFFFF1F2), // rose-50
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: () => _logout(context, ref),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(12),
         child: Container(
           width: double.infinity,
           height: 48,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: AppColors.primarySurfaceBorder,
-              width: 1.2,
+              color: const Color(0xFFFECDD3), // rose-200
+              width: 1,
             ),
           ),
           child: const Row(
@@ -538,8 +612,8 @@ class ProfilScreen extends ConsumerWidget {
             children: [
               Icon(
                 PhosphorIconsRegular.signOut,
-                color: AppColors.primaryRed,
-                size: 19,
+                color: Color(0xFFBE123C), // rose-700
+                size: 16,
               ),
               SizedBox(width: 8),
               Text(
@@ -547,8 +621,8 @@ class ProfilScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontFamily: AppTextStyles.fontFamily,
                   fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryRed,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFFBE123C), // rose-700
                 ),
               ),
             ],
@@ -566,19 +640,20 @@ class ProfilScreen extends ConsumerWidget {
           style: TextStyle(
             fontFamily: AppTextStyles.fontFamily,
             fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textTertiary,
-            letterSpacing: 0.2,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF94A3B8), // slate-400
+            letterSpacing: 0.5,
           ),
         ),
-        SizedBox(height: 3),
+        SizedBox(height: 4),
         Text(
           'Dinas Perumahan Rakyat dan Kawasan Permukiman Kota Tasikmalaya',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontFamily: AppTextStyles.fontFamily,
             fontSize: 11,
-            color: AppColors.textTertiary,
+            color: Color(0xFF94A3B8), // slate-400
+            height: 1.3,
           ),
         ),
       ],
@@ -614,4 +689,3 @@ class ProfilScreen extends ConsumerWidget {
     );
   }
 }
-
