@@ -75,9 +75,30 @@ void main() {
 
       expect(find.text('Pengaturan & Bantuan'), findsOneWidget);
       expect(find.text('Profil Perusahaan & Dokumen NIB'), findsOneWidget);
-      expect(find.text('Pusat Bantuan Disperwaskim'), findsOneWidget);
+      expect(find.text('Pusat Bantuan'), findsOneWidget);
       expect(find.text('Tentang Aplikasi Satu Rumah'), findsOneWidget);
       expect(find.text('Ubah Kata Sandi'), findsNothing);
+    });
+
+    testWidgets('tapping Pusat Bantuan opens PusatBantuanScreen and can navigate back', (tester) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+
+      final bantuanMenu = find.text('Pusat Bantuan');
+      await tester.ensureVisible(bantuanMenu);
+      await tester.pumpAndSettle();
+      await tester.tap(bantuanMenu);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Panduan dan kontak layanan Disperwaskim'),
+        findsOneWidget,
+      );
+
+      // Tap back button
+      await tester.tap(find.bySemanticsLabel('Kembali'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pengaturan & Bantuan'), findsOneWidget);
     });
 
     testWidgets('renders logout button and footer text', (tester) async {

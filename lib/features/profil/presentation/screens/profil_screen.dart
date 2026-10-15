@@ -10,6 +10,7 @@ import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
+import '../../../bantuan/presentation/screens/pusat_bantuan_screen.dart';
 
 const double profileCardOverlap = 34.0;
 
@@ -431,11 +432,18 @@ class ProfilScreen extends ConsumerWidget {
           ),
           _buildMenuRow(
             icon: PhosphorIconsRegular.lifebuoy,
-            title: 'Pusat Bantuan Disperwaskim',
-            onTap: () => showUnavailableAction(
-              context,
-              'Pusat Bantuan Disperwaskim',
-            ),
+            title: 'Pusat Bantuan',
+            onTap: () {
+              try {
+                context.push('/bantuan');
+              } catch (_) {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const PusatBantuanScreen(),
+                  ),
+                );
+              }
+            },
           ),
           const Divider(
             height: 1,

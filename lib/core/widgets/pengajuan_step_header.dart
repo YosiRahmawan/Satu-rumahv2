@@ -6,6 +6,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_radii.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
+import 'panduan_pengajuan_dialog.dart';
 
 /// Canonical hero header component for the multi-step Pengembang submission flow.
 ///
@@ -40,29 +41,7 @@ class PengajuanStepHeader extends StatelessWidget {
   }
 
   void _showHelpDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.help_outline, color: AppColors.primaryRed),
-            SizedBox(width: AppSpacing.sm),
-            Text('Panduan Pengajuan', style: AppTextStyles.titleMedium),
-          ],
-        ),
-        content: const Text(
-          'Lengkapi data PT dan permohonan site plan pada langkah ini. '
-          'Seluruh berkas administrasi dan gambar teknis akan diunggah pada langkah berikutnya.',
-          style: AppTextStyles.bodyMedium,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Mengerti', style: TextStyle(color: AppColors.primaryRed)),
-          ),
-        ],
-      ),
-    );
+    PanduanPengajuanDialog.show(context);
   }
 
   Widget _buildCircularButton({

@@ -5,12 +5,12 @@ import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
-import '../../../../core/widgets/route_feedback.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../../pengajuan/presentation/screens/jadwal_survey_screen.dart';
 import '../../../pengajuan/presentation/screens/unduh_sk_ba_screen.dart';
 import '../../../pengajuan/presentation/screens/template_berkas_screen.dart';
+import '../../../bantuan/presentation/screens/pusat_bantuan_screen.dart';
 import '../providers/dashboard_provider.dart';
 
 Pengajuan? latestPengajuan(List<Pengajuan> submissions) {
@@ -540,8 +540,18 @@ class _MenuLayananPengembangSection extends ConsumerWidget {
                   child: _MenuLayananCard(
                     icon: Icons.help_outline_rounded,
                     title: 'Pusat Bantuan',
-                    subtitle: 'SOP & Layanan Dinas Perkim',
-                    onTap: () => showUnavailableAction(context, 'Pusat Bantuan'),
+                    subtitle: 'Panduan dan kontak layanan',
+                    onTap: () {
+                      try {
+                        context.push('/bantuan');
+                      } catch (_) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const PusatBantuanScreen(),
+                          ),
+                        );
+                      }
+                    },
                   ),
                 ),
               ],

@@ -118,7 +118,7 @@ void main() {
       expect(find.text('File persetujuan PDF resmi'), findsOneWidget);
 
       expect(find.text('Pusat Bantuan'), findsOneWidget);
-      expect(find.text('SOP & Layanan Dinas Perkim'), findsOneWidget);
+      expect(find.text('Panduan dan kontak layanan'), findsOneWidget);
 
       // Verify each card height is at least 162dp
       for (final title in [
@@ -182,14 +182,22 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Menu Layanan Pengembang'), findsOneWidget);
 
-      // 4. Pusat Bantuan shows unavailable action safe feedback
+      // 4. Pusat Bantuan opens PusatBantuanScreen and can navigate back
       final bantuanCard = find.text('Pusat Bantuan');
       await tester.ensureVisible(bantuanCard);
       await tester.pumpAndSettle();
       await tester.tap(bantuanCard);
       await tester.pumpAndSettle();
 
-      expect(find.text('Pusat Bantuan belum tersedia di prototipe lokal.'), findsOneWidget);
+      expect(
+        find.text('Panduan dan kontak layanan Disperwaskim'),
+        findsOneWidget,
+      );
+
+      // Tap back button
+      await tester.tap(find.bySemanticsLabel('Kembali'));
+      await tester.pumpAndSettle();
+      expect(find.text('Menu Layanan Pengembang'), findsOneWidget);
     });
 
     testWidgets('renders without overflow on 360px viewport', (tester) async {
