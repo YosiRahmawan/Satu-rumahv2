@@ -22,7 +22,7 @@ void main() {
   }
 
   group('ProfilScreen (Profil Pengembang) Visual & Functional Target Tests', () {
-    testWidgets('renders header merah with title, subtitle, and terverifikasi badge', (tester) async {
+    testWidgets('renders header merah with title and subtitle', (tester) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -31,17 +31,18 @@ void main() {
         find.text('Kelola informasi perusahaan dan pengaturan akun'),
         findsOneWidget,
       );
-      expect(find.text('Terverifikasi'), findsOneWidget);
     });
 
-    testWidgets('renders identity card with initials, company name, ID, and Aktif badge', (tester) async {
+    testWidgets('renders identity card with initials, Terverifikasi badge, company name, and ID without Aktif badge', (tester) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
       expect(find.text('TI'), findsOneWidget);
+      expect(find.text('Terverifikasi'), findsOneWidget);
+      expect(find.byIcon(Icons.verified_rounded), findsOneWidget);
       expect(find.text('PT. Tasik Indah Sentosa'), findsOneWidget);
       expect(find.text('ID: Dev-2026-082'), findsOneWidget);
-      expect(find.text('Aktif'), findsOneWidget);
+      expect(find.text('Aktif'), findsNothing);
     });
 
     testWidgets('renders statistics: Total Pengajuan, Dalam Proses, Selesai', (tester) async {
@@ -68,15 +69,15 @@ void main() {
       expect(find.text('0812-9876-5432'), findsOneWidget);
     });
 
-    testWidgets('renders Section Pengaturan & Bantuan with all required menu options', (tester) async {
+    testWidgets('renders Section Pengaturan & Bantuan with menu options (without Ubah Kata Sandi)', (tester) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
       expect(find.text('Pengaturan & Bantuan'), findsOneWidget);
       expect(find.text('Profil Perusahaan & Dokumen NIB'), findsOneWidget);
-      expect(find.text('Ubah Kata Sandi'), findsOneWidget);
       expect(find.text('Pusat Bantuan Disperwaskim'), findsOneWidget);
       expect(find.text('Tentang Aplikasi Satu Rumah'), findsOneWidget);
+      expect(find.text('Ubah Kata Sandi'), findsNothing);
     });
 
     testWidgets('renders logout button and footer text', (tester) async {

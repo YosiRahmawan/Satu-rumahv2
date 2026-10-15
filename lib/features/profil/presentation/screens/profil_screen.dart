@@ -11,8 +11,68 @@ import '../../../../core/widgets/route_feedback.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 
+const double profileCardOverlap = 34.0;
+
+enum VerificationStatus { verified, pending }
+
+/// Badge status verifikasi perusahaan (gaya glass terang).
+class VerifiedBadge extends StatelessWidget {
+  const VerifiedBadge({super.key, this.status = VerificationStatus.verified});
+
+  final VerificationStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final verified = status == VerificationStatus.verified;
+    const emeraldColor = Color(0xFF059669);
+    const amberColor = Color(0xFFF59E0B);
+    const amberTextColor = Color(0xFFB45309);
+    final color = verified ? emeraldColor : amberColor;
+    final textColor = verified ? emeraldColor : amberTextColor;
+    final label = verified ? 'Terverifikasi' : 'Menunggu Verifikasi';
+    final icon = verified ? Icons.verified_rounded : Icons.schedule_rounded;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ProfilScreen extends ConsumerWidget {
   const ProfilScreen({super.key});
+
+  static String _initials(String name) {
+    final words = name
+        .replaceFirst(RegExp(r'^(PT|CV)\.?\s+', caseSensitive: false), '')
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+    if (words.isEmpty) return '?';
+    final second = words.length > 1 ? words[1][0] : '';
+    return (words.first[0] + second).toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -23,31 +83,41 @@ class ProfilScreen extends ConsumerWidget {
         .length;
     final dalamProses = total - selesai;
 
+    // Sumber data identitas pengembang
+    final companyName = pengajuan.isNotEmpty
+        ? pengajuan.first.namaPt
+        : 'PT. Tasik Indah Sentosa';
+    const developerId = 'Dev-2026-082';
+    const verificationStatus = VerificationStatus.verified;
+
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Header Merah
+            // 1. Header Merah Kanonis
             const DeveloperHeader(
               pageTitle: 'Profil Pengembang',
               pageSubtitle: 'Kelola informasi perusahaan dan pengaturan akun',
-              isVerified: true,
               showAvatar: false,
-              bottomPadding: 40,
+              bottomPadding: 52,
             ),
 
-            // Konten kartu yang bertumpuk halus dengan header merah
+            // Konten kartu yang overlap 34dp dengan header merah
             Transform.translate(
-              offset: const Offset(0, -20),
+              offset: const Offset(0, -34), // profileCardOverlap = 34.0
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 2. Card Identitas Pengembang
-                    _buildIdentityCard(),
+                    // 2. Card Identitas Pengembang (Badge verifikasi di atas nama PT, tanpa chip Aktif)
+                    _buildIdentityCard(
+                      companyName: companyName,
+                      developerId: developerId,
+                      status: verificationStatus,
+                    ),
 
                     const SizedBox(height: 12),
 
@@ -82,7 +152,8 @@ class ProfilScreen extends ConsumerWidget {
                     // 7. Footer
                     _buildFooter(),
 
-                    const SizedBox(height: 24),
+                    // Spacing ekstra di bawah agar footer tidak tertutup bottom bar & docked FAB
+                    const SizedBox(height: 96),
                   ],
                 ),
               ),
@@ -93,90 +164,69 @@ class ProfilScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildIdentityCard() {
+  Widget _buildIdentityCard({
+    required String companyName,
+    required String developerId,
+    VerificationStatus status = VerificationStatus.verified,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderSubtle),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
-          // Avatar "TI"
-          Container(
-            width: 48,
-            height: 48,
-            decoration: const BoxDecoration(
-              color: AppColors.primarySurface,
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              'TI',
-              style: TextStyle(
+          CircleAvatar(
+            radius: 26,
+            backgroundColor: AppColors.primarySurface,
+            child: Text(
+              _initials(companyName),
+              style: const TextStyle(
                 fontFamily: AppTextStyles.fontFamily,
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
                 color: AppColors.primaryDarkAlt,
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
           const SizedBox(width: 14),
-
-          // Nama & ID
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
+                VerifiedBadge(status: status),
+                const SizedBox(height: 6),
                 Text(
-                  'PT. Tasik Indah Sentosa',
-                  style: TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    fontSize: 15.5,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textMain,
-                  ),
-                  maxLines: 1,
+                  companyName,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 3),
-                Text(
-                  'ID: Dev-2026-082',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontFamily: AppTextStyles.fontFamily,
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
+                    color: AppColors.textMain,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'ID: $developerId',
+                  style: const TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
                     color: AppColors.textSecondary,
+                    fontSize: 12,
                   ),
                 ),
               ],
-            ),
-          ),
-
-          // Badge "Aktif"
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.statusSuccessSurface,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const Text(
-              'Aktif',
-              style: TextStyle(
-                fontFamily: AppTextStyles.fontFamily,
-                fontSize: 11.5,
-                fontWeight: FontWeight.w600,
-                color: AppColors.statusSuccessText,
-              ),
             ),
           ),
         ],
@@ -192,66 +242,53 @@ class ProfilScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderSubtle, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.borderSubtle),
       ),
       child: Row(
         children: [
-          Expanded(
-            child: _buildStatItem('$total', 'Total Pengajuan'),
-          ),
+          _buildStatBox(value: total, label: 'Total Pengajuan'),
           const SizedBox(width: 8),
-          Expanded(
-            child: _buildStatItem('$dalamProses', 'Dalam Proses'),
-          ),
+          _buildStatBox(value: dalamProses, label: 'Dalam Proses'),
           const SizedBox(width: 8),
-          Expanded(
-            child: _buildStatItem('$selesai', 'Selesai'),
-          ),
+          _buildStatBox(value: selesai, label: 'Selesai'),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem(String count, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundCanvas,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            count,
-            style: const TextStyle(
-              fontFamily: AppTextStyles.fontFamily,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textMain,
+  Widget _buildStatBox({required int value, required String label}) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundCanvas,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            Text(
+              '$value',
+              style: const TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
+                color: AppColors.textMain,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontFamily: AppTextStyles.fontFamily,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textSecondary,
+            const SizedBox(height: 2),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
+                color: AppColors.textSecondary,
+                fontSize: 11,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -263,7 +300,7 @@ class ProfilScreen extends ConsumerWidget {
         fontFamily: AppTextStyles.fontFamily,
         fontSize: 14.5,
         fontWeight: FontWeight.w700,
-        color: AppColors.slate700,
+        color: AppColors.slate800,
       ),
     );
   }
@@ -271,7 +308,7 @@ class ProfilScreen extends ConsumerWidget {
   Widget _buildAccountCard() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderSubtle, width: 1),
         boxShadow: [
@@ -364,7 +401,7 @@ class ProfilScreen extends ConsumerWidget {
   Widget _buildMenuCard(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.borderSubtle, width: 1),
         boxShadow: [
@@ -383,21 +420,6 @@ class ProfilScreen extends ConsumerWidget {
             onTap: () => showUnavailableAction(
               context,
               'Profil Perusahaan & Dokumen NIB',
-            ),
-          ),
-          const Divider(
-            height: 1,
-            thickness: 1,
-            color: AppColors.borderSubtle,
-            indent: 16,
-            endIndent: 16,
-          ),
-          _buildMenuRow(
-            icon: PhosphorIconsRegular.clockCounterClockwise,
-            title: 'Ubah Kata Sandi',
-            onTap: () => showUnavailableAction(
-              context,
-              'Ubah Kata Sandi',
             ),
           ),
           const Divider(

@@ -450,20 +450,21 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
               if (widget.isFilteredEmpty && widget.onReset != null) ...[
                 const SizedBox(height: 24),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 270),
+                  constraints: const BoxConstraints(maxWidth: 300),
                   child: Column(
                     children: [
                       ElevatedButton(
                         onPressed: _isLoading ? null : _handleReset,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryRed,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                              AppColors.primaryRed.withValues(alpha: 0.7),
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF0F172A),
+                          disabledBackgroundColor: Colors.white,
+                          disabledForegroundColor:
+                              const Color(0xFF0F172A).withValues(alpha: 0.6),
                           elevation: 1,
-                          shadowColor:
-                              AppColors.primaryRed.withValues(alpha: 0.25),
-                          minimumSize: const Size(double.infinity, 48),
+                          shadowColor: const Color(0x1A0F172A),
+                          side: const BorderSide(color: Color(0xFFE2E8F0)),
+                          minimumSize: const Size(double.infinity, 46),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -477,25 +478,26 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
                               RotationTransition(
                                 turns: _rotationController,
                                 child: const Icon(
-                                  Icons.rotate_left_rounded,
+                                  Icons.refresh_rounded,
                                   size: 18,
-                                  color: Colors.white,
+                                  color: Color(0xFF0F172A),
                                 ),
                               )
                             else
                               const Icon(
-                                Icons.rotate_left_rounded,
+                                Icons.refresh_rounded,
                                 size: 18,
-                                color: Colors.white,
+                                color: Color(0xFF0F172A),
                               ),
                             const SizedBox(width: 8),
-                            Flexible(
+                            const Flexible(
                               child: Text(
                                 'Reset pencarian dan filter',
-                                style: AppTextStyles.labelMedium.copyWith(
-                                  color: Colors.white,
+                                style: TextStyle(
+                                  fontFamily: 'Plus Jakarta Sans',
+                                  color: Color(0xFF0F172A),
                                   fontWeight: FontWeight.w600,
-                                  fontSize: 13,
+                                  fontSize: 14,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
