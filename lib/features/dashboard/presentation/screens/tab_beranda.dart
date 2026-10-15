@@ -82,6 +82,7 @@ class TabBeranda extends ConsumerWidget {
                     avatarTooltip: 'Buka profil',
                     onAvatarTap: () =>
                         ref.read(dashboardTabProvider.notifier).state = 3,
+                    bottomPadding: 24.0,
                   ),
 
                   // 2. GAP 16dp antara header dan card identitas
@@ -101,7 +102,7 @@ class TabBeranda extends ConsumerWidget {
                   const _MenuLayananPengembangSection(),
 
                   // Bottom padding for docked FAB & bar
-                  const SizedBox(height: 80),
+                  const SizedBox(height: 96),
                 ],
               ),
             ),

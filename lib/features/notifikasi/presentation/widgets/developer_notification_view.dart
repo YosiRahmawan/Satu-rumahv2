@@ -52,13 +52,15 @@ class DeveloperNotificationView extends StatelessWidget {
                 showOnlineIndicator: showOnlineIndicator,
                 avatarTooltip: 'Buka profil',
                 onAvatarTap: onAvatarTap,
-                bottomPadding: 20.0,
+                bottomPadding: 24.0,
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: AppSpacing.sm,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg + AppSpacing.xs,
+                AppSpacing.lg,
+                AppSpacing.lg + AppSpacing.xs,
+                AppSpacing.sm,
               ),
               sliver: SliverToBoxAdapter(
                 child: Column(
@@ -139,7 +141,9 @@ class DeveloperNotificationView extends StatelessWidget {
               ),
             ),
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg + AppSpacing.xs,
+              ),
               sliver: SliverToBoxAdapter(
                 child: AnimatedSwitcher(
                   duration: MediaQuery.disableAnimationsOf(context)
@@ -190,7 +194,7 @@ class DeveloperNotificationView extends StatelessWidget {
             // Keep the final item clear of the dashboard's docked FAB.
             SliverToBoxAdapter(
               child: SizedBox(
-                height: AppSpacing.xxl + MediaQuery.paddingOf(context).bottom,
+                height: 96.0 + MediaQuery.paddingOf(context).bottom,
               ),
             ),
           ],

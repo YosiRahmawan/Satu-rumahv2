@@ -62,19 +62,19 @@ class PengajuanSayaListScreen extends ConsumerWidget {
           const SliverToBoxAdapter(child: SizedBox(height: 16.0)),
           if (items.isEmpty)
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg + AppSpacing.xs),
               sliver: SliverToBoxAdapter(
                 child: PengajuanListSummary(items: items),
               ),
             ),
           const SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg + AppSpacing.xs),
             sliver: SliverToBoxAdapter(child: PengajuanListFilters()),
           ),
           if (filtered.isEmpty)
             SliverPadding(
               padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
+                horizontal: AppSpacing.lg + AppSpacing.xs,
                 vertical: AppSpacing.md,
               ),
               sliver: SliverToBoxAdapter(
@@ -89,7 +89,7 @@ class PengajuanSayaListScreen extends ConsumerWidget {
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg + AppSpacing.xs),
               sliver: SliverList.builder(
                 itemCount: visible.length,
                 itemBuilder: (context, index) {
@@ -178,7 +178,7 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                           ),
                         ),
                       Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
                         child: PengajuanListCard(
                           key: ValueKey(item.id),
                           item: item,
@@ -195,9 +195,9 @@ class PengajuanSayaListScreen extends ConsumerWidget {
           if (filtered.isNotEmpty)
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg,
+                AppSpacing.lg + AppSpacing.xs,
                 AppSpacing.sm,
-                AppSpacing.lg,
+                AppSpacing.lg + AppSpacing.xs,
                 110.0,
               ),
               sliver: SliverToBoxAdapter(
@@ -245,7 +245,7 @@ class PengajuanSayaListScreen extends ConsumerWidget {
               ),
             )
           else
-            const SliverToBoxAdapter(child: SizedBox(height: 110.0)),
+            const SliverToBoxAdapter(child: SizedBox(height: 96.0)),
         ],
       ),
     );
