@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/auth/role_session.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_loading_spinner.dart';
@@ -1671,7 +1672,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                                 ),
                                 SizedBox(width: 6),
                                 Text(
-                                  'v2.4.0 Build 2026',
+                                  'v${AppConfig.appVersion} ${AppConfig.appBuild}',
                                   style: TextStyle(
                                     fontFamily: AppTextStyles.fontFamily,
                                     fontSize: 10,

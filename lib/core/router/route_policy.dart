@@ -34,7 +34,8 @@ AppRole? _requiredRole(String path) {
       path == '/jadwal-survey' ||
       path == '/unduh-sk-ba' ||
       path == '/template-berkas' ||
-      path == '/bantuan') {
+      path == '/bantuan' ||
+      path == '/tentang') {
     return AppRole.developer;
   }
   if (path == '/admin' || path.startsWith('/admin/')) return AppRole.admin;

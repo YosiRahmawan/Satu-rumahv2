@@ -1,3 +1,4 @@
+import '../../../../core/config/app_config.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -80,7 +81,7 @@ class TabProfilMonitoring extends ConsumerWidget {
         ref.read(roleSessionProvider.notifier).signOut();
         context.go('/login');
       },
-      footerText: 'SATU RUMAH · Versi 1.0.0 (Build 2026)',
+      footerText: '${AppConfig.appName} · ${AppConfig.versionLabel}',
     );
   }
 }

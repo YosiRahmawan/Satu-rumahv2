@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../../../core/auth/role_session.dart';
+import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/developer_header.dart';
@@ -530,8 +531,7 @@ class ProfilScreen extends ConsumerWidget {
           _buildMenuRow(
             icon: PhosphorIconsRegular.info,
             title: 'Tentang Aplikasi Satu Rumah',
-            onTap: () =>
-                showUnavailableAction(context, 'Tentang Aplikasi Satu Rumah'),
+            onTap: () => context.push('/tentang'),
           ),
         ],
       ),
@@ -636,7 +636,7 @@ class ProfilScreen extends ConsumerWidget {
     return const Column(
       children: [
         Text(
-          'SATU RUMAH • v1.0.0 (Build 2026)',
+          '${AppConfig.appName} • v${AppConfig.appVersion} (${AppConfig.appBuild})',
           style: TextStyle(
             fontFamily: AppTextStyles.fontFamily,
             fontSize: 11,
