@@ -38,9 +38,6 @@ void main() {
     expect(find.text(AppConfig.appName), findsOneWidget);
     expect(find.text('Sistem Aplikasi Terpadu Urusan Rumah'), findsOneWidget);
     expect(find.text(AppConfig.versionLabel), findsOneWidget);
-    expect(find.text('Pengembang'), findsOneWidget);
-    expect(find.text('Admin Disperwaskim'), findsOneWidget);
-    expect(find.text('Tim Perwaskim Lapangan'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('© 2025–2026 Pemerintah Kota Tasikmalaya'),
@@ -49,6 +46,36 @@ void main() {
     );
     expect(find.text('Diskominfo Kota Tasikmalaya'), findsOneWidget);
     expect(find.text('Disperwaskim'), findsOneWidget);
+  });
+
+  testWidgets('menjelaskan alur singkat dan tugas tiap peran', (tester) async {
+    await pump(tester);
+    final scroll = find.byType(Scrollable).first;
+
+    await tester.scrollUntilVisible(
+      find.text('Satu pengajuan melewati tiga peran secara berurutan.'),
+      200,
+      scrollable: scroll,
+    );
+    expect(find.textContaining('mengajukan berkas'), findsOneWidget);
+    expect(find.textContaining('mengelola persetujuan'), findsOneWidget);
+
+    for (final text in [
+      'Pengembang',
+      'Di aplikasi ini, Anda bisa',
+      'Mengirim ulang berkas yang diminta diperbaiki',
+      'Admin Disperwaskim',
+      'Menjadwalkan survey dan menugaskan petugas lapangan',
+      'Tim Perwaskim Lapangan',
+      'Menyusun Berita Acara hasil survey',
+    ]) {
+      await tester.scrollUntilVisible(
+        find.text(text),
+        200,
+        scrollable: scroll,
+      );
+      expect(find.text(text), findsOneWidget);
+    }
   });
 
   testWidgets('tombol kembali tanpa riwayat menuju Beranda', (tester) async {

@@ -50,24 +50,55 @@ class TentangAplikasiScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
+                _sectionTitle('Cara kerjanya singkat'),
+                const Text(
+                  'Satu pengajuan melewati tiga peran secara berurutan.',
+                  style: TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
+                    fontSize: 14,
+                    height: 1.7,
+                    color: AppColors.textMain,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const _AlurSingkat(),
+                const SizedBox(height: 32),
                 _sectionTitle('Siapa yang memakai'),
-                _card(const [
-                  _InfoRow(
-                    icon: PhosphorIconsRegular.buildings,
-                    title: 'Pengembang',
-                    subtitle: 'Mengajukan berkas dan memantau statusnya',
-                  ),
-                  _InfoRow(
-                    icon: PhosphorIconsRegular.sealCheck,
-                    title: 'Admin Disperwaskim',
-                    subtitle: 'Memeriksa berkas dan mengatur jadwal survey',
-                  ),
-                  _InfoRow(
-                    icon: PhosphorIconsRegular.mapPin,
-                    title: 'Tim Perwaskim Lapangan',
-                    subtitle: 'Survey lokasi dan menyusun Berita Acara',
-                  ),
-                ]),
+                const _PeranCard(
+                  icon: PhosphorIconsRegular.buildings,
+                  title: 'Pengembang',
+                  subtitle: 'Perusahaan yang menyerahkan PSU perumahan',
+                  label: 'Di aplikasi ini, Anda bisa',
+                  points: [
+                    'Mengisi pengajuan dalam 5 langkah dan mengunggah berkas',
+                    'Memantau status pengajuan dan membaca catatan perbaikan',
+                    'Mengirim ulang berkas yang diminta diperbaiki',
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const _PeranCard(
+                  icon: PhosphorIconsRegular.sealCheck,
+                  title: 'Admin Disperwaskim',
+                  subtitle: 'Petugas dinas yang memproses pengajuan',
+                  label: 'Tugasnya',
+                  points: [
+                    'Memeriksa berkas, lalu menyetujui, meminta perbaikan, atau menolak',
+                    'Menjadwalkan survey dan menugaskan petugas lapangan',
+                    'Mengelola alur persetujuan sampai selesai',
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const _PeranCard(
+                  icon: PhosphorIconsRegular.mapPin,
+                  title: 'Tim Perwaskim Lapangan',
+                  subtitle: 'Petugas yang turun langsung ke lokasi',
+                  label: 'Tugasnya',
+                  points: [
+                    'Survey fisik PSU dan mencatat temuan di lapangan',
+                    'Mengambil foto bukti',
+                    'Menyusun Berita Acara hasil survey',
+                  ],
+                ),
                 const SizedBox(height: 32),
                 _sectionTitle('Dikembangkan oleh'),
                 _card(const [
@@ -253,9 +284,8 @@ class TentangAplikasiScreen extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({this.icon, required this.title, required this.subtitle});
+  const _InfoRow({required this.title, required this.subtitle});
 
-  final IconData? icon;
   final String title;
   final String subtitle;
 
@@ -263,47 +293,224 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (icon != null) ...[
-            Container(
-              width: 38,
-              height: 38,
-              decoration: const BoxDecoration(
-                color: AppColors.primarySurfaceSoft,
-                borderRadius: AppRadii.control,
-              ),
-              child: Icon(icon, size: 20, color: AppColors.primaryRed),
-            ),
-            const SizedBox(width: 14),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMain,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    fontSize: 13,
-                    height: 1.5,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+          Text(
+            title,
+            style: const TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMain,
             ),
           ),
+          const SizedBox(height: 2),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
+              fontSize: 13,
+              height: 1.5,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Empat langkah alur pengajuan, urutannya mengikuti README.
+class _AlurSingkat extends StatelessWidget {
+  const _AlurSingkat();
+
+  static const _steps = [
+    ('Pengembang', ' mengajukan berkas'),
+    ('Admin Disperwaskim', ' memeriksa berkas dan menjadwalkan survey'),
+    ('Tim Perwaskim Lapangan', ' survey lokasi dan menyusun Berita Acara'),
+    ('Admin', ' mengelola persetujuan sampai selesai'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final children = <Widget>[];
+    for (var i = 0; i < _steps.length; i++) {
+      if (i > 0) {
+        children.add(
+          Container(
+            width: 1,
+            height: 12,
+            margin: const EdgeInsets.fromLTRB(10, 3, 0, 3),
+            color: AppColors.borderSubtle,
+          ),
+        );
+      }
+      children.add(
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              margin: const EdgeInsets.only(top: 1),
+              decoration: const BoxDecoration(
+                color: AppColors.primarySurface,
+                shape: BoxShape.circle,
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                '${i + 1}',
+                style: const TextStyle(
+                  fontFamily: AppTextStyles.fontFamily,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: _steps[i].$1,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    TextSpan(text: _steps[i].$2),
+                  ],
+                ),
+                style: const TextStyle(
+                  fontFamily: AppTextStyles.fontFamily,
+                  fontSize: 13,
+                  height: 1.5,
+                  color: AppColors.textMain,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Column(children: children),
+    );
+  }
+}
+
+/// Kartu satu peran: siapa dia, lalu daftar tugasnya di aplikasi.
+class _PeranCard extends StatelessWidget {
+  const _PeranCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.label,
+    required this.points,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String label;
+  final List<String> points;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: const BoxDecoration(
+                  color: AppColors.primarySurfaceSoft,
+                  borderRadius: AppRadii.control,
+                ),
+                child: Icon(icon, size: 20, color: AppColors.primaryRed),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontFamily: AppTextStyles.fontFamily,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMain,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontFamily: AppTextStyles.fontFamily,
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          for (var i = 0; i < points.length; i++)
+            Padding(
+              padding: EdgeInsets.only(bottom: i == points.length - 1 ? 0 : 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '•',
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: AppColors.primaryRed,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      points[i],
+                      style: const TextStyle(
+                        fontFamily: AppTextStyles.fontFamily,
+                        fontSize: 13,
+                        height: 1.5,
+                        color: AppColors.textMain,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
