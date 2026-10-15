@@ -10,6 +10,7 @@ import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_loading_spinner.dart';
+import '../../../dashboard/presentation/screens/tab_beranda.dart';
 
 /// Screen Login SATU RUMAH V2 dengan desain hero food-grade visual & motion entrance
 /// terkoordinasi sesuai spesifikasi Google Stitch.
@@ -2310,84 +2311,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 
   Widget _buildDeveloperSubsequentPreview() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.borderSubtle),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'PENGAJUAN TERAKHIR',
-                      style: TextStyle(
-                        fontFamily: AppTextStyles.fontFamily,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.slate500,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        '● Dalam Proses',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFD97706),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Perumahan Green Tasik',
-                  style: TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textMain,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Tahap: Verifikasi Administrasi Dokumen (Langkah 2 dari 4)',
-                  style: TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: const LinearProgressIndicator(
-                    value: 0.4,
-                    minHeight: 6,
-                    backgroundColor: Color(0xFFF1F5F9),
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryRed),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          const Row(
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PengajuanTerakhirCard(
+          projectName: 'Perumahan Green Tasik',
+          regNumber: 'REG-2026-0142',
+        ),
+        SizedBox(height: 18),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.0),
+          child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
@@ -2409,8 +2343,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

@@ -242,9 +242,33 @@ class _PengajuanTerakhirCard extends StatelessWidget {
         : 'REG - TSK-2026-084';
     final targetId = submission?.id ?? 'REG-TSK-2026-084';
 
+    return PengajuanTerakhirCard(
+      projectName: projectName,
+      regNumber: regNumber,
+      onTap: () => context.push('/pengajuan/detail/$targetId'),
+    );
+  }
+}
+
+/// Kartu "Pengajuan Terakhir" bersama (Beranda dan preview login).
+class PengajuanTerakhirCard extends StatelessWidget {
+  final String projectName;
+  final String regNumber;
+  final VoidCallback? onTap;
+
+  const PengajuanTerakhirCard({
+    super.key,
+    required this.projectName,
+    required this.regNumber,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Container(
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -257,126 +281,79 @@ class _PengajuanTerakhirCard extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Baris atas: Label & Status chip
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'PENGAJUAN TERAKHIR',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
-                    letterSpacing: 0.6,
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.statusWarningSurface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFFDE68A)),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.circle,
+                    size: 6,
+                    color: AppColors.statusWarningText,
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEF9C3),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFFFDE68A),
-                      width: 1,
+                  SizedBox(width: 6),
+                  Text(
+                    'Dalam Proses',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.statusWarningText,
                     ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Color(0xFFEAB308),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        'Dalam Proses',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFFB45309),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: 12),
-
-            // Nama proyek & Nomor registrasi
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                Expanded(
-                  child: Text(
-                    projectName,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textMain,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  regNumber,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+            const Text(
+              'PENGAJUAN TERAKHIR',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.6,
+              ),
             ),
             const SizedBox(height: 4),
-            const Text(
-              'Tahap: Verifikasi Administrasi Dokumen (Langkah 2 dari 4)',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: AppColors.textSecondary,
+            Text(
+              projectName,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMain,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
+            const SizedBox(height: 2),
+            Text(
+              regNumber,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11.5,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Tahap: Verifikasi Administrasi Dokumen (Langkah 2 dari 4)',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
             const SizedBox(height: 14),
-
-            // Progress labels & bar
-            const Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Progres kelengkapan (40%)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textMain,
-                  ),
-                ),
-                Text(
-                  'Verifikasi Tahap 2',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryRed,
-                  ),
-                ),
-              ],
+            const Text(
+              'Progres kelengkapan (40%)',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMain,
+              ),
             ),
             const SizedBox(height: 8),
             ClipRRect(
@@ -389,24 +366,32 @@ class _PengajuanTerakhirCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-
-            // CTA: "[description_outlined] Cek Detail ->"
-            Align(
-              alignment: Alignment.centerRight,
+            Material(
+              color: AppColors.primarySurfaceSoft,
+              borderRadius: BorderRadius.circular(12),
               child: InkWell(
-                onTap: () {
-                  context.push('/pengajuan/detail/$targetId');
-                },
-                borderRadius: BorderRadius.circular(8),
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(12),
                 child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                  child: Text(
-                    'Cek Detail',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primaryRed,
-                    ),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        size: 16,
+                        color: AppColors.primaryRed,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Cek Detail',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryRed,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

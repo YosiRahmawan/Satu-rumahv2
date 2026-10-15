@@ -96,7 +96,6 @@ void main() {
       expect(find.text('REG - TSK-2026-084'), findsOneWidget);
       expect(find.text('Tahap: Verifikasi Administrasi Dokumen (Langkah 2 dari 4)'), findsOneWidget);
       expect(find.text('Progres kelengkapan (40%)'), findsOneWidget);
-      expect(find.text('Verifikasi Tahap 2'), findsOneWidget);
       expect(find.text('Cek Detail'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
     });
