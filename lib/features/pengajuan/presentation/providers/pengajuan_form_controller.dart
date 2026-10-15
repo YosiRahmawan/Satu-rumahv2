@@ -137,9 +137,13 @@ class PengajuanFormState {
   final String namaPerumahan;
   final String alamatProyek;
   final String npwpPerusahaan;
+  final bool npwpVerified;
   final double luasLahan;
   final int jumlahUnit;
   final String tipePerumahan;
+
+  /// Opsional: paket daya PLN per unit, kosong bila tidak dipilih.
+  final String dayaListrik;
   final Map<String, String> uploadedDocs;
 
   /// File references for slots that support more than one local attachment.
@@ -159,9 +163,11 @@ class PengajuanFormState {
     this.namaPerumahan = '',
     this.alamatProyek = '',
     this.npwpPerusahaan = '',
+    this.npwpVerified = false,
     this.luasLahan = 0.0,
     this.jumlahUnit = 0,
     this.tipePerumahan = 'Subsidi',
+    this.dayaListrik = '',
     this.uploadedDocs = const {},
     this.multiUploadedDocs = const {},
     this.technicalFiles = const [],
@@ -202,9 +208,11 @@ class PengajuanFormState {
     String? namaPerumahan,
     String? alamatProyek,
     String? npwpPerusahaan,
+    bool? npwpVerified,
     double? luasLahan,
     int? jumlahUnit,
     String? tipePerumahan,
+    String? dayaListrik,
     Map<String, String>? uploadedDocs,
     Map<String, List<String>>? multiUploadedDocs,
     List<String>? technicalFiles,
@@ -216,9 +224,11 @@ class PengajuanFormState {
       namaPerumahan: namaPerumahan ?? this.namaPerumahan,
       alamatProyek: alamatProyek ?? this.alamatProyek,
       npwpPerusahaan: npwpPerusahaan ?? this.npwpPerusahaan,
+      npwpVerified: npwpVerified ?? this.npwpVerified,
       luasLahan: luasLahan ?? this.luasLahan,
       jumlahUnit: jumlahUnit ?? this.jumlahUnit,
       tipePerumahan: tipePerumahan ?? this.tipePerumahan,
+      dayaListrik: dayaListrik ?? this.dayaListrik,
       uploadedDocs: uploadedDocs ?? Map.from(this.uploadedDocs),
       multiUploadedDocs:
           multiUploadedDocs ??
@@ -242,8 +252,14 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
       state = state.copyWith(namaPerumahan: value);
   void updateAlamatProyek(String value) =>
       state = state.copyWith(alamatProyek: value);
-  void updateNpwp(String value) =>
-      state = state.copyWith(npwpPerusahaan: value);
+  void updateNpwp(String value) => state = state.copyWith(
+    npwpPerusahaan: value,
+    npwpVerified: value == state.npwpPerusahaan ? state.npwpVerified : false,
+  );
+  void setNpwpVerified(bool value) =>
+      state = state.copyWith(npwpVerified: value);
+  void updateDayaListrik(String value) =>
+      state = state.copyWith(dayaListrik: value);
   void updateLuasLahan(double value) =>
       state = state.copyWith(luasLahan: value);
   void updateJumlahUnit(int value) => state = state.copyWith(jumlahUnit: value);

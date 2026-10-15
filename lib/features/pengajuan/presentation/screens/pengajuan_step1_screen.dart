@@ -47,6 +47,16 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
     },
   ];
 
+  static const List<String> _dayaListrikOptions = [
+    '450 VA',
+    '900 VA',
+    '1.300 VA',
+    '2.200 VA',
+  ];
+
+  bool _npwpVerifying = false;
+  String? _npwpError;
+
   static const List<String> _tipePerumahanOptions = [
     'Subsidi',
     'Komersil',
@@ -59,7 +69,8 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
     final state = ref.read(pengajuanFormProvider);
     _namaPerumahanController = TextEditingController(text: state.namaPerumahan);
     _alamatProyekController = TextEditingController(text: state.alamatProyek);
-    _npwpController = TextEditingController(text: state.npwpPerusahaan);
+    _npwpController = TextEditingController(text: state.npwpPerusahaan)
+      ..addListener(_onNpwpChanged);
     _luasController = TextEditingController(
       text: state.luasLahan > 0
           ? (state.luasLahan % 1 == 0
@@ -88,6 +99,32 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
     super.dispose();
   }
 
+  void _onNpwpChanged() {
+    ref.read(pengajuanFormProvider.notifier).updateNpwp(_npwpController.text);
+    if (_npwpError != null) setState(() => _npwpError = null);
+  }
+
+  Future<void> _verifyNpwp() async {
+    final text = _npwpController.text;
+    final digits = text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length != 15 && digits.length != 16) {
+      setState(() => _npwpError = 'NPWP harus 15 atau 16 digit angka');
+      return;
+    }
+    setState(() {
+      _npwpVerifying = true;
+      _npwpError = null;
+    });
+    // shortcut: simulasi lokal tanpa API pajak, ganti dengan verifikasi NPWP
+    // dari backend saat endpoint tersedia.
+    await Future<void>.delayed(const Duration(milliseconds: 900));
+    if (!mounted) return;
+    if (_npwpController.text == text) {
+      ref.read(pengajuanFormProvider.notifier).setNpwpVerified(true);
+    }
+    setState(() => _npwpVerifying = false);
+  }
+
   void _syncState() {
     final notifier = ref.read(pengajuanFormProvider.notifier);
     notifier.updateTipePengajuan(_selectedTipePengajuan);
@@ -106,7 +143,9 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
     final isValid = _formKey.currentState?.validate() == true;
     final isStateValid = ref.read(pengajuanFormProvider).isStep1Valid;
 
-    if (isValid && isStateValid) {
+    final isNpwpVerified = ref.read(pengajuanFormProvider).npwpVerified;
+
+    if (isValid && isStateValid && isNpwpVerified) {
       context.push('/pengajuan/step2');
       return;
     }
@@ -140,6 +179,14 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
         title: 'NPWP Perusahaan *',
         subtitle: 'Format 15 atau 16 digit angka',
         statusText: 'Belum valid',
+        icon: Icons.badge_outlined,
+      ));
+    } else if (!ref.read(pengajuanFormProvider).npwpVerified) {
+      missing.add(const MissingValidationItem(
+        key: 'npwp',
+        title: 'NPWP Perusahaan *',
+        subtitle: 'Tekan tombol Verifikasi pada kolom NPWP',
+        statusText: 'Belum diverifikasi',
         icon: Icons.badge_outlined,
       ));
     }
@@ -435,6 +482,10 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
   }
 
   Widget _buildTipePerumahanSegmentedControl() {
+    final optionCount = _tipePerumahanOptions.length;
+    final selectedIndex = _tipePerumahanOptions.indexOf(
+      _selectedTipePerumahan,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -463,58 +514,172 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.borderSubtle),
           ),
-          child: Row(
-            children: _tipePerumahanOptions.map((opt) {
-              final isSelected = _selectedTipePerumahan == opt;
-              return Expanded(
-                child: InkWell(
-                  onTap: () {
-                    setState(() => _selectedTipePerumahan = opt);
-                    _syncState();
-                  },
-                  borderRadius: BorderRadius.circular(8),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSelected ? Colors.white : Colors.transparent,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.05),
-                                blurRadius: 4,
-                                offset: const Offset(0, 1),
-                              ),
-                            ]
-                          : null,
+          child: Stack(
+            children: [
+              if (selectedIndex >= 0)
+                Positioned.fill(
+                  child: AnimatedAlign(
+                    duration: const Duration(milliseconds: 220),
+                    curve: Curves.easeOutCubic,
+                    alignment: Alignment(
+                      -1 + 2 * selectedIndex / (optionCount - 1),
+                      0,
                     ),
-                    child: Center(
-                      child: Text(
-                        opt,
-                        style: TextStyle(
-                          fontFamily: AppTextStyles.fontFamily,
-                          fontSize: 13,
-                          fontWeight: isSelected
-                              ? FontWeight.bold
-                              : FontWeight.w500,
-                          color: isSelected
-                              ? AppColors.primaryRed
-                              : AppColors.textSecondary,
+                    child: FractionallySizedBox(
+                      widthFactor: 1 / optionCount,
+                      heightFactor: 1,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 1),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
                 ),
-              );
-            }).toList(),
+              Row(
+                children: _tipePerumahanOptions.map((opt) {
+                  final isSelected = _selectedTipePerumahan == opt;
+                  return Expanded(
+                    child: InkWell(
+                      onTap: () {
+                        setState(() => _selectedTipePerumahan = opt);
+                        _syncState();
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Center(
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 220),
+                            curve: Curves.easeOutCubic,
+                            style: TextStyle(
+                              fontFamily: AppTextStyles.fontFamily,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected
+                                  ? AppColors.primaryRed
+                                  : AppColors.textSecondary,
+                            ),
+                            child: Text(opt),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
+  Widget _buildNpwpSuffix(bool verified) {
+    if (verified) {
+      return const Padding(
+        padding: EdgeInsets.only(right: 12),
+        child: Icon(Icons.check_circle, color: AppColors.statusSuccessText),
+      );
+    }
+    if (_npwpVerifying) {
+      return const Padding(
+        padding: EdgeInsets.all(14),
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    return TextButton(
+      onPressed: _verifyNpwp,
+      child: const Text(
+        'Verifikasi',
+        style: TextStyle(fontWeight: FontWeight.w700),
+      ),
+    );
+  }
+
+  Widget _buildDayaListrikChips() {
+    final selected = ref.watch(
+      pengajuanFormProvider.select((s) => s.dayaListrik),
+    );
+    final notifier = ref.read(pengajuanFormProvider.notifier);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: const TextSpan(
+            text: 'Daya Listrik PLN per Unit ',
+            style: TextStyle(
+              fontFamily: AppTextStyles.fontFamily,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textMain,
+            ),
+            children: [
+              TextSpan(
+                text: '(Opsional)',
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _dayaListrikOptions.map((opt) {
+            final isSelected = selected == opt;
+            return ChoiceChip(
+              label: Text(opt),
+              selected: isSelected,
+              showCheckmark: false,
+              onSelected: (_) =>
+                  notifier.updateDayaListrik(isSelected ? '' : opt),
+              selectedColor: AppColors.primarySurface,
+              backgroundColor: AppColors.backgroundCanvas,
+              side: BorderSide(
+                color: isSelected
+                    ? AppColors.primaryRed
+                    : AppColors.borderSubtle,
+              ),
+              labelStyle: TextStyle(
+                fontFamily: AppTextStyles.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: isSelected
+                    ? AppColors.primaryRed
+                    : AppColors.textSecondary,
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Pilih bila rencana daya listrik per unit sudah ditentukan',
+          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+        ),
+      ],
+    );
+  }
+
   Widget _buildFormCard() {
+    final npwpVerified = ref.watch(
+      pengajuanFormProvider.select((s) => s.npwpVerified),
+    );
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
@@ -598,10 +763,42 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
             label: 'NPWP Perusahaan *',
             hintText: '01.234.567.8-411.000',
             controller: _npwpController,
+            keyboardType: TextInputType.number,
             prefixIcon: Icons.badge_outlined,
+            suffixIcon: _buildNpwpSuffix(npwpVerified),
             validator: (val) =>
                 val == null || val.trim().isEmpty ? 'NPWP wajib diisi' : null,
           ),
+          if (npwpVerified)
+            const Padding(
+              padding: EdgeInsets.only(top: 6),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    size: 14,
+                    color: AppColors.statusSuccessText,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    'NPWP Terdaftar Aktif di KPP Tasikmalaya',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.statusSuccessText,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else if (_npwpError != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                _npwpError!,
+                style: const TextStyle(fontSize: 11.5, color: AppColors.error),
+              ),
+            ),
           const SizedBox(height: AppSpacing.md),
 
           // 5. Luas Lahan & Jumlah Unit
@@ -720,6 +917,10 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
 
           // 6. Tipe Perumahan Segmented Control
           _buildTipePerumahanSegmentedControl(),
+          const SizedBox(height: AppSpacing.md),
+
+          // 7. Daya Listrik PLN (opsional)
+          _buildDayaListrikChips(),
         ],
       ),
     );

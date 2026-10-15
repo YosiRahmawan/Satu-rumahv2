@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satu_rumah/core/auth/role_session.dart';
+import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_step1_screen.dart';
 
 void main() {
@@ -192,6 +193,11 @@ void main() {
         await tester.enterText(find.byType(TextFormField).at(3), '48500');
         await tester.enterText(find.byType(TextFormField).at(4), '320');
 
+        await tester.ensureVisible(find.text('Verifikasi'));
+        await tester.tap(find.text('Verifikasi'));
+        await tester.pump(const Duration(milliseconds: 1000));
+        await tester.pumpAndSettle();
+
         // Select Tipe Perumahan "Komersil"
         await tester.ensureVisible(find.text('Komersil'));
         await tester.tap(find.text('Komersil'));
@@ -205,6 +211,83 @@ void main() {
         expect(find.text('Step 2 Screen'), findsOneWidget);
       },
     );
+
+    testWidgets('blocks Fase 2 until NPWP is verified, then shows status', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(createTestWidget(container: container));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        'Graha Sukatani Indah',
+      );
+      await tester.enterText(
+        find.byType(TextFormField).at(1),
+        'Jl. Tamansari KM 4, Kota Tasikmalaya',
+      );
+      await tester.enterText(find.byType(TextFormField).at(3), '48500');
+      await tester.enterText(find.byType(TextFormField).at(4), '320');
+
+      // Format salah ditolak oleh tombol Verifikasi.
+      await tester.enterText(find.byType(TextFormField).at(2), '123');
+      await tester.ensureVisible(find.text('Verifikasi'));
+      await tester.tap(find.text('Verifikasi'));
+      await tester.pumpAndSettle();
+      expect(find.text('NPWP harus 15 atau 16 digit angka'), findsOneWidget);
+
+      // NPWP valid tetapi belum diverifikasi tidak boleh lanjut.
+      await tester.enterText(
+        find.byType(TextFormField).at(2),
+        '01.234.567.8-411.000',
+      );
+      await tester.tap(find.text('Lanjut ke Berkas'));
+      await tester.pumpAndSettle();
+      expect(find.text('Step 2 Screen'), findsNothing);
+      expect(find.text('Belum diverifikasi'), findsOneWidget);
+      Navigator.of(tester.element(find.text('Belum diverifikasi'))).pop();
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Verifikasi'));
+      await tester.tap(find.text('Verifikasi'));
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('NPWP Terdaftar Aktif di KPP Tasikmalaya'),
+        findsOneWidget,
+      );
+      expect(container.read(pengajuanFormProvider).npwpVerified, isTrue);
+
+      // Mengubah NPWP membatalkan verifikasi.
+      await tester.enterText(
+        find.byType(TextFormField).at(2),
+        '09.876.543.2-123.000',
+      );
+      await tester.pumpAndSettle();
+      expect(container.read(pengajuanFormProvider).npwpVerified, isFalse);
+    });
+
+    testWidgets('daya listrik PLN is optional and can be toggled', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(createTestWidget(container: container));
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('900 VA'));
+      expect(container.read(pengajuanFormProvider).dayaListrik, isEmpty);
+      await tester.tap(find.text('900 VA'));
+      await tester.pumpAndSettle();
+      expect(container.read(pengajuanFormProvider).dayaListrik, '900 VA');
+      await tester.tap(find.text('900 VA'));
+      await tester.pumpAndSettle();
+      expect(container.read(pengajuanFormProvider).dayaListrik, isEmpty);
+    });
 
     testWidgets(
       'retains form entries when navigating Fase 1 -> Fase 2 -> back to Fase 1',
@@ -257,6 +340,11 @@ void main() {
         );
         await tester.enterText(find.byType(TextFormField).at(3), '25000');
         await tester.enterText(find.byType(TextFormField).at(4), '150');
+        await tester.pumpAndSettle();
+
+        await tester.ensureVisible(find.text('Verifikasi'));
+        await tester.tap(find.text('Verifikasi'));
+        await tester.pump(const Duration(milliseconds: 1000));
         await tester.pumpAndSettle();
 
         // Navigate to Step 2

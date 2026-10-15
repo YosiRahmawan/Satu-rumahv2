@@ -94,6 +94,8 @@ class _PengajuanStep5ReviewScreenState
                         _info('Luas Lahan', '${_number(state.luasLahan)} m²'),
                         _info('Jumlah Unit', '${state.jumlahUnit} Unit'),
                         _info('Tipe Perumahan', state.tipePerumahan),
+                        if (state.dayaListrik.isNotEmpty)
+                          _info('Daya Listrik PLN', state.dayaListrik),
                       ],
                     ),
                   ),
