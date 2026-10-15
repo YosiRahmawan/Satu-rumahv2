@@ -72,7 +72,7 @@ void main() {
         // 1. Header elements
         expect(find.text('Pengajuan Baru'), findsOneWidget);
         expect(find.text('Langkah 1 dari 5'), findsOneWidget);
-        expect(find.text('DISPERWASKIM KOTA TASIKMALAYA'), findsOneWidget);
+        expect(find.text('DISPERWASKIM KOTA TASIKMALAYA'), findsNothing);
 
         // 2. Stepper labels & Card title
         expect(find.text('Data PT'), findsNWidgets(2));

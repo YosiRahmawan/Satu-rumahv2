@@ -737,7 +737,6 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
             PengajuanStepHeader(
               title: 'Pengajuan Baru',
               subtitle: 'Langkah 1 dari 5',
-              badgeText: 'DISPERWASKIM KOTA TASIKMALAYA',
               onBackPressed: () {
                 if (context.canPop()) {
                   context.pop();

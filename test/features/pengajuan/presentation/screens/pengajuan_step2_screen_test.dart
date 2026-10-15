@@ -78,7 +78,7 @@ void main() {
       // Canonical PengajuanStepHeader elements
       expect(find.text('Pengajuan Baru'), findsOneWidget);
       expect(find.text('Langkah 2 dari 5'), findsOneWidget);
-      expect(find.text('DISPERWASKIM KOTA TASIKMALAYA'), findsOneWidget);
+      expect(find.text('DISPERWASKIM KOTA TASIKMALAYA'), findsNothing);
 
       // Stepper 5 steps
       expect(find.text('Data PT'), findsOneWidget);

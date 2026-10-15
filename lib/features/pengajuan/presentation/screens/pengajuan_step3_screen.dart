@@ -179,6 +179,14 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
 
   bool _isModalShowing = false;
 
+  void _backToStep2() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/pengajuan/step2');
+    }
+  }
+
   void _onNext() async {
     final formState = ref.read(pengajuanFormProvider);
     final isStep3Valid = formState.isStep3Valid;
@@ -241,7 +249,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
         children: [
           PengajuanStepHeader(
             subtitle: 'Langkah 3 dari 5',
-            onBackPressed: () => context.pop(),
+            onBackPressed: _backToStep2,
           ),
           const StepperHeader(currentStep: 3),
           Expanded(
@@ -685,7 +693,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
               if (useStackedActions) ...[
                 AppButton.secondary(
                   text: 'Kembali',
-                  onPressed: () => context.pop(),
+                  onPressed: _backToStep2,
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 AppButton.primary(
@@ -698,7 +706,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
                     Expanded(
                       child: AppButton.secondary(
                         text: 'Kembali',
-                        onPressed: () => context.pop(),
+                        onPressed: _backToStep2,
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),

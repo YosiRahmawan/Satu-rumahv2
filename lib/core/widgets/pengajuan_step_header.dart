@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_radii.dart';
@@ -14,21 +13,19 @@ import 'panduan_pengajuan_dialog.dart';
 /// - Brand red gradient ([AppColors.heroGradient])
 /// - Bottom corner radius ([AppRadii.hero])
 /// - Semi-transparent circular back and help action buttons
-/// - Centered title, step indicator subtitle, and official agency pill badge
+/// - Centered title, and step indicator subtitle
 /// - Accessible and responsive scaling up to 200% text scale without overflow
 class PengajuanStepHeader extends StatelessWidget {
   const PengajuanStepHeader({
     super.key,
     this.title = 'Pengajuan Baru',
     this.subtitle = 'Langkah 1 dari 5',
-    this.badgeText = 'DISPERWASKIM KOTA TASIKMALAYA',
     this.onBackPressed,
     this.onHelpPressed,
   });
 
   final String title;
   final String subtitle;
-  final String badgeText;
   final VoidCallback? onBackPressed;
   final VoidCallback? onHelpPressed;
 
@@ -78,45 +75,6 @@ class PengajuanStepHeader extends StatelessWidget {
     );
   }
 
-  Widget _buildAgencyPill() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: AppRadii.pill,
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.25),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            PhosphorIconsRegular.sealCheck,
-            size: 13,
-            color: Colors.white,
-          ),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text(
-              badgeText,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontFamily: AppTextStyles.fontFamily,
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-                letterSpacing: 0.6,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final topPadding = MediaQuery.paddingOf(context).top;
@@ -137,7 +95,7 @@ class PengajuanStepHeader extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Row with back button, center title/subtitle/pill, and help button
+          // Row with back button, center title/subtitle, and help button
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -168,8 +126,6 @@ class PengajuanStepHeader extends StatelessWidget {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    _buildAgencyPill(),
                   ],
                 ),
               ),

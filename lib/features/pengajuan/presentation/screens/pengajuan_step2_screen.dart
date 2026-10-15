@@ -1368,7 +1368,6 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
             PengajuanStepHeader(
               title: 'Pengajuan Baru',
               subtitle: 'Langkah 2 dari 5',
-              badgeText: 'DISPERWASKIM KOTA TASIKMALAYA',
               onBackPressed: _onBack,
               onHelpPressed: () => _showHelpDialog(context),
             ),

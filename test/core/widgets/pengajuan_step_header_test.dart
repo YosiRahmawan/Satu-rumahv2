@@ -6,7 +6,6 @@ void main() {
   Widget buildHeader({
     String title = 'Pengajuan Baru',
     String subtitle = 'Langkah 1 dari 5',
-    String badgeText = 'DISPERWASKIM KOTA TASIKMALAYA',
     VoidCallback? onBackPressed,
     VoidCallback? onHelpPressed,
     double textScale = 1.0,
@@ -23,7 +22,6 @@ void main() {
           body: PengajuanStepHeader(
             title: title,
             subtitle: subtitle,
-            badgeText: badgeText,
             onBackPressed: onBackPressed,
             onHelpPressed: onHelpPressed,
           ),
@@ -33,7 +31,7 @@ void main() {
   }
 
   group('PengajuanStepHeader Visual & Interaction Tests', () {
-    testWidgets('renders title, subtitle, and agency badge pill correctly', (
+    testWidgets('renders title and subtitle without agency badge', (
       tester,
     ) async {
       await tester.pumpWidget(buildHeader());
@@ -41,7 +39,7 @@ void main() {
 
       expect(find.text('Pengajuan Baru'), findsOneWidget);
       expect(find.text('Langkah 1 dari 5'), findsOneWidget);
-      expect(find.text('DISPERWASKIM KOTA TASIKMALAYA'), findsOneWidget);
+      expect(find.text('DISPERWASKIM KOTA TASIKMALAYA'), findsNothing);
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
       expect(find.byIcon(Icons.help_outline), findsOneWidget);
     });
