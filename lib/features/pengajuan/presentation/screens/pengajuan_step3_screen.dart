@@ -263,26 +263,11 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
               children: [
                 _buildVerificationBanner(uploaded, isComplete),
                 const SizedBox(height: AppSpacing.lg),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Daftar Berkas Persyaratan (11)',
-                        style: AppTextStyles.titleMedium.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    _statusPill(
-                      isComplete ? 'Lengkap' : 'Mandatori SIPP',
-                      isComplete
-                          ? AppColors.statusSuccessText
-                          : AppColors.textSecondary,
-                      isComplete
-                          ? AppColors.statusSuccessSurface
-                          : AppColors.slate100,
-                    ),
-                  ],
+                Text(
+                  'Daftar berkas ($_totalSlotCount)',
+                  style: AppTextStyles.titleMedium.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 ..._slots.map(
@@ -301,6 +286,9 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
   }
 
   Widget _buildVerificationBanner(int uploaded, bool isComplete) {
+    final statusColor = isComplete
+        ? AppColors.statusSuccessText
+        : AppColors.primaryRed;
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -311,87 +299,52 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _statusPill(
-                  'Fase Verifikasi Administratif',
-                  AppColors.primaryRed,
-                  AppColors.primarySurfaceSoft,
-                ),
-              ),
-              const Icon(
-                Icons.folder_copy_outlined,
-                color: AppColors.primaryRed,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Kelengkapan Dokumen Perizinan Perumahan',
-            style: AppTextStyles.headlineSmall.copyWith(
-              fontWeight: FontWeight.w800,
+          Align(
+            alignment: Alignment.centerLeft,
+            child: _statusPill(
+              'Fase Verifikasi Administratif',
+              AppColors.primaryRed,
+              AppColors.primarySurfaceSoft,
             ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.sm),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Expanded(
                 child: Text(
-                  'Status Pengunggahan',
-                  style: AppTextStyles.labelMedium.copyWith(
-                    color: AppColors.textSecondary,
+                  'Dokumen perumahan',
+                  style: AppTextStyles.headlineSmall.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ),
               Text(
-                uploaded.toString() +
-                    ' dari ' +
-                    _totalSlotCount.toString() +
-                    ' berkas telah siap',
+                '$uploaded dari $_totalSlotCount siap',
                 style: AppTextStyles.labelMedium.copyWith(
-                  color: isComplete
-                      ? AppColors.statusSuccessText
-                      : AppColors.primaryRed,
+                  color: statusColor,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.xs),
+          const SizedBox(height: AppSpacing.sm),
           ClipRRect(
             borderRadius: AppRadii.pill,
             child: LinearProgressIndicator(
               minHeight: 6,
               value: uploaded / _totalSlotCount,
               backgroundColor: AppColors.primarySurfaceSoft,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isComplete ? AppColors.statusSuccessText : AppColors.primaryRed,
-              ),
+              valueColor: AlwaysStoppedAnimation<Color>(statusColor),
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-            child: Divider(height: 1),
-          ),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.info_outline,
-                size: 16,
-                color: AppColors.statusUrgentText,
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  'Format berkas PDF wajib terlegalisir pejabat berwenang / instansi teknis terkait Kota Tasikmalaya (Maks. 10 MB per file).',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'PDF, maks. 10 MB per file, dilegalisir pejabat berwenang.',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),

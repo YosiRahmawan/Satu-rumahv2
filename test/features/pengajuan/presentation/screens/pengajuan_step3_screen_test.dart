@@ -48,7 +48,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Daftar Berkas Persyaratan (11)'), findsOneWidget);
+      expect(find.text('Daftar berkas (11)'), findsOneWidget);
       expect(find.textContaining('1. Surat Permohonan'), findsOneWidget);
       await tester.scrollUntilVisible(
         find.textContaining('11. Proposal Rencana Pembangunan'),
