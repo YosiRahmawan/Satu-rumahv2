@@ -12,12 +12,22 @@ import '../../../pengajuan/presentation/screens/pengajuan_saya_list_screen.dart'
 import '../../../notifikasi/presentation/screens/notifikasi_list_screen.dart';
 import '../../../profil/presentation/screens/profil_screen.dart';
 
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  /// Tab yang sudah pernah dibuka. Hanya tab ini yang dibangun dan
+  /// dipertahankan, supaya frame pertama setelah login tidak berat.
+  final Set<int> _builtTabs = {};
+
+  @override
+  Widget build(BuildContext context) {
     final currentIndex = ref.watch(dashboardTabProvider);
+    _builtTabs.add(currentIndex);
     final unreadCount = ref.watch(unreadCountProvider);
     final fabSize = MediaQuery.textScalerOf(
       context,
@@ -32,7 +42,13 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
-      body: IndexedStack(index: currentIndex, children: tabs),
+      body: IndexedStack(
+        index: currentIndex,
+        children: [
+          for (var i = 0; i < tabs.length; i++)
+            _builtTabs.contains(i) ? tabs[i] : const SizedBox.shrink(),
+        ],
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       floatingActionButton: SizedBox(
         width: fabSize,

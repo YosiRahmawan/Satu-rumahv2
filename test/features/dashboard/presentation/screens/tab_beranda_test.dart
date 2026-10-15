@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/core/widgets/app_housing_loader.dart';
 import 'package:satu_rumah/core/widgets/developer_header.dart';
 import 'package:satu_rumah/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:satu_rumah/features/dashboard/presentation/screens/tab_beranda.dart';
@@ -43,6 +44,16 @@ void main() {
         ),
       );
     }
+
+    testWidgets('menampilkan isi Beranda di frame pertama tanpa loader', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+
+      // Tanpa pumpAndSettle: frame pertama sudah berisi, bukan loader.
+      expect(find.text('Satu Rumah'), findsOneWidget);
+      expect(find.byType(AppHousingLoader), findsNothing);
+    });
 
     testWidgets('renders Header Profile Card with Satu Rumah and PORTAL PENGEMBANG', (tester) async {
       await tester.pumpWidget(createWidgetUnderTest());

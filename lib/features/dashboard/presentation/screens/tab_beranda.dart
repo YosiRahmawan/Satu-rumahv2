@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
@@ -16,14 +15,6 @@ import '../providers/dashboard_provider.dart';
 Pengajuan? latestPengajuan(List<Pengajuan> submissions) {
   return submissions.isEmpty ? null : submissions.first;
 }
-
-final dashboardPengajuanAsyncProvider = FutureProvider<List<Pengajuan>>((
-  ref,
-) async {
-  final submissions = ref.watch(pengajuanListProvider);
-  await Future<void>.delayed(Duration.zero);
-  return submissions;
-});
 
 int? dashboardShortcutTab(String title) {
   switch (title) {
@@ -45,69 +36,54 @@ class TabBeranda extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final submissionsState = ref.watch(dashboardPengajuanAsyncProvider);
+    final list = ref.watch(pengajuanListProvider);
+    final lastSubmission = latestPengajuan(list);
+
+    final session = ref.watch(roleSessionProvider);
+    final String? avatarInitials = (session.username != null && session.username!.trim().isNotEmpty)
+        ? (session.username!.trim().length >= 2
+            ? session.username!.trim().substring(0, 2).toUpperCase()
+            : session.username!.trim().toUpperCase())
+        : null;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
-      body: submissionsState.when(
-        loading: () => const DataStateView.loading(),
-        error: (error, stack) => DataStateView.error(
-          onAction: () => ref.invalidate(dashboardPengajuanAsyncProvider),
-        ),
-        data: (list) {
-          final lastSubmission = latestPengajuan(list);
-
-          final session = ref.watch(roleSessionProvider);
-          final String? avatarInitials = (session.username != null && session.username!.trim().isNotEmpty)
-              ? (session.username!.trim().length >= 2
-                  ? session.username!.trim().substring(0, 2).toUpperCase()
-                  : session.username!.trim().toUpperCase())
-              : null;
-
-          return RefreshIndicator(
-            color: AppColors.primaryRed,
-            onRefresh: () async {
-              ref.invalidate(dashboardPengajuanAsyncProvider);
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // 1. HEADER MERAH (Scrolls naturally with content)
-                  DeveloperHeader(
-                    brandTitle: 'Satu Rumah',
-                    avatarLabel: avatarInitials ?? 'YR',
-                    showOnlineIndicator: true,
-                    avatarTooltip: 'Buka profil',
-                    onAvatarTap: () =>
-                        ref.read(dashboardTabProvider.notifier).state = 3,
-                    bottomPadding: 24.0,
-                  ),
-
-                  // 2. GAP 16dp antara header dan card identitas
-                  const SizedBox(height: 16),
-
-                  // 3. CARD IDENTITAS PENGEMBANG
-                  const _DeveloperIdentityCard(),
-
-                  const SizedBox(height: 8),
-
-                  // 4. CARD "PENGAJUAN TERAKHIR"
-                  _PengajuanTerakhirCard(submission: lastSubmission),
-
-                  const SizedBox(height: 20),
-
-                  // 5. SECTION "MENU LAYANAN PENGEMBANG"
-                  const _MenuLayananPengembangSection(),
-
-                  // Bottom padding for docked FAB & bar
-                  const SizedBox(height: 96),
-                ],
-              ),
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. HEADER MERAH (Scrolls naturally with content)
+            DeveloperHeader(
+              brandTitle: 'Satu Rumah',
+              avatarLabel: avatarInitials ?? 'YR',
+              showOnlineIndicator: true,
+              avatarTooltip: 'Buka profil',
+              onAvatarTap: () =>
+                  ref.read(dashboardTabProvider.notifier).state = 3,
+              bottomPadding: 24.0,
             ),
-          );
-        },
+
+            // 2. GAP 16dp antara header dan card identitas
+            const SizedBox(height: 16),
+
+            // 3. CARD IDENTITAS PENGEMBANG
+            const _DeveloperIdentityCard(),
+
+            const SizedBox(height: 8),
+
+            // 4. CARD "PENGAJUAN TERAKHIR"
+            _PengajuanTerakhirCard(submission: lastSubmission),
+
+            const SizedBox(height: 20),
+
+            // 5. SECTION "MENU LAYANAN PENGEMBANG"
+            const _MenuLayananPengembangSection(),
+
+            // Bottom padding for docked FAB & bar
+            const SizedBox(height: 96),
+          ],
+        ),
       ),
     );
   }
