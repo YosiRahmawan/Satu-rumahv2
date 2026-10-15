@@ -47,7 +47,8 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
     ) {
       if (_search.text != next) _search.text = next;
     });
-    final hasMenunggu = items.any(PengajuanFilter.menungguVerifikasi.matches) ||
+    final hasMenunggu =
+        items.any(PengajuanFilter.menungguVerifikasi.matches) ||
         query.filter == PengajuanFilter.menungguVerifikasi;
     final displayFilters = [
       PengajuanFilter.semua,
@@ -85,15 +86,15 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                     vertical: 12,
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(16),
                     borderSide: const BorderSide(
                       color: AppColors.primaryRed,
                       width: 1.5,
@@ -111,7 +112,7 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                 backgroundColor: AppColors.cardSurface,
                 side: const BorderSide(color: Color(0xFFE2E8F0)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
               icon: Badge(
@@ -131,7 +132,8 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
               for (final filter in displayFilters) ...[
                 () {
                   final isSelected = query.filter == filter;
-                  final isSoftActive = isSelected &&
+                  final isSoftActive =
+                      isSelected &&
                       filter == PengajuanFilter.menungguVerifikasi;
 
                   return Padding(
@@ -157,16 +159,13 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                           : const Color(0xFFB91C1C),
                       backgroundColor: Colors.white,
                       side: isSoftActive
-                          ? const BorderSide(
-                              color: Color(0xFFFECACA),
-                              width: 1,
-                            )
+                          ? const BorderSide(color: Color(0xFFFECACA), width: 1)
                           : isSelected
-                              ? BorderSide.none
-                              : const BorderSide(
-                                  color: Color(0xFFE2E8F0),
-                                  width: 1,
-                                ),
+                          ? BorderSide.none
+                          : const BorderSide(
+                              color: Color(0xFFE2E8F0),
+                              width: 1,
+                            ),
                       shape: const StadiumBorder(),
                       materialTapTargetSize: MaterialTapTargetSize.padded,
                       visualDensity: const VisualDensity(
@@ -184,20 +183,20 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                       labelStyle: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                         color: isSoftActive
                             ? const Color(0xFFB91C1C)
                             : isSelected
-                                ? Colors.white
-                                : const Color(0xFF64748B),
+                            ? Colors.white
+                            : const Color(0xFF64748B),
                         height: 1.25,
                       ),
                     ),
                   );
                 }(),
-                if (hasMenunggu &&
-                    filter == PengajuanFilter.menungguVerifikasi)
+                if (hasMenunggu && filter == PengajuanFilter.menungguVerifikasi)
                   Padding(
                     padding: const EdgeInsets.only(right: AppSpacing.sm),
                     child: ActionChip(
@@ -268,10 +267,7 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                     shadowColor: Colors.transparent,
                     surfaceTintColor: Colors.transparent,
                     backgroundColor: Colors.white,
-                    side: const BorderSide(
-                      color: Color(0xFFE2E8F0),
-                      width: 1,
-                    ),
+                    side: const BorderSide(color: Color(0xFFE2E8F0), width: 1),
                     shape: const StadiumBorder(),
                     materialTapTargetSize: MaterialTapTargetSize.padded,
                     visualDensity: const VisualDensity(
@@ -480,7 +476,8 @@ class _YearFilterSheetState extends ConsumerState<_YearFilterSheet>
           'tahun $y'.toLowerCase().contains(_searchQuery);
     }).toList();
 
-    final bool showSemuaTahun = _searchQuery.isEmpty ||
+    final bool showSemuaTahun =
+        _searchQuery.isEmpty ||
         'semua tahun'.contains(_searchQuery) ||
         'semua'.contains(_searchQuery);
 
@@ -575,7 +572,10 @@ class _YearFilterSheetState extends ConsumerState<_YearFilterSheet>
 
               // 3. Input Section: Periode Pengajuan & Compact Dropdown Picker
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
@@ -869,7 +869,9 @@ class _YearFilterSheetState extends ConsumerState<_YearFilterSheet>
                           backgroundColor: AppColors.primaryRed,
                           foregroundColor: Colors.white,
                           elevation: 1,
-                          shadowColor: AppColors.primaryRed.withValues(alpha: 0.25),
+                          shadowColor: AppColors.primaryRed.withValues(
+                            alpha: 0.25,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),

@@ -161,29 +161,32 @@ void main() {
     expect(pengajuanYear(items[0].copyWith(tanggal: '2026-10-05')), 2026);
   });
 
-  testWidgets('gap between DeveloperHeader and search filters is preserved and header scrolls naturally', (tester) async {
-    await _pump(tester);
-    final headerFinder = find.byType(DeveloperHeader);
-    expect(headerFinder, findsOneWidget);
+  testWidgets(
+    'gap between DeveloperHeader and search filters is preserved and header scrolls naturally',
+    (tester) async {
+      await _pump(tester);
+      final headerFinder = find.byType(DeveloperHeader);
+      expect(headerFinder, findsOneWidget);
 
-    final filterFinder = find.byType(PengajuanListFilters);
-    expect(filterFinder, findsOneWidget);
+      final filterFinder = find.byType(PengajuanListFilters);
+      expect(filterFinder, findsOneWidget);
 
-    // Initial gap between header bottom and filter top is 16dp
-    final headerBottom = tester.getRect(headerFinder).bottom;
-    final filterTop = tester.getRect(filterFinder).top;
-    expect(filterTop - headerBottom, 16.0);
+      // Initial gap between header bottom and filter top is 16dp
+      final headerBottom = tester.getRect(headerFinder).bottom;
+      final filterTop = tester.getRect(filterFinder).top;
+      expect(filterTop - headerBottom, 16.0);
 
-    final titleFinder = find.text('Pengajuan');
-    final headerTopBefore = tester.getTopLeft(titleFinder).dy;
+      final titleFinder = find.text('Pengajuan');
+      final headerTopBefore = tester.getTopLeft(titleFinder).dy;
 
-    // Scroll up
-    await tester.drag(_scroll, const Offset(0, -150));
-    await tester.pumpAndSettle();
+      // Scroll up
+      await tester.drag(_scroll, const Offset(0, -60));
+      await tester.pumpAndSettle();
 
-    // Header scrolls up naturally with content
-    expect(tester.getTopLeft(titleFinder).dy, lessThan(headerTopBefore));
-  });
+      // Header scrolls up naturally with content
+      expect(tester.getTopLeft(titleFinder).dy, lessThan(headerTopBefore));
+    },
+  );
 
   testWidgets('search and filter reset recover an empty result', (
     tester,
@@ -230,17 +233,17 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, 'Perlu Perbaikan (1)'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
-      find.text('Perbaiki →'),
+      find.text('Perbaiki Berkas'),
       200,
       scrollable: _scroll,
     );
     await tester.pumpAndSettle();
     await Scrollable.ensureVisible(
-      tester.element(find.text('Perbaiki →')),
+      tester.element(find.text('Perbaiki Berkas')),
       alignment: .5,
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Perbaiki →'));
+    await tester.tap(find.text('Perbaiki Berkas'));
     await tester.pumpAndSettle();
     expect(find.text('Detail pengajuan'), findsOneWidget);
     expect(find.text('REG-2026-0142'), findsOneWidget);
@@ -264,11 +267,11 @@ void main() {
       items: [_items().first.copyWith(revisionSubmitted: true)],
     );
     await tester.scrollUntilVisible(
-      find.text('Cek Detail →'),
+      find.text('Revisi terkirim · Menunggu pemeriksaan'),
       200,
       scrollable: _scroll,
     );
-    expect(find.text('Perbaiki →'), findsNothing);
+    expect(find.text('Perbaiki Berkas'), findsNothing);
     expect(find.text('Revisi terkirim · Menunggu pemeriksaan'), findsOneWidget);
   });
 

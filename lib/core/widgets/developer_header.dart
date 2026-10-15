@@ -32,10 +32,14 @@ class DeveloperHeader extends StatelessWidget {
     this.avatarTooltip,
     this.showOnlineIndicator = false,
     this.showAvatar = true,
+    this.showBrandBar = true,
     this.actions = const [],
     this.bottomPadding,
     this.child,
   });
+
+  /// Whether to display the top brand bar (SATU RUMAH & PORTAL PENGEMBANG). Defaults to true.
+  final bool showBrandBar;
 
   /// Optional brand title shown in the brand bar. Defaults to 'SATU RUMAH'.
   final String? brandTitle;
@@ -281,42 +285,20 @@ class DeveloperHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 1. Top Brand & Controls Row
-          if (controls == null)
-            brand
-          else if (isTextScaled) ...[
-            brand,
-            const SizedBox(height: AppSpacing.sm),
-            Align(alignment: Alignment.centerRight, child: controls),
-          ] else
-            Row(
-              children: [
-                Expanded(child: brand),
-                const SizedBox(width: AppSpacing.sm),
-                controls,
-              ],
-            ),
-
-          // 2. Optional Page Title, Subtitle, & Badge Row
-          if (pageTitle != null) ...[
-            const SizedBox(height: AppSpacing.lg),
-            if (effectiveBadge != null && isTextScaled) ...[
+          if (!showBrandBar) ...[
+            if (controls == null)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      pageTitle!,
-                      style: AppTextStyles.headlineLarge.copyWith(
-                        color: AppColors.textOnRed,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  Text(
+                    pageTitle ?? 'Pengajuan',
+                    style: AppTextStyles.headlineMedium.copyWith(
+                      color: AppColors.textOnRed,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                   if (pageSubtitle != null) ...[
-                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: AppSpacing.xs / 2),
                     Text(
                       pageSubtitle!,
                       style: AppTextStyles.bodySmall.copyWith(
@@ -324,11 +306,33 @@ class DeveloperHeader extends StatelessWidget {
                       ),
                     ),
                   ],
-                  const SizedBox(height: AppSpacing.sm),
-                  effectiveBadge,
+                ],
+              )
+            else if (isTextScaled) ...[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    pageTitle ?? 'Pengajuan',
+                    style: AppTextStyles.headlineMedium.copyWith(
+                      color: AppColors.textOnRed,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  if (pageSubtitle != null) ...[
+                    const SizedBox(height: AppSpacing.xs / 2),
+                    Text(
+                      pageSubtitle!,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textOnRedSubtle,
+                      ),
+                    ),
+                  ],
                 ],
               ),
-            ] else if (effectiveBadge != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              Align(alignment: Alignment.centerRight, child: controls),
+            ] else
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -337,14 +341,14 @@ class DeveloperHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          pageTitle!,
-                          style: AppTextStyles.headlineLarge.copyWith(
+                          pageTitle ?? 'Pengajuan',
+                          style: AppTextStyles.headlineMedium.copyWith(
                             color: AppColors.textOnRed,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                         if (pageSubtitle != null) ...[
-                          const SizedBox(height: AppSpacing.xs),
+                          const SizedBox(height: AppSpacing.xs / 2),
                           Text(
                             pageSubtitle!,
                             style: AppTextStyles.bodySmall.copyWith(
@@ -356,29 +360,105 @@ class DeveloperHeader extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  effectiveBadge,
+                  controls,
                 ],
               ),
-            ] else ...[
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: Text(
+          ] else ...[
+            // 1. Top Brand & Controls Row
+            if (controls == null)
+              brand
+            else if (isTextScaled) ...[
+              brand,
+              const SizedBox(height: AppSpacing.sm),
+              Align(alignment: Alignment.centerRight, child: controls),
+            ] else
+              Row(
+                children: [
+                  Expanded(child: brand),
+                  const SizedBox(width: AppSpacing.sm),
+                  controls,
+                ],
+              ),
+
+            // 2. Optional Page Title, Subtitle, & Badge Row
+            if (pageTitle != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              if (effectiveBadge != null && isTextScaled) ...[
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        pageTitle!,
+                        style: AppTextStyles.headlineLarge.copyWith(
+                          color: AppColors.textOnRed,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (pageSubtitle != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        pageSubtitle!,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textOnRedSubtle,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.sm),
+                    effectiveBadge,
+                  ],
+                ),
+              ] else if (effectiveBadge != null) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            pageTitle!,
+                            style: AppTextStyles.headlineLarge.copyWith(
+                              color: AppColors.textOnRed,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (pageSubtitle != null) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              pageSubtitle!,
+                              style: AppTextStyles.bodySmall.copyWith(
+                                color: AppColors.textOnRedSubtle,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    effectiveBadge,
+                  ],
+                ),
+              ] else ...[
+                Text(
                   pageTitle!,
                   style: AppTextStyles.headlineLarge.copyWith(
                     color: AppColors.textOnRed,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
-              if (pageSubtitle != null) ...[
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  pageSubtitle!,
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.textOnRedSubtle,
+                if (pageSubtitle != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    pageSubtitle!,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textOnRedSubtle,
+                    ),
                   ),
-                ),
+                ],
               ],
             ],
           ],

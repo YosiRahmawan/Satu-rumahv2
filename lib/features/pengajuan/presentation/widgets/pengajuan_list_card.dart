@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/status_badge.dart';
@@ -47,7 +46,8 @@ class PengajuanListCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isWaitingVerification =
         item.status.toLowerCase() == 'menunggu verifikasi perbaikan';
-    final revision = item.statusTahap == StatusTahapPengajuan.perluPerbaikan &&
+    final revision =
+        item.statusTahap == StatusTahapPengajuan.perluPerbaikan &&
         !isWaitingVerification;
     final complete = item.statusTahap == StatusTahapPengajuan.selesai;
     final canRevise = revision && !item.revisionSubmitted;
@@ -59,508 +59,569 @@ class PengajuanListCard extends StatelessWidget {
         ? 'Disetujui'
         : 'Dalam Proses';
 
-    final tipeText = item.tipePengajuan ??
+    final tipeText =
+        item.tipePengajuan ??
         (item.tipePerumahan.contains('Site Plan')
             ? item.tipePerumahan
             : 'Pengajuan Site Plan (${item.tipePerumahan})');
 
     return Material(
       color: Colors.transparent,
-      borderRadius: AppRadii.card,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onOpen,
-        borderRadius: AppRadii.card,
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: AppColors.cardSurface,
-            borderRadius: AppRadii.card,
-            border: Border.all(color: AppColors.borderSubtle),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: 8,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // 1. Top row: ID chip & Status badge
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.xs,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: AppColors.primarySurface,
-                        borderRadius: AppRadii.tight,
-                      ),
-                      child: Text(
-                        item.id,
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.primaryRed,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    StatusBadge(
-                      status: status,
-                      showIcon: true,
-                      showBorder: true,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // 2. Title: Nama Perumahan
-                Text(
-                  item.namaPerumahan,
-                  style: AppTextStyles.titleLarge.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textMain,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-
-                // 3. Subtitle row: [Tipe] Pill + Type text
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.backgroundCanvas,
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: AppColors.borderSubtle),
-                      ),
-                      child: Text(
-                        'Tipe',
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.textSecondary,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppSpacing.xs),
-                    Expanded(
-                      child: Text(
-                        tipeText,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-
-                // 4. Metrics container: Luas Lahan & Rencana Unit
-                Container(
-                  padding: const EdgeInsets.all(AppSpacing.sm),
-                  decoration: const BoxDecoration(
-                    color: AppColors.backgroundCanvas,
-                    borderRadius: AppRadii.small,
-                  ),
-                  child: Row(
+              // Group 1: Identity & Status
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: _metric(
-                          Icons.straighten,
-                          'Luas Lahan',
-                          '${_number.format(item.luasLahan)} m²',
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.id,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.slate500,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              item.namaPerumahan,
+                              style: AppTextStyles.titleMedium.copyWith(
+                                fontSize: 15.5,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.slate900,
+                                height: 1.25,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.md),
+                      const SizedBox(width: AppSpacing.sm),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: constraints.maxWidth * 0.48,
+                        ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: StatusBadge(
+                            status: status,
+                            showIcon: true,
+                            showBorder: true,
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Tipe: $tipeText',
+                style: AppTextStyles.bodySmall.copyWith(
+                  fontSize: 12,
+                  color: AppColors.slate500,
+                  fontWeight: FontWeight.w500,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+
+              // Group 2: Essential Metrics (Unboxed inline layout)
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: const BoxDecoration(
+                  border: Border(
+                    top: BorderSide(color: Color(0xFFF1F5F9)),
+                    bottom: BorderSide(color: Color(0xFFF1F5F9)),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.straighten,
+                            size: 16,
+                            color: AppColors.slate400,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Luas Lahan',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.slate400,
+                                  ),
+                                ),
+                                Text(
+                                  '${_number.format(item.luasLahan)} m²',
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.slate800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 28,
+                      color: const Color(0xFFE2E8F0),
+                      margin: const EdgeInsets.symmetric(horizontal: 10),
+                    ),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.home_work_outlined,
+                            size: 16,
+                            color: AppColors.slate400,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Rencana Unit',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.slate400,
+                                  ),
+                                ),
+                                Text(
+                                  '${_number.format(item.jumlahUnit)} Unit',
+                                  style: const TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.slate800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Group 3: Contextual Action per status
+              if (isWaitingVerification) ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                    border: const Border(
+                      left: BorderSide(color: Color(0xFF3B82F6), width: 4),
+                    ),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Color(0xFF1D4ED8),
+                      ),
+                      SizedBox(width: 8),
                       Expanded(
-                        child: _metric(
-                          Icons.home_work_outlined,
-                          'Rencana Unit',
-                          '${_number.format(item.jumlahUnit)} Unit',
+                        child: Text(
+                          'Revisi terkirim · Menunggu pemeriksaan',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1E40AF),
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(height: 10),
-
-                // 5. Middle State-Specific Area
-                if (isWaitingVerification) ...[
-                  // Langsung ke bottom action bar
-                ] else if (revision) ...[
-                  // Date sent & Updated row
-                  Wrap(
-                    alignment: WrapAlignment.spaceBetween,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.xs,
+                const SizedBox(height: 12),
+              ] else if (revision) ...[
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFFBEB),
+                    borderRadius: BorderRadius.horizontal(
+                      right: Radius.circular(12),
+                    ),
+                    border: Border(
+                      left: BorderSide(color: Color(0xFFF59E0B), width: 4),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _inlineNotice(
-                        icon: Icons.event_outlined,
-                        text: 'Dikirim ${item.tanggal}',
-                        color: AppColors.textSecondary,
+                      Text(
+                        (item.catatanPerbaikan != null &&
+                                item.catatanPerbaikan!.trim().isNotEmpty)
+                            ? item.catatanPerbaikan!
+                            : (item.dokumenPerluRevisi.isEmpty
+                                  ? 'Format site plan teknis belum mencantumkan koordinat UTM dan luasan RTH minimum 30%. Bukti kepemilikan tanah belum dilegalisir basah.'
+                                  : '${item.dokumenPerluRevisi.length} berkas perlu diperbaiki.'),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          height: 1.4,
+                          color: Color(0xFF78350F),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      _inlineNotice(
-                        icon: Icons.schedule_outlined,
-                        text: item.diperbarui ?? 'Diperbarui 2 hari lalu',
-                        color: AppColors.statusWarningText,
-                        fontWeight: FontWeight.w600,
+                      const SizedBox(height: 8),
+                      Wrap(
+                        alignment: WrapAlignment.spaceBetween,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 220),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.schedule_outlined,
+                                  size: 14,
+                                  color: Color(0xFFB45309),
+                                ),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    item.diperbarui ?? 'Diperbarui 2 hari lalu',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFFB45309),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (canRevise)
+                            ElevatedButton.icon(
+                              onPressed: onOpen,
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                backgroundColor: AppColors.primaryRed,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              icon: const Icon(Icons.edit_document, size: 14),
+                              label: const Text('Perbaiki Berkas'),
+                            )
+                          else
+                            Text(
+                              'Revisi terkirim · Menunggu pemeriksaan',
+                              style: AppTextStyles.labelSmall.copyWith(
+                                color: AppColors.statusWarningText,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
-                  if (item.catatanPerbaikan?.trim().isNotEmpty ?? false) ...[
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      item.catatanPerbaikan!,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ] else if (complete) ...[
-                  // SK Box
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.sm),
-                    decoration: BoxDecoration(
-                      color: AppColors.statusSuccessSurface,
-                      borderRadius: AppRadii.small,
-                      border: Border.all(
-                        color: AppColors.statusSuccessText.withValues(
-                          alpha: 0.25,
-                        ),
-                      ),
-                    ),
-                    child: Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: AppSpacing.sm,
-                      runSpacing: AppSpacing.xs,
-                      children: [
-                        Column(
+                ),
+                const SizedBox(height: 12),
+              ] else if (complete) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Nomor SK Pengesahan:',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.statusSuccessText,
-                                fontWeight: FontWeight.w600,
+                            const Text(
+                              'Nomor SK Pengesahan',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.slate500,
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               item.nomorSk ?? '648/SK-SP/DPKP/2026',
-                              style: AppTextStyles.labelMedium.copyWith(
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textMain,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF064E3B),
                               ),
                             ),
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                        ),
+                        child: Text(
+                          item.tanggalSk ?? item.tanggal,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF065F46),
                           ),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: AppColors.statusSuccessText.withValues(
-                                alpha: 0.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ] else ...[
+                Builder(
+                  builder: (context) {
+                    final stepInfo = _getStepInfo(item.statusTahap);
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF0284C7),
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      'Tahap: ${stepInfo.$3}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF0369A1),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-                          child: Text(
-                            item.tanggalSk ?? item.tanggal,
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.statusSuccessText,
-                              fontWeight: FontWeight.w700,
+                            const SizedBox(width: 8),
+                            Text(
+                              'Langkah ${stepInfo.$1}/${stepInfo.$2}',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.slate500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: stepInfo.$4,
+                            minHeight: 4,
+                            backgroundColor: const Color(0xFFE2E8F0),
+                            valueColor: const AlwaysStoppedAnimation<Color>(
+                              Color(0xFF2563EB),
                             ),
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ] else ...[
-                  // Dalam Proses: Step & Progress bar
-                  Builder(
-                    builder: (context) {
-                      final stepInfo = _getStepInfo(item.statusTahap);
-                      return Container(
-                        padding: const EdgeInsets.all(AppSpacing.sm),
-                        decoration: const BoxDecoration(
-                          color: AppColors.statusSurveySurface,
-                          borderRadius: AppRadii.small,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Wrap(
-                              alignment: WrapAlignment.spaceBetween,
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: AppSpacing.sm,
-                              runSpacing: AppSpacing.xs,
-                              children: [
-                                _inlineNotice(
-                                  icon: Icons.info_outline,
-                                  text: 'Tahap: ${stepInfo.$3}',
-                                  color: AppColors.statusSurveyText,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                                Text(
-                                  'Langkah ${stepInfo.$1}/${stepInfo.$2}',
-                                  style: AppTextStyles.labelSmall.copyWith(
-                                    color: AppColors.statusSurveyText,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: AppSpacing.xs),
-                            LinearProgressIndicator(
-                              value: stepInfo.$4,
-                              semanticsLabel: 'Tahap ${item.statusTahap.label}',
-                              minHeight: 6,
-                              borderRadius: AppRadii.pill,
-                              color: AppColors.statusSurveyText,
-                              backgroundColor: AppColors.borderSubtle,
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
               ],
-            ),
-          ),
 
-          // 6. Bottom Action Bar
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.xs,
-            ),
-            decoration: BoxDecoration(
-              color: canRevise
-                  ? AppColors.statusWarningSurface.withValues(alpha: .4)
-                  : AppColors.cardSurface,
-              border: const Border(
-                top: BorderSide(color: AppColors.dividerLine),
-              ),
-            ),
-            child: Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: AppSpacing.sm,
-              runSpacing: AppSpacing.xs,
-              children: [
-                if (isWaitingVerification) ...[
-                  _inlineNotice(
-                    icon: Icons.event_outlined,
-                    text: 'Dikirim ${item.tanggal}',
-                    color: AppColors.textSecondary,
-                  ),
-                  _inlineNotice(
-                    icon: Icons.schedule_outlined,
-                    text: item.diperbarui ?? 'Diperbarui 2 hari lalu',
-                    color: AppColors.statusWarningText,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ] else if (revision) ...[
-                  _inlineNotice(
-                    icon: item.revisionSubmitted
-                        ? Icons.info_outline
-                        : Icons.warning_amber_rounded,
-                    text: item.revisionSubmitted
-                        ? 'Revisi terkirim · Menunggu pemeriksaan'
-                        : item.dokumenPerluRevisi.isEmpty
-                        ? '2 berkas perlu diperbaiki'
-                        : '${item.dokumenPerluRevisi.length} berkas perlu diperbaiki',
-                    color: AppColors.statusWarningText,
-                    fontWeight: FontWeight.w700,
-                    iconSize: 16,
-                  ),
-                  TextButton.icon(
-                    onPressed: onOpen,
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(48, 44),
-                      foregroundColor: canRevise
-                          ? AppColors.textOnRed
-                          : AppColors.primaryRed,
-                      backgroundColor: canRevise
-                          ? AppColors.primaryRed
-                          : AppColors.primarySurfaceSoft,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadii.small,
-                      ),
-                      textStyle: AppTextStyles.labelMedium.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    icon: Icon(
-                      canRevise
-                          ? Icons.edit_document
-                          : Icons.visibility_outlined,
-                      size: 16,
-                    ),
-                    label: Text(canRevise ? 'Perbaiki →' : 'Cek Detail →'),
-                  ),
-                ] else if (complete) ...[
-                  _inlineNotice(
-                    icon: Icons.check_circle_outline,
-                    text: 'Selesai Validasi',
-                    color: AppColors.statusSuccessText,
-                    fontWeight: FontWeight.w600,
-                    iconSize: 16,
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      if (onDownloadSk != null) {
-                        onDownloadSk!();
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Mengunduh SK Pengesahan: ${item.nomorSk ?? "648/SK-SP/DPKP/2026"} (Dummy/Local Preview)',
-                            ),
-                            backgroundColor: AppColors.statusSuccessText,
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(48, 40),
-                      foregroundColor: const Color(0xFF2563EB),
-                      backgroundColor: const Color(0xFFEFF6FF),
-                      side: const BorderSide(color: Color(0xFFBFDBFE)),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      textStyle: AppTextStyles.labelSmall.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    icon: const Icon(
-                      Icons.file_download_outlined,
-                      size: 16,
-                      color: Color(0xFF2563EB),
-                    ),
-                    label: const Text('Unduh SK (PDF)'),
-                  ),
-                ] else ...[
-                  _inlineNotice(
-                    icon: Icons.event_outlined,
-                    text: 'Dikirim ${item.tanggal}',
-                    color: AppColors.textSecondary,
-                  ),
-                  InkWell(
-                    onTap: onOpen,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 4,
-                      ),
+              // Group 4: Footer
+              Container(
+                padding: const EdgeInsets.only(top: 8),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            'Detail',
-                            style: AppTextStyles.labelMedium.copyWith(
-                              color: AppColors.primaryRed,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          Icon(
+                            complete
+                                ? Icons.check_circle_outline
+                                : Icons.calendar_today_outlined,
+                            size: 13,
+                            color: AppColors.slate400,
                           ),
-                          const Icon(
-                            Icons.chevron_right,
-                            size: 16,
-                            color: AppColors.primaryRed,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              complete
+                                  ? 'Selesai diproses'
+                                  : 'Dikirim ${item.tanggal}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.slate400,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                ],
-              ],
-            ),
+                    const SizedBox(width: 8),
+                    if (complete)
+                      InkWell(
+                        onTap: () {
+                          if (onDownloadSk != null) {
+                            onDownloadSk!();
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Mengunduh SK Pengesahan: ${item.nomorSk ?? "648/SK-SP/DPKP/2026"} (Dummy/Local Preview)',
+                                ),
+                                backgroundColor: AppColors.statusSuccessText,
+                                duration: const Duration(seconds: 3),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.description_outlined,
+                                size: 14,
+                                color: Color(0xFF15803D),
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Lihat SK',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF15803D),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else
+                      InkWell(
+                        onTap: onOpen,
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 2,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'Detail',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primaryRed,
+                                ),
+                              ),
+                              SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 15,
+                                color: AppColors.primaryRed,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
-  ),
-);
-  }
-
-  Widget _metric(IconData icon, String label, String value) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Icon(icon, color: AppColors.textSecondary, size: 16),
-      const SizedBox(width: AppSpacing.xs),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: AppTextStyles.labelMedium.copyWith(
-                fontWeight: FontWeight.w700,
-                color: AppColors.textMain,
-              ),
-            ),
-          ],
         ),
       ),
-    ],
-  );
-
-  Widget _inlineNotice({
-    required IconData icon,
-    required String text,
-    required Color color,
-    FontWeight fontWeight = FontWeight.w500,
-    double iconSize = 14,
-  }) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: iconSize, color: color),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            text,
-            style: AppTextStyles.labelSmall.copyWith(
-              color: color,
-              fontWeight: fontWeight,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
-
