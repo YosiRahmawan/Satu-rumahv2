@@ -91,12 +91,25 @@ void main() {
         // Dialog opens
         expect(find.byType(AlertDialog), findsOneWidget);
         expect(
-          find.text(
-            'Lengkapi data PT dan permohonan site plan pada langkah ini. '
-            'Seluruh berkas administrasi dan gambar teknis akan diunggah pada langkah berikutnya.',
-          ),
+          find.text('Pengajuan diisi dalam 5 langkah. Berikut isi tiap langkah.'),
           findsOneWidget,
         );
+        for (final langkah in ['Data PT', 'Berkas PT', 'Berkas perumahan', 'Teknis']) {
+          expect(find.text(langkah), findsOneWidget);
+        }
+        expect(
+          find.textContaining('Unggah minimal satu site plan berformat DWG atau PDF'),
+          findsOneWidget,
+        );
+        await tester.scrollUntilVisible(
+          find.text('Review'),
+          100,
+          scrollable: find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.byType(Scrollable),
+          ),
+        );
+        expect(find.text('Review'), findsOneWidget);
 
         // Tap 'Mengerti' to close
         await tester.tap(find.text('Mengerti'));
@@ -194,19 +207,46 @@ void main() {
         await tester.tap(q1);
         await tester.pumpAndSettle();
 
-        expect(find.text('Jawaban belum tersedia'), findsOneWidget);
+        expect(
+          find.textContaining('5 berkas perusahaan, 10 berkas perumahan wajib'),
+          findsOneWidget,
+        );
 
         // Footer disclaimer note
         expect(
           find.text(
-            'Kontak layanan dan jawaban pertanyaan umum akan diisi setelah '
-            'divalidasi Disperwaskim. Selama belum ada, '
-            'ditampilkan "Belum tersedia".',
+            'Kontak layanan akan diisi setelah divalidasi Disperwaskim. '
+            'Selama belum ada, ditampilkan "Belum tersedia".',
           ),
           findsOneWidget,
         );
       },
     );
+
+    testWidgets('menjawab dua pertanyaan umum lainnya', (tester) async {
+      await tester.pumpWidget(createTestWidget());
+      await tester.pumpAndSettle();
+
+      final q2 = find.text(
+        'Apa yang harus dilakukan jika berkas diminta diperbaiki?',
+      );
+      await tester.ensureVisible(q2);
+      await tester.tap(q2);
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('lalu tekan Perbaiki Berkas'),
+        findsOneWidget,
+      );
+
+      final q3 = find.text('Bagaimana jadwal survei lapangan ditentukan?');
+      await tester.ensureVisible(q3);
+      await tester.tap(q3);
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Jadwalnya tampil di menu Jadwal Survey'),
+        findsOneWidget,
+      );
+    });
 
     testWidgets(
       'renders responsively across 360dp, 390dp, and 412dp without overflow',

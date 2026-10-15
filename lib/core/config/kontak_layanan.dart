@@ -24,11 +24,21 @@ class KontakLayanan {
 
   // ─── Bagian 3: Pertanyaan Umum (FAQ) ──────────────────────────────────────
   /// Jawaban untuk: "Dokumen apa saja yang wajib diunggah?"
-  static const String? jawabanDokumenWajib = null;
+  static const String jawabanDokumenWajib =
+      'Formulir meminta 5 berkas perusahaan, 10 berkas perumahan wajib, dan '
+      'minimal satu gambar teknis site plan. Berkas PDF maksimal 10 MB, gambar '
+      'teknis DWG atau PDF maksimal 50 MB. Ketentuan resmi mengikuti '
+      'Disperwaskim.';
 
   /// Jawaban untuk: "Apa yang harus dilakukan jika berkas diminta diperbaiki?"
-  static const String? jawabanPerbaikanBerkas = null;
+  static const String jawabanPerbaikanBerkas =
+      'Buka pengajuannya, baca catatan perbaikan, lalu tekan Perbaiki Berkas. '
+      'Ganti hanya dokumen yang diminta, lalu kirim. Selama menunggu '
+      'pemeriksaan, berkas tidak bisa diubah lagi.';
 
   /// Jawaban untuk: "Bagaimana jadwal survei lapangan ditentukan?"
-  static const String? jawabanJadwalSurvei = null;
+  static const String jawabanJadwalSurvei =
+      'Admin Disperwaskim menentukan tanggal dan petugas setelah berkas lolos '
+      'pemeriksaan. Jadwalnya tampil di menu Jadwal Survey. Aturan penentuan '
+      'jadwal ditetapkan Disperwaskim.';
 }

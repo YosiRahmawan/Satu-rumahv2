@@ -205,9 +205,8 @@ class PusatBantuanScreen extends StatelessWidget {
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
-                        'Kontak layanan dan jawaban pertanyaan umum akan diisi setelah '
-                        'divalidasi Disperwaskim. Selama belum ada, '
-                        'ditampilkan "Belum tersedia".',
+                        'Kontak layanan akan diisi setelah divalidasi Disperwaskim. '
+                        'Selama belum ada, ditampilkan "Belum tersedia".',
                         style: TextStyle(
                           fontFamily: AppTextStyles.fontFamily,
                           fontSize: 12,
@@ -637,21 +636,21 @@ class PusatBantuanScreen extends StatelessWidget {
               context: context,
               question: 'Dokumen apa saja yang wajib diunggah?',
               answer:
-                  KontakLayanan.jawabanDokumenWajib ?? 'Jawaban belum tersedia',
+                  KontakLayanan.jawabanDokumenWajib,
             ),
             const Divider(height: 1, thickness: 1, color: AppColors.dividerLine),
             _buildFaqItem(
               context: context,
               question: 'Apa yang harus dilakukan jika berkas diminta diperbaiki?',
               answer:
-                  KontakLayanan.jawabanPerbaikanBerkas ?? 'Jawaban belum tersedia',
+                  KontakLayanan.jawabanPerbaikanBerkas,
             ),
             const Divider(height: 1, thickness: 1, color: AppColors.dividerLine),
             _buildFaqItem(
               context: context,
               question: 'Bagaimana jadwal survei lapangan ditentukan?',
               answer:
-                  KontakLayanan.jawabanJadwalSurvei ?? 'Jawaban belum tersedia',
+                  KontakLayanan.jawabanJadwalSurvei,
             ),
           ],
         ),
