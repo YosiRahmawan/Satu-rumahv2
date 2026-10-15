@@ -51,6 +51,7 @@ class PengajuanDetailScreen extends ConsumerStatefulWidget {
 
 class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
   Map<String, String> localDocs = {};
+  final Map<String, String> fileErrors = {};
   Set<String> clearedDocs = {};
   bool _isSubmittingRevision = false;
   int _selectedCategoryIndex = 2; // Default to 'Teknis (4)' matching prototype
@@ -1767,31 +1768,42 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                       final currentVal = clearedDocs.contains(key)
                           ? localDocs[key]
                           : (localDocs[key] ?? item.uploadedDocs[key]);
+                      final rule = FilePickerUtil.revisionRule(key);
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12.0),
                         child: DocUploadTile(
                           title: label,
                           subtitle:
-                              'Pilih file revisi baru dari HP (PDF / DWG / Gambar)',
+                              'Format ${rule.formatLabel}, maks. ${rule.maxMb} MB',
                           fileName: currentVal,
+                          errorText: fileErrors[key],
                           onUpload: () async {
                             final file = await FilePickerUtil.pickSingleFile(
-                              allowedExtensions: key == 'site_plan_dwg'
-                                  ? ['dwg', 'pdf', 'zip']
-                                  : ['pdf', 'jpg', 'jpeg', 'png'],
+                              allowedExtensions: rule.allowed,
                             );
-                            if (!ctx.mounted) return;
-                            if (file != null) {
-                              setModalState(() {
-                                localDocs[key] = file.path ?? file.name;
-                                clearedDocs.remove(key);
-                              });
-                              setState(() {
-                                localDocs[key] = file.path ?? file.name;
-                                clearedDocs.remove(key);
-                              });
+                            if (!ctx.mounted || file == null) return;
+                            final violation = FilePickerUtil.violationOf(
+                              file,
+                              rule,
+                            );
+                            if (violation != null) {
+                              final text =
+                                  '${file.name}: ${violation.message} Berkas lama tetap tersimpan.';
+                              setModalState(() => fileErrors[key] = text);
+                              setState(() => fileErrors[key] = text);
+                              return;
                             }
+                            setModalState(() {
+                              localDocs[key] = file.path ?? file.name;
+                              clearedDocs.remove(key);
+                              fileErrors.remove(key);
+                            });
+                            setState(() {
+                              localDocs[key] = file.path ?? file.name;
+                              clearedDocs.remove(key);
+                              fileErrors.remove(key);
+                            });
                           },
                           onDelete: () {
                             setModalState(() {

@@ -189,15 +189,45 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('KTP_Direktur_Revisi_2026.pdf'), findsOneWidget);
-        expect(find.text('KTP_Direktur_Terlalu_Besar.pdf'), findsNothing);
+        expect(find.text('KTP_Direktur_Terlalu_Besar.pdf'), findsOneWidget);
+        expect(find.text('10.0 MB • Melebihi batas maksimal'), findsOneWidget);
         expect(
           find.textContaining(
             'File melebihi batas maksimal 10 MB. Berkas lama tetap tersimpan.',
           ),
           findsOneWidget,
         );
+        expect(find.text('Coba Lagi'), findsOneWidget);
       },
     );
+
+    testWidgets('rejects a non-PDF replacement with an inline failure card', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildTestWidget(
+          pickerSeam: ({allowedExtensions}) async =>
+              PlatformFile(name: 'KTP_Foto.jpg', size: 1024 * 1024),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Pilih Berkas'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Pilih Berkas'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('KTP_Foto.jpg'), findsOneWidget);
+      expect(find.text('1.0 MB • Format tidak didukung'), findsOneWidget);
+      expect(
+        find.textContaining('Format tidak didukung. Gunakan PDF.'),
+        findsOneWidget,
+      );
+      expect(find.text('KTP_Direktur_Revisi_2026.pdf'), findsOneWidget);
+    });
 
     testWidgets('renders Card 4: Catatan untuk Admin with counter', (
       tester,

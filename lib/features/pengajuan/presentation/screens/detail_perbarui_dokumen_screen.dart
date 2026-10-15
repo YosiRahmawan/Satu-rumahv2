@@ -33,6 +33,7 @@ class _DetailPerbaruiDokumenScreenState
     extends ConsumerState<DetailPerbaruiDokumenScreen> {
   late TextEditingController _catatanController;
   String? _selectedFileName;
+  _PickError? _pickError;
   String? _selectedFileSize;
 
   @override
@@ -56,6 +57,8 @@ class _DetailPerbaruiDokumenScreenState
     _catatanController.dispose();
     super.dispose();
   }
+
+  FileRule get _rule => FilePickerUtil.revisionRule(widget.docKey);
 
   String get _documentTitle {
     if (widget.docData != null && widget.docData!['title'] != null) {
@@ -99,46 +102,129 @@ class _DetailPerbaruiDokumenScreenState
 
   Future<void> _handlePickFile() async {
     try {
-      final isSitePlan = widget.docKey == 'site_plan_dwg';
-      final allowedExtensions = isSitePlan
-          ? ['pdf', 'dwg']
-          : ['pdf', 'jpg', 'png'];
       final picked = widget.pickerSeam != null
-          ? await widget.pickerSeam!(allowedExtensions: allowedExtensions)
+          ? await widget.pickerSeam!(allowedExtensions: _rule.allowed)
           : await FilePickerUtil.pickSingleFile(
-              allowedExtensions: allowedExtensions,
+              allowedExtensions: _rule.allowed,
             );
 
       if (picked == null) return;
 
-      final maxBytes = isSitePlan ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
-      if (picked.size > maxBytes) {
+      final violation = FilePickerUtil.violationOf(picked, _rule);
+      if (violation != null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'File melebihi batas maksimal ${maxBytes ~/ (1024 * 1024)} MB. Berkas lama tetap tersimpan.',
-            ),
+        setState(
+          () => _pickError = _PickError(
+            fileName: picked.name,
+            sizeText: FilePickerUtil.formatSize(picked.size),
+            reason: violation.reason,
+            message: '${violation.message} Berkas lama tetap tersimpan.',
           ),
         );
         return;
       }
 
       setState(() {
+        _pickError = null;
         _selectedFileName = picked.name;
         _selectedFileSize =
             '${(picked.size / (1024 * 1024)).toStringAsFixed(1)} MB';
       });
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Berkas tidak dapat dipilih. Berkas lama tetap tersimpan.',
-          ),
+      setState(
+        () => _pickError = const _PickError(
+          fileName: 'Kendala perangkat',
+          sizeText: '',
+          reason: 'Berkas tidak dapat dipilih',
+          message: 'Berkas tidak dapat dipilih. Berkas lama tetap tersimpan.',
         ),
       );
     }
+  }
+
+  Widget _buildPickErrorCard(_PickError error) {
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primarySurfaceSoft,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.primarySurfaceBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: AppColors.primaryRed,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      error.fileName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMain,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      error.sizeText.isEmpty
+                          ? error.reason
+                          : '${error.sizeText} • ${error.reason}',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.primaryRed,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  error.message,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.primaryRed,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: _handlePickFile,
+                child: const Text(
+                  'Coba Lagi',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   void _handleKirimPerbaikan() {
@@ -895,7 +981,7 @@ class _DetailPerbaruiDokumenScreenState
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Ketuk untuk memilih berkas PDF',
+                    'Ketuk untuk memilih berkas ${_rule.formatLabel}',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.bodyMedium.copyWith(
                       fontWeight: FontWeight.w700,
@@ -905,7 +991,7 @@ class _DetailPerbaruiDokumenScreenState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Maks. 10 MB, format PDF (BR-002)',
+                    'Maks. ${_rule.maxMb} MB, format ${_rule.formatLabel} (${widget.docKey == 'site_plan_dwg' ? 'BR-004' : 'BR-002'})',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textMuted,
@@ -940,6 +1026,8 @@ class _DetailPerbaruiDokumenScreenState
               ),
             ),
           ),
+
+          if (_pickError != null) _buildPickErrorCard(_pickError!),
 
           // Selected File Section
           if (_selectedFileName != null) ...[
@@ -1468,4 +1556,18 @@ class DashedBorderPainter extends CustomPainter {
       oldDelegate.dashWidth != dashWidth ||
       oldDelegate.dashSpace != dashSpace ||
       oldDelegate.borderRadius != borderRadius;
+}
+
+class _PickError {
+  const _PickError({
+    required this.fileName,
+    required this.sizeText,
+    required this.reason,
+    required this.message,
+  });
+
+  final String fileName;
+  final String sizeText;
+  final String reason;
+  final String message;
 }

@@ -24,7 +24,55 @@ class FilePickResult<T> {
   bool get isFailed => status == FilePickStatus.failed;
 }
 
+/// Aturan format dan ukuran untuk satu jenis berkas.
+class FileRule {
+  const FileRule(this.allowed, this.maxBytes);
+
+  final List<String> allowed;
+  final int maxBytes;
+
+  int get maxMb => maxBytes ~/ (1024 * 1024);
+  String get formatLabel => allowed.map((e) => e.toUpperCase()).join(' atau ');
+}
+
+/// Alasan sebuah berkas ditolak: [reason] singkat, [message] lengkap.
+class FileViolation {
+  const FileViolation(this.reason, this.message);
+
+  final String reason;
+  final String message;
+}
+
 class FilePickerUtil {
+  /// Aturan berkas revisi: site plan DWG atau PDF (maks. 50 MB), selain itu
+  /// PDF saja (maks. 10 MB), sama dengan form pengajuan awal.
+  static FileRule revisionRule(String docKey) => docKey == 'site_plan_dwg'
+      ? const FileRule(['dwg', 'pdf'], 50 * 1024 * 1024)
+      : const FileRule(['pdf'], 10 * 1024 * 1024);
+
+  /// Mengembalikan alasan penolakan, atau null bila berkas sesuai [rule].
+  static FileViolation? violationOf(PlatformFile file, FileRule rule) {
+    final extension = file.extension?.toLowerCase() ??
+        (file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '');
+    if (!rule.allowed.contains(extension)) {
+      return FileViolation(
+        'Format tidak didukung',
+        'Format tidak didukung. Gunakan ${rule.formatLabel}.',
+      );
+    }
+    if (file.size > rule.maxBytes) {
+      return FileViolation(
+        'Melebihi batas maksimal',
+        'File melebihi batas maksimal ${rule.maxMb} MB.',
+      );
+    }
+    return null;
+  }
+
+  static String formatSize(int bytes) => bytes >= 1024 * 1024
+      ? '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB'
+      : '${(bytes / 1024).toStringAsFixed(0)} KB';
+
   /// Membuka pemilih berkas bawaan Android (Document Picker / Files app) untuk memilih 1 file.
   static Future<FilePickResult<PlatformFile>> pickSingleFileResult({
     List<String>? allowedExtensions,
