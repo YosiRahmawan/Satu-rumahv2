@@ -15,6 +15,7 @@ class DataStateView extends StatelessWidget {
   final String message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final Widget? illustration;
 
   const DataStateView({
     super.key,
@@ -23,6 +24,7 @@ class DataStateView extends StatelessWidget {
     required this.message,
     this.actionLabel,
     this.onAction,
+    this.illustration,
   });
 
   const DataStateView.loading({
@@ -31,7 +33,8 @@ class DataStateView extends StatelessWidget {
     this.message = 'Data sedang disiapkan.',
   }) : state = AppDataState.loading,
        actionLabel = null,
-       onAction = null;
+       onAction = null,
+       illustration = null;
 
   const DataStateView.empty({
     super.key,
@@ -39,6 +42,7 @@ class DataStateView extends StatelessWidget {
     required this.message,
     this.actionLabel,
     this.onAction,
+    this.illustration,
   }) : state = AppDataState.empty;
 
   const DataStateView.error({
@@ -47,23 +51,26 @@ class DataStateView extends StatelessWidget {
     this.message = 'Coba lagi untuk memuat data terbaru.',
     this.actionLabel = 'Coba lagi',
     this.onAction,
-  }) : state = AppDataState.error;
+  }) : state = AppDataState.error,
+       illustration = null;
 
   @override
   Widget build(BuildContext context) {
-    final icon = switch (state) {
-      AppDataState.loading => const AppHousingLoader.medium(),
-      AppDataState.empty => const Icon(
-        Icons.inbox_outlined,
-        size: 40,
-        color: AppColors.textMuted,
-      ),
-      AppDataState.error => const Icon(
-        Icons.error_outline,
-        size: 40,
-        color: AppColors.error,
-      ),
-    };
+    final icon =
+        illustration ??
+        switch (state) {
+          AppDataState.loading => const AppHousingLoader.medium(),
+          AppDataState.empty => const Icon(
+            Icons.inbox_outlined,
+            size: 40,
+            color: AppColors.textMuted,
+          ),
+          AppDataState.error => const Icon(
+            Icons.error_outline,
+            size: 40,
+            color: AppColors.error,
+          ),
+        };
 
     return Container(
       width: double.infinity,

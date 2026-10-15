@@ -17,8 +17,10 @@ import 'package:satu_rumah/features/pengajuan/data/models/status_tahap_pengajuan
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_list_view_provider.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_saya_list_screen.dart';
+import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_empty_state.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_list_card.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_list_filters.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class _Submissions extends PengajuanListNotifier {
   _Submissions(List<Pengajuan> items) {
@@ -198,9 +200,13 @@ void main() {
     expect(find.text('Perumahan Green Tasik'), findsNothing);
     await tester.enterText(find.byType(TextField), 'missing');
     await tester.pumpAndSettle();
+    expect(find.text('Tidak ada pengajuan ditemukan'), findsOneWidget);
+    expect(find.byType(SvgPicture), findsOneWidget);
+    expect(find.byType(HousingSitePlanIllustration), findsNothing);
     await tester.ensureVisible(find.text('Reset pencarian dan filter'));
     await tester.tap(find.text('Reset pencarian dan filter'));
     await tester.pumpAndSettle();
+    expect(find.byType(SvgPicture), findsNothing);
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller!.text,
       isEmpty,
@@ -266,7 +272,10 @@ void main() {
       await tester.tap(find.widgetWithText(ChoiceChip, 'Perlu Perbaikan (1)'));
       await tester.pumpAndSettle();
 
-      final buttonFinder = find.widgetWithText(ElevatedButton, 'Perbaiki Berkas');
+      final buttonFinder = find.widgetWithText(
+        ElevatedButton,
+        'Perbaiki Berkas',
+      );
       expect(buttonFinder, findsOneWidget);
 
       final timestampFinder = find.text('Diperbarui 2 hari lalu');
@@ -331,8 +340,21 @@ void main() {
   testWidgets('empty data has an honest empty state', (tester) async {
     await _pump(tester, items: []);
     expect(find.text('Belum ada pengajuan'), findsOneWidget);
+    expect(
+      find.text(
+        'Mulai pengajuan pertama Anda untuk mengajukan site plan dan dokumen perumahan.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Buat Pengajuan'), findsOneWidget);
     expect(find.byType(PengajuanListCard), findsNothing);
     expect(find.text('Total: 0 Pengajuan'), findsOneWidget);
+    expect(find.byType(SvgPicture), findsOneWidget);
+
+    // Tap Buat Pengajuan navigates to /pengajuan/step1
+    await tester.tap(find.text('Buat Pengajuan'));
+    await tester.pumpAndSettle();
+    expect(find.text('Form pengajuan baru'), findsOneWidget);
   });
 
   testWidgets('provider updates recompute summary and active filter', (

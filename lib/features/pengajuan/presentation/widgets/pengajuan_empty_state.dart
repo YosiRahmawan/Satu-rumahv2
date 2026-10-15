@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -80,11 +82,46 @@ class _HousingSitePlanPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    _drawDashedLine(canvas, const Offset(42, 24), const Offset(42, 108), 3, 3, gridPaint);
-    _drawDashedLine(canvas, const Offset(80, 24), const Offset(80, 108), 3, 3, gridPaint);
-    _drawDashedLine(canvas, const Offset(118, 24), const Offset(118, 108), 3, 3, gridPaint);
-    _drawDashedLine(canvas, const Offset(22, 52), const Offset(138, 52), 3, 3, gridPaint);
-    _drawDashedLine(canvas, const Offset(22, 80), const Offset(138, 80), 3, 3, gridPaint);
+    _drawDashedLine(
+      canvas,
+      const Offset(42, 24),
+      const Offset(42, 108),
+      3,
+      3,
+      gridPaint,
+    );
+    _drawDashedLine(
+      canvas,
+      const Offset(80, 24),
+      const Offset(80, 108),
+      3,
+      3,
+      gridPaint,
+    );
+    _drawDashedLine(
+      canvas,
+      const Offset(118, 24),
+      const Offset(118, 108),
+      3,
+      3,
+      gridPaint,
+    );
+    _drawDashedLine(
+      canvas,
+      const Offset(22, 52),
+      const Offset(138, 52),
+      3,
+      3,
+      gridPaint,
+    );
+    _drawDashedLine(
+      canvas,
+      const Offset(22, 80),
+      const Offset(138, 80),
+      3,
+      3,
+      gridPaint,
+    );
 
     // 3. Folded Corner Sheet Detail (M126 24 V36 H138)
     final foldPath = Path()
@@ -320,12 +357,14 @@ class PengajuanEmptyState extends StatefulWidget {
   final bool isFilteredEmpty;
   final int totalRegistered;
   final FutureOr<void> Function()? onReset;
+  final VoidCallback? onCreateNew;
 
   const PengajuanEmptyState({
     super.key,
     required this.isFilteredEmpty,
     this.totalRegistered = 0,
     this.onReset,
+    this.onCreateNew,
   });
 
   @override
@@ -380,6 +419,14 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
     }
   }
 
+  void _handleCreateNew() {
+    if (widget.onCreateNew != null) {
+      widget.onCreateNew!();
+    } else {
+      context.push('/pengajuan/step1');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final title = widget.isFilteredEmpty
@@ -388,7 +435,7 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
 
     final message = widget.isFilteredEmpty
         ? 'Coba ubah kata kunci, status, atau filter tahun untuk melihat hasil lainnya.'
-        : 'Gunakan tombol AJUKAN untuk membuat pengajuan perumahan.';
+        : 'Mulai pengajuan pertama Anda untuk mengajukan site plan dan dokumen perumahan.';
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -413,8 +460,26 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // B. Housing Architectural Blueprint Illustration
-              const HousingSitePlanIllustration(),
+              // B. Empty State Illustration
+              if (widget.isFilteredEmpty)
+                Semantics(
+                  label:
+                      'Maskot SATU RUMAH memeriksa dokumen tidak ada pengajuan ditemukan',
+                  child: SvgPicture.asset(
+                    'assets/images/pengajuan_empty_search.svg',
+                    height: 145,
+                    fit: BoxFit.contain,
+                  ),
+                )
+              else
+                Semantics(
+                  label: 'Maskot SATU RUMAH mengajak membuat pengajuan pertama',
+                  child: SvgPicture.asset(
+                    'assets/images/pengajuan_empty_onboarding.svg',
+                    height: 145,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               const SizedBox(height: 20),
 
               // C. Headline
@@ -446,7 +511,7 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
                 ),
               ),
 
-              // E. Action Button & F. Microtext (Only when filters are active)
+              // E. Action Button (Filtered: Reset / Zero Submissions: Buat Pengajuan)
               if (widget.isFilteredEmpty && widget.onReset != null) ...[
                 const SizedBox(height: 24),
                 ConstrainedBox(
@@ -459,8 +524,9 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
                           backgroundColor: Colors.white,
                           foregroundColor: const Color(0xFF0F172A),
                           disabledBackgroundColor: Colors.white,
-                          disabledForegroundColor:
-                              const Color(0xFF0F172A).withValues(alpha: 0.6),
+                          disabledForegroundColor: const Color(
+                            0xFF0F172A,
+                          ).withValues(alpha: 0.6),
                           elevation: 1,
                           shadowColor: const Color(0x1A0F172A),
                           side: const BorderSide(color: Color(0xFFE2E8F0)),
@@ -516,6 +582,46 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
                         textAlign: TextAlign.center,
                       ),
                     ],
+                  ),
+                ),
+              ] else if (!widget.isFilteredEmpty) ...[
+                const SizedBox(height: 24),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 300),
+                  child: ElevatedButton(
+                    onPressed: _handleCreateNew,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryRed,
+                      foregroundColor: AppColors.textOnRed,
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                      minimumSize: const Size(double.infinity, 46),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.add_rounded,
+                          size: 18,
+                          color: AppColors.textOnRed,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          'Buat Pengajuan',
+                          style: TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            color: AppColors.textOnRed,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

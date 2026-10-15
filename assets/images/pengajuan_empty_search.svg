@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="100%" height="100%" fill="none">
+  <!-- Subtle ambient decorative glow rings in brand tones -->
+  <circle cx="118" cy="94" r="72" fill="#FEE2E2" fill-opacity="0.35" />
+  <circle cx="118" cy="94" r="52" fill="#FEE2E2" fill-opacity="0.45" />
+
+  <!-- Subtle discovery / curiosity accent sparks -->
+  <path d="M44 48L46 52.5L50.5 54.5L46 56.5L44 61L42 56.5L37.5 54.5L42 52.5Z" fill="#FDA4AF" opacity="0.75" />
+  <path d="M202 46L204 50.5L208.5 52.5L204 54.5L202 59L200 54.5L195.5 52.5L200 50.5Z" fill="#FDA4AF" opacity="0.8" />
+  <circle cx="206" cy="76" r="2.5" fill="#FECDD3" />
+  <circle cx="36" cy="84" r="2.5" fill="#FECDD3" />
+
+  <!-- Floor ground shadows: grounded natural stance and document resting shadow -->
+  <ellipse cx="120" cy="155" rx="60" ry="7.5" fill="#CBD5E1" opacity="0.5" />
+  <ellipse cx="80" cy="154" rx="32" ry="4.5" fill="#94A3B8" opacity="0.3" />
+  <ellipse cx="140" cy="155" rx="38" ry="5.5" fill="#94A3B8" opacity="0.3" />
+
+  <!-- Supporting Object: Small Application Document resting angled on ground left -->
+  <g id="application-document" transform="translate(48, 74) rotate(-5)">
+    <!-- Document drop shadow -->
+    <rect x="1" y="2" width="46" height="64" rx="6" fill="#94A3B8" opacity="0.25" />
+    <!-- Document Card Base -->
+    <rect x="0" y="0" width="46" height="64" rx="6" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5" />
+    
+    <!-- Red Accent Top Header Tab (Siteplan/Pengajuan identifier) -->
+    <path d="M0 6C0 2.68629 2.68629 0 6 0H40C43.3137 0 46 2.68629 46 6V10H0V6Z" fill="#B91C1C" />
+    
+    <!-- Mini House / Siteplan Crest Icon on Document -->
+    <g transform="translate(8, 16)">
+      <path d="M6 1L1 5.5V11C1 11.5 1.5 12 2 12H10C10.5 12 11 11.5 11 11V5.5L6 1Z" fill="#FEE2E2" />
+      <path d="M4.5 12V8.5C4.5 8.2 4.7 8 5 8H7C7.3 8 7.5 8.2 7.5 8.5V12" fill="#B91C1C" />
+      <!-- Document header title lines -->
+      <rect x="15" y="3" width="16" height="2.5" rx="1.25" fill="#64748B" />
+      <rect x="15" y="7.5" width="11" height="2" rx="1" fill="#94A3B8" />
+    </g>
+
+    <!-- Simulated Document Content Rows -->
+    <rect x="8" y="34" width="30" height="2.5" rx="1.25" fill="#E2E8F0" />
+    <rect x="8" y="40" width="24" height="2.5" rx="1.25" fill="#F1F5F9" />
+    <rect x="8" y="46" width="28" height="2.5" rx="1.25" fill="#F1F5F9" />
+    <rect x="8" y="52" width="18" height="2" rx="1" fill="#E2E8F0" />
+  </g>
+
+  <!-- Mascot Character: Leaning forward and towards the left to inspect the document closely -->
+  <!-- Applied -6 deg natural body tilt anchored near bottom center -->
+  <g id="mascot-character" transform="translate(98, 28) rotate(-6 35 110)">
+    
+    <!-- Grounded Sturdy Feet -->
+    <!-- Left Leg & Foot (closer to document) -->
+    <rect x="12" y="108" width="11" height="17" rx="5" fill="#991B1B" />
+    <ellipse cx="17" cy="125" rx="8" ry="4.5" fill="#7F1D1D" />
+
+    <!-- Right Leg & Foot -->
+    <rect x="36" y="108" width="11" height="17" rx="5" fill="#991B1B" />
+    <ellipse cx="42" cy="125" rx="8" ry="4.5" fill="#7F1D1D" />
+
+    <!-- House Body / Torso (Rounded friendly house structure) -->
+    <rect x="6" y="52" width="52" height="62" rx="14" fill="#B91C1C" />
+
+    <!-- Clean white apron / belly patch -->
+    <rect x="14" y="68" width="36" height="38" rx="10" fill="#FFFFFF" opacity="0.96" />
+    <!-- Mini House crest on chest -->
+    <path d="M32 76L24 83V94C24 95 25 96 26 96H38C39 96 40 95 40 94V83L32 76Z" fill="#FEE2E2" />
+    <path d="M29 96V89C29 88.5 29.5 88 30 88H34C34.5 88 35 88.5 35 89V96" fill="#B91C1C" />
+
+    <!-- Left Arm: Resting and bracing lightly at bottom-left, guiding the document -->
+    <g transform="translate(-16, 72)">
+      <path d="M22 6C14 10 6 18 1 27C-1 30 2 33 6 31C10 28 16 22 22 17" stroke="#B91C1C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+      <!-- Left Hand resting on/beside the lower corner of document -->
+      <circle cx="2" cy="29" r="5" fill="#991B1B" />
+    </g>
+
+    <!-- Head / Roof Bonnet: Iconic SATU RUMAH House Roof -->
+    <!-- Chimney on left pitch -->
+    <rect x="12" y="14" width="7" height="12" rx="2" fill="#881337" />
+
+    <!-- Triangular roof structure -->
+    <path d="M32 10L61 36C64 38.7 62.5 44 58.5 44H5.5C1.5 44 0 38.7 3 36L32 10Z" fill="#881337" />
+    <!-- Inner roof highlight rim -->
+    <path d="M32 14L6 37.5C4.5 38.8 5.3 41.5 7.3 41.5H56.7C58.7 41.5 59.5 38.8 58 37.5L32 14Z" fill="#991B1B" />
+
+    <!-- Face Area nestled smoothly beneath roof -->
+    <rect x="11" y="32" width="42" height="34" rx="10" fill="#FFF1F2" />
+
+    <!-- Focused, curious eyes looking down and forward directly toward the inspection lens & document -->
+    <!-- Left Eye -->
+    <g transform="translate(17, 44)">
+      <ellipse cx="4" cy="4" rx="3.5" ry="4" fill="#334155" />
+      <circle cx="2" cy="2.5" r="1.3" fill="#FFFFFF" />
+    </g>
+    <!-- Right Eye -->
+    <g transform="translate(35, 44)">
+      <ellipse cx="4" cy="4" rx="3.5" ry="4" fill="#334155" />
+      <circle cx="2" cy="2.5" r="1.3" fill="#FFFFFF" />
+    </g>
+
+    <!-- Inquisitive, slightly furrowed / raised soft eyebrows -->
+    <path d="M18 39.5C21 38 25 38.5 27 40.5" stroke="#64748B" stroke-width="1.8" stroke-linecap="round" />
+    <path d="M36 39.5C39 37.5 44 38 45 40" stroke="#64748B" stroke-width="1.8" stroke-linecap="round" />
+
+    <!-- Calm, searching, gently focused mouth (thoughtful small curve) -->
+    <path d="M28 55.5C29.5 57.5 33.5 57.5 35 55.5" stroke="#881337" stroke-width="2.3" stroke-linecap="round" />
+
+    <!-- Rosy cheerful cheeks -->
+    <circle cx="15" cy="52" r="3.2" fill="#FDA4AF" opacity="0.65" />
+    <circle cx="45" cy="52" r="3.2" fill="#FDA4AF" opacity="0.65" />
+  </g>
+
+  <!-- Right Arm & Magnifying Glass Group (Drawn on top to allow lens to partially overlap the document) -->
+  <!-- Reaching intentionally forward-left right over the document face -->
+  <g id="inspecting-arm-and-lens" transform="translate(94, 62)">
+    
+    <!-- Forward, intentional reaching arm curving from mascot shoulder across chest towards document -->
+    <path d="M42 22C34 16 22 18 10 24C4 27 2 32 6 34C10 36 16 33 22 29" stroke="#B91C1C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Hand gripping magnifying glass handle firmly -->
+    <circle cx="4" cy="30" r="5" fill="#991B1B" />
+
+    <!-- Magnifying Glass Object (Scaled down ~12% with radius 15.5px, positioned directly overlapping document) -->
+    <g transform="translate(-10, 36) rotate(-28)">
+      
+      <!-- Magnifying Glass Handle -->
+      <g transform="translate(0, 0)">
+        <!-- Grip -->
+        <rect x="-2.5" y="13" width="5" height="19" rx="2.5" fill="#334155" />
+        <rect x="-0.8" y="15" width="1.6" height="15" rx="0.8" fill="#64748B" />
+        <rect x="-3.5" y="10.5" width="7" height="3.5" rx="1.2" fill="#94A3B8" />
+
+        <!-- Lens Rim / Frame (Outer shadow and sturdy slate frame) -->
+        <circle cx="0" cy="-2" r="16.5" fill="none" stroke="#1E293B" stroke-width="3.8" />
+        <circle cx="0" cy="-2" r="15" fill="none" stroke="#475569" stroke-width="1.2" />
+
+        <!-- Translucent Cyan Glass Lens (overlapping the document beneath) -->
+        <circle cx="0" cy="-2" r="14" fill="#F0F9FF" fill-opacity="0.65" />
+        
+        <!-- Magnified simulated text bar inside lens focus -->
+        <rect x="-8" y="-4" width="16" height="3" rx="1.5" fill="#3B82F6" fill-opacity="0.3" />
+        <rect x="-6" y="1" width="12" height="2" rx="1" fill="#64748B" fill-opacity="0.35" />
+
+        <!-- Lens Specular Glare / Reflection Curves -->
+        <path d="M-9 -10C-5 -14 3 -14 8 -10" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" opacity="0.9" />
+        <circle cx="9" cy="-6" r="1.3" fill="#FFFFFF" opacity="0.85" />
+      </g>
+    </g>
+
+    <!-- Subtle gentle wonder/focus ripple arcs near the inspection point -->
+    <path d="M-24 16C-22 13 -19 11 -15 12" stroke="#FDA4AF" stroke-width="1.6" stroke-linecap="round" opacity="0.7" />
+    <path d="M-28 22C-26 18 -22 16 -17 17" stroke="#FDA4AF" stroke-width="1.6" stroke-linecap="round" opacity="0.6" />
+  </g>
+</svg>

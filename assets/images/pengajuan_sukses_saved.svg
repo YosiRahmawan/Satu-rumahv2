@@ -1,0 +1,158 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="100%" height="100%" fill="none">
+  <!-- Subtle ambient decorative glow rings in brand tones -->
+  <circle cx="120" cy="88" r="74" fill="#FEE2E2" fill-opacity="0.35" />
+  <circle cx="120" cy="88" r="54" fill="#FEE2E2" fill-opacity="0.5" />
+
+  <!-- Subtle joyful motion sparks / celebratory accents -->
+  <!-- Left celebratory star -->
+  <path d="M42 46L44.5 51.5L50 54L44.5 56.5L42 62L39.5 56.5L34 54L39.5 51.5Z" fill="#FDA4AF" opacity="0.8" />
+  <!-- Right celebratory star -->
+  <path d="M202 42L204 46.5L208.5 48.5L204 50.5L202 55L200 50.5L195.5 48.5L200 46.5Z" fill="#FDA4AF" opacity="0.85" />
+  <circle cx="206" cy="78" r="2.5" fill="#FECDD3" />
+  <circle cx="36" cy="88" r="2.5" fill="#FECDD3" />
+
+  <!-- Floor shadows - Showing jump clearance / lift -->
+  <!-- Clipboard resting shadow on ground -->
+  <ellipse cx="68" cy="158" rx="26" ry="4" fill="#CBD5E1" opacity="0.55" />
+  <!-- Mascot jump shadow: narrower, softened ellipse indicating distance above floor -->
+  <ellipse cx="138" cy="160" rx="36" ry="6" fill="#CBD5E1" opacity="0.45" />
+  <ellipse cx="138" cy="160" rx="22" ry="3.5" fill="#94A3B8" opacity="0.3" />
+
+  <!-- Supporting Object: Large Formal Application Clipboard resting securely on Left -->
+  <g transform="translate(42, 68)">
+    <!-- Clipboard Board (warm slate / dark corporate base) -->
+    <rect x="0" y="8" width="54" height="76" rx="8" fill="#1E293B" />
+    <rect x="2" y="10" width="50" height="72" rx="6" fill="#334155" />
+    
+    <!-- Metallic Clip Top -->
+    <rect x="17" y="3" width="20" height="10" rx="3" fill="#94A3B8" />
+    <rect x="21" y="1" width="12" height="4" rx="2" fill="#64748B" />
+    <circle cx="27" cy="8" r="2" fill="#1E293B" />
+
+    <!-- Application Paper Sheet tucked in clip -->
+    <rect x="5" y="15" width="44" height="65" rx="4" fill="#FFFFFF" />
+    
+    <!-- Document Header Badge (Siteplan / Permohonan bar) in SATU RUMAH red -->
+    <rect x="10" y="22" width="22" height="4.5" rx="2" fill="#B91C1C" />
+    <rect x="10" y="29" width="32" height="2.5" rx="1.25" fill="#E2E8F0" />
+    
+    <!-- Form line rows representing registered data -->
+    <rect x="10" y="35" width="26" height="2.5" rx="1.25" fill="#F1F5F9" />
+    <rect x="10" y="40" width="30" height="2.5" rx="1.25" fill="#F1F5F9" />
+    <rect x="10" y="45" width="20" height="2.5" rx="1.25" fill="#F1F5F9" />
+
+    <!-- Neutral Saved / Recorded Document Indicator (Clean, non-verification / non-approval stamp) -->
+    <g transform="translate(10, 52)">
+      <!-- Neutral subtle container with soft border indicating recorded submission -->
+      <rect x="0" y="0" width="34" height="20" rx="4" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
+      
+      <!-- Mini recorded doc/database check badge -->
+      <rect x="4" y="4.5" width="8" height="11" rx="1.5" fill="#E2E8F0" />
+      <rect x="6" y="7" width="4" height="1.2" rx="0.6" fill="#94A3B8" />
+      <rect x="6" y="9.5" width="4" height="1.2" rx="0.6" fill="#94A3B8" />
+      <rect x="6" y="12" width="4" height="1.2" rx="0.6" fill="#94A3B8" />
+      
+      <!-- Subtle recorded text lines -->
+      <rect x="15" y="6" width="14" height="2.5" rx="1" fill="#64748B" />
+      <rect x="15" y="10.5" width="10" height="2" rx="1" fill="#94A3B8" />
+      <rect x="15" y="14" width="7" height="1.8" rx="0.9" fill="#CBD5E1" />
+    </g>
+  </g>
+
+  <!-- Mascot: SATU RUMAH House Guardian Character in Joyful Celebratory Jump Pose -->
+  <!-- Whole mascot is lifted ~14px upward with slight energetic tilt (rotated -2 deg) -->
+  <g transform="translate(112, 18)">
+    
+    <!-- Jump motion wind / boost curves beneath lifted feet -->
+    <path d="M16 138C20 141 27 142 32 140" stroke="#FDA4AF" stroke-width="2" stroke-linecap="round" opacity="0.75" />
+    <path d="M38 139C42 142 49 141 53 138" stroke="#FDA4AF" stroke-width="2" stroke-linecap="round" opacity="0.75" />
+
+    <!-- Bent / Lifted Legs in Jump Motion -->
+    <!-- Left Leg: tucked slightly upward/backward -->
+    <g transform="translate(14, 108)">
+      <path d="M8 0L3 18C2.5 20 4.5 22 7 22H11C13.5 22 15.5 20 15 18L13 0" fill="#991B1B" />
+      <!-- Left Foot angled cheerfully up -->
+      <ellipse cx="6" cy="22" rx="7.5" ry="4.5" fill="#7F1D1D" transform="rotate(-12 6 22)" />
+    </g>
+
+    <!-- Right Leg: bent outward playfully in celebratory hop -->
+    <g transform="translate(36, 108)">
+      <path d="M2 0L5 17C5.5 19.5 8 21.5 10.5 21L14.5 20C17 19.5 18 17 17.5 15L11 0" fill="#991B1B" />
+      <!-- Right Foot angled upward -->
+      <ellipse cx="14" cy="20" rx="7.5" ry="4.5" fill="#7F1D1D" transform="rotate(16 14 20)" />
+    </g>
+
+    <!-- Torso / Main Body (Friendly rounded house structure) -->
+    <rect x="6" y="58" width="54" height="58" rx="15" fill="#B91C1C" />
+
+    <!-- Clean white apron / belly patch -->
+    <rect x="15" y="73" width="36" height="36" rx="10" fill="#FFFFFF" opacity="0.96" />
+    <!-- Mini House crest on chest -->
+    <path d="M33 80L25 87V98C25 99 26 100 27 100H39C40 100 41 99 41 98V87L33 80Z" fill="#FEE2E2" />
+    <path d="M30 100V93C30 92.5 30.5 92 31 92H35C35.5 92 36 92.5 36 93V100" fill="#B91C1C" />
+
+    <!-- Open Expressive Arm Left: Raised high & gesturing towards saved clipboard with open hand -->
+    <g transform="translate(-18, 52)">
+      <!-- Arm reaching outward and up in celebration -->
+      <path d="M26 28C16 26 4 17 -1 7C-3 4 0 0 4 1C10 3 18 12 25 18" stroke="#B91C1C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+      <!-- Joyful open hand / paw -->
+      <circle cx="-1" cy="6" r="5" fill="#991B1B" />
+      <circle cx="-4" cy="4" r="2.2" fill="#B91C1C" />
+      <circle cx="-1" cy="0" r="2.2" fill="#B91C1C" />
+      <circle cx="3" cy="2" r="2.2" fill="#B91C1C" />
+      <!-- Motion energy arcs near left hand -->
+      <path d="M-10 14C-12 11 -12 7 -10 3" stroke="#FCA5A5" stroke-width="1.8" stroke-linecap="round" />
+      <path d="M-6 -4C-3 -7 1 -8 5 -7" stroke="#FCA5A5" stroke-width="1.8" stroke-linecap="round" />
+    </g>
+
+    <!-- Open Expressive Arm Right: Raised high in proud "yes!" celebratory cheer / thumbs-up -->
+    <g transform="translate(50, 48)">
+      <!-- Dynamic energetic arm reaching upward and outward -->
+      <path d="M6 30C16 26 26 18 31 7C33 3 29 -1 25 1C20 4 13 14 6 20" stroke="#B91C1C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+      <!-- Joyful hand with high thumb gesture -->
+      <circle cx="28" cy="6" r="5" fill="#B91C1C" />
+      <rect x="27" y="-2" width="4.5" height="8" rx="2.25" fill="#B91C1C" transform="rotate(15 29 2)" />
+      <!-- Radiant celebration motion arcs around right hand -->
+      <path d="M37 2C40 5 41 9 40 13" stroke="#FCA5A5" stroke-width="2" stroke-linecap="round" />
+      <path d="M42 6C44 9 45 12 44 15" stroke="#FCA5A5" stroke-width="2" stroke-linecap="round" />
+      <path d="M29 -8C33 -7 37 -4 39 0" stroke="#FCA5A5" stroke-width="1.8" stroke-linecap="round" />
+    </g>
+
+    <!-- Head / Roof Bonnet: Iconic SATU RUMAH House Roof -->
+    <!-- Chimney on left pitch -->
+    <rect x="13" y="20" width="7" height="12" rx="2" fill="#881337" />
+
+    <!-- Triangular roof structure -->
+    <path d="M33 16L62 42C65 44.7 63.5 50 59.5 50H6.5C2.5 50 1 44.7 4 42L33 16Z" fill="#881337" />
+    <!-- Inner roof highlight rim -->
+    <path d="M33 20L7 43.5C5.5 44.8 6.3 47.5 8.3 47.5H57.7C59.7 47.5 60.5 44.8 59 43.5L33 20Z" fill="#991B1B" />
+
+    <!-- Face Area nestled smoothly beneath roof -->
+    <rect x="12" y="38" width="42" height="34" rx="10" fill="#FFF1F2" />
+
+    <!-- Joyful, happy closed-arc eyes in delighted celebration -->
+    <path d="M19 50C21 47 24.5 47 26.5 50" stroke="#475569" stroke-width="2.6" stroke-linecap="round" />
+    <path d="M39.5 50C41.5 47 45 47 47 50" stroke="#475569" stroke-width="2.6" stroke-linecap="round" />
+
+    <!-- Wide delighted, warm celebratory smile -->
+    <path d="M28 55C29.5 60 36.5 60 38 55" stroke="#881337" stroke-width="2.6" stroke-linecap="round" />
+
+    <!-- Rosy cheerful cheeks -->
+    <circle cx="18" cy="55" r="3.5" fill="#FDA4AF" opacity="0.7" />
+    <circle cx="48" cy="55" r="3.5" fill="#FDA4AF" opacity="0.7" />
+  </g>
+
+  <!-- Floating Saved Status Chip on Upper Right: "Tersimpan" with saved checkmark -->
+  <g transform="translate(156, 26)">
+    <!-- Pill container with clean shadow -->
+    <rect x="0" y="1" width="67" height="22" rx="11" fill="#E2E8F0" opacity="0.3" />
+    <rect x="0" y="0" width="67" height="22" rx="11" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.2" />
+    
+    <!-- Mini green circular indicator with checkmark (indicates saved/success) -->
+    <circle cx="10" cy="11" r="5" fill="#16A34A" />
+    <path d="M7.8 11L9.4 12.6L12.4 9.4" stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Compact "Tersimpan" Label -->
+    <text x="19" y="14.5" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="8.5" font-weight="700" fill="#1E293B">Tersimpan</text>
+  </g>
+</svg>

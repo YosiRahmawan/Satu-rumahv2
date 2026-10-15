@@ -62,13 +62,17 @@ class PengajuanSayaListScreen extends ConsumerWidget {
           const SliverToBoxAdapter(child: SizedBox(height: 16.0)),
           if (items.isEmpty)
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg + AppSpacing.xs),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg + AppSpacing.xs,
+              ),
               sliver: SliverToBoxAdapter(
                 child: PengajuanListSummary(items: items),
               ),
             ),
           const SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg + AppSpacing.xs),
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg + AppSpacing.xs,
+            ),
             sliver: SliverToBoxAdapter(child: PengajuanListFilters()),
           ),
           if (filtered.isEmpty)
@@ -84,12 +88,18 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                   onReset: items.isEmpty
                       ? null
                       : ref.read(pengajuanListQueryProvider.notifier).reset,
+                  onCreateNew: () {
+                    ref.read(pengajuanFormProvider.notifier).reset();
+                    context.push('/pengajuan/step1');
+                  },
                 ),
               ),
             )
           else
             SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg + AppSpacing.xs),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg + AppSpacing.xs,
+              ),
               sliver: SliverList.builder(
                 itemCount: visible.length,
                 itemBuilder: (context, index) {

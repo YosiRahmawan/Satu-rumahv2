@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -158,6 +159,14 @@ class DeveloperNotificationView extends StatelessWidget {
                     key: ValueKey<bool>(unreadOnly),
                     child: items.isEmpty
                         ? DataStateView.empty(
+                            illustration: unreadOnly
+                                ? SvgPicture.asset(
+                                    'assets/images/notifikasi_unread_empty.svg',
+                                    width: 180,
+                                    height: 135,
+                                    fit: BoxFit.contain,
+                                  )
+                                : null,
                             title: unreadOnly
                                 ? 'Tidak ada notifikasi belum dibaca'
                                 : 'Belum ada notifikasi',

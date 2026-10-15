@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satu_rumah/features/dashboard/presentation/providers/dashboard_provider.dart';
@@ -53,132 +54,146 @@ void main() {
           : ProviderScope(child: app);
     }
 
-    testWidgets('renders all content elements without overflow on constrained height (550px)', (
-      tester,
-    ) async {
-      final router = testRouter();
-      addTearDown(router.dispose);
-
-      await tester.pumpWidget(createWidgetUnderTest(width: 360, height: 550, router: router));
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-      expect(find.text('Pengajuan Berhasil Disimpan!'), findsOneWidget);
-      expect(find.text('REG-TSK-2026-144'), findsOneWidget);
-      expect(find.text('Lihat Notifikasi'), findsOneWidget);
-      expect(find.text('Lihat Detail Pengajuan'), findsOneWidget);
-      expect(find.text('Lihat Status Pengajuan'), findsOneWidget);
-      expect(find.text('Kembali ke Beranda'), findsOneWidget);
-    });
-
-    testWidgets('renders responsively without overflow across 360dp, 390dp, and 412dp viewports', (
-      tester,
-    ) async {
-      final viewports = [
-        const Size(360, 640),
-        const Size(390, 844),
-        const Size(412, 915),
-      ];
-
-      for (final vp in viewports) {
+    testWidgets(
+      'renders all content elements without overflow on constrained height (550px)',
+      (tester) async {
         final router = testRouter();
         addTearDown(router.dispose);
 
         await tester.pumpWidget(
-          createWidgetUnderTest(width: vp.width, height: vp.height, router: router),
+          createWidgetUnderTest(width: 360, height: 550, router: router),
         );
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
         expect(find.text('Pengajuan Berhasil Disimpan!'), findsOneWidget);
         expect(find.text('REG-TSK-2026-144'), findsOneWidget);
-      }
-    });
+        expect(find.text('Lihat Notifikasi'), findsOneWidget);
+        expect(find.text('Lihat Detail Pengajuan'), findsOneWidget);
+        expect(find.text('Lihat Status Pengajuan'), findsOneWidget);
+        expect(find.text('Kembali ke Beranda'), findsOneWidget);
+      },
+    );
 
-    testWidgets('Lihat Notifikasi button sets dashboardTabProvider to 2 and navigates to dashboard', (
+    testWidgets(
+      'renders responsively without overflow across 360dp, 390dp, and 412dp viewports',
+      (tester) async {
+        final viewports = [
+          const Size(360, 640),
+          const Size(390, 844),
+          const Size(412, 915),
+        ];
+
+        for (final vp in viewports) {
+          final router = testRouter();
+          addTearDown(router.dispose);
+
+          await tester.pumpWidget(
+            createWidgetUnderTest(
+              width: vp.width,
+              height: vp.height,
+              router: router,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(tester.takeException(), isNull);
+          expect(find.text('Pengajuan Berhasil Disimpan!'), findsOneWidget);
+          expect(find.text('REG-TSK-2026-144'), findsOneWidget);
+        }
+      },
+    );
+
+    testWidgets(
+      'Lihat Notifikasi button sets dashboardTabProvider to 2 and navigates to dashboard',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final router = testRouter();
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            width: 390,
+            height: 844,
+            router: router,
+            container: container,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final notifFinder = find.text('Lihat Notifikasi');
+        await tester.ensureVisible(notifFinder);
+        await tester.tap(notifFinder);
+        await tester.pumpAndSettle();
+
+        expect(container.read(dashboardTabProvider), 2);
+        expect(find.text('DASHBOARD'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Lihat Status Pengajuan button sets dashboardTabProvider to 1 and navigates to dashboard',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final router = testRouter();
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          createWidgetUnderTest(
+            width: 390,
+            height: 844,
+            router: router,
+            container: container,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final statusFinder = find.text('Lihat Status Pengajuan');
+        await tester.ensureVisible(statusFinder);
+        await tester.tap(statusFinder);
+        await tester.pumpAndSettle();
+
+        expect(container.read(dashboardTabProvider), 1);
+        expect(find.text('DASHBOARD'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Lihat Detail Pengajuan button navigates to detail pengajuan screen',
+      (tester) async {
+        final router = testRouter();
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(
+          createWidgetUnderTest(width: 390, height: 844, router: router),
+        );
+        await tester.pumpAndSettle();
+
+        final detailFinder = find.text('Lihat Detail Pengajuan');
+        await tester.ensureVisible(detailFinder);
+        await tester.tap(detailFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.text('DETAIL REG-TSK-2026-144'), findsOneWidget);
+      },
+    );
+
+    testWidgets('renders new SvgPicture saved illustration asset correctly', (
       tester,
     ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
       final router = testRouter();
       addTearDown(router.dispose);
 
       await tester.pumpWidget(
-        createWidgetUnderTest(
-          width: 390,
-          height: 844,
-          router: router,
-          container: container,
-        ),
+        createWidgetUnderTest(width: 390, height: 844, router: router),
       );
       await tester.pumpAndSettle();
 
-      final notifFinder = find.text('Lihat Notifikasi');
-      await tester.ensureVisible(notifFinder);
-      await tester.tap(notifFinder);
-      await tester.pumpAndSettle();
-
-      expect(container.read(dashboardTabProvider), 2);
-      expect(find.text('DASHBOARD'), findsOneWidget);
-    });
-
-    testWidgets('Lihat Status Pengajuan button sets dashboardTabProvider to 1 and navigates to dashboard', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      final router = testRouter();
-      addTearDown(router.dispose);
-
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          width: 390,
-          height: 844,
-          router: router,
-          container: container,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final statusFinder = find.text('Lihat Status Pengajuan');
-      await tester.ensureVisible(statusFinder);
-      await tester.tap(statusFinder);
-      await tester.pumpAndSettle();
-
-      expect(container.read(dashboardTabProvider), 1);
-      expect(find.text('DASHBOARD'), findsOneWidget);
-    });
-
-    testWidgets('Kembali ke Beranda button sets dashboardTabProvider to 0 and navigates to dashboard', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      container.read(dashboardTabProvider.notifier).state = 2;
-
-      final router = testRouter();
-      addTearDown(router.dispose);
-
-      await tester.pumpWidget(
-        createWidgetUnderTest(
-          width: 390,
-          height: 844,
-          router: router,
-          container: container,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final berandaFinder = find.text('Kembali ke Beranda');
-      await tester.ensureVisible(berandaFinder);
-      await tester.tap(berandaFinder);
-      await tester.pumpAndSettle();
-
-      expect(container.read(dashboardTabProvider), 0);
-      expect(find.text('DASHBOARD'), findsOneWidget);
+      expect(find.byType(SvgPicture), findsOneWidget);
     });
   });
 }

@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 180" width="100%" height="100%" fill="none">
+  <!-- Subtle ambient decorative circles -->
+  <circle cx="120" cy="95" r="76" fill="#FEE2E2" fill-opacity="0.35" />
+  <circle cx="120" cy="95" r="56" fill="#FEE2E2" fill-opacity="0.5" />
+  
+  <!-- Subtle decorative stars/sparkles indicating clean/fresh state -->
+  <path d="M48 55L50.5 61L56.5 63.5L50.5 66L48 72L45.5 66L39.5 63.5L45.5 61Z" fill="#FDA4AF" opacity="0.75" />
+  <path d="M194 48L196 52.5L200.5 54.5L196 56.5L194 61L192 56.5L187.5 54.5L192 52.5Z" fill="#FCA5A5" opacity="0.8" />
+  <circle cx="184" cy="116" r="3.5" fill="#FECDD3" />
+  <circle cx="58" cy="112" r="3" fill="#FECDD3" />
+
+  <!-- Soft shadow under character & elements -->
+  <ellipse cx="120" cy="154" rx="58" ry="8" fill="#E2E8F0" opacity="0.65" />
+  <ellipse cx="64" cy="148" rx="20" ry="4" fill="#CBD5E1" opacity="0.45" />
+
+  <!-- Background Mini Notification Card (indicating completed / checked list) -->
+  <g transform="translate(42, 70)">
+    <rect x="0" y="0" width="46" height="58" rx="8" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="1.5" />
+    <!-- Header of mini card -->
+    <rect x="7" y="9" width="22" height="4.5" rx="2" fill="#E2E8F0" />
+    <rect x="7" y="19" width="32" height="3" rx="1.5" fill="#F1F5F9" />
+    <rect x="7" y="26" width="28" height="3" rx="1.5" fill="#F1F5F9" />
+    <rect x="7" y="33" width="20" height="3" rx="1.5" fill="#F1F5F9" />
+    <!-- Small subtle checkmark in card -->
+    <circle cx="35" cy="45" r="6" fill="#DCFCE7" />
+    <path d="M32.5 45L34.5 47L38 43" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <!-- Mascot: Friendly SATU RUMAH House-Guardian Character -->
+  <!-- Legs / base feet -->
+  <rect x="105" y="138" width="10" height="14" rx="5" fill="#991B1B" />
+  <rect x="125" y="138" width="10" height="14" rx="5" fill="#991B1B" />
+  <ellipse cx="110" cy="152" rx="7.5" ry="4" fill="#7F1D1D" />
+  <ellipse cx="130" cy="152" rx="7.5" ry="4" fill="#7F1D1D" />
+
+  <!-- Body / Torso (Smooth rounded modern house-body shape) -->
+  <!-- Main body rectangle with soft curves -->
+  <rect x="94" y="82" width="52" height="60" rx="14" fill="#B91C1C" />
+  
+  <!-- Subtle belly patch / apron in softer cream-white -->
+  <rect x="102" y="98" width="36" height="38" rx="10" fill="#FFFFFF" opacity="0.95" />
+  <!-- Small cute house icon on chest -->
+  <path d="M120 106L112 113V124C112 125 113 126 114 126H126C127 126 128 125 128 124V113L120 106Z" fill="#FEE2E2" />
+  <path d="M117 126V119C117 118.5 117.5 118 118 118H122C122.5 118 123 118.5 123 119V126" fill="#B91C1C" />
+
+  <!-- Left arm waving cheerfully -->
+  <g transform="translate(86, 92)">
+    <path d="M10 12C6 10 -4 4 -7 -2C-8.5 -5 -6 -7 -4 -6C0 -4 8 3 12 7" stroke="#B91C1C" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Waving hand -->
+    <circle cx="-5" cy="-4" r="5" fill="#B91C1C" />
+  </g>
+  <!-- Tiny motion lines near waving hand -->
+  <path d="M72 82C70 85 70 88 72 91" stroke="#FCA5A5" stroke-width="2" stroke-linecap="round" />
+  <path d="M67 85C65 87 65 89 67 92" stroke="#FCA5A5" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Right arm holding/presenting the success badge -->
+  <path d="M144 102C150 102 158 102 163 103" stroke="#B91C1C" stroke-width="7" stroke-linecap="round" />
+
+  <!-- Head / Roof Cap: Iconic Roof-Shape Head with cute rounded chimney -->
+  <!-- Cute little chimney on roof left -->
+  <rect x="100" y="44" width="7" height="12" rx="2" fill="#881337" />
+  
+  <!-- Roof triangular bonnet / head -->
+  <path d="M120 40L149 66C152 68.7 150.5 74 146.5 74H93.5C89.5 74 88 68.7 91 66L120 40Z" fill="#881337" />
+  <!-- Roof highlight / rim -->
+  <path d="M120 44L94 67.5C92.5 68.8 93.3 71.5 95.3 71.5H144.7C146.7 71.5 147.5 68.8 146 67.5L120 44Z" fill="#991B1B" />
+
+  <!-- Face area (nested cleanly inside the roof / upper body) -->
+  <rect x="99" y="62" width="42" height="34" rx="10" fill="#FFF1F2" />
+
+  <!-- Friendly Eyes (happy arcs) -->
+  <path d="M107 75C108.5 72.5 111.5 72.5 113 75" stroke="#475569" stroke-width="2.5" stroke-linecap="round" />
+  <path d="M127 75C128.5 72.5 131.5 72.5 133 75" stroke="#475569" stroke-width="2.5" stroke-linecap="round" />
+
+  <!-- Cheerful warm smile -->
+  <path d="M116 81C117.5 84 122.5 84 124 81" stroke="#881337" stroke-width="2.5" stroke-linecap="round" />
+
+  <!-- Blushing rosy cheeks -->
+  <circle cx="106" cy="80" r="3.5" fill="#FDA4AF" opacity="0.65" />
+  <circle cx="134" cy="80" r="3.5" fill="#FDA4AF" opacity="0.65" />
+
+  <!-- Notification Bell resting calmly / checked -->
+  <g transform="translate(162, 54)">
+    <!-- Peaceful clean bell -->
+    <path d="M14 8C14 4.7 11.3 2 8 2C4.7 2 2 4.7 2 8C2 14 -1 16 -1 18H17C17 16 14 14 14 8Z" fill="#FEF2F2" stroke="#FDA4AF" stroke-width="1.5" />
+    <circle cx="8" cy="20.5" r="2" fill="#FDA4AF" />
+    <!-- Sleeping / silent zzz or ripple -->
+    <path d="M22 6L26 6L22 10L26 10" stroke="#CBD5E1" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" opacity="0.6" />
+  </g>
+
+  <!-- Big Green Success Badge (indicating "All clear / checked") -->
+  <g transform="translate(155, 90)">
+    <!-- Drop shadow -->
+    <circle cx="18" cy="19" r="18" fill="#16A34A" fill-opacity="0.15" />
+    <!-- Badge outer circle -->
+    <circle cx="18" cy="18" r="17" fill="#16A34A" />
+    <!-- Inner soft ring -->
+    <circle cx="18" cy="18" r="14.5" fill="#22C55E" />
+    <!-- White sharp checkmark -->
+    <path d="M11.5 18L15.5 22L24.5 13" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>
