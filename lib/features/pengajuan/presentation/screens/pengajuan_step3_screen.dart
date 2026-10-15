@@ -16,6 +16,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/pengajuan_draft_ui.dart';
 import '../widgets/smart_validation_bottom_sheet.dart';
 
 typedef Step3FilePickerSeam =
@@ -615,34 +616,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.cloud_done_outlined,
-                    size: 14,
-                    color: AppColors.statusSuccessText,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Expanded(
-                    child: Text(
-                      'Tersimpan otomatis untuk sesi ini',
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Draft formulir disimpan untuk sesi ini.',
-                        ),
-                      ),
-                    ),
-                    child: const Text('Simpan Draft'),
-                  ),
-                ],
-              ),
+              const DraftStatusRow(),
               if (useStackedActions) ...[
                 AppButton.secondary(
                   text: 'Kembali',

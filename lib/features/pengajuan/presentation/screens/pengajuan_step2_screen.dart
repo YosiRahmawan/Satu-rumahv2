@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
@@ -17,6 +16,7 @@ import '../../../../core/utils/file_picker_util.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/pengajuan_draft_ui.dart';
 import '../widgets/smart_validation_bottom_sheet.dart';
 
 /// Persists document file size metadata across screen transitions/navigation in the session.
@@ -121,7 +121,6 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
   final Map<String, _SlotError> _slotErrors = {};
   final Map<String, int> _slotFileSizes = {};
   final Set<String> _loadingKeys = {};
-  String? _lastSavedTime;
 
   final ScrollController _scrollController = ScrollController();
   late final Map<String, GlobalKey> _slotKeys = {
@@ -292,22 +291,6 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     setState(() {
       _slotErrors.remove(key);
     });
-  }
-
-  void _onSaveDraft() {
-    final nowStr = DateFormat('HH:mm').format(DateTime.now());
-    setState(() {
-      _lastSavedTime = nowStr;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Draft formulir disimpan untuk sesi ini. Perubahan aman selama aplikasi aktif.',
-        ),
-        duration: Duration(seconds: 3),
-      ),
-    );
   }
 
   void _onBack() {
@@ -1233,63 +1216,6 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     );
   }
 
-  Widget _buildAutoSaveRow() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 7,
-          height: 7,
-          decoration: const BoxDecoration(
-            color: AppColors.statusSuccessText,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Flexible(
-          child: Text(
-            'Tersimpan otomatis pukul ${_lastSavedTime ?? "10:25"}',
-            style: const TextStyle(
-              fontFamily: AppTextStyles.fontFamily,
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDraftButton() {
-    return InkWell(
-      onTap: _onSaveDraft,
-      borderRadius: BorderRadius.circular(6),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              PhosphorIconsRegular.bookmarkSimple,
-              size: 15,
-              color: AppColors.primaryRed,
-            ),
-            SizedBox(width: 4),
-            Text(
-              'Simpan Draft',
-              style: TextStyle(
-                fontFamily: AppTextStyles.fontFamily,
-                fontSize: 12.5,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primaryRed,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildBackButton() {
     return OutlinedButton(
       style: OutlinedButton.styleFrom(
@@ -1464,29 +1390,8 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Auto-save status and draft action
-              if (isTextScaled) ...[
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildAutoSaveRow(),
-                    const SizedBox(height: 6),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: _buildDraftButton(),
-                    ),
-                  ],
-                ),
-              ] else ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(child: _buildAutoSaveRow()),
-                    const SizedBox(width: 8),
-                    _buildDraftButton(),
-                  ],
-                ),
-              ],
+              // Status simpan otomatis dan tombol Simpan Draft
+              const DraftStatusRow(),
               const SizedBox(height: 10),
 
               // Action buttons (Kembali & Lanjut ke Langkah 3)

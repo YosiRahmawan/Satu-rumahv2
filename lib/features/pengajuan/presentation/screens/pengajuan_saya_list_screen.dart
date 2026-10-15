@@ -12,6 +12,7 @@ import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 import '../providers/pengajuan_form_controller.dart';
 import '../providers/pengajuan_list_view_provider.dart';
+import '../widgets/pengajuan_draft_ui.dart';
 import '../widgets/pengajuan_empty_state.dart';
 import '../widgets/pengajuan_list_card.dart';
 import '../widgets/pengajuan_list_filters.dart';
@@ -60,6 +61,8 @@ class PengajuanSayaListScreen extends ConsumerWidget {
           ),
           // 2. GAP 16dp antara header dan search bar / filter
           const SliverToBoxAdapter(child: SizedBox(height: 16.0)),
+          // Draf pengajuan yang belum dikirim (bila ada)
+          const SliverToBoxAdapter(child: PengajuanDraftCard()),
           if (items.isEmpty)
             SliverPadding(
               padding: const EdgeInsets.symmetric(
@@ -88,10 +91,7 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                   onReset: items.isEmpty
                       ? null
                       : ref.read(pengajuanListQueryProvider.notifier).reset,
-                  onCreateNew: () {
-                    ref.read(pengajuanFormProvider.notifier).reset();
-                    context.push('/pengajuan/step1');
-                  },
+                  onCreateNew: () => mulaiPengajuanBaru(context, ref),
                 ),
               ),
             )

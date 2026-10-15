@@ -1,7 +1,13 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/auth/role_session.dart';
 import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
+import '../../data/repositories/pengajuan_draft_store.dart';
 
 /// One source of truth for the current Fase 3 document form.
 class PengajuanStep3DocumentConfig {
@@ -175,6 +181,73 @@ class PengajuanFormState {
     this.isAgreed = false,
   });
 
+  /// Draf dipulihkan dari JSON. Pernyataan persetujuan sengaja tidak
+  /// dipulihkan: pengembang harus mengonfirmasinya lagi sebelum kirim.
+  factory PengajuanFormState.fromJson(Map<String, dynamic> json) {
+    Map<String, String> strings(Object? v) => (v as Map? ?? const {}).map(
+      (key, value) => MapEntry(key as String, value as String),
+    );
+    List<String> list(Object? v) =>
+        (v as List? ?? const []).map((e) => e as String).toList();
+
+    return PengajuanFormState(
+      tipePengajuan:
+          json['tipePengajuan'] as String? ?? 'Pengajuan Site Plan Baru',
+      namaPerumahan: json['namaPerumahan'] as String? ?? '',
+      alamatProyek: json['alamatProyek'] as String? ?? '',
+      npwpPerusahaan: json['npwpPerusahaan'] as String? ?? '',
+      npwpVerified: json['npwpVerified'] as bool? ?? false,
+      luasLahan: (json['luasLahan'] as num? ?? 0).toDouble(),
+      jumlahUnit: (json['jumlahUnit'] as num? ?? 0).toInt(),
+      tipePerumahan: json['tipePerumahan'] as String? ?? 'Subsidi',
+      dayaListrik: json['dayaListrik'] as String? ?? '',
+      uploadedDocs: strings(json['uploadedDocs']),
+      multiUploadedDocs: (json['multiUploadedDocs'] as Map? ?? const {}).map(
+        (key, value) => MapEntry(key as String, list(value)),
+      ),
+      technicalFiles: list(json['technicalFiles']),
+      selectedCakupanGambar: list(json['selectedCakupanGambar']).toSet(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'tipePengajuan': tipePengajuan,
+    'namaPerumahan': namaPerumahan,
+    'alamatProyek': alamatProyek,
+    'npwpPerusahaan': npwpPerusahaan,
+    'npwpVerified': npwpVerified,
+    'luasLahan': luasLahan,
+    'jumlahUnit': jumlahUnit,
+    'tipePerumahan': tipePerumahan,
+    'dayaListrik': dayaListrik,
+    'uploadedDocs': uploadedDocs,
+    'multiUploadedDocs': multiUploadedDocs,
+    'technicalFiles': technicalFiles,
+    'selectedCakupanGambar': selectedCakupanGambar.toList(),
+  };
+
+  /// True bila ada isian yang layak disimpan sebagai draf.
+  bool get hasContent =>
+      namaPerumahan.trim().isNotEmpty ||
+      alamatProyek.trim().isNotEmpty ||
+      npwpPerusahaan.trim().isNotEmpty ||
+      luasLahan > 0 ||
+      jumlahUnit > 0 ||
+      dayaListrik.isNotEmpty ||
+      uploadedDocs.isNotEmpty ||
+      multiUploadedDocs.isNotEmpty ||
+      technicalFiles.isNotEmpty ||
+      selectedCakupanGambar.isNotEmpty;
+
+  /// Langkah pertama yang belum lengkap, tujuan saat melanjutkan draf.
+  String get resumeRoute {
+    if (!isStep1Valid || !npwpVerified) return '/pengajuan/step1';
+    if (!isStep2Valid) return '/pengajuan/step2';
+    if (!isStep3Valid) return '/pengajuan/step3';
+    if (!isStep4Valid) return '/pengajuan/step4';
+    return '/pengajuan/step5';
+  }
+
   bool get isStep1Valid =>
       tipePengajuan.trim().isNotEmpty &&
       namaPerumahan.trim().isNotEmpty &&
@@ -243,27 +316,175 @@ class PengajuanFormState {
   }
 }
 
-class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
-  PengajuanFormNotifier() : super(PengajuanFormState());
+enum DraftSaveResult { saved, empty, failed }
 
-  void updateTipePengajuan(String value) =>
-      state = state.copyWith(tipePengajuan: value);
-  void updateNamaPerumahan(String value) =>
-      state = state.copyWith(namaPerumahan: value);
-  void updateAlamatProyek(String value) =>
-      state = state.copyWith(alamatProyek: value);
-  void updateNpwp(String value) => state = state.copyWith(
-    npwpPerusahaan: value,
-    npwpVerified: value == state.npwpPerusahaan ? state.npwpVerified : false,
-  );
-  void setNpwpVerified(bool value) =>
-      state = state.copyWith(npwpVerified: value);
-  void updateDayaListrik(String value) =>
-      state = state.copyWith(dayaListrik: value);
-  void updateLuasLahan(double value) =>
-      state = state.copyWith(luasLahan: value);
-  void updateJumlahUnit(int value) => state = state.copyWith(jumlahUnit: value);
-  void updateTipe(String value) => state = state.copyWith(tipePerumahan: value);
+/// Ringkasan draf tersimpan untuk ditampilkan di kartu draf.
+class PengajuanDraftInfo {
+  const PengajuanDraftInfo({required this.nama, required this.savedAt});
+
+  /// Nama kawasan pada draf; kosong bila belum diisi.
+  final String nama;
+  final DateTime savedAt;
+}
+
+class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
+  /// Tanpa [store], form hanya hidup di memori (dipakai test dan prototipe).
+  PengajuanFormNotifier({this.store, this.owner = 'tamu'})
+    : super(PengajuanFormState()) {
+    unawaited(_loadDraftInfo());
+  }
+
+  final PengajuanDraftStore? store;
+  final String owner;
+  bool _saving = false;
+  bool _dirty = false;
+
+  /// Ada tidaknya draf tersimpan, untuk kartu draf. Null bila tidak ada.
+  final ValueNotifier<PengajuanDraftInfo?> draftInfo =
+      ValueNotifier<PengajuanDraftInfo?>(null);
+
+  /// Waktu draf terakhir tersimpan di perangkat, null bila belum pernah.
+  final ValueNotifier<DateTime?> lastSavedAt = ValueNotifier<DateTime?>(null);
+
+  /// Setiap perubahan form otomatis disimpan sebagai draf.
+  @override
+  set state(PengajuanFormState value) {
+    super.state = value;
+    unawaited(_autosave());
+  }
+
+  Future<void> _autosave() async {
+    if (store == null) return;
+    if (_saving) {
+      _dirty = true;
+      return;
+    }
+    _saving = true;
+    try {
+      do {
+        _dirty = false;
+        if (!mounted) return;
+        await saveDraft();
+      } while (_dirty);
+    } finally {
+      _saving = false;
+    }
+  }
+
+  /// Membaca draf yang sudah ada di perangkat (misalnya dari sesi sebelumnya).
+  Future<void> _loadDraftInfo() async {
+    final draftStore = store;
+    if (draftStore == null) return;
+    try {
+      final json = await draftStore.load(owner);
+      if (json == null || !mounted || draftInfo.value != null) return;
+      draftInfo.value = PengajuanDraftInfo(
+        nama: (json['namaPerumahan'] as String? ?? '').trim(),
+        savedAt:
+            DateTime.tryParse(json['savedAt'] as String? ?? '') ??
+            DateTime.now(),
+      );
+    } catch (_) {
+      // Tanpa info draf, kartu draf tidak tampil; tidak ada yang rusak.
+    }
+  }
+
+  /// Menyimpan draf sekarang dan melaporkan hasilnya.
+  Future<DraftSaveResult> saveDraft() async {
+    final draftStore = store;
+    if (draftStore == null || !state.hasContent) {
+      return DraftSaveResult.empty;
+    }
+    try {
+      final savedAt = DateTime.now();
+      await draftStore.save(owner, {
+        ...state.toJson(),
+        'savedAt': savedAt.toIso8601String(),
+      });
+      if (mounted) {
+        lastSavedAt.value = savedAt;
+        draftInfo.value = PengajuanDraftInfo(
+          nama: state.namaPerumahan.trim(),
+          savedAt: savedAt,
+        );
+      }
+      return DraftSaveResult.saved;
+    } catch (_) {
+      return DraftSaveResult.failed;
+    }
+  }
+
+  Future<bool> hasDraft() async {
+    final draftStore = store;
+    if (draftStore == null) return false;
+    try {
+      return await draftStore.exists(owner);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Memulihkan draf tersimpan ke form. False bila tidak ada atau rusak.
+  Future<bool> restoreDraft() async {
+    final draftStore = store;
+    if (draftStore == null) return false;
+    try {
+      final json = await draftStore.load(owner);
+      if (json == null || !mounted) return false;
+      state = PengajuanFormState.fromJson(json);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Setiap updateX mengabaikan nilai yang sama, supaya kursor yang bergerak di
+  // kolom teks tidak dihitung sebagai perubahan form (dan tidak memicu simpan).
+  void updateTipePengajuan(String value) {
+    if (value == state.tipePengajuan) return;
+    state = state.copyWith(tipePengajuan: value);
+  }
+
+  void updateNamaPerumahan(String value) {
+    if (value == state.namaPerumahan) return;
+    state = state.copyWith(namaPerumahan: value);
+  }
+
+  void updateAlamatProyek(String value) {
+    if (value == state.alamatProyek) return;
+    state = state.copyWith(alamatProyek: value);
+  }
+
+  void updateNpwp(String value) {
+    if (value == state.npwpPerusahaan) return;
+    state = state.copyWith(npwpPerusahaan: value, npwpVerified: false);
+  }
+
+  void setNpwpVerified(bool value) {
+    if (value == state.npwpVerified) return;
+    state = state.copyWith(npwpVerified: value);
+  }
+
+  void updateDayaListrik(String value) {
+    if (value == state.dayaListrik) return;
+    state = state.copyWith(dayaListrik: value);
+  }
+
+  void updateLuasLahan(double value) {
+    if (value == state.luasLahan) return;
+    state = state.copyWith(luasLahan: value);
+  }
+
+  void updateJumlahUnit(int value) {
+    if (value == state.jumlahUnit) return;
+    state = state.copyWith(jumlahUnit: value);
+  }
+
+  void updateTipe(String value) {
+    if (value == state.tipePerumahan) return;
+    state = state.copyWith(tipePerumahan: value);
+  }
+
   void toggleAgreement(bool value) => state = state.copyWith(isAgreed: value);
 
   void uploadDocument(String key, String fileName) {
@@ -367,8 +588,14 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     state = state.copyWith(selectedCakupanGambar: {});
   }
 
+  /// Mengosongkan form beserta draf tersimpan (setelah kirim atau mulai baru).
   void reset() {
     state = PengajuanFormState();
+    draftInfo.value = null;
+    final store = this.store;
+    if (store != null) {
+      unawaited(store.clear(owner).catchError((Object _) {}));
+    }
   }
 
   void fillDummyData() {
@@ -427,7 +654,14 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
 
 final pengajuanFormProvider =
     StateNotifierProvider<PengajuanFormNotifier, PengajuanFormState>((ref) {
-      return PengajuanFormNotifier();
+      // Draf per akun: berganti akun membuat form baru dengan draf akun itu.
+      final owner =
+          ref.watch(roleSessionProvider.select((session) => session.username)) ??
+          'tamu';
+      return PengajuanFormNotifier(
+        store: const PengajuanDraftStore(),
+        owner: owner,
+      );
     });
 
 // Repository data pengajuan disinkronkan dengan database satu_rumah.sql (Admin Disperwaskim)

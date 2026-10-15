@@ -13,6 +13,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/pengajuan_draft_ui.dart';
 import '../widgets/smart_validation_bottom_sheet.dart';
 
 typedef Step4FilePickerSeam =
@@ -553,25 +554,7 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.circle,
-                  color: AppColors.statusSuccessText,
-                  size: 8,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    'Tersimpan otomatis untuk sesi ini',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-                TextButton(onPressed: () {}, child: const Text('Simpan Draft')),
-              ],
-            ),
+            const DraftStatusRow(),
             LayoutBuilder(
               builder: (context, constraints) {
                 final isCompact =

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
+import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_step1_screen.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_step2_screen.dart';
 
@@ -340,23 +342,35 @@ void main() {
       expect(find.text('Step 3 Screen'), findsOneWidget);
     });
 
-    testWidgets('Simpan Draft persists session data and provides truthful feedback', (
+    testWidgets('Simpan Draft menyimpan draf ke perangkat dan memberi kabar jujur', (
       tester,
     ) async {
+      SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       await tester.pumpWidget(createTestWidget(tester: tester, container: container));
       await tester.pumpAndSettle();
 
+      // Form masih kosong: tidak ada yang perlu disimpan.
       await tester.tap(find.text('Simpan Draft'));
       await tester.pumpAndSettle();
+      expect(find.text('Belum ada isian yang perlu disimpan.'), findsOneWidget);
 
+      // Penyimpanan butuh async sungguhan; siapkan dulu di luar jam palsu.
+      await tester.runAsync(SharedPreferences.getInstance);
+      container.read(pengajuanFormProvider.notifier).updateNamaPerumahan('Pesona Tasik');
+      await tester.tap(find.text('Simpan Draft'));
+      // Berhasil disampaikan lewat animasi ikon, bukan snackbar.
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+      await tester.pump(); // frame pertama: animasi mulai
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Draf tersimpan di perangkat ini.'), findsNothing);
+      expect(find.byIcon(PhosphorIconsRegular.checkCircle), findsOneWidget);
+      expect(find.text('Tersimpan'), findsOneWidget);
       expect(
-        find.text(
-          'Draft formulir disimpan untuk sesi ini. Perubahan aman selama aplikasi aktif.',
-        ),
-        findsOneWidget,
+        await container.read(pengajuanFormProvider.notifier).hasDraft(),
+        isTrue,
       );
     });
 

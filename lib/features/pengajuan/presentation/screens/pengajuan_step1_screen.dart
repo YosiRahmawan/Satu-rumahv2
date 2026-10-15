@@ -12,6 +12,7 @@ import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/pengajuan_draft_ui.dart';
 import '../widgets/smart_validation_bottom_sheet.dart';
 
 class PengajuanStep1Screen extends ConsumerStatefulWidget {
@@ -97,8 +98,10 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
     _chevronAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(_openCurve);
 
     final state = ref.read(pengajuanFormProvider);
-    _namaPerumahanController = TextEditingController(text: state.namaPerumahan);
-    _alamatProyekController = TextEditingController(text: state.alamatProyek);
+    _namaPerumahanController = TextEditingController(text: state.namaPerumahan)
+      ..addListener(_onFieldChanged);
+    _alamatProyekController = TextEditingController(text: state.alamatProyek)
+      ..addListener(_onFieldChanged);
     _npwpController = TextEditingController(text: state.npwpPerusahaan)
       ..addListener(_onNpwpChanged);
     _luasController = TextEditingController(
@@ -107,10 +110,10 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
                 ? state.luasLahan.toInt().toString()
                 : state.luasLahan.toString())
           : '',
-    );
+    )..addListener(_onFieldChanged);
     _unitController = TextEditingController(
       text: state.jumlahUnit > 0 ? state.jumlahUnit.toString() : '',
-    );
+    )..addListener(_onFieldChanged);
     _selectedTipePengajuan = state.tipePengajuan.isNotEmpty
         ? state.tipePengajuan
         : 'Pengajuan Site Plan Baru';
@@ -157,6 +160,10 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
     }
     setState(() => _npwpVerifying = false);
   }
+
+  /// Isian teks langsung masuk ke form, jadi ikut tersimpan sebagai draf
+  /// tanpa menunggu tombol Lanjut ditekan.
+  void _onFieldChanged() => _syncState();
 
   void _syncState() {
     final notifier = ref.read(pengajuanFormProvider.notifier);
@@ -1285,63 +1292,70 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
           ],
         ),
         child: SafeArea(
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                flex: 4,
-                child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: AppColors.borderSubtle),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    backgroundColor: AppColors.backgroundCanvas,
-                  ),
-                  onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.go('/dashboard');
-                    }
-                  },
-                  child: const Text(
-                    '‹ Kembali',
-                    style: TextStyle(
-                      fontFamily: AppTextStyles.fontFamily,
-                      color: AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 6,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: AppColors.primaryRed,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: _onNext,
-                  child: const FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      'Lanjut ke Berkas',
-                      style: TextStyle(
-                        fontFamily: AppTextStyles.fontFamily,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
+              const DraftStatusRow(),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    flex: 4,
+                    child: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: AppColors.borderSubtle),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        backgroundColor: AppColors.backgroundCanvas,
+                      ),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go('/dashboard');
+                        }
+                      },
+                      child: const Text(
+                        '‹ Kembali',
+                        style: TextStyle(
+                          fontFamily: AppTextStyles.fontFamily,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 6,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: AppColors.primaryRed,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: _onNext,
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Lanjut ke Berkas',
+                          style: TextStyle(
+                            fontFamily: AppTextStyles.fontFamily,
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

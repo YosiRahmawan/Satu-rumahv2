@@ -7,6 +7,7 @@ import '../../../../core/widgets/developer_header.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../../pengajuan/presentation/screens/jadwal_survey_screen.dart';
+import '../../../pengajuan/presentation/widgets/pengajuan_draft_ui.dart';
 import '../../../pengajuan/presentation/widgets/pengajuan_list_card.dart';
 import '../../../pengajuan/presentation/screens/unduh_sk_ba_screen.dart';
 import '../../../pengajuan/presentation/screens/template_berkas_screen.dart';
@@ -72,6 +73,9 @@ class TabBeranda extends ConsumerWidget {
             const _DeveloperIdentityCard(),
 
             const SizedBox(height: 8),
+
+            // 3b. Draf pengajuan yang belum dikirim (bila ada)
+            const PengajuanDraftCard(),
 
             // 4. CARD "PENGAJUAN TERAKHIR"
             _PengajuanTerakhirCard(submission: lastSubmission),
@@ -228,11 +232,11 @@ class _PengajuanTerakhirCard extends StatelessWidget {
 }
 
 /// Tampil saat akun belum punya pengajuan, bukan data contoh.
-class _BelumAdaPengajuanCard extends StatelessWidget {
+class _BelumAdaPengajuanCard extends ConsumerWidget {
   const _BelumAdaPengajuanCard();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
       child: Container(
@@ -273,7 +277,7 @@ class _BelumAdaPengajuanCard extends StatelessWidget {
               color: AppColors.primarySurfaceSoft,
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
-                onTap: () => context.push('/pengajuan/step1'),
+                onTap: () => mulaiPengajuanBaru(context, ref),
                 borderRadius: BorderRadius.circular(12),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),

@@ -212,6 +212,32 @@ void main() {
       },
     );
 
+    testWidgets('isian teks langsung masuk form dan punya baris Simpan Draft', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(createTestWidget(container: container));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Simpan Draft'), findsOneWidget);
+
+      // Tanpa menekan Lanjut, teks yang diketik sudah ada di form (dan draf).
+      await tester.enterText(
+        find.byType(TextFormField).at(0),
+        'Graha Sukatani Indah',
+      );
+      await tester.enterText(find.byType(TextFormField).at(3), '48500');
+      await tester.enterText(find.byType(TextFormField).at(4), '320');
+      await tester.pump();
+
+      final state = container.read(pengajuanFormProvider);
+      expect(state.namaPerumahan, 'Graha Sukatani Indah');
+      expect(state.luasLahan, 48500);
+      expect(state.jumlahUnit, 320);
+    });
+
     testWidgets('blocks Fase 2 until NPWP is verified, then shows status', (
       tester,
     ) async {

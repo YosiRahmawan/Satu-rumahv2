@@ -21,6 +21,7 @@ import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_emp
 import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_list_card.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_list_filters.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _Submissions extends PengajuanListNotifier {
   _Submissions(List<Pengajuan> items) {
@@ -153,6 +154,9 @@ Finder get _scroll => find
     .first;
 
 void main() {
+  // Tombol Buat Pengajuan memeriksa draf tersimpan dulu.
+  setUp(() => SharedPreferences.setMockInitialValues({}));
+
   test('filters use stages, including scheduled and final legacy labels', () {
     final items = _items();
     expect(items.where(PengajuanFilter.proses.matches), [items[1]]);

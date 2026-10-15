@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../providers/dashboard_provider.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
-import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
+import '../../../pengajuan/presentation/widgets/pengajuan_draft_ui.dart';
 import 'tab_beranda.dart';
 import '../../../pengajuan/presentation/screens/pengajuan_saya_list_screen.dart';
 import '../../../notifikasi/presentation/screens/notifikasi_list_screen.dart';
@@ -98,10 +97,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             shape: const CircleBorder(
               side: BorderSide(color: AppColors.cardSurface, width: 3),
             ),
-            onPressed: () {
-              ref.read(pengajuanFormProvider.notifier).reset();
-              context.push('/pengajuan/step1');
-            },
+            onPressed: () => mulaiPengajuanBaru(context, ref),
             child: const Icon(
               Icons.add_rounded,
               color: AppColors.textOnRed,
