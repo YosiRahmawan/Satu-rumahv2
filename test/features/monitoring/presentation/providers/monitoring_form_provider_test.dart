@@ -12,17 +12,17 @@ import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_v
 
 MonitoringModel _draft({
   String id = 'monitoring-submit-1',
-  String? pengajuanId = 'SR-20260720-612',
+  String? pengajuanId = 'SR-2025-0148',
   StatusHasilEvaluasi status = StatusHasilEvaluasi.sesuaiSiteplan,
   List<String> rtl = const [],
 }) {
   return MonitoringModel(
     id: id,
     pengajuanId: pengajuanId,
-    tanggalMonitoring: DateTime(2026, 8, 19),
-    namaPerumahan: 'Green Tasik',
-    namaDeveloper: 'PT. Tasik Indah Sentosa',
-    lokasiPerumahan: 'Kota Tasikmalaya',
+    tanggalMonitoring: DateTime(2025, 5, 22),
+    namaPerumahan: 'Griya Mangkubumi Asri',
+    namaDeveloper: 'PT Citra Tasik Mandiri',
+    lokasiPerumahan: 'Kec. Mangkubumi, Kota Tasikmalaya',
     statusHasilEvaluasi: status,
     rencanaTindakLanjut: rtl,
     isDraft: true,
@@ -53,7 +53,7 @@ void main() {
 
       final pengajuan = container
           .read(pengajuanListProvider)
-          .singleWhere((item) => item.id == 'SR-20260720-612');
+          .singleWhere((item) => item.id == 'SR-2025-0148');
       expect(pengajuan.beritaAcaraPath, isNotEmpty);
       final submittedHistory = pengajuan.riwayatSurvey.where(
         (item) => item.id == 'monitoring-submit-1',
@@ -167,7 +167,7 @@ void main() {
     notifier.updateNamaPerumahan('Draft retained after BA rejection');
     final beforePengajuan = container
         .read(pengajuanListProvider)
-        .singleWhere((item) => item.id == 'SR-20260720-612');
+        .singleWhere((item) => item.id == 'SR-2025-0148');
     final result = notifier.submitFinal(
       _draft(id: 'monitoring-submit-ba-rejected'),
     );
@@ -183,7 +183,7 @@ void main() {
     );
     final afterPengajuan = container
         .read(pengajuanListProvider)
-        .singleWhere((item) => item.id == 'SR-20260720-612');
+        .singleWhere((item) => item.id == 'SR-2025-0148');
     expect(afterPengajuan.beritaAcaraPath, beforePengajuan.beritaAcaraPath);
     expect(afterPengajuan.riwayatSurvey, beforePengajuan.riwayatSurvey);
     expect(
@@ -203,7 +203,7 @@ void main() {
 
     final target = container
         .read(pengajuanListProvider)
-        .singleWhere((item) => item.id == 'SR-20260720-612');
+        .singleWhere((item) => item.id == 'SR-2025-0148');
     container
         .read(pengajuanListProvider.notifier)
         .updatePengajuan(
@@ -258,7 +258,7 @@ void main() {
     expect(
       container
           .read(pengajuanListProvider)
-          .singleWhere((item) => item.id == 'SR-20260720-612')
+          .singleWhere((item) => item.id == 'SR-2025-0148')
           .riwayatSurvey
           .where((item) => item.id == 'monitoring-submit-rejected'),
       isEmpty,
@@ -284,7 +284,7 @@ void main() {
 
     final pengajuan = container
         .read(pengajuanListProvider)
-        .singleWhere((item) => item.id == 'SR-20260720-612');
+        .singleWhere((item) => item.id == 'SR-2025-0148');
     expect(result.isSuccess, isTrue);
     expect(
       pengajuan.riwayatSurvey
