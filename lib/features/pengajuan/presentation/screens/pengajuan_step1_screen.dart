@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -20,8 +22,19 @@ class PengajuanStep1Screen extends ConsumerStatefulWidget {
       _PengajuanStep1ScreenState();
 }
 
-class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
+class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
+  final _dropdownKey = GlobalKey();
+  final _layerLink = LayerLink();
+
+  bool _isDropdownOpen = false;
+  OverlayEntry? _overlayEntry;
+
+  late final AnimationController _dropdownController;
+  late final Animation<double> _openCurve;
+  late final Animation<double> _chevronAnimation;
+  late final ScrollController _dropdownScrollController;
 
   late TextEditingController _namaPerumahanController;
   late TextEditingController _alamatProyekController;
@@ -52,6 +65,10 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
     '900 VA',
     '1.300 VA',
     '2.200 VA',
+    '3.500 VA',
+    '4.400 VA',
+    '5.500 VA',
+    '6.600 VA ke atas',
   ];
 
   bool _npwpVerifying = false;
@@ -66,6 +83,19 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
   @override
   void initState() {
     super.initState();
+    _dropdownScrollController = ScrollController();
+    _dropdownController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+      reverseDuration: const Duration(milliseconds: 160),
+    );
+    _openCurve = CurvedAnimation(
+      parent: _dropdownController,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
+    );
+    _chevronAnimation = Tween<double>(begin: 0.0, end: 0.5).animate(_openCurve);
+
     final state = ref.read(pengajuanFormProvider);
     _namaPerumahanController = TextEditingController(text: state.namaPerumahan);
     _alamatProyekController = TextEditingController(text: state.alamatProyek);
@@ -91,6 +121,9 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
 
   @override
   void dispose() {
+    _removeOverlay();
+    _dropdownScrollController.dispose();
+    _dropdownController.dispose();
     _namaPerumahanController.dispose();
     _alamatProyekController.dispose();
     _npwpController.dispose();
@@ -154,61 +187,73 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
 
     final missing = <MissingValidationItem>[];
     if (_namaPerumahanController.text.trim().isEmpty) {
-      missing.add(const MissingValidationItem(
-        key: 'nama',
-        title: 'Nama Perumahan *',
-        subtitle: 'Wajib diisi sesuai site plan',
-        statusText: 'Belum diisi',
-        icon: Icons.edit_note,
-      ));
+      missing.add(
+        const MissingValidationItem(
+          key: 'nama',
+          title: 'Nama Perumahan *',
+          subtitle: 'Wajib diisi sesuai site plan',
+          statusText: 'Belum diisi',
+          icon: Icons.edit_note,
+        ),
+      );
     }
     if (_alamatProyekController.text.trim().isEmpty) {
-      missing.add(const MissingValidationItem(
-        key: 'alamat',
-        title: 'Alamat Lokasi Proyek *',
-        subtitle: 'Wajib diisi lengkap',
-        statusText: 'Belum diisi',
-        icon: Icons.location_on_outlined,
-      ));
+      missing.add(
+        const MissingValidationItem(
+          key: 'alamat',
+          title: 'Alamat Lokasi Proyek *',
+          subtitle: 'Wajib diisi lengkap',
+          statusText: 'Belum diisi',
+          icon: Icons.location_on_outlined,
+        ),
+      );
     }
     final rawNpwp = _npwpController.text.replaceAll(RegExp(r'[^0-9]'), '');
     if (_npwpController.text.trim().isEmpty ||
         (rawNpwp.length != 15 && rawNpwp.length != 16)) {
-      missing.add(const MissingValidationItem(
-        key: 'npwp',
-        title: 'NPWP Perusahaan *',
-        subtitle: 'Format 15 atau 16 digit angka',
-        statusText: 'Belum valid',
-        icon: Icons.badge_outlined,
-      ));
+      missing.add(
+        const MissingValidationItem(
+          key: 'npwp',
+          title: 'NPWP Perusahaan *',
+          subtitle: 'Format 15 atau 16 digit angka',
+          statusText: 'Belum valid',
+          icon: Icons.badge_outlined,
+        ),
+      );
     } else if (!ref.read(pengajuanFormProvider).npwpVerified) {
-      missing.add(const MissingValidationItem(
-        key: 'npwp',
-        title: 'NPWP Perusahaan *',
-        subtitle: 'Tekan tombol Verifikasi pada kolom NPWP',
-        statusText: 'Belum diverifikasi',
-        icon: Icons.badge_outlined,
-      ));
+      missing.add(
+        const MissingValidationItem(
+          key: 'npwp',
+          title: 'NPWP Perusahaan *',
+          subtitle: 'Tekan tombol Verifikasi pada kolom NPWP',
+          statusText: 'Belum diverifikasi',
+          icon: Icons.badge_outlined,
+        ),
+      );
     }
     final luas = double.tryParse(_luasController.text) ?? 0.0;
     if (luas <= 0) {
-      missing.add(const MissingValidationItem(
-        key: 'luas',
-        title: 'Luas Lahan Proyek (m²) *',
-        subtitle: 'Harus berupa angka lebih dari 0',
-        statusText: 'Belum diisi',
-        icon: Icons.square_foot_outlined,
-      ));
+      missing.add(
+        const MissingValidationItem(
+          key: 'luas',
+          title: 'Luas Lahan Proyek (m²) *',
+          subtitle: 'Harus berupa angka lebih dari 0',
+          statusText: 'Belum diisi',
+          icon: Icons.square_foot_outlined,
+        ),
+      );
     }
     final unit = int.tryParse(_unitController.text) ?? 0;
     if (unit <= 0) {
-      missing.add(const MissingValidationItem(
-        key: 'unit',
-        title: 'Jumlah Unit Perumahan *',
-        subtitle: 'Harus minimal 1 unit',
-        statusText: 'Belum diisi',
-        icon: Icons.home_outlined,
-      ));
+      missing.add(
+        const MissingValidationItem(
+          key: 'unit',
+          title: 'Jumlah Unit Perumahan *',
+          subtitle: 'Harus minimal 1 unit',
+          statusText: 'Belum diisi',
+          icon: Icons.home_outlined,
+        ),
+      );
     }
 
     _isModalShowing = true;
@@ -483,9 +528,7 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
 
   Widget _buildTipePerumahanSegmentedControl() {
     final optionCount = _tipePerumahanOptions.length;
-    final selectedIndex = _tipePerumahanOptions.indexOf(
-      _selectedTipePerumahan,
-    );
+    final selectedIndex = _tipePerumahanOptions.indexOf(_selectedTipePerumahan);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -510,7 +553,7 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: AppColors.backgroundCanvas,
+            color: const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.borderSubtle),
           ),
@@ -519,8 +562,8 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
               if (selectedIndex >= 0)
                 Positioned.fill(
                   child: AnimatedAlign(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
                     alignment: Alignment(
                       -1 + 2 * selectedIndex / (optionCount - 1),
                       0,
@@ -530,15 +573,8 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                       heightFactor: 1,
                       child: DecoratedBox(
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: const Color(0xFFDC2626),
                           borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
                         ),
                       ),
                     ),
@@ -558,15 +594,15 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         child: Center(
                           child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 220),
-                            curve: Curves.easeOutCubic,
+                            duration: const Duration(milliseconds: 200),
+                            curve: Curves.easeInOut,
                             style: TextStyle(
                               fontFamily: AppTextStyles.fontFamily,
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
                               color: isSelected
-                                  ? AppColors.primaryRed
-                                  : AppColors.textSecondary,
+                                  ? Colors.white
+                                  : const Color(0xFF64748B),
                             ),
                             child: Text(opt),
                           ),
@@ -609,11 +645,228 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
     );
   }
 
-  Widget _buildDayaListrikChips() {
+  void _openDropdown() {
+    if (_isDropdownOpen) return;
+
+    final disableAnimations =
+        MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (disableAnimations) {
+      _dropdownController.duration = Duration.zero;
+      _dropdownController.reverseDuration = Duration.zero;
+    } else {
+      _dropdownController.duration = const Duration(milliseconds: 220);
+      _dropdownController.reverseDuration = const Duration(milliseconds: 160);
+    }
+
+    _isDropdownOpen = true;
+    _overlayEntry = _createOverlayEntry();
+    Overlay.of(context).insert(_overlayEntry!);
+    if (disableAnimations) {
+      _dropdownController.value = 1.0;
+    } else {
+      _dropdownController.forward();
+    }
+    setState(() {});
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_isDropdownOpen) return;
+      final selected = ref.read(pengajuanFormProvider).dayaListrik;
+      final selectedIndex = _dayaListrikOptions.indexOf(selected);
+      if (selectedIndex > 2 && _dropdownScrollController.hasClients) {
+        final targetOffset = math.max(0.0, (selectedIndex * 44.0) - 44.0);
+        _dropdownScrollController.jumpTo(
+          math.min(
+            targetOffset,
+            _dropdownScrollController.position.maxScrollExtent,
+          ),
+        );
+      }
+    });
+  }
+
+  void _closeDropdown() {
+    if (!_isDropdownOpen) return;
+
+    final disableAnimations =
+        MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    _isDropdownOpen = false;
+    setState(() {});
+
+    if (disableAnimations) {
+      _dropdownController.value = 0.0;
+      _removeOverlay();
+    } else {
+      _dropdownController.reverse().then((_) {
+        if (!_isDropdownOpen) {
+          _removeOverlay();
+        }
+      });
+    }
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    final renderBox =
+        _dropdownKey.currentContext?.findRenderObject() as RenderBox?;
+    final size = renderBox?.size ?? const Size(300, 48);
+    final offset = renderBox?.localToGlobal(Offset.zero) ?? Offset.zero;
+    final mediaQuery = MediaQuery.of(context);
+    final screenHeight = mediaQuery.size.height;
+    final paddingBottom = mediaQuery.padding.bottom;
+    final paddingTop = mediaQuery.padding.top;
+
+    // Hitung sisa ruang vertikal: bottom navigation bar tingginya ~72dp
+    final availableBelow =
+        screenHeight - (offset.dy + size.height) - paddingBottom - 76;
+    final availableAbove = offset.dy - paddingTop - 56;
+
+    final bool openUpward =
+        availableBelow < 220 && availableAbove > availableBelow;
+    final double maxMenuHeight = openUpward
+        ? math.min(260.0, math.max(160.0, availableAbove - 16))
+        : math.min(260.0, math.max(160.0, availableBelow - 16));
+
+    return OverlayEntry(
+      builder: (context) {
+        final state = ref.watch(pengajuanFormProvider);
+        final dropdownValue = _dayaListrikOptions.contains(state.dayaListrik)
+            ? state.dayaListrik
+            : null;
+
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _closeDropdown,
+              ),
+            ),
+            Positioned(
+              width: size.width,
+              child: CompositedTransformFollower(
+                link: _layerLink,
+                showWhenUnlinked: false,
+                targetAnchor: openUpward
+                    ? Alignment.topLeft
+                    : Alignment.bottomLeft,
+                followerAnchor: openUpward
+                    ? Alignment.bottomLeft
+                    : Alignment.topLeft,
+                offset: openUpward ? const Offset(0, -4) : const Offset(0, 4),
+                child: AnimatedBuilder(
+                  animation: _openCurve,
+                  builder: (context, child) {
+                    final progress = _openCurve.value;
+                    final slideDelta = openUpward ? -5.0 : 5.0;
+                    return Opacity(
+                      opacity: progress.clamp(0.0, 1.0),
+                      child: Transform.translate(
+                        offset: Offset(0, slideDelta * (progress - 1.0)),
+                        child: child,
+                      ),
+                    );
+                  },
+                  child: Material(
+                    elevation: 4,
+                    shadowColor: Colors.black.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.white,
+                    clipBehavior: Clip.antiAlias,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppColors.borderSubtle,
+                          width: 1.2,
+                        ),
+                      ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxHeight: maxMenuHeight),
+                        child: Scrollbar(
+                          controller: _dropdownScrollController,
+                          thumbVisibility: true,
+                          child: SingleChildScrollView(
+                            controller: _dropdownScrollController,
+                            physics: const ClampingScrollPhysics(),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: _dayaListrikOptions.map((opt) {
+                                final isSelected = opt == dropdownValue;
+                                return InkWell(
+                                  onTap: () {
+                                    ref
+                                        .read(pengajuanFormProvider.notifier)
+                                        .updateDayaListrik(opt);
+                                    _closeDropdown();
+                                  },
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    color: isSelected
+                                        ? const Color(
+                                            0xFFFEE2E2,
+                                          ).withValues(alpha: 0.35)
+                                        : Colors.transparent,
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            opt,
+                                            style: TextStyle(
+                                              fontFamily:
+                                                  AppTextStyles.fontFamily,
+                                              fontSize: 13.5,
+                                              color: isSelected
+                                                  ? AppColors.primaryRed
+                                                  : AppColors.textMain,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isSelected)
+                                          const Icon(
+                                            Icons.check_rounded,
+                                            size: 16,
+                                            color: AppColors.primaryRed,
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildDayaListrikDropdown() {
     final selected = ref.watch(
       pengajuanFormProvider.select((s) => s.dayaListrik),
     );
-    final notifier = ref.read(pengajuanFormProvider.notifier);
+    final dropdownValue = _dayaListrikOptions.contains(selected)
+        ? selected
+        : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -638,34 +891,79 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
           ),
         ),
         const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _dayaListrikOptions.map((opt) {
-            final isSelected = selected == opt;
-            return ChoiceChip(
-              label: Text(opt),
-              selected: isSelected,
-              showCheckmark: false,
-              onSelected: (_) =>
-                  notifier.updateDayaListrik(isSelected ? '' : opt),
-              selectedColor: AppColors.primarySurface,
-              backgroundColor: AppColors.backgroundCanvas,
-              side: BorderSide(
-                color: isSelected
-                    ? AppColors.primaryRed
-                    : AppColors.borderSubtle,
+        CompositedTransformTarget(
+          link: _layerLink,
+          child: InkWell(
+            key: const ValueKey('daya_listrik_dropdown'),
+            onTap: () {
+              if (_isDropdownOpen) {
+                _closeDropdown();
+              } else {
+                _openDropdown();
+              }
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: InputDecorator(
+              key: _dropdownKey,
+              isFocused: _isDropdownOpen,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.borderSubtle,
+                    width: 1.2,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.borderSubtle,
+                    width: 1.2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(
+                    color: AppColors.primaryRed,
+                    width: 1.5,
+                  ),
+                ),
               ),
-              labelStyle: TextStyle(
-                fontFamily: AppTextStyles.fontFamily,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isSelected
-                    ? AppColors.primaryRed
-                    : AppColors.textSecondary,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      dropdownValue ?? 'Pilih daya listrik',
+                      style: TextStyle(
+                        fontFamily: AppTextStyles.fontFamily,
+                        fontSize: 13.5,
+                        color: dropdownValue != null
+                            ? AppColors.textMain
+                            : AppColors.textSecondary,
+                        fontWeight: dropdownValue != null
+                            ? FontWeight.w500
+                            : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                  RotationTransition(
+                    turns: _chevronAnimation,
+                    child: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                  ),
+                ],
               ),
-            );
-          }).toList(),
+            ),
+          ),
         ),
         const SizedBox(height: 4),
         const Text(
@@ -920,7 +1218,7 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen> {
           const SizedBox(height: AppSpacing.md),
 
           // 7. Daya Listrik PLN (opsional)
-          _buildDayaListrikChips(),
+          _buildDayaListrikDropdown(),
         ],
       ),
     );

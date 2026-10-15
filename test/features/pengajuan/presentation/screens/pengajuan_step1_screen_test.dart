@@ -270,24 +270,134 @@ void main() {
       expect(container.read(pengajuanFormProvider).npwpVerified, isFalse);
     });
 
-    testWidgets('daya listrik PLN is optional and can be toggled', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    testWidgets(
+      'daya listrik PLN is optional, defaults to null, and updates via scrollable dropdown',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 844);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(createTestWidget(container: container));
-      await tester.pumpAndSettle();
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      await tester.ensureVisible(find.text('900 VA'));
-      expect(container.read(pengajuanFormProvider).dayaListrik, isEmpty);
-      await tester.tap(find.text('900 VA'));
-      await tester.pumpAndSettle();
-      expect(container.read(pengajuanFormProvider).dayaListrik, '900 VA');
-      await tester.tap(find.text('900 VA'));
-      await tester.pumpAndSettle();
-      expect(container.read(pengajuanFormProvider).dayaListrik, isEmpty);
-    });
+        await tester.pumpWidget(createTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        // 1. Placeholder shown when null
+        expect(find.text('Pilih daya listrik'), findsOneWidget);
+        expect(container.read(pengajuanFormProvider).dayaListrik, isEmpty);
+
+        // 2. Tap dropdown trigger and verify options are rendered in scrollable menu
+        final dropdownTrigger = find.byKey(
+          const ValueKey('daya_listrik_dropdown'),
+        );
+        await tester.ensureVisible(dropdownTrigger);
+        await tester.tap(dropdownTrigger);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(Scrollbar), findsOneWidget);
+        expect(find.text('450 VA'), findsOneWidget);
+        expect(find.text('900 VA'), findsOneWidget);
+        expect(find.text('1.300 VA'), findsOneWidget);
+        expect(find.text('2.200 VA'), findsOneWidget);
+
+        // Scroll to reach higher power options
+        await tester.scrollUntilVisible(
+          find.text('6.600 VA ke atas'),
+          50,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('6.600 VA ke atas'), findsOneWidget);
+
+        // Select '6.600 VA ke atas'
+        await tester.tap(find.text('6.600 VA ke atas').last);
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(pengajuanFormProvider).dayaListrik,
+          '6.600 VA ke atas',
+        );
+        expect(find.text('6.600 VA ke atas'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'implements Opsi B (Merah Tegas) for Tipe Perumahan and clean animated dropdown for Daya Listrik',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(createTestWidget(container: container));
+        await tester.pumpAndSettle();
+
+        // 1. Tipe Perumahan track container: #F1F5F9
+        final trackFinder = find.byWidgetPredicate((widget) {
+          return widget is Container &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).color ==
+                  const Color(0xFFF1F5F9);
+        });
+        expect(trackFinder, findsOneWidget);
+
+        // Active sliding indicator: #DC2626
+        final activeIndicatorFinder = find.byWidgetPredicate((widget) {
+          return widget is DecoratedBox &&
+              widget.decoration is BoxDecoration &&
+              (widget.decoration as BoxDecoration).color ==
+                  const Color(0xFFDC2626);
+        });
+        expect(activeIndicatorFinder, findsOneWidget);
+
+        // 2. Daya Listrik: Dropdown trigger exists with chevron down icon and InputDecorator
+        final dropdownFinder = find.byKey(
+          const ValueKey('daya_listrik_dropdown'),
+        );
+        expect(dropdownFinder, findsOneWidget);
+        expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+        expect(find.text('Pilih daya listrik'), findsOneWidget);
+
+        final inputDecorator = tester.widget<InputDecorator>(
+          find.descendant(
+            of: dropdownFinder,
+            matching: find.byType(InputDecorator),
+          ),
+        );
+        expect(inputDecorator.decoration.fillColor, Colors.white);
+        expect(inputDecorator.decoration.filled, isTrue);
+
+        // Initial chevron rotation is 0.0 (pointing down)
+        final rotationFinder = find.descendant(
+          of: dropdownFinder,
+          matching: find.byType(RotationTransition),
+        );
+        expect(rotationFinder, findsOneWidget);
+        final initialRotation = tester.widget<RotationTransition>(
+          rotationFinder,
+        );
+        expect(initialRotation.turns.value, 0.0);
+
+        // Open dropdown: rotates chevron by 180° (0.5 turns)
+        await tester.ensureVisible(dropdownFinder);
+        await tester.tap(dropdownFinder);
+        await tester.pumpAndSettle();
+
+        final openedRotation = tester.widget<RotationTransition>(
+          rotationFinder,
+        );
+        expect(openedRotation.turns.value, 0.5);
+
+        // Close dropdown by tapping trigger again: rotates back to 0.0
+        await tester.tap(dropdownFinder);
+        await tester.pumpAndSettle();
+
+        final closedRotation = tester.widget<RotationTransition>(
+          rotationFinder,
+        );
+        expect(closedRotation.turns.value, 0.0);
+      },
+    );
 
     testWidgets(
       'retains form entries when navigating Fase 1 -> Fase 2 -> back to Fase 1',
