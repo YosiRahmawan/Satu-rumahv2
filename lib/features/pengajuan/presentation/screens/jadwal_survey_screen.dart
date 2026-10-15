@@ -14,8 +14,9 @@ import '../widgets/survey_not_found_illustration.dart';
 import 'pengajuan_detail_screen.dart';
 
 /// Provider data jadwal survey yang bersumber dari daftar pengajuan aktif pengembang.
-final jadwalSurveyListProvider =
-    FutureProvider.autoDispose<List<Pengajuan>>((ref) async {
+final jadwalSurveyListProvider = FutureProvider.autoDispose<List<Pengajuan>>((
+  ref,
+) async {
   final list = ref.watch(pengajuanListProvider);
   await Future<void>.delayed(Duration.zero);
   return list;
@@ -44,8 +45,9 @@ enum SurveyStatus {
 
 SurveyStatus getSurveyStatus(Pengajuan item) {
   // 1. Jika survey sudah selesai atau tahap pengajuan sudah selesai/persetujuan
-  final bool hasCompletedSurvey =
-      item.riwayatSurvey.any((s) => s.sudahTerlaksana);
+  final bool hasCompletedSurvey = item.riwayatSurvey.any(
+    (s) => s.sudahTerlaksana,
+  );
   if (hasCompletedSurvey ||
       item.statusTahap == StatusTahapPengajuan.selesai ||
       item.statusTahap == StatusTahapPengajuan.persetujuan) {
@@ -312,16 +314,13 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final item = filteredItems[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildSurveyCard(item),
-                    );
-                  },
-                  childCount: filteredItems.length,
-                ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final item = filteredItems[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildSurveyCard(item),
+                  );
+                }, childCount: filteredItems.length),
               ),
             ),
         ],
@@ -383,8 +382,10 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
         ),
       ),
     );
@@ -432,10 +433,12 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
                     style: TextStyle(
                       fontFamily: 'Plus Jakarta Sans',
                       fontSize: 12,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color:
-                          isSelected ? Colors.white : const Color(0xFF64748B),
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFF64748B),
                       height: 1.25,
                     ),
                   ),
@@ -603,11 +606,7 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
           // Row 1: Tanggal
           Row(
             children: [
-              Icon(
-                dateIcon,
-                size: 17,
-                color: dateIconColor,
-              ),
+              Icon(dateIcon, size: 17, color: dateIconColor),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -703,15 +702,17 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
               final String? evalDetail = surveyEval.temuanLapangan.isNotEmpty
                   ? surveyEval.temuanLapangan.first
                   : (surveyEval.kesimpulan.isNotEmpty
-                      ? surveyEval.kesimpulan.first
-                      : null);
+                        ? surveyEval.kesimpulan.first
+                        : null);
 
               return Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Container(
                   width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFFFBEB), // soft amber surface
                     borderRadius: BorderRadius.circular(8),
@@ -860,10 +861,7 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
           Container(
             width: 6,
             height: 6,
-            decoration: BoxDecoration(
-              color: dotColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
@@ -898,10 +896,7 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
           children: [
             // Illustration
             if (isFilterEmpty)
-              const SurveyNotFoundIllustration(
-                width: 200,
-                height: 157,
-              )
+              const SurveyNotFoundIllustration(width: 200, height: 157)
             else
               // Calendar with SATU RUMAH House Accent illustration
               Container(

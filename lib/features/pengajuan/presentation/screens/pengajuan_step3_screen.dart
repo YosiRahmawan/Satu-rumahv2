@@ -8,9 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/file_picker_util.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
@@ -46,9 +44,18 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
 
   final _loading = <String>{};
   final _failures = <String, _SlotFailure>{};
+  final Map<String, int> _slotFileSizes = {};
 
   int get _totalSlotCount => _slots.length;
   int get _requiredCount => _slots.where((slot) => !slot.isOptional).length;
+
+  String _formatFileSize(int bytes) {
+    if (bytes <= 0) return 'Ukuran tidak tersedia';
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    return '${(bytes / 1024).toStringAsFixed(0)} KB';
+  }
 
   Future<List<PlatformFile>> _pick({required bool allowMultiple}) async {
     if (widget.pickerSeam != null) {
@@ -131,6 +138,12 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
       }
 
       final references = files.map(FilePickerUtil.referenceOf).toList();
+      for (final f in files) {
+        final refName = FilePickerUtil.referenceOf(f);
+        _slotFileSizes[refName] = f.size;
+        _slotFileSizes[f.name] = f.size;
+        _slotFileSizes[slot.key] = f.size;
+      }
       final notifier = ref.read(pengajuanFormProvider.notifier);
       if (slot.allowsMultiple) {
         notifier.uploadDocuments(slot.key, references);
@@ -161,7 +174,25 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
 
   void _delete(PengajuanStep3DocumentConfig slot) {
     ref.read(pengajuanFormProvider.notifier).deleteDocument(slot.key);
-    setState(() => _failures.remove(slot.key));
+    setState(() {
+      _failures.remove(slot.key);
+      _slotFileSizes.remove(slot.key);
+    });
+  }
+
+  void _deleteFile(PengajuanStep3DocumentConfig slot, String file) {
+    if (slot.allowsMultiple) {
+      ref
+          .read(pengajuanFormProvider.notifier)
+          .deleteMultiDocumentFile(slot.key, file);
+      setState(() {
+        _failures.remove(slot.key);
+        _slotFileSizes.remove(file);
+        _slotFileSizes.remove(file.split(RegExp(r'[/\\]')).last);
+      });
+    } else {
+      _delete(slot);
+    }
   }
 
   bool _hasFile(PengajuanStep3DocumentConfig slot, PengajuanFormState state) {
@@ -264,10 +295,30 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
               children: [
                 _buildVerificationBanner(uploaded, isComplete),
                 const SizedBox(height: AppSpacing.lg),
-                Text(
-                  'Daftar berkas ($_totalSlotCount)',
-                  style: AppTextStyles.titleMedium.copyWith(
-                    fontWeight: FontWeight.w700,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 2),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Daftar berkas ($_totalSlotCount)',
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const Text(
+                        'Wajib diisi bertanda *',
+                        style: TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
@@ -291,60 +342,84 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
         ? AppColors.statusSuccessText
         : AppColors.primaryRed;
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: AppRadii.control,
-        border: Border.all(color: AppColors.borderSubtle),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x080F172A),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: _statusPill(
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF1F2),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFFFE4E6)),
+            ),
+            child: const Text(
               'Fase Verifikasi Administratif',
-              AppColors.primaryRed,
-              AppColors.primarySurfaceSoft,
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFFBE123C),
+              ),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 10),
           Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Expanded(
+              const Expanded(
                 child: Text(
                   'Dokumen perumahan',
-                  style: AppTextStyles.headlineSmall.copyWith(
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 15,
                     fontWeight: FontWeight.w800,
+                    color: Color(0xFF0F172A),
                   ),
                 ),
               ),
               Text(
                 '$uploaded dari $_totalSlotCount siap',
-                style: AppTextStyles.labelMedium.copyWith(
-                  color: statusColor,
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 12,
                   fontWeight: FontWeight.w700,
+                  color: statusColor,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: AppRadii.pill,
+            borderRadius: BorderRadius.circular(9999),
             child: LinearProgressIndicator(
               minHeight: 6,
               value: uploaded / _totalSlotCount,
-              backgroundColor: AppColors.primarySurfaceSoft,
+              backgroundColor: const Color(0xFFFFE4E6),
               valueColor: AlwaysStoppedAnimation<Color>(statusColor),
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
+          const SizedBox(height: 10),
+          const Text(
             'PDF, maks. 10 MB per file, dilegalisir pejabat berwenang.',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 11,
+              color: Color(0xFF64748B),
+              height: 1.4,
             ),
           ),
         ],
@@ -363,20 +438,20 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     final loading = _loading.contains(slot.key);
 
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: AppRadii.control,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: failure != null
               ? AppColors.statusUrgentText
-              : AppColors.borderSubtle,
+              : const Color(0xFFE2E8F0),
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x080F172A),
+            color: Color(0x060F172A),
             blurRadius: 6,
-            offset: Offset(0, 2),
+            offset: Offset(0, 1),
           ),
         ],
       ),
@@ -384,84 +459,186 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(
-                child: _statusPill(
-                  hasFile
-                      ? (slot.allowsMultiple
-                            ? 'Multi-file: ' +
-                                  files.length.toString() +
-                                  ' Berkas Terlampir'
-                            : 'Telah Terunggah')
-                      : (loading
-                            ? 'Mengunggah...'
-                            : failure != null
-                            ? 'Gagal'
-                            : 'Belum Diunggah'),
-                  hasFile
-                      ? AppColors.statusSuccessText
-                      : loading
-                      ? AppColors.statusWarningText
-                      : failure != null
-                      ? AppColors.statusUrgentText
-                      : AppColors.textSecondary,
-                  hasFile
-                      ? AppColors.statusSuccessSurface
-                      : loading
-                      ? AppColors.statusWarningSurface
-                      : failure != null
-                      ? AppColors.statusUrgentSurface
-                      : AppColors.slate100,
+              _buildStatusBadge(
+                hasFile: hasFile,
+                loading: loading,
+                failure: failure != null,
+                count: files.length,
+                allowsMultiple: slot.allowsMultiple,
+              ),
+              _buildRequirementTag(slot.isOptional),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            '${slot.number}. ${slot.label}${slot.isOptional ? '' : ' *'}',
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF0F172A),
+              height: 1.35,
+            ),
+          ),
+          if (slot.description != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              slot.description!,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 11,
+                color: Color(0xFF64748B),
+                height: 1.4,
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          if (failure != null)
+            _buildFailure(slot, failure)
+          else if (loading)
+            _buildLoading(slot)
+          else if (hasFile)
+            ..._buildFiles(
+              slot,
+              files.isEmpty && singleFile != null ? [singleFile] : files,
+            )
+          else
+            _uploadButton(slot),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge({
+    required bool hasFile,
+    required bool loading,
+    required bool failure,
+    required int count,
+    required bool allowsMultiple,
+  }) {
+    final String text;
+    final Color textColor;
+    final Color bgColor;
+    final Color borderColor;
+
+    if (hasFile) {
+      text = allowsMultiple
+          ? 'Multi-file: $count Berkas Terlampir'
+          : 'Telah Terunggah';
+      textColor = const Color(0xFF047857);
+      bgColor = const Color(0xFFECFDF5);
+      borderColor = const Color(0xFFA7F3D0);
+    } else if (loading) {
+      text = 'Mengunggah...';
+      textColor = const Color(0xFFB45309);
+      bgColor = const Color(0xFFFFFBEB);
+      borderColor = const Color(0xFFFDE68A);
+    } else if (failure) {
+      text = 'Gagal';
+      textColor = const Color(0xFFB91C1C);
+      bgColor = const Color(0xFFFEF2F2);
+      borderColor = const Color(0xFFFECDD3);
+    } else {
+      text = 'Belum Diunggah';
+      textColor = const Color(0xFF475569);
+      bgColor = const Color(0xFFF1F5F9);
+      borderColor = const Color(0xFFE2E8F0);
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: borderColor),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: 'Plus Jakarta Sans',
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequirementTag(bool isOptional) {
+    if (isOptional) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Text(
+          'Opsional',
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF64748B),
+          ),
+        ),
+      );
+    }
+    return const Text(
+      'Wajib',
+      style: TextStyle(
+        fontFamily: 'Plus Jakarta Sans',
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: AppColors.primaryRed,
+      ),
+    );
+  }
+
+  Widget _buildLoading(PengajuanStep3DocumentConfig slot) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Row(
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primaryRed,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              SizedBox(width: 8),
               Text(
-                slot.isOptional ? 'Opsional' : 'Wajib',
-                style: AppTextStyles.labelSmall.copyWith(
-                  color: slot.isOptional
-                      ? AppColors.textSecondary
-                      : AppColors.statusUrgentText,
-                  fontWeight: FontWeight.w700,
+                'Memeriksa dan memproses berkas...',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF64748B),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            slot.number + '. ' + slot.label + (slot.isOptional ? '' : ' *'),
-            style: AppTextStyles.titleMedium.copyWith(
-              fontWeight: FontWeight.w700,
+          SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.all(Radius.circular(2)),
+            child: LinearProgressIndicator(
+              minHeight: 4,
+              color: AppColors.primaryRed,
+              backgroundColor: Color(0xFFFEE2E2),
             ),
           ),
-          if (slot.description != null) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              slot.description!,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-          if (failure != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            _buildFailure(slot, failure),
-          ] else if (loading) ...[
-            const SizedBox(height: AppSpacing.sm),
-            const LinearProgressIndicator(
-              minHeight: 5,
-              color: AppColors.primaryRed,
-            ),
-          ] else if (hasFile) ...[
-            const SizedBox(height: AppSpacing.sm),
-            ..._buildFiles(
-              slot,
-              files.isEmpty && singleFile != null ? [singleFile] : files,
-            ),
-          ] else ...[
-            const SizedBox(height: AppSpacing.sm),
-            _uploadButton(slot),
-          ],
         ],
       ),
     );
@@ -472,55 +649,105 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     List<String> files,
   ) {
     return [
-      ...files.map(
-        (file) => Padding(
+      ...files.map((file) {
+        final fileName = file.split(RegExp(r'[/\\\\]')).last;
+        final size =
+            _slotFileSizes[file] ??
+            _slotFileSizes[fileName] ??
+            _slotFileSizes[slot.key];
+        final sizeText = size != null && size > 0
+            ? 'PDF · ${_formatFileSize(size)} · Terunggah'
+            : 'PDF · Terunggah';
+
+        return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.xs),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.sm,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: AppColors.slate100,
-              borderRadius: AppRadii.small,
+              color: AppColors.cardSurface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.borderSubtle),
             ),
             child: Row(
               children: [
-                const Icon(
-                  Icons.picture_as_pdf_outlined,
-                  size: 18,
-                  color: AppColors.statusUrgentText,
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFECDD3)),
+                  ),
+                  child: const Icon(
+                    Icons.description_outlined,
+                    size: 20,
+                    color: AppColors.primaryRed,
+                  ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
+                const SizedBox(width: 12),
                 Expanded(
-                  child: Text(
-                    file.split(RegExp(r'[/\\\\]')).last,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodySmall,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        fileName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textMain,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        sizeText,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11.5,
+                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (slot.allowsMultiple)
-                  IconButton(
-                    tooltip: 'Hapus berkas',
-                    icon: const Icon(Icons.close, size: 18),
-                    onPressed: () => _delete(slot),
-                  )
-                else
-                  TextButton(
-                    onPressed: () => _select(slot),
-                    child: const Text('Ganti'),
+                UploadedAttachmentActions(
+                  onPreview: () => FilePickerUtil.showAppDocumentPreview(
+                    context,
+                    fileName: fileName,
+                    title: slot.label,
+                    fileSize: size,
                   ),
+                  onReplace: () => _select(slot),
+                  onDelete: () => _deleteFile(slot, file),
+                ),
               ],
             ),
           ),
-        ),
-      ),
+        );
+      }),
       if (slot.allowsMultiple)
-        OutlinedButton.icon(
-          onPressed: () => _select(slot),
-          icon: const Icon(Icons.add, size: 18),
-          label: Text(slot.actionLabel),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _select(slot),
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(slot.actionLabel),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primaryRed,
+                side: const BorderSide(color: AppColors.primaryRed, width: 1.2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: const Size(double.infinity, 44),
+              ),
+            ),
+          ),
         ),
     ];
   }
@@ -530,30 +757,51 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
     _SlotFailure failure,
   ) {
     return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppColors.statusUrgentSurface,
-        borderRadius: AppRadii.small,
+        color: const Color(0xFFFEF2F2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFECDD3)),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(
-            Icons.error_outline,
-            color: AppColors.statusUrgentText,
+            Icons.error_outline_rounded,
+            color: AppColors.primaryRed,
             size: 18,
           ),
-          const SizedBox(width: AppSpacing.sm),
+          const SizedBox(width: 8),
           Expanded(
             child: Text(
-              failure.fileName + '\n' + failure.message,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.statusUrgentText,
+              '${failure.fileName}\n${failure.message}',
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 11,
+                color: AppColors.primaryRed,
+                fontWeight: FontWeight.w500,
+                height: 1.35,
               ),
             ),
           ),
+          const SizedBox(width: 8),
           TextButton(
             onPressed: () => _select(slot),
-            child: const Text('Coba Lagi'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primaryRed,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(54, 36),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'Coba Lagi',
+              style: TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryRed,
+              ),
+            ),
           ),
         ],
       ),
@@ -561,37 +809,37 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
   }
 
   Widget _uploadButton(PengajuanStep3DocumentConfig slot) {
+    final isOptional = slot.isOptional;
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: () => _select(slot),
-        icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+        icon: Icon(
+          Icons.cloud_upload_outlined,
+          size: 16,
+          color: isOptional ? const Color(0xFF64748B) : AppColors.primaryRed,
+        ),
         label: Text(
           slot.actionLabel,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: 'Plus Jakarta Sans',
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isOptional ? const Color(0xFF334155) : AppColors.primaryRed,
+          ),
         ),
-      ),
-    );
-  }
-
-  Widget _statusPill(String text, Color foreground, Color background) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.xs,
-      ),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: AppRadii.tight,
-      ),
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: AppTextStyles.labelSmall.copyWith(
-          color: foreground,
-          fontWeight: FontWeight.w700,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: isOptional
+              ? const Color(0xFF334155)
+              : AppColors.primaryRed,
+          side: BorderSide(
+            color: isOptional ? const Color(0xFFCBD5E1) : AppColors.primaryRed,
+            width: 1.2,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          minimumSize: const Size(double.infinity, 44),
         ),
       ),
     );
@@ -602,8 +850,9 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
         MediaQuery.textScalerOf(context).scale(14) > 20 ||
         MediaQuery.sizeOf(context).width < 370;
     return Material(
-      color: AppColors.cardSurface,
+      color: Colors.white,
       elevation: 8,
+      shadowColor: Colors.black.withValues(alpha: 0.1),
       child: SafeArea(
         top: false,
         child: Padding(
@@ -617,11 +866,9 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               const DraftStatusRow(),
+              const SizedBox(height: 10),
               if (useStackedActions) ...[
-                AppButton.secondary(
-                  text: 'Kembali',
-                  onPressed: _backToStep2,
-                ),
+                AppButton.secondary(text: 'Kembali', onPressed: _backToStep2),
                 const SizedBox(height: AppSpacing.sm),
                 AppButton.primary(
                   text: 'Lanjut ke Langkah 4',

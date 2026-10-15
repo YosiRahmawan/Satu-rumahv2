@@ -99,10 +99,9 @@ void main() {
     }
 
     Finder findFilterPill(String label) {
-      return find.ancestor(
-        of: find.text(label),
-        matching: find.byType(InkWell),
-      ).first;
+      return find
+          .ancestor(of: find.text(label), matching: find.byType(InkWell))
+          .first;
     }
 
     testWidgets('1. Loading -> Data Available transition', (tester) async {
@@ -149,7 +148,9 @@ void main() {
       expect(find.byType(AppHousingLoader), findsNothing);
       expect(find.text('Belum Ada Jadwal Survey'), findsOneWidget);
       expect(
-        find.text('Jadwal survey untuk pengajuan Anda akan ditampilkan di sini setelah tersedia.'),
+        find.text(
+          'Jadwal survey untuk pengajuan Anda akan ditampilkan di sini setelah tersedia.',
+        ),
         findsOneWidget,
       );
       expect(find.text('Periksa Status Pengajuan'), findsOneWidget);
@@ -175,7 +176,9 @@ void main() {
       expect(find.byType(AppHousingLoader), findsNothing);
       expect(find.text('Gagal Memuat Jadwal Survey'), findsOneWidget);
       expect(
-        find.text('Jadwal survey belum dapat ditampilkan. Silakan coba kembali.'),
+        find.text(
+          'Jadwal survey belum dapat ditampilkan. Silakan coba kembali.',
+        ),
         findsOneWidget,
       );
       expect(find.text('Coba Lagi'), findsOneWidget);
@@ -187,7 +190,9 @@ void main() {
         overrides: [
           jadwalSurveyListProvider.overrideWith((ref) {
             if (returnError) {
-              return Future<List<Pengajuan>>.error(Exception('Gagal terhubung'));
+              return Future<List<Pengajuan>>.error(
+                Exception('Gagal terhubung'),
+              );
             }
             return Future.value(mockSubmissions);
           }),
@@ -198,9 +203,7 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            home: JadwalSurveyScreen(),
-          ),
+          child: const MaterialApp(home: JadwalSurveyScreen()),
         ),
       );
       await tester.pumpAndSettle();
@@ -216,12 +219,16 @@ void main() {
       expect(find.text('Kencana Kawalu Regency'), findsOneWidget);
     });
 
-    testWidgets('5. Search dengan hasil kosong (Search Not Found)', (tester) async {
+    testWidgets('5. Search dengan hasil kosong (Search Not Found)', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createWidgetUnderTest(
           tester,
           overrides: [
-            jadwalSurveyListProvider.overrideWith((ref) => Future.value(mockSubmissions)),
+            jadwalSurveyListProvider.overrideWith(
+              (ref) => Future.value(mockSubmissions),
+            ),
           ],
         ),
       );
@@ -232,19 +239,25 @@ void main() {
 
       expect(find.text('Jadwal Tidak Ditemukan'), findsOneWidget);
       expect(
-        find.text('Tidak ada jadwal survey yang sesuai dengan filter atau kata kunci pencarian Anda.'),
+        find.text(
+          'Tidak ada jadwal survey yang sesuai dengan filter atau kata kunci pencarian Anda.',
+        ),
         findsOneWidget,
       );
       expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
       expect(find.text('Reset Filter'), findsOneWidget);
     });
 
-    testWidgets('6. Reset Filter mengembalikan kondisi default', (tester) async {
+    testWidgets('6. Reset Filter mengembalikan kondisi default', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createWidgetUnderTest(
           tester,
           overrides: [
-            jadwalSurveyListProvider.overrideWith((ref) => Future.value(mockSubmissions)),
+            jadwalSurveyListProvider.overrideWith(
+              (ref) => Future.value(mockSubmissions),
+            ),
           ],
         ),
       );
@@ -268,7 +281,9 @@ void main() {
           tester,
           height: 1200,
           overrides: [
-            jadwalSurveyListProvider.overrideWith((ref) => Future.value(mockSubmissions)),
+            jadwalSurveyListProvider.overrideWith(
+              (ref) => Future.value(mockSubmissions),
+            ),
           ],
         ),
       );
@@ -292,7 +307,9 @@ void main() {
       expect(find.text('Jadwal Tidak Ditemukan'), findsOneWidget);
     });
 
-    testWidgets('8. Housing Loader berhenti setelah proses selesai', (tester) async {
+    testWidgets('8. Housing Loader berhenti setelah proses selesai', (
+      tester,
+    ) async {
       final completer = Completer<List<Pengajuan>>();
       await tester.pumpWidget(
         createWidgetUnderTest(
@@ -310,13 +327,17 @@ void main() {
       expect(find.byType(AppHousingLoader), findsNothing);
     });
 
-    testWidgets('9. Status evaluasi hanya tampil jika didukung data', (tester) async {
+    testWidgets('9. Status evaluasi hanya tampil jika didukung data', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         createWidgetUnderTest(
           tester,
           height: 1200,
           overrides: [
-            jadwalSurveyListProvider.overrideWith((ref) => Future.value(mockSubmissions)),
+            jadwalSurveyListProvider.overrideWith(
+              (ref) => Future.value(mockSubmissions),
+            ),
           ],
         ),
       );
@@ -336,7 +357,9 @@ void main() {
           tester,
           height: 1200,
           overrides: [
-            jadwalSurveyListProvider.overrideWith((ref) => Future.value(mockSubmissions)),
+            jadwalSurveyListProvider.overrideWith(
+              (ref) => Future.value(mockSubmissions),
+            ),
           ],
         ),
       );
@@ -352,7 +375,9 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('11. Tidak ada overflow pada 360dp, 390dp, 412dp', (tester) async {
+    testWidgets('11. Tidak ada overflow pada 360dp, 390dp, 412dp', (
+      tester,
+    ) async {
       for (final w in [360.0, 390.0, 412.0]) {
         await tester.pumpWidget(
           createWidgetUnderTest(
@@ -360,7 +385,9 @@ void main() {
             width: w,
             height: 800,
             overrides: [
-              jadwalSurveyListProvider.overrideWith((ref) => Future.value(mockSubmissions)),
+              jadwalSurveyListProvider.overrideWith(
+                (ref) => Future.value(mockSubmissions),
+              ),
             ],
           ),
         );

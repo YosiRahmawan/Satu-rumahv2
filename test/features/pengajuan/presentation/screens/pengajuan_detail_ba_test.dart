@@ -64,24 +64,27 @@ void main() {
       container.dispose();
       await tester.binding.setSurfaceSize(null);
     });
-    container.read(pengajuanListProvider.notifier).addPengajuan(
-      Pengajuan(
-        id: 'SR-LONG-001',
-        namaPerumahan:
-            'Perumahan dengan nama yang sangat panjang untuk pengujian responsive',
-        namaPt:
-            'PT Pengembang Perumahan Nusantara dengan Nama Legal yang Panjang',
-        namaDirektur: 'Direktur',
-        npwpPerusahaan: '01.001',
-        luasLahan: 1000,
-        jumlahUnit: 10,
-        tipePerumahan: 'Subsidi Komersil Keduanya dengan Keterangan Tambahan',
-        status: 'Dalam Proses',
-        statusTahap: StatusTahapPengajuan.verifikasiAdministrasi,
-        tanggal: '19 Agustus 2026 dengan catatan waktu yang panjang',
-        uploadedDocs: const {},
-      ),
-    );
+    container
+        .read(pengajuanListProvider.notifier)
+        .addPengajuan(
+          Pengajuan(
+            id: 'SR-LONG-001',
+            namaPerumahan:
+                'Perumahan dengan nama yang sangat panjang untuk pengujian responsive',
+            namaPt:
+                'PT Pengembang Perumahan Nusantara dengan Nama Legal yang Panjang',
+            namaDirektur: 'Direktur',
+            npwpPerusahaan: '01.001',
+            luasLahan: 1000,
+            jumlahUnit: 10,
+            tipePerumahan:
+                'Subsidi Komersil Keduanya dengan Keterangan Tambahan',
+            status: 'Dalam Proses',
+            statusTahap: StatusTahapPengajuan.verifikasiAdministrasi,
+            tanggal: '19 Agustus 2026 dengan catatan waktu yang panjang',
+            uploadedDocs: const {},
+          ),
+        );
 
     final overflowErrors = <FlutterErrorDetails>[];
     final previousOnError = FlutterError.onError;

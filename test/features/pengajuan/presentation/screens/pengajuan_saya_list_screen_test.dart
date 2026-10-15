@@ -431,9 +431,18 @@ void main() {
     'header tabs preserve list query and central FAB starts the form',
     (tester) async {
       final container = await _pump(tester, dashboard: true);
+      // Header Pengajuan only has avatar (no duplicate notification bell)
+      expect(find.byTooltip('Buka notifikasi'), findsNothing);
+      expect(find.byTooltip('Buka profil'), findsOneWidget);
+
       await tester.enterText(find.byType(TextField), 'Green');
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Buka notifikasi'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(BottomAppBar),
+          matching: find.text('Notifikasi'),
+        ),
+      );
       await tester.pumpAndSettle();
       expect(container.read(dashboardTabProvider), 2);
       await tester.tap(

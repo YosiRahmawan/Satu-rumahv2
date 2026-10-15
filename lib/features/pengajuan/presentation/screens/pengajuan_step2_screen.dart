@@ -20,13 +20,13 @@ import '../widgets/pengajuan_draft_ui.dart';
 import '../widgets/smart_validation_bottom_sheet.dart';
 
 /// Persists document file size metadata across screen transitions/navigation in the session.
-final pengajuanStep2DocSizesProvider =
-    StateProvider<Map<String, int>>((ref) => {});
+final pengajuanStep2DocSizesProvider = StateProvider<Map<String, int>>(
+  (ref) => {},
+);
 
 /// Testable seam for file picking to allow deterministic widget and unit testing.
-typedef FilePickerSeam = Future<PlatformFile?> Function({
-  List<String>? allowedExtensions,
-});
+typedef FilePickerSeam =
+    Future<PlatformFile?> Function({List<String>? allowedExtensions});
 
 /// Slot configuration for the 5 mandatory legal documents in Fase 2 - Berkas PT.
 class _DocSlotConfig {
@@ -70,10 +70,7 @@ class _SlotError {
 /// - Sticky bottom bar with local draft persistence and navigation guard.
 /// - Fully responsive for 360dp, 412dp, and 200% text scale.
 class PengajuanStep2Screen extends ConsumerStatefulWidget {
-  const PengajuanStep2Screen({
-    super.key,
-    this.pickerSeam,
-  });
+  const PengajuanStep2Screen({super.key, this.pickerSeam});
 
   /// Optional test seam to inject custom picker behavior for tests.
   final FilePickerSeam? pickerSeam;
@@ -168,7 +165,10 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Mengerti', style: TextStyle(color: AppColors.primaryRed)),
+            child: const Text(
+              'Mengerti',
+              style: TextStyle(color: AppColors.primaryRed),
+            ),
           ),
         ],
       ),
@@ -186,9 +186,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
       if (widget.pickerSeam != null) {
         file = await widget.pickerSeam!(allowedExtensions: ['pdf']);
       } else {
-        file = await FilePickerUtil.pickSingleFile(
-          allowedExtensions: ['pdf'],
-        );
+        file = await FilePickerUtil.pickSingleFile(allowedExtensions: ['pdf']);
       }
     } catch (e) {
       debugPrint('Error picking file for $key: $e');
@@ -220,7 +218,8 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
 
     // PDF extension check
     final fileName = file.name;
-    final ext = file.extension?.toLowerCase() ??
+    final ext =
+        file.extension?.toLowerCase() ??
         (fileName.contains('.') ? fileName.split('.').last.toLowerCase() : '');
     final isPdf = ext == 'pdf' || fileName.toLowerCase().endsWith('.pdf');
 
@@ -262,15 +261,13 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
       _slotFileSizes[key] = file!.size;
     });
 
-    ref.read(pengajuanStep2DocSizesProvider.notifier).update((m) => {
-          ...m,
-          key: file!.size,
-        });
+    ref
+        .read(pengajuanStep2DocSizesProvider.notifier)
+        .update((m) => {...m, key: file!.size});
 
-    ref.read(pengajuanFormProvider.notifier).uploadDocument(
-      key,
-      FilePickerUtil.referenceOf(file),
-    );
+    ref
+        .read(pengajuanFormProvider.notifier)
+        .uploadDocument(key, FilePickerUtil.referenceOf(file));
   }
 
   void _deleteFile(String key) {
@@ -424,7 +421,11 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
     );
   }
 
-  Widget _buildSlotHeader(_DocSlotConfig slot, Widget badge, bool isTextScaled) {
+  Widget _buildSlotHeader(
+    _DocSlotConfig slot,
+    Widget badge,
+    bool isTextScaled,
+  ) {
     if (isTextScaled) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -641,9 +642,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
               children: [
                 Row(
                   children: [
-                    const AppLoadingSpinner.small(
-                      color: AppColors.primaryRed,
-                    ),
+                    const AppLoadingSpinner.small(color: AppColors.primaryRed),
                     const SizedBox(width: 10),
                     const Expanded(
                       child: Text(
@@ -806,8 +805,10 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                 if (hasExistingFile) ...[
                   const SizedBox(height: 8),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.cardSurface,
                       borderRadius: BorderRadius.circular(8),
@@ -979,16 +980,16 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
             child: Row(
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(
-                    PhosphorIconsRegular.filePdf,
+                    Icons.description_outlined,
                     color: AppColors.primaryRed,
-                    size: 22,
+                    size: 20,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1010,8 +1011,8 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                       const SizedBox(height: 3),
                       Text(
                         effectiveSize > 0
-                            ? '${_formatFileSize(effectiveSize)} • PDF Siap Dikirim'
-                            : '${_formatFileSize(0)} • PDF Siap Dikirim',
+                            ? 'PDF · ${_formatFileSize(effectiveSize)} · Terunggah'
+                            : 'PDF · ${_formatFileSize(0)} · Terunggah',
                         style: const TextStyle(
                           fontFamily: AppTextStyles.fontFamily,
                           fontSize: 11.5,
@@ -1021,23 +1022,15 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                     ],
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Ganti berkas ini',
-                  icon: const Icon(
-                    Icons.edit_outlined,
-                    color: AppColors.slate400,
-                    size: 18,
+                UploadedAttachmentActions(
+                  onPreview: () => FilePickerUtil.showAppDocumentPreview(
+                    context,
+                    fileName: fileName,
+                    title: slot.title,
+                    fileSize: effectiveSize,
                   ),
-                  onPressed: () => _pickFile(slot.key),
-                ),
-                IconButton(
-                  tooltip: 'Hapus berkas',
-                  icon: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.slate400,
-                    size: 20,
-                  ),
-                  onPressed: () => _deleteFile(slot.key),
+                  onReplace: () => _pickFile(slot.key),
+                  onDelete: () => _deleteFile(slot.key),
                 ),
               ],
             ),
@@ -1111,7 +1104,10 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: const BoxDecoration(
                     color: AppColors.primarySurface,
                     borderRadius: AppRadii.pill,
@@ -1191,11 +1187,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
             ),
             child: const Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: AppColors.primaryRed,
-                  size: 20,
-                ),
+                Icon(Icons.info_outline, color: AppColors.primaryRed, size: 20),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -1221,9 +1213,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
       style: OutlinedButton.styleFrom(
         padding: const EdgeInsets.symmetric(vertical: 14),
         side: const BorderSide(color: AppColors.borderSubtle),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         backgroundColor: AppColors.backgroundCanvas,
       ),
       onPressed: _onBack,
@@ -1248,9 +1238,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         backgroundColor: AppColors.primaryRed,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         elevation: 0,
       ),
       onPressed: _onNext,
@@ -1325,7 +1313,8 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                       );
                     } else {
                       final uploadedDoc = formState.uploadedDocs[slot.key];
-                      if (uploadedDoc != null && uploadedDoc.trim().isNotEmpty) {
+                      if (uploadedDoc != null &&
+                          uploadedDoc.trim().isNotEmpty) {
                         slotWidget = _buildValidSlot(
                           slot,
                           uploadedDoc,
@@ -1353,8 +1342,9 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                           boxShadow: isHighlighted
                               ? [
                                   BoxShadow(
-                                    color: AppColors.primaryRed
-                                        .withValues(alpha: 0.18),
+                                    color: AppColors.primaryRed.withValues(
+                                      alpha: 0.18,
+                                    ),
                                     blurRadius: 10,
                                     spreadRadius: 2,
                                   ),
@@ -1407,15 +1397,9 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
               ] else ...[
                 Row(
                   children: [
-                    Expanded(
-                      flex: 4,
-                      child: _buildBackButton(),
-                    ),
+                    Expanded(flex: 4, child: _buildBackButton()),
                     const SizedBox(width: 12),
-                    Expanded(
-                      flex: 6,
-                      child: _buildNextButton(isStep2Valid),
-                    ),
+                    Expanded(flex: 6, child: _buildNextButton(isStep2Valid)),
                   ],
                 ),
               ],
@@ -1436,10 +1420,7 @@ class _DashedBorderPainter extends CustomPainter {
   static const double _dash = 6.0;
   static const double _gap = 4.0;
 
-  _DashedBorderPainter({
-    required this.color,
-    required this.radius,
-  });
+  _DashedBorderPainter({required this.color, required this.radius});
 
   @override
   void paint(Canvas canvas, Size size) {

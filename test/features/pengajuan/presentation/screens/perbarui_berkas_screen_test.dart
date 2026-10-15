@@ -28,22 +28,28 @@ void main() {
   }
 
   group('PerbaruiBerkasScreen Tests', () {
-    testWidgets('renders header without pill and renders Housing Identity Card below header', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders header without pill and renders Housing Identity Card below header',
+      (tester) async {
+        await tester.pumpWidget(buildTestWidget());
+        await tester.pumpAndSettle();
 
-      // Header has title and back button only
-      expect(find.text('Perbarui Berkas'), findsWidgets);
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+        // Header has title and back button only
+        expect(find.text('Perbarui Berkas'), findsWidgets);
+        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
 
-      // Old combined header pill is no longer rendered
-      expect(find.textContaining('Perumahan Green Tasik • REG-2026-0142'), findsNothing);
+        // Old combined header pill is no longer rendered
+        expect(
+          find.textContaining('Perumahan Green Tasik • REG-2026-0142'),
+          findsNothing,
+        );
 
-      // Housing Identity Card is rendered with icon, housing name, and registration number
-      expect(find.byIcon(Icons.home_work_outlined), findsOneWidget);
-      expect(find.text('Perumahan Green Tasik'), findsOneWidget);
-      expect(find.text('REG-2026-0142'), findsOneWidget);
-    });
+        // Housing Identity Card is rendered with icon, housing name, and registration number
+        expect(find.byIcon(Icons.home_work_outlined), findsOneWidget);
+        expect(find.text('Perumahan Green Tasik'), findsOneWidget);
+        expect(find.text('REG-2026-0142'), findsOneWidget);
+      },
+    );
 
     testWidgets('renders progress card with 1/3 Berkas initial progress', (
       tester,
@@ -398,7 +404,9 @@ void main() {
 
           // 2. Note content verbatim
           expect(
-            find.textContaining('Mohon lakukan revisi pada KTP Penanggung Jawab'),
+            find.textContaining(
+              'Mohon lakukan revisi pada KTP Penanggung Jawab',
+            ),
             findsWidgets,
           );
 
@@ -409,7 +417,9 @@ void main() {
           expect(find.textContaining('09:30 WIB'), findsOneWidget);
           expect(find.text('Instansi'), findsOneWidget);
           expect(
-            find.text('Dinas Perumahan dan Kawasan Permukiman Kota Tasikmalaya'),
+            find.text(
+              'Dinas Perumahan dan Kawasan Permukiman Kota Tasikmalaya',
+            ),
             findsOneWidget,
           );
 
@@ -474,7 +484,10 @@ void main() {
 
           // Remains on Perbarui Berkas screen and Perlu Diperbaiki section is visible
           expect(find.text('Perlu Diperbaiki (3)'), findsOneWidget);
-          expect(find.text('1. KTP Direktur / Penanggung Jawab'), findsOneWidget);
+          expect(
+            find.text('1. KTP Direktur / Penanggung Jawab'),
+            findsOneWidget,
+          );
         },
       );
 

@@ -18,7 +18,10 @@ void main() {
     GoRouter? router,
     FilePickerSeam? pickerSeam,
   }) {
-    tester.view.physicalSize = Size(size.width, size.height * (textScale > 1.5 ? 2.0 : 1.2));
+    tester.view.physicalSize = Size(
+      size.width,
+      size.height * (textScale > 1.5 ? 2.0 : 1.2),
+    );
     tester.view.devicePixelRatio = 1.0;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -71,119 +74,140 @@ void main() {
   }
 
   group('PengajuanStep2Screen (Fase 2 - Berkas PT Prototype Tests)', () {
-    testWidgets('renders canonical hero header, agency pill, and StepperHeader', (
-      tester,
-    ) async {
-      await tester.pumpWidget(createTestWidget(tester: tester));
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders canonical hero header, agency pill, and StepperHeader',
+      (tester) async {
+        await tester.pumpWidget(createTestWidget(tester: tester));
+        await tester.pumpAndSettle();
 
-      // Canonical PengajuanStepHeader elements
-      expect(find.text('Pengajuan Baru'), findsOneWidget);
-      expect(find.text('Langkah 2 dari 5'), findsOneWidget);
-      expect(find.text('DISPERWASKIM KOTA TASIKMALAYA'), findsNothing);
+        // Canonical PengajuanStepHeader elements
+        expect(find.text('Pengajuan Baru'), findsOneWidget);
+        expect(find.text('Langkah 2 dari 5'), findsOneWidget);
+        expect(find.text('DISPERWASKIM KOTA TASIKMALAYA'), findsNothing);
 
-      // Stepper 5 steps
-      expect(find.text('Data PT'), findsOneWidget);
-      expect(find.text('Berkas PT'), findsOneWidget);
-      expect(find.text('Perumahan'), findsOneWidget);
-      expect(find.text('Teknis'), findsOneWidget);
-      expect(find.text('Review'), findsOneWidget);
+        // Stepper 5 steps
+        expect(find.text('Data PT'), findsOneWidget);
+        expect(find.text('Berkas PT'), findsOneWidget);
+        expect(find.text('Perumahan'), findsOneWidget);
+        expect(find.text('Teknis'), findsOneWidget);
+        expect(find.text('Review'), findsOneWidget);
 
-      // Section summary card
-      expect(
-        find.text('Kelengkapan Berkas Legalitas Perusahaan'),
-        findsOneWidget,
-      );
-      expect(find.text('Wajib 5'), findsOneWidget);
-      expect(find.text('0 dari 5 berkas dipilih'), findsOneWidget);
-      expect(find.text('0%'), findsOneWidget);
+        // Section summary card
+        expect(
+          find.text('Kelengkapan Berkas Legalitas Perusahaan'),
+          findsOneWidget,
+        );
+        expect(find.text('Wajib 5'), findsOneWidget);
+        expect(find.text('0 dari 5 berkas dipilih'), findsOneWidget);
+        expect(find.text('0%'), findsOneWidget);
 
-      // 5 Document slot titles
-      expect(find.text('1. KTP-el Pemohon / Direktur Utama *'), findsOneWidget);
-      expect(find.text('2. Nomor Induk Berusaha (NIB) *'), findsOneWidget);
-      expect(find.text('3. NPWP Perusahaan *'), findsOneWidget);
-      expect(find.text('4. Bukti Keanggotaan Asosiasi *'), findsOneWidget);
-      expect(
-        find.text('5. Akta Pendirian & SK Kemenkumham *'),
-        findsOneWidget,
-      );
+        // 5 Document slot titles
+        expect(
+          find.text('1. KTP-el Pemohon / Direktur Utama *'),
+          findsOneWidget,
+        );
+        expect(find.text('2. Nomor Induk Berusaha (NIB) *'), findsOneWidget);
+        expect(find.text('3. NPWP Perusahaan *'), findsOneWidget);
+        expect(find.text('4. Bukti Keanggotaan Asosiasi *'), findsOneWidget);
+        expect(
+          find.text('5. Akta Pendirian & SK Kemenkumham *'),
+          findsOneWidget,
+        );
 
-      // 5 "Belum Unggah" badges initially
-      expect(find.text('Belum Unggah'), findsNWidgets(5));
+        // 5 "Belum Unggah" badges initially
+        expect(find.text('Belum Unggah'), findsNWidgets(5));
 
-      // Next button is clickable and primary red initially
-      final nextButton = tester.widget<ElevatedButton>(
-        find.widgetWithText(ElevatedButton, 'Lanjut ke Langkah 3'),
-      );
-      expect(nextButton.onPressed, isNotNull);
-    });
+        // Next button is clickable and primary red initially
+        final nextButton = tester.widget<ElevatedButton>(
+          find.widgetWithText(ElevatedButton, 'Lanjut ke Langkah 3'),
+        );
+        expect(nextButton.onPressed, isNotNull);
+      },
+    );
 
-    testWidgets('canceling file picker does not mutate state or show false selection', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    testWidgets(
+      'canceling file picker does not mutate state or show false selection',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        createTestWidget(
-          tester: tester,
-          container: container,
-          pickerSeam: ({allowedExtensions}) async => null, // User cancelled
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          createTestWidget(
+            tester: tester,
+            container: container,
+            pickerSeam: ({allowedExtensions}) async => null, // User cancelled
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Tap first "Pilih Berkas" button
-      final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
-      await tester.ensureVisible(pilihButtons.first);
-      await tester.tap(pilihButtons.first);
-      await tester.pumpAndSettle();
+        // Tap first "Pilih Berkas" button
+        final pilihButtons = find.widgetWithText(
+          OutlinedButton,
+          'Pilih Berkas',
+        );
+        await tester.ensureVisible(pilihButtons.first);
+        await tester.tap(pilihButtons.first);
+        await tester.pumpAndSettle();
 
-      // State remains unchanged: 0 of 5 selected, no error
-      expect(find.text('0 dari 5 berkas dipilih'), findsOneWidget);
-      expect(find.text('Belum Unggah'), findsNWidgets(5));
-      expect(find.text('Gagal'), findsNothing);
-      expect(container.read(pengajuanFormProvider).isStep2Valid, isFalse);
-    });
+        // State remains unchanged: 0 of 5 selected, no error
+        expect(find.text('0 dari 5 berkas dipilih'), findsOneWidget);
+        expect(find.text('Belum Unggah'), findsNWidgets(5));
+        expect(find.text('Gagal'), findsNothing);
+        expect(container.read(pengajuanFormProvider).isStep2Valid, isFalse);
+      },
+    );
 
-    testWidgets('rejects file larger than 10 MB with actionable Gagal state and retry', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    testWidgets(
+      'rejects file larger than 10 MB with actionable Gagal state and retry',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      // 14.2 MB oversized PDF
-      final oversizedFile = PlatformFile(
-        name: 'Akta_Perusahaan_Scan_HD.pdf',
-        size: 14 * 1024 * 1024 + 200 * 1024, // 14.2 MB
-      );
+        // 14.2 MB oversized PDF
+        final oversizedFile = PlatformFile(
+          name: 'Akta_Perusahaan_Scan_HD.pdf',
+          size: 14 * 1024 * 1024 + 200 * 1024, // 14.2 MB
+        );
 
-      await tester.pumpWidget(
-        createTestWidget(
-          tester: tester,
-          container: container,
-          pickerSeam: ({allowedExtensions}) async => oversizedFile,
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          createTestWidget(
+            tester: tester,
+            container: container,
+            pickerSeam: ({allowedExtensions}) async => oversizedFile,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Tap 5th slot (Akta & SK)
-      final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
-      await tester.ensureVisible(pilihButtons.at(4));
-      await tester.tap(pilihButtons.at(4));
-      await tester.pumpAndSettle();
+        // Tap 5th slot (Akta & SK)
+        final pilihButtons = find.widgetWithText(
+          OutlinedButton,
+          'Pilih Berkas',
+        );
+        await tester.ensureVisible(pilihButtons.at(4));
+        await tester.tap(pilihButtons.at(4));
+        await tester.pumpAndSettle();
 
-      // Error state displayed
-      expect(find.text('Gagal'), findsOneWidget);
-      expect(find.text('Akta_Perusahaan_Scan_HD.pdf'), findsOneWidget);
-      expect(find.text('File melebihi batas maksimal 10 MB.'), findsOneWidget);
-      expect(find.widgetWithText(ElevatedButton, 'Ganti Berkas'), findsOneWidget);
+        // Error state displayed
+        expect(find.text('Gagal'), findsOneWidget);
+        expect(find.text('Akta_Perusahaan_Scan_HD.pdf'), findsOneWidget);
+        expect(
+          find.text('File melebihi batas maksimal 10 MB.'),
+          findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(ElevatedButton, 'Ganti Berkas'),
+          findsOneWidget,
+        );
 
-      // Oversized file does NOT count as valid
-      expect(find.text('0 dari 5 berkas dipilih'), findsOneWidget);
-      expect(container.read(pengajuanFormProvider).uploadedDocs['legalitas'], isNull);
-      expect(container.read(pengajuanFormProvider).isStep2Valid, isFalse);
-    });
+        // Oversized file does NOT count as valid
+        expect(find.text('0 dari 5 berkas dipilih'), findsOneWidget);
+        expect(
+          container.read(pengajuanFormProvider).uploadedDocs['legalitas'],
+          isNull,
+        );
+        expect(container.read(pengajuanFormProvider).isStep2Valid, isFalse);
+      },
+    );
 
     testWidgets('rejects non-PDF format with actionable error state', (
       tester,
@@ -214,7 +238,10 @@ void main() {
       // Error state displayed
       expect(find.text('Gagal'), findsOneWidget);
       expect(find.text('foto_ktp.jpg'), findsOneWidget);
-      expect(find.text('Format berkas harus berupa dokumen PDF.'), findsOneWidget);
+      expect(
+        find.text('Format berkas harus berupa dokumen PDF.'),
+        findsOneWidget,
+      );
       expect(container.read(pengajuanFormProvider).uploadedDocs['ktp'], isNull);
     });
 
@@ -239,7 +266,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
+        final pilihButtons = find.widgetWithText(
+          OutlinedButton,
+          'Pilih Berkas',
+        );
         await tester.ensureVisible(pilihButtons.first);
         await tester.tap(pilihButtons.first);
         await tester.pumpAndSettle();
@@ -256,55 +286,151 @@ void main() {
       },
     );
 
-    testWidgets('successfully uploads valid PDF, updates progress, and supports delete', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    testWidgets(
+      'successfully uploads valid PDF, updates progress, and supports delete',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final validKtp = PlatformFile(
-        name: 'KTP_Direktur_Hendra_Gunawan.pdf',
-        size: 1400 * 1024, // 1.4 MB
-        path: '/dummy/KTP_Direktur_Hendra_Gunawan.pdf',
-      );
+        final validKtp = PlatformFile(
+          name: 'KTP_Direktur_Hendra_Gunawan.pdf',
+          size: 1400 * 1024, // 1.4 MB
+          path: '/dummy/KTP_Direktur_Hendra_Gunawan.pdf',
+        );
 
-      await tester.pumpWidget(
-        createTestWidget(
-          tester: tester,
-          container: container,
-          pickerSeam: ({allowedExtensions}) async => validKtp,
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          createTestWidget(
+            tester: tester,
+            container: container,
+            pickerSeam: ({allowedExtensions}) async => validKtp,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Pick KTP
-      final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
-      await tester.ensureVisible(pilihButtons.first);
-      await tester.tap(pilihButtons.first);
-      await tester.pumpAndSettle();
+        // Pick KTP
+        final pilihButtons = find.widgetWithText(
+          OutlinedButton,
+          'Pilih Berkas',
+        );
+        await tester.ensureVisible(pilihButtons.first);
+        await tester.tap(pilihButtons.first);
+        await tester.pumpAndSettle();
 
-      // Verified honest status
-      expect(find.text('Siap Dikirim'), findsOneWidget);
-      expect(find.text('KTP_Direktur_Hendra_Gunawan.pdf'), findsOneWidget);
-      expect(find.text('1 dari 5 berkas dipilih'), findsOneWidget);
-      expect(find.text('20%'), findsOneWidget);
-      expect(
-        container.read(pengajuanFormProvider).uploadedDocs['ktp'],
-        equals('/dummy/KTP_Direktur_Hendra_Gunawan.pdf'),
-      );
+        // Verified honest status
+        expect(find.text('Siap Dikirim'), findsOneWidget);
+        expect(find.text('KTP_Direktur_Hendra_Gunawan.pdf'), findsOneWidget);
+        expect(find.text('1 dari 5 berkas dipilih'), findsOneWidget);
+        expect(find.text('20%'), findsOneWidget);
+        expect(
+          container.read(pengajuanFormProvider).uploadedDocs['ktp'],
+          equals('/dummy/KTP_Direktur_Hendra_Gunawan.pdf'),
+        );
 
-      // Delete action restores slot to empty
-      final deleteBtn = find.byTooltip('Hapus berkas');
-      expect(deleteBtn, findsOneWidget);
-      await tester.ensureVisible(deleteBtn);
-      await tester.tap(deleteBtn);
-      await tester.pumpAndSettle();
+        // Delete action restores slot to empty
+        final deleteBtn = find.byTooltip('Hapus Dokumen');
+        expect(deleteBtn, findsOneWidget);
+        await tester.ensureVisible(deleteBtn);
+        await tester.tap(deleteBtn);
+        await tester.pumpAndSettle();
 
-      expect(find.text('0 dari 5 berkas dipilih'), findsOneWidget);
-      expect(find.text('0%'), findsOneWidget);
-      expect(find.text('Belum Unggah'), findsNWidgets(5));
-      expect(container.read(pengajuanFormProvider).uploadedDocs['ktp'], isNull);
-    });
+        expect(find.text('0 dari 5 berkas dipilih'), findsOneWidget);
+        expect(find.text('0%'), findsOneWidget);
+        expect(find.text('Belum Unggah'), findsNWidgets(5));
+        expect(
+          container.read(pengajuanFormProvider).uploadedDocs['ktp'],
+          isNull,
+        );
+      },
+    );
+
+    testWidgets(
+      'displays consistent Lihat -> Ganti -> Hapus actions and preview opens and closes safely',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        var pickerCallCount = 0;
+        final file1 = PlatformFile(
+          name: 'KTP_Hendra_1.pdf',
+          size: 1024 * 1024,
+          path: '/dummy/KTP_Hendra_1.pdf',
+        );
+        final file2 = PlatformFile(
+          name: 'KTP_Hendra_Replacement.pdf',
+          size: 1500 * 1024,
+          path: '/dummy/KTP_Hendra_Replacement.pdf',
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            tester: tester,
+            container: container,
+            pickerSeam: ({allowedExtensions}) async {
+              pickerCallCount++;
+              return pickerCallCount == 1 ? file1 : file2;
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Initially no preview/actions shown
+        expect(find.byTooltip('Lihat Dokumen'), findsNothing);
+        expect(find.byTooltip('Ganti Dokumen'), findsNothing);
+        expect(find.byTooltip('Hapus Dokumen'), findsNothing);
+
+        // Upload first file
+        final pilihButtons = find.widgetWithText(
+          OutlinedButton,
+          'Pilih Berkas',
+        );
+        await tester.ensureVisible(pilihButtons.first);
+        await tester.tap(pilihButtons.first);
+        await tester.pumpAndSettle();
+
+        // Verify action icons sequence and existence
+        expect(find.byTooltip('Lihat Dokumen'), findsOneWidget);
+        expect(find.byTooltip('Ganti Dokumen'), findsOneWidget);
+        expect(find.byTooltip('Hapus Dokumen'), findsOneWidget);
+        expect(find.text('PDF · 1.0 MB · Terunggah'), findsOneWidget);
+
+        // Tap Lihat (eye) -> opens document preview
+        final lihatBtn = find.byTooltip('Lihat Dokumen');
+        await tester.ensureVisible(lihatBtn);
+        await tester.tap(lihatBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Preview dialog shows canonical title and filename
+        expect(find.text('1. KTP-el Pemohon / Direktur Utama *'), findsWidgets);
+        expect(find.text('KTP_Hendra_1.pdf'), findsWidgets);
+
+        // Close preview safely without altering state
+        final closeBtn = find.byTooltip('Tutup');
+        expect(closeBtn, findsOneWidget);
+        await tester.tap(closeBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('KTP_Hendra_1.pdf'), findsOneWidget);
+        expect(
+          container.read(pengajuanFormProvider).uploadedDocs['ktp'],
+          equals('/dummy/KTP_Hendra_1.pdf'),
+        );
+
+        // Tap Ganti (pencil) -> replaces with file2
+        final gantiBtn = find.byTooltip('Ganti Dokumen');
+        await tester.ensureVisible(gantiBtn);
+        await tester.tap(gantiBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('KTP_Hendra_Replacement.pdf'), findsOneWidget);
+        expect(find.text('PDF · 1.5 MB · Terunggah'), findsOneWidget);
+        expect(
+          container.read(pengajuanFormProvider).uploadedDocs['ktp'],
+          equals('/dummy/KTP_Hendra_Replacement.pdf'),
+        );
+      },
+    );
 
     testWidgets('completing all 5 slots enables Step 3 navigation', (
       tester,
@@ -336,43 +462,55 @@ void main() {
       expect(nextButton.onPressed, isNotNull);
 
       // Tap next button navigates to Step 3
-      await tester.tap(find.widgetWithText(ElevatedButton, 'Lanjut ke Langkah 3'));
+      await tester.tap(
+        find.widgetWithText(ElevatedButton, 'Lanjut ke Langkah 3'),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Step 3 Screen'), findsOneWidget);
     });
 
-    testWidgets('Simpan Draft menyimpan draf ke perangkat dan memberi kabar jujur', (
-      tester,
-    ) async {
-      SharedPreferences.setMockInitialValues({});
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    testWidgets(
+      'Simpan Draft menyimpan draf ke perangkat dan memberi kabar jujur',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      await tester.pumpWidget(createTestWidget(tester: tester, container: container));
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          createTestWidget(tester: tester, container: container),
+        );
+        await tester.pumpAndSettle();
 
-      // Form masih kosong: tidak ada yang perlu disimpan.
-      await tester.tap(find.text('Simpan Draft'));
-      await tester.pumpAndSettle();
-      expect(find.text('Belum ada isian yang perlu disimpan.'), findsOneWidget);
+        // Form masih kosong: tidak ada yang perlu disimpan.
+        await tester.tap(find.text('Simpan Draft'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Belum ada isian yang perlu disimpan.'),
+          findsOneWidget,
+        );
 
-      // Penyimpanan butuh async sungguhan; siapkan dulu di luar jam palsu.
-      await tester.runAsync(SharedPreferences.getInstance);
-      container.read(pengajuanFormProvider.notifier).updateNamaPerumahan('Pesona Tasik');
-      await tester.tap(find.text('Simpan Draft'));
-      // Berhasil disampaikan lewat animasi ikon, bukan snackbar.
-      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-      await tester.pump(); // frame pertama: animasi mulai
-      await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('Draf tersimpan di perangkat ini.'), findsNothing);
-      expect(find.byIcon(PhosphorIconsRegular.checkCircle), findsOneWidget);
-      expect(find.text('Tersimpan'), findsOneWidget);
-      expect(
-        await container.read(pengajuanFormProvider.notifier).hasDraft(),
-        isTrue,
-      );
-    });
+        // Penyimpanan butuh async sungguhan; siapkan dulu di luar jam palsu.
+        await tester.runAsync(SharedPreferences.getInstance);
+        container
+            .read(pengajuanFormProvider.notifier)
+            .updateNamaPerumahan('Pesona Tasik');
+        await tester.tap(find.text('Simpan Draft'));
+        // Berhasil disampaikan lewat animasi ikon, bukan snackbar.
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump(); // frame pertama: animasi mulai
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Draf tersimpan di perangkat ini.'), findsNothing);
+        expect(find.byIcon(PhosphorIconsRegular.checkCircle), findsOneWidget);
+        expect(find.text('Tersimpan'), findsOneWidget);
+        expect(
+          await container.read(pengajuanFormProvider.notifier).hasDraft(),
+          isTrue,
+        );
+      },
+    );
 
     testWidgets('navigating back preserves form state without resetting', (
       tester,
@@ -385,7 +523,9 @@ void main() {
       notifier.updateNamaPerumahan('Pesona Tasik Indah');
       notifier.uploadDocument('ktp', 'KTP_Direktur.pdf');
 
-      await tester.pumpWidget(createTestWidget(tester: tester, container: container));
+      await tester.pumpWidget(
+        createTestWidget(tester: tester, container: container),
+      );
       await tester.pumpAndSettle();
 
       // Tap Kembali
@@ -413,7 +553,10 @@ void main() {
 
       expect(tester.takeException(), isNull);
       expect(find.text('Pengajuan Baru'), findsOneWidget);
-      expect(find.text('Kelengkapan Berkas Legalitas Perusahaan'), findsOneWidget);
+      expect(
+        find.text('Kelengkapan Berkas Legalitas Perusahaan'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders cleanly without overflow at 412dp width', (
@@ -466,14 +609,20 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
+        final pilihButtons = find.widgetWithText(
+          OutlinedButton,
+          'Pilih Berkas',
+        );
         await tester.ensureVisible(pilihButtons.first);
         await tester.tap(pilihButtons.first);
         await tester.pumpAndSettle();
 
         expect(find.text('1 dari 5 berkas dipilih'), findsOneWidget);
         expect(find.text('KTP_Lama_Valid.pdf'), findsOneWidget);
-        expect(container.read(pengajuanFormProvider).uploadedDocs['ktp'], isNotNull);
+        expect(
+          container.read(pengajuanFormProvider).uploadedDocs['ktp'],
+          isNotNull,
+        );
 
         // Now attempt to replace with an invalid file (> 10MB)
         final oversizedReplacement = PlatformFile(
@@ -490,7 +639,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final gantiBtn = find.byTooltip('Ganti berkas ini');
+        final gantiBtn = find.byTooltip('Ganti Dokumen');
         expect(gantiBtn, findsOneWidget);
         await tester.ensureVisible(gantiBtn);
         await tester.tap(gantiBtn);
@@ -499,9 +648,18 @@ void main() {
         // Error is shown for the failed replacement attempt
         expect(find.text('Gagal'), findsOneWidget);
         expect(find.text('KTP_Baru_Kebesaran.pdf'), findsOneWidget);
-        expect(find.text('File melebihi batas maksimal 10 MB.'), findsOneWidget);
-        expect(find.text('Berkas lama (KTP_Lama_Valid.pdf) tetap tersimpan.'), findsOneWidget);
-        expect(find.widgetWithText(ElevatedButton, 'Coba Lagi'), findsOneWidget);
+        expect(
+          find.text('File melebihi batas maksimal 10 MB.'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Berkas lama (KTP_Lama_Valid.pdf) tetap tersimpan.'),
+          findsOneWidget,
+        );
+        expect(
+          find.widgetWithText(ElevatedButton, 'Coba Lagi'),
+          findsOneWidget,
+        );
 
         // CRITICAL REGRESSION CHECK: old valid file is NOT deleted and completion count remains intact
         expect(find.text('1 dari 5 berkas dipilih'), findsOneWidget);
@@ -512,6 +670,7 @@ void main() {
 
         // Closing the error restores view to the valid document
         final closeErrorBtn = find.byTooltip('Tutup pesan kesalahan');
+        await tester.ensureVisible(closeErrorBtn);
         await tester.tap(closeErrorBtn);
         await tester.pumpAndSettle();
 
@@ -537,7 +696,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
+        final pilihButtons = find.widgetWithText(
+          OutlinedButton,
+          'Pilih Berkas',
+        );
         await tester.ensureVisible(pilihButtons.first);
         await tester.tap(pilihButtons.first);
         await tester.pumpAndSettle();
@@ -546,10 +708,15 @@ void main() {
         expect(find.text('Gagal'), findsOneWidget);
         expect(find.text('Kendala perangkat'), findsOneWidget);
         expect(
-          find.text('Terjadi kendala saat mengakses berkas. Silakan coba lagi.'),
+          find.text(
+            'Terjadi kendala saat mengakses berkas. Silakan coba lagi.',
+          ),
           findsOneWidget,
         );
-        expect(find.widgetWithText(ElevatedButton, 'Ganti Berkas'), findsOneWidget);
+        expect(
+          find.widgetWithText(ElevatedButton, 'Ganti Berkas'),
+          findsOneWidget,
+        );
       },
     );
 
@@ -622,12 +789,15 @@ void main() {
         await tester.pumpAndSettle();
 
         // Pick KTP
-        final pilihButtons = find.widgetWithText(OutlinedButton, 'Pilih Berkas');
+        final pilihButtons = find.widgetWithText(
+          OutlinedButton,
+          'Pilih Berkas',
+        );
         await tester.ensureVisible(pilihButtons.first);
         await tester.tap(pilihButtons.first);
         await tester.pumpAndSettle();
 
-        expect(find.text('2.0 MB • PDF Siap Dikirim'), findsOneWidget);
+        expect(find.text('PDF · 2.0 MB · Terunggah'), findsOneWidget);
 
         // Pre-fill remaining 4 to allow Step 3 push
         final notifier = container.read(pengajuanFormProvider.notifier);
@@ -638,7 +808,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // Navigate to Step 3
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Lanjut ke Langkah 3'));
+        await tester.tap(
+          find.widgetWithText(ElevatedButton, 'Lanjut ke Langkah 3'),
+        );
         await tester.pumpAndSettle();
         expect(find.text('Back to Step 2'), findsOneWidget);
 
@@ -647,7 +819,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // File size metadata is fully preserved
-        expect(find.text('2.0 MB • PDF Siap Dikirim'), findsOneWidget);
+        expect(find.text('PDF · 2.0 MB · Terunggah'), findsOneWidget);
       },
     );
   });

@@ -345,6 +345,70 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
     );
   }
 
+  Future<void> _replaceFile(String group, int index) async {
+    final isSitePlan = group == _sitePlanKey;
+    final allowed = isSitePlan ? _sitePlanExtensions : _otherExtensions;
+
+    List<PlatformFile> files;
+    try {
+      if (widget.pickerSeam != null) {
+        files = await widget.pickerSeam!(
+          allowMultiple: false,
+          allowedExtensions: allowed,
+        );
+      } else {
+        final single = await FilePickerUtil.pickSingleFile(
+          allowedExtensions: allowed,
+        );
+        files = single == null ? const [] : [single];
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kendala perangkat saat memilih berkas pengganti.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted || files.isEmpty) return;
+
+    final file = files.first;
+    final extension = _extension(file.name);
+    if (!allowed.contains(extension)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isSitePlan
+                ? 'Format tidak didukung. Gunakan DWG atau PDF.'
+                : 'Format tidak didukung. Gunakan PDF.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (file.size > _maxTechnicalFileBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ukuran melebihi batas 50 MB per file.')),
+      );
+      return;
+    }
+
+    final reference = FilePickerUtil.referenceOf(file);
+    setState(() {
+      _fileSizes[reference] = file.size;
+      _fileSizes[file.name] = file.size;
+    });
+
+    final notifier = ref.read(pengajuanFormProvider.notifier);
+    if (isSitePlan) {
+      notifier.replaceTechnicalFile(index, reference);
+    } else {
+      notifier.replaceTechnicalOtherFile(index, reference);
+    }
+  }
+
   Widget _buildFileRow({
     required String group,
     required int index,
@@ -352,73 +416,98 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
   }) {
     final name = _displayName(reference);
     final isDwg = _extension(name) == 'dwg';
-    final size = _fileSizes[reference];
+    final size = _fileSizes[reference] ?? _fileSizes[name];
     final notifier = ref.read(pengajuanFormProvider.notifier);
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.slate50,
-        borderRadius: AppRadii.control,
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderSubtle),
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
               color: isDwg
                   ? AppColors.statusSurveySurface
-                  : AppColors.primarySurface,
-              borderRadius: AppRadii.small,
+                  : const Color(0xFFFEE2E2),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              isDwg ? Icons.architecture : Icons.picture_as_pdf,
+              isDwg ? Icons.architecture : Icons.description_outlined,
               color: isDwg ? AppColors.statusSurveyText : AppColors.primaryRed,
               size: 20,
             ),
           ),
-          const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: const TextStyle(
+                    fontFamily: AppTextStyles.fontFamily,
                     fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    color: AppColors.textMain,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.xs,
+                  spacing: 4,
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
-                    if (size != null)
+                    if (size != null) ...[
                       Text(
                         _formatSize(size),
-                        style: AppTextStyles.bodySmall.copyWith(
+                        style: const TextStyle(
+                          fontFamily: AppTextStyles.fontFamily,
+                          fontSize: 11.5,
                           color: AppColors.textSecondary,
                         ),
                       ),
-                    _statusBadge(
-                      isDwg ? 'CAD Validated' : 'Terverifikasi Otomatis',
+                      const Text(
+                        '·',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                    Text(
+                      isDwg ? 'CAD Terunggah' : 'Terunggah',
+                      style: const TextStyle(
+                        fontFamily: AppTextStyles.fontFamily,
+                        fontSize: 11.5,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Hapus ${_displayName(reference)}',
-            onPressed: () => group == _sitePlanKey
+          UploadedAttachmentActions(
+            onPreview: () => FilePickerUtil.showAppDocumentPreview(
+              context,
+              fileName: name,
+              title: group == _sitePlanKey
+                  ? 'Site Plan & Gambar Kawasan'
+                  : 'Kajian Teknis & Lingkungan',
+              fileSize: size,
+            ),
+            onReplace: () => _replaceFile(group, index),
+            onDelete: () => group == _sitePlanKey
                 ? notifier.removeTechnicalFile(index)
                 : notifier.removeTechnicalOtherFile(index),
-            icon: const Icon(Icons.delete_outline, color: AppColors.slate400),
           ),
         ],
       ),
@@ -513,22 +602,6 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
     );
   }
 
-  Widget _statusBadge(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: const BoxDecoration(
-        color: AppColors.statusSuccessSurface,
-        borderRadius: AppRadii.tight,
-      ),
-      child: Text(
-        text,
-        style: AppTextStyles.labelSmall.copyWith(
-          color: AppColors.statusSuccessText,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
 
   Widget _buildBottomBar(bool isValid) {
     return Container(

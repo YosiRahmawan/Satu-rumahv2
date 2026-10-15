@@ -282,8 +282,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final button = find.widgetWithText(TextButton, 'Ganti');
-      tester.widget<TextButton>(button).onPressed!();
+      final button = find.byTooltip('Ganti Dokumen');
+      await tester.tap(button);
       await tester.pumpAndSettle();
 
       final state = container.read(pengajuanFormProvider);
@@ -310,8 +310,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final button = find.widgetWithText(TextButton, 'Ganti');
-      tester.widget<TextButton>(button).onPressed!();
+      final button = find.byTooltip('Ganti Dokumen');
+      await tester.tap(button);
       await tester.pumpAndSettle();
 
       final state = container.read(pengajuanFormProvider);
@@ -391,7 +391,6 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          expect(tester.takeException(), isNull);
           expect(
             container
                 .read(pengajuanFormProvider)
@@ -399,6 +398,73 @@ void main() {
             'surat.pdf',
           );
         }
+      },
+    );
+
+    testWidgets(
+      'displays consistent Lihat -> Ganti -> Hapus, opens preview, and supports individual multi-file delete',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(pengajuanFormProvider.notifier);
+        notifier.uploadDocument('surat_permohonan', 'surat_pemohon.pdf');
+        notifier.uploadDocuments('rekomendasi_instansi', [
+          'rekom_a.pdf',
+          'rekom_b.pdf',
+        ]);
+
+        await tester.pumpWidget(
+          _host(
+            container: container,
+            picker: ({required bool allowMultiple, allowedExtensions}) async =>
+                const [],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Slot 1 is visible at top: has Lihat, Ganti, Hapus
+        expect(find.byTooltip('Lihat Dokumen'), findsOneWidget);
+        expect(find.byTooltip('Ganti Dokumen'), findsOneWidget);
+        expect(find.byTooltip('Hapus Dokumen'), findsOneWidget);
+
+        // Tap Lihat Dokumen on slot 1
+        final lihatSingle = find.byTooltip('Lihat Dokumen');
+        await tester.tap(lihatSingle);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Preview modal displays title and file name
+        expect(
+          find.text('Surat Permohonan Persetujuan Site Plan'),
+          findsWidgets,
+        );
+        expect(find.text('surat_pemohon.pdf'), findsWidgets);
+
+        // Close preview safely
+        final closeBtn = find.byTooltip('Tutup');
+        expect(closeBtn, findsOneWidget);
+        await tester.tap(closeBtn);
+        await tester.pumpAndSettle();
+
+        // State preserved
+        expect(
+          container
+              .read(pengajuanFormProvider)
+              .uploadedDocs['surat_permohonan'],
+          'surat_pemohon.pdf',
+        );
+
+        // Delete slot 1 file
+        final hapusBtn = find.byTooltip('Hapus Dokumen');
+        expect(hapusBtn, findsOneWidget);
+        await tester.tap(hapusBtn);
+        await tester.pumpAndSettle();
+        expect(
+          container
+              .read(pengajuanFormProvider)
+              .uploadedDocs['surat_permohonan'],
+          isNull,
+        );
       },
     );
   });

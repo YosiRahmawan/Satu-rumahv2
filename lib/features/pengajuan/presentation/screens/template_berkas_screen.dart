@@ -167,7 +167,14 @@ class TemplateBerkasCatalog {
           'Dinas Kependudukan dan Pencatatan Sipil (Disdukcapil) / Kemendagri',
       guidance:
           'Unggah hasil pemindaian KTP-el asli, bukan fotokopi buram. Pastikan seluruh teks NIK, nama, dan foto terlihat jelas tanpa pantulan cahaya.',
-      searchKeywords: ['ktp', 'identitas', 'direktur', 'kependudukan', 'nik', 'disdukcapil'],
+      searchKeywords: [
+        'ktp',
+        'identitas',
+        'direktur',
+        'kependudukan',
+        'nik',
+        'disdukcapil',
+      ],
     ),
     TemplateBerkasItem(
       slotNumber: '02',
@@ -180,7 +187,15 @@ class TemplateBerkasCatalog {
       issuingAgency: 'Kementerian Investasi / BKPM (Sistem OSS-RBA)',
       guidance:
           'Pastikan NIB masih aktif dan mencantumkan KBLI Real Estat / Pengembang Perumahan yang sesuai dengan lokasi pengajuan proyek.',
-      searchKeywords: ['nib', 'bkpm', 'oss', 'oss-rba', 'investasi', 'kbli', 'usaha'],
+      searchKeywords: [
+        'nib',
+        'bkpm',
+        'oss',
+        'oss-rba',
+        'investasi',
+        'kbli',
+        'usaha',
+      ],
     ),
     TemplateBerkasItem(
       slotNumber: '03',
@@ -220,7 +235,15 @@ class TemplateBerkasCatalog {
       issuingAgency: 'Notaris & Ditjen AHU Kementerian Hukum dan HAM RI',
       guidance:
           'Gabungkan salinan akta pendirian, akta perubahan anggaran dasar terakhir (jika ada), beserta SK pengesahan Kemenkumham dalam satu file PDF runut.',
-      searchKeywords: ['akta', 'pendirian', 'sk', 'kemenkumham', 'notaris', 'ahu', 'legalitas'],
+      searchKeywords: [
+        'akta',
+        'pendirian',
+        'sk',
+        'kemenkumham',
+        'notaris',
+        'ahu',
+        'legalitas',
+      ],
     ),
 
     // ─── FASE 3: BERKAS PERUMAHAN (11 SLOT) ───
@@ -235,7 +258,13 @@ class TemplateBerkasCatalog {
       issuingAgency: 'Pengembang / Pemohon ditujukan ke Kepala Dinas',
       guidance:
           'Gunakan kop resmi perusahaan, bertanda tangan basah direktur dan dibubuhi meterai Rp10.000.',
-      searchKeywords: ['surat permohonan', 'permohonan', 'site plan', 'kepala dinas', 'disperwaskim'],
+      searchKeywords: [
+        'surat permohonan',
+        'permohonan',
+        'site plan',
+        'kepala dinas',
+        'disperwaskim',
+      ],
     ),
     TemplateBerkasItem(
       slotNumber: '07',
@@ -248,7 +277,16 @@ class TemplateBerkasCatalog {
       issuingAgency: 'Dinas Tata Ruang / DPMPTSP / Kementerian ATR-BPN',
       guidance:
           'Lampirkan lembar IIPR atau PKKPR yang telah diterbitkan lengkap beserta peta koordinat batas kavling perencanaan.',
-      searchKeywords: ['ipr', 'krk', 'iipr', 'kkpr', 'tata ruang', 'kdb', 'atr', 'bpn'],
+      searchKeywords: [
+        'ipr',
+        'krk',
+        'iipr',
+        'kkpr',
+        'tata ruang',
+        'kdb',
+        'atr',
+        'bpn',
+      ],
     ),
     TemplateBerkasItem(
       slotNumber: '08',
@@ -261,7 +299,16 @@ class TemplateBerkasCatalog {
       issuingAgency: 'Kantor Pertanahan (Kantah ATR/BPN)',
       guidance:
           'Pastikan sertifikat atas nama badan hukum pemohon atau dilengkapi perjanjian pengikatan jual beli (PPJB) notariil yang sah.',
-      searchKeywords: ['sertifikat', 'lahan', 'tanah', 'shm', 'shgb', 'hpl', 'ppjb', 'bpn'],
+      searchKeywords: [
+        'sertifikat',
+        'lahan',
+        'tanah',
+        'shm',
+        'shgb',
+        'hpl',
+        'ppjb',
+        'bpn',
+      ],
     ),
     TemplateBerkasItem(
       slotNumber: '09',
@@ -289,7 +336,15 @@ class TemplateBerkasCatalog {
       guidance:
           'Pastikan surat keputusan persetujuan lingkungan memuat komitmen pengelolaan air limbah domestik dan persampahan.',
       allowsMultiple: true,
-      searchKeywords: ['lingkungan', 'amdal', 'ukl', 'upl', 'sppl', 'dlh', 'drainase'],
+      searchKeywords: [
+        'lingkungan',
+        'amdal',
+        'ukl',
+        'upl',
+        'sppl',
+        'dlh',
+        'drainase',
+      ],
     ),
     TemplateBerkasItem(
       slotNumber: '11',
@@ -303,7 +358,13 @@ class TemplateBerkasCatalog {
           'Dinas Perhubungan (Dishub) / Balai Pengelola Transportasi Darat',
       guidance:
           'Wajib menyertakan rekomendasi teknis mitigasi simpang masuk perumahan dan pemasangan rambu keselamatan lalu lintas.',
-      searchKeywords: ['andalalin', 'dishub', 'lalu lintas', 'transportasi', 'perhubungan'],
+      searchKeywords: [
+        'andalalin',
+        'dishub',
+        'lalu lintas',
+        'transportasi',
+        'perhubungan',
+      ],
     ),
     TemplateBerkasItem(
       slotNumber: '12',
@@ -343,7 +404,13 @@ class TemplateBerkasCatalog {
       issuingAgency: 'Pengembang / Direksi Pemohon dengan Notulen Dinas',
       guidance:
           'Ditandatangani di atas meterai Rp10.000 dengan melampirkan rincian luasan RTH, jalan, drainase, dan fasilitas ibadah/sosial.',
-      searchKeywords: ['psu', 'prasarana', 'sarana', 'utilitas', 'penyerahan psu'],
+      searchKeywords: [
+        'psu',
+        'prasarana',
+        'sarana',
+        'utilitas',
+        'penyerahan psu',
+      ],
     ),
     TemplateBerkasItem(
       slotNumber: '15',
@@ -358,7 +425,15 @@ class TemplateBerkasCatalog {
       guidance:
           'Lampirkan KTP arsitek perencana, STRA/SKA aktif, dan surat penunjukan resmi dari perusahaan pengembang.',
       isOptional: true,
-      searchKeywords: ['penanggung jawab', 'teknis', 'tenaga ahli', 'arsitek', 'ska', 'skk', 'stra'],
+      searchKeywords: [
+        'penanggung jawab',
+        'teknis',
+        'tenaga ahli',
+        'arsitek',
+        'ska',
+        'skk',
+        'stra',
+      ],
     ),
     TemplateBerkasItem(
       slotNumber: '16',
@@ -371,7 +446,13 @@ class TemplateBerkasCatalog {
       issuingAgency: 'Tim Teknis Pengembang Pemohon',
       guidance:
           'Disusun sistematis dilengkapi narasi konsep lingkungan ramah anak, persentase RTH minimal 30%, serta peta pembagian zonasi kavling.',
-      searchKeywords: ['proposal', 'rencana pembangunan', 'tahapan', 'jadwal', 'konstruksi'],
+      searchKeywords: [
+        'proposal',
+        'rencana pembangunan',
+        'tahapan',
+        'jadwal',
+        'konstruksi',
+      ],
     ),
   ];
 }
@@ -444,27 +525,28 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
     const allItems = TemplateBerkasCatalog.items;
 
     // Filter by category
-    final filterPerusahaan = _selectedFilter == TemplateFilterCategory.semua ||
+    final filterPerusahaan =
+        _selectedFilter == TemplateFilterCategory.semua ||
         _selectedFilter == TemplateFilterCategory.perusahaan;
-    final filterPerumahan = _selectedFilter == TemplateFilterCategory.semua ||
+    final filterPerumahan =
+        _selectedFilter == TemplateFilterCategory.semua ||
         _selectedFilter == TemplateFilterCategory.perumahan;
 
     final visiblePerusahaan = filterPerusahaan
         ? allItems
-            .where((it) => it.group == TemplateBerkasGroup.perusahaan)
-            .where(_matchesSearch)
-            .toList()
+              .where((it) => it.group == TemplateBerkasGroup.perusahaan)
+              .where(_matchesSearch)
+              .toList()
         : <TemplateBerkasItem>[];
 
     final visiblePerumahan = filterPerumahan
         ? allItems
-            .where((it) => it.group == TemplateBerkasGroup.perumahan)
-            .where(_matchesSearch)
-            .toList()
+              .where((it) => it.group == TemplateBerkasGroup.perumahan)
+              .where(_matchesSearch)
+              .toList()
         : <TemplateBerkasItem>[];
 
-    final bool isEmpty =
-        visiblePerusahaan.isEmpty && visiblePerumahan.isEmpty;
+    final bool isEmpty = visiblePerusahaan.isEmpty && visiblePerumahan.isEmpty;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -676,8 +758,10 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
         ),
       ),
     );
@@ -722,8 +806,9 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     alignment: Alignment.center,
                     decoration: ShapeDecoration(
-                      color:
-                          isSelected ? const Color(0xFFB91C1C) : Colors.white,
+                      color: isSelected
+                          ? const Color(0xFFB91C1C)
+                          : Colors.white,
                       shape: StadiumBorder(
                         side: BorderSide(
                           color: isSelected
@@ -739,10 +824,12 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color:
-                            isSelected ? Colors.white : const Color(0xFF64748B),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : const Color(0xFF64748B),
                         height: 1.25,
                       ),
                       child: Text(category.label),
@@ -836,11 +923,7 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
         children: [
           for (int i = 0; i < items.length; i++) ...[
             if (i > 0)
-              const Divider(
-                height: 1,
-                thickness: 1,
-                color: Color(0xFFF1F5F9),
-              ),
+              const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
             _buildDocRow(items[i]),
           ],
         ],
@@ -927,7 +1010,9 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 1),
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(4),
@@ -973,10 +1058,7 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SurveyNotFoundIllustration(
-              width: 180,
-              height: 140,
-            ),
+            const SurveyNotFoundIllustration(width: 180, height: 140),
             const SizedBox(height: 14),
             const Text(
               'Dokumen Tidak Ditemukan',
@@ -1055,7 +1137,8 @@ class _TemplateBerkasDetailSheet extends StatefulWidget {
       _TemplateBerkasDetailSheetState();
 }
 
-class _TemplateBerkasDetailSheetState extends State<_TemplateBerkasDetailSheet> {
+class _TemplateBerkasDetailSheetState
+    extends State<_TemplateBerkasDetailSheet> {
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -1070,9 +1153,7 @@ class _TemplateBerkasDetailSheetState extends State<_TemplateBerkasDetailSheet> 
     final maxHeight = MediaQuery.sizeOf(context).height * 0.85;
 
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: maxHeight,
-      ),
+      constraints: BoxConstraints(maxHeight: maxHeight),
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -1185,7 +1266,9 @@ class _TemplateBerkasDetailSheetState extends State<_TemplateBerkasDetailSheet> 
                             decoration: BoxDecoration(
                               color: const Color(0xFFF8FAFC),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1224,7 +1307,9 @@ class _TemplateBerkasDetailSheetState extends State<_TemplateBerkasDetailSheet> 
                             decoration: BoxDecoration(
                               color: const Color(0xFFF8FAFC),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              border: Border.all(
+                                color: const Color(0xFFE2E8F0),
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1370,9 +1455,7 @@ class _TemplateBerkasDetailSheetState extends State<_TemplateBerkasDetailSheet> 
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: Color(0xFFF1F5F9)),
-                ),
+                border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
               ),
               child: SizedBox(
                 height: 46,
@@ -1417,11 +1500,7 @@ class _TemplateBerkasDetailSheetState extends State<_TemplateBerkasDetailSheet> 
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            status.icon,
-            size: 18,
-            color: status.iconColor,
-          ),
+          Icon(status.icon, size: 18, color: status.iconColor),
           const SizedBox(width: 10),
           Expanded(
             child: Column(

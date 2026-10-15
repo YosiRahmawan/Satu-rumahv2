@@ -88,23 +88,19 @@ void main() {
             repo ?? mockMonitoringRepo,
           ),
         ],
-        child: const MaterialApp(
-          home: UnduhSkBaScreen(),
-        ),
+        child: const MaterialApp(home: UnduhSkBaScreen()),
       );
     }
 
-    testWidgets('1. Renders header, search bar, and filter pills correctly',
-        (tester) async {
+    testWidgets('1. Renders header, search bar, and filter pills correctly', (
+      tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
       // Header
       expect(find.text('Unduh SK & BA'), findsOneWidget);
-      expect(
-        find.text('Dokumen resmi pengajuan perumahan'),
-        findsOneWidget,
-      );
+      expect(find.text('Dokumen resmi pengajuan perumahan'), findsOneWidget);
       expect(find.bySemanticsLabel('Kembali'), findsOneWidget);
 
       // Search Bar
@@ -125,32 +121,35 @@ void main() {
       expect(find.text('Mutiara Regency Tasik'), findsOneWidget);
     });
 
-    testWidgets('2. Expand and collapse project card toggles documents visibility',
-        (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+    testWidgets(
+      '2. Expand and collapse project card toggles documents visibility',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      // Card pertama default terbuka
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
+        // Card pertama default terbuka
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
 
-      // Tap card pertama untuk collapse
-      final cardHeader = find.text('Griya Mangkubumi Asri');
-      await tester.tap(cardHeader);
-      await tester.pumpAndSettle();
+        // Tap card pertama untuk collapse
+        final cardHeader = find.text('Griya Mangkubumi Asri');
+        await tester.tap(cardHeader);
+        await tester.pumpAndSettle();
 
-      // Dokumen row tersembunyi
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsNothing);
+        // Dokumen row tersembunyi
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsNothing);
 
-      // Tap lagi untuk re-expand
-      await tester.tap(cardHeader);
-      await tester.pumpAndSettle();
+        // Tap lagi untuk re-expand
+        await tester.tap(cardHeader);
+        await tester.pumpAndSettle();
 
-      // Dokumen row terlihat kembali
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
-    });
+        // Dokumen row terlihat kembali
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
+      },
+    );
 
-    testWidgets('3. Searches housing project by name and registration ID',
-        (tester) async {
+    testWidgets('3. Searches housing project by name and registration ID', (
+      tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -182,32 +181,43 @@ void main() {
       expect(find.text('Griya Mangkubumi Asri'), findsNothing);
     });
 
-    testWidgets('4. Filter pills show only SK Persetujuan or Berita Acara rows',
-        (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+    testWidgets(
+      '4. Filter pills show only SK Persetujuan or Berita Acara rows',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      // Filter: SK Persetujuan
-      await tester.tap(find.text('SK Persetujuan'));
-      await tester.pumpAndSettle();
+        // Filter: SK Persetujuan
+        await tester.tap(find.text('SK Persetujuan'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
-      expect(find.text('Berita Acara (BA Verifikasi Lapangan)'), findsNothing);
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
+        expect(
+          find.text('Berita Acara (BA Verifikasi Lapangan)'),
+          findsNothing,
+        );
 
-      // Filter: Berita Acara
-      await tester.tap(find.text('Berita Acara'));
-      await tester.pumpAndSettle();
+        // Filter: Berita Acara
+        await tester.tap(find.text('Berita Acara'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsNothing);
-      expect(find.text('Berita Acara (BA Verifikasi Lapangan)'), findsOneWidget);
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsNothing);
+        expect(
+          find.text('Berita Acara (BA Verifikasi Lapangan)'),
+          findsOneWidget,
+        );
 
-      // Filter: Semua
-      await tester.tap(find.text('Semua'));
-      await tester.pumpAndSettle();
+        // Filter: Semua
+        await tester.tap(find.text('Semua'));
+        await tester.pumpAndSettle();
 
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
-      expect(find.text('Berita Acara (BA Verifikasi Lapangan)'), findsOneWidget);
-    });
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
+        expect(
+          find.text('Berita Acara (BA Verifikasi Lapangan)'),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('5. Combines search and filter seamlessly', (tester) async {
       await tester.pumpWidget(createWidgetUnderTest());
@@ -219,22 +229,27 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Griya Mangkubumi Asri'), findsOneWidget);
-      expect(find.text('Berita Acara (BA Verifikasi Lapangan)'), findsOneWidget);
+      expect(
+        find.text('Berita Acara (BA Verifikasi Lapangan)'),
+        findsOneWidget,
+      );
       expect(find.text('Surat Keputusan (SK Persetujuan)'), findsNothing);
     });
 
-    testWidgets('6. Displays empty database state when submissions list is empty',
-        (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest(submissions: []));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Belum Ada Dokumen Tersedia'), findsOneWidget);
-      expect(find.text('Periksa Daftar Pengajuan'), findsOneWidget);
-    });
-
     testWidgets(
-        '7. Displays Search Not Found state and resets via button',
-        (tester) async {
+      '6. Displays empty database state when submissions list is empty',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest(submissions: []));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Belum Ada Dokumen Tersedia'), findsOneWidget);
+        expect(find.text('Periksa Daftar Pengajuan'), findsOneWidget);
+      },
+    );
+
+    testWidgets('7. Displays Search Not Found state and resets via button', (
+      tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -255,9 +270,9 @@ void main() {
       expect(find.text('Mutiara Regency Tasik'), findsOneWidget);
     });
 
-    testWidgets(
-        '8. Download button is disabled when document is unavailable',
-        (tester) async {
+    testWidgets('8. Download button is disabled when document is unavailable', (
+      tester,
+    ) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
@@ -267,107 +282,127 @@ void main() {
     });
 
     testWidgets(
-        '9. Document action is active and accessible only when valid BA exists',
-        (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
-
-      // Pada Griya Mangkubumi Asri, BA valid dan tersedia
-      expect(find.text('No: BA/PERWASKIM/2025/05/0148'), findsOneWidget);
-      expect(find.text('Tersedia'), findsOneWidget);
-      expect(find.text('Lihat / Unduh PDF'), findsOneWidget);
-    });
-
-    testWidgets(
-        '10. Renders responsively without overflow across 360, 390, and 412dp',
-        (tester) async {
-      for (final width in [360.0, 390.0, 412.0]) {
-        tester.view.physicalSize = Size(width * 2.0, 840 * 2.0);
-        tester.view.devicePixelRatio = 2.0;
-
+      '9. Document action is active and accessible only when valid BA exists',
+      (tester) async {
         await tester.pumpWidget(createWidgetUnderTest());
         await tester.pumpAndSettle();
 
-        expect(tester.takeException(), isNull);
-
-        // Reset
-        addTearDown(() {
-          tester.view.resetPhysicalSize();
-          tester.view.resetDevicePixelRatio();
-        });
-      }
-    });
+        // Pada Griya Mangkubumi Asri, BA valid dan tersedia
+        expect(find.text('No: BA/PERWASKIM/2025/05/0148'), findsOneWidget);
+        expect(find.text('Tersedia'), findsOneWidget);
+        expect(find.text('Lihat / Unduh PDF'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-        '11. Filter transitions preserve open/closed card state and repeated expand/collapse settles smoothly',
-        (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+      '10. Renders responsively without overflow across 360, 390, and 412dp',
+      (tester) async {
+        for (final width in [360.0, 390.0, 412.0]) {
+          tester.view.physicalSize = Size(width * 2.0, 840 * 2.0);
+          tester.view.devicePixelRatio = 2.0;
 
-      final cardHeader = find.text('Griya Mangkubumi Asri');
+          await tester.pumpWidget(createWidgetUnderTest());
+          await tester.pumpAndSettle();
 
-      // 1. Filter transition saat kartu terbuka (card 1 default terbuka)
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
-      expect(find.text('Berita Acara (BA Verifikasi Lapangan)'), findsOneWidget);
+          expect(tester.takeException(), isNull);
 
-      await tester.tap(find.text('SK Persetujuan'));
-      await tester.pumpAndSettle();
+          // Reset
+          addTearDown(() {
+            tester.view.resetPhysicalSize();
+            tester.view.resetDevicePixelRatio();
+          });
+        }
+      },
+    );
 
-      // Kartu tetap dalam kondisi terbuka dan hanya menampilkan SK
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
-      expect(find.text('Berita Acara (BA Verifikasi Lapangan)'), findsNothing);
+    testWidgets(
+      '11. Filter transitions preserve open/closed card state and repeated expand/collapse settles smoothly',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
 
-      // 2. Collapse kartu saat filter SK aktif
-      await tester.tap(cardHeader);
-      await tester.pumpAndSettle();
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsNothing);
+        final cardHeader = find.text('Griya Mangkubumi Asri');
 
-      // 3. Filter transition saat kartu tertutup
-      await tester.tap(find.text('Berita Acara'));
-      await tester.pumpAndSettle();
-      expect(find.text('Berita Acara (BA Verifikasi Lapangan)'), findsNothing);
+        // 1. Filter transition saat kartu terbuka (card 1 default terbuka)
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
+        expect(
+          find.text('Berita Acara (BA Verifikasi Lapangan)'),
+          findsOneWidget,
+        );
 
-      // 4. Buka kembali kartu: dokumen Berita Acara langsung tampil sesuai filter aktif
-      await tester.tap(cardHeader);
-      await tester.pumpAndSettle();
-      expect(find.text('Berita Acara (BA Verifikasi Lapangan)'), findsOneWidget);
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsNothing);
+        await tester.tap(find.text('SK Persetujuan'));
+        await tester.pumpAndSettle();
 
-      // 5. Kembali ke Semua
-      await tester.tap(find.text('Semua'));
-      await tester.pumpAndSettle();
-      expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
-      expect(find.text('Berita Acara (BA Verifikasi Lapangan)'), findsOneWidget);
+        // Kartu tetap dalam kondisi terbuka dan hanya menampilkan SK
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
+        expect(
+          find.text('Berita Acara (BA Verifikasi Lapangan)'),
+          findsNothing,
+        );
 
-      // 6. Repeated expand/collapse toggles
-      for (int i = 0; i < 3; i++) {
+        // 2. Collapse kartu saat filter SK aktif
         await tester.tap(cardHeader);
         await tester.pumpAndSettle();
-      }
-      expect(tester.takeException(), isNull);
-    });
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsNothing);
 
-    testWidgets('12. Scroll position remains stable and is clamped without jump',
-        (tester) async {
-      await tester.pumpWidget(createWidgetUnderTest());
-      await tester.pumpAndSettle();
+        // 3. Filter transition saat kartu tertutup
+        await tester.tap(find.text('Berita Acara'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Berita Acara (BA Verifikasi Lapangan)'),
+          findsNothing,
+        );
 
-      // Scroll sedikit ke bawah agar filter tetap dalam viewport
-      await tester.drag(find.byType(CustomScrollView), const Offset(0, -40));
-      await tester.pumpAndSettle();
+        // 4. Buka kembali kartu: dokumen Berita Acara langsung tampil sesuai filter aktif
+        await tester.tap(cardHeader);
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Berita Acara (BA Verifikasi Lapangan)'),
+          findsOneWidget,
+        );
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsNothing);
 
-      final scrollable = tester.state<ScrollableState>(
-        find.byType(Scrollable).first,
-      );
-      final initialOffset = scrollable.position.pixels;
-      expect(initialOffset, greaterThan(0));
+        // 5. Kembali ke Semua
+        await tester.tap(find.text('Semua'));
+        await tester.pumpAndSettle();
+        expect(find.text('Surat Keputusan (SK Persetujuan)'), findsOneWidget);
+        expect(
+          find.text('Berita Acara (BA Verifikasi Lapangan)'),
+          findsOneWidget,
+        );
 
-      // Ganti filter ke SK Persetujuan
-      await tester.tap(find.text('SK Persetujuan'));
-      await tester.pumpAndSettle();
+        // 6. Repeated expand/collapse toggles
+        for (int i = 0; i < 3; i++) {
+          await tester.tap(cardHeader);
+          await tester.pumpAndSettle();
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-      // Tidak ada unhandled exception dan status tetap stabil
-      expect(tester.takeException(), isNull);
-    });
+    testWidgets(
+      '12. Scroll position remains stable and is clamped without jump',
+      (tester) async {
+        await tester.pumpWidget(createWidgetUnderTest());
+        await tester.pumpAndSettle();
+
+        // Scroll sedikit ke bawah agar filter tetap dalam viewport
+        await tester.drag(find.byType(CustomScrollView), const Offset(0, -40));
+        await tester.pumpAndSettle();
+
+        final scrollable = tester.state<ScrollableState>(
+          find.byType(Scrollable).first,
+        );
+        final initialOffset = scrollable.position.pixels;
+        expect(initialOffset, greaterThan(0));
+
+        // Ganti filter ke SK Persetujuan
+        await tester.tap(find.text('SK Persetujuan'));
+        await tester.pumpAndSettle();
+
+        // Tidak ada unhandled exception dan status tetap stabil
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

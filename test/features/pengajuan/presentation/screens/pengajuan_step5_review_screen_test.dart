@@ -258,7 +258,6 @@ void main() {
 
       const expectedRoutes = [
         '/pengajuan/step1',
-        '/pengajuan/step1',
         '/pengajuan/step2',
         '/pengajuan/step3',
         '/pengajuan/step4',

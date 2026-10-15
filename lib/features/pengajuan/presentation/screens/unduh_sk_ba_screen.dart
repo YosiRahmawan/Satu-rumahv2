@@ -21,8 +21,9 @@ import '../widgets/survey_not_found_illustration.dart';
 import 'pengajuan_detail_screen.dart';
 
 /// Provider pengajuan lokal untuk layar Unduh SK & BA.
-final unduhSkBaListProvider =
-    FutureProvider.autoDispose<List<Pengajuan>>((ref) async {
+final unduhSkBaListProvider = FutureProvider.autoDispose<List<Pengajuan>>((
+  ref,
+) async {
   final list = ref.watch(pengajuanListProvider);
   await Future<void>.delayed(Duration.zero);
   return list;
@@ -140,9 +141,7 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
           // ── Body Content ──
           Expanded(
             child: submissionsAsync.when(
-              loading: () => const Center(
-                child: AppHousingLoader.medium(),
-              ),
+              loading: () => const Center(child: AppHousingLoader.medium()),
               error: (error, _) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(24.0),
@@ -156,7 +155,8 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                 ),
               ),
               data: (allSubmissions) {
-                if (!_hasInitializedExpandedState && allSubmissions.isNotEmpty) {
+                if (!_hasInitializedExpandedState &&
+                    allSubmissions.isNotEmpty) {
                   // Default card pertama dibuka agar pengguna langsung melihat contoh dokumen
                   _expandedProjectIds.add(allSubmissions.first.id);
                   _hasInitializedExpandedState = true;
@@ -335,8 +335,9 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                       final keyVal = key.value;
                       if (keyVal.startsWith('card_')) {
                         final id = keyVal.substring(5);
-                        final idx =
-                            filteredItems.indexWhere((it) => it.id == id);
+                        final idx = filteredItems.indexWhere(
+                          (it) => it.id == id,
+                        );
                         return idx >= 0 ? idx : null;
                       } else if (keyVal == 'security_callout') {
                         return filteredItems.length;
@@ -406,8 +407,10 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                 )
               : null,
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 12,
+          ),
         ),
       ),
     );
@@ -452,8 +455,9 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     alignment: Alignment.center,
                     decoration: ShapeDecoration(
-                      color:
-                          isSelected ? const Color(0xFFB91C1C) : Colors.white,
+                      color: isSelected
+                          ? const Color(0xFFB91C1C)
+                          : Colors.white,
                       shape: StadiumBorder(
                         side: BorderSide(
                           color: isSelected
@@ -469,10 +473,12 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                       style: TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
                         fontSize: 12,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.w500,
-                        color:
-                            isSelected ? Colors.white : const Color(0xFF64748B),
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
+                        color: isSelected
+                            ? Colors.white
+                            : const Color(0xFF64748B),
                         height: 1.25,
                       ),
                       child: Text(category.label),
@@ -688,26 +694,19 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
             switchOutCurve: Curves.easeInOut,
             layoutBuilder:
                 (Widget? currentChild, List<Widget> previousChildren) {
-              return Stack(
-                alignment: Alignment.topCenter,
-                children: <Widget>[
-                  ...previousChildren.map(
-                    (child) => Positioned(
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      child: child,
-                    ),
-                  ),
-                  if (currentChild != null) currentChild,
-                ],
-              );
-            },
+                  return Stack(
+                    alignment: Alignment.topCenter,
+                    children: <Widget>[
+                      ...previousChildren.map(
+                        (child) =>
+                            Positioned(top: 0, left: 0, right: 0, child: child),
+                      ),
+                      if (currentChild != null) currentChild,
+                    ],
+                  );
+                },
             transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: child,
-              );
+              return FadeTransition(opacity: animation, child: child);
             },
             child: KeyedSubtree(
               key: ValueKey('filter_${_selectedFilter.name}_${item.id}'),
@@ -720,9 +719,11 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
   }
 
   Widget _buildDocListForFilter(Pengajuan item) {
-    final showSk = _selectedFilter == DocFilterCategory.semua ||
+    final showSk =
+        _selectedFilter == DocFilterCategory.semua ||
         _selectedFilter == DocFilterCategory.sk;
-    final showBa = _selectedFilter == DocFilterCategory.semua ||
+    final showBa =
+        _selectedFilter == DocFilterCategory.semua ||
         _selectedFilter == DocFilterCategory.ba;
 
     return Column(
@@ -794,8 +795,8 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                     Text(
                       isAvailable
                           ? (item.nomorSk?.isNotEmpty == true
-                              ? 'No: ${item.nomorSk}'
-                              : 'SK Persetujuan Terbit')
+                                ? 'No: ${item.nomorSk}'
+                                : 'SK Persetujuan Terbit')
                           : 'No. Registrasi: ${item.id}',
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',
@@ -833,8 +834,10 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE2E8F0),
                     borderRadius: BorderRadius.circular(4),
@@ -859,8 +862,9 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
               child: ElevatedButton.icon(
                 onPressed: () async {
                   try {
-                    final bytes =
-                        await File(item.skPersetujuanPath!).readAsBytes();
+                    final bytes = await File(
+                      item.skPersetujuanPath!,
+                    ).readAsBytes();
                     await Printing.layoutPdf(
                       onLayout: (_) async => bytes,
                       name: 'SK_${item.id}.pdf',
@@ -1022,8 +1026,10 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  DateFormat('d MMMM yyyy', 'id')
-                      .format(baModel.tanggalMonitoring),
+                  DateFormat(
+                    'd MMMM yyyy',
+                    'id',
+                  ).format(baModel.tanggalMonitoring),
                   style: const TextStyle(
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: 11,
@@ -1032,8 +1038,10 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFE2E8F0),
                     borderRadius: BorderRadius.circular(4),
@@ -1137,9 +1145,7 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: isAvailable
-            ? const Color(0xFFDCFCE7)
-            : const Color(0xFFF1F5F9),
+        color: isAvailable ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
@@ -1354,10 +1360,7 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SurveyNotFoundIllustration(
-              width: 180,
-              height: 140,
-            ),
+            const SurveyNotFoundIllustration(width: 180, height: 140),
             const SizedBox(height: 14),
             const Text(
               'Data Tidak Ditemukan',

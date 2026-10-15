@@ -52,7 +52,10 @@ class _PengajuanAdminListScreenState
     }).toList();
 
     return Scaffold(
-      appBar: const AppHeader(title: 'Pemerintah Kota Tasikmalaya', subtitle: 'SATU RUMAH'),
+      appBar: const AppHeader(
+        title: 'Pemerintah Kota Tasikmalaya',
+        subtitle: 'SATU RUMAH',
+      ),
       backgroundColor: AppColors.background,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

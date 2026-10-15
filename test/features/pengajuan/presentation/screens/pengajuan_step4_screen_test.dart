@@ -364,5 +364,91 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('step 5'), findsOneWidget);
     });
+
+    testWidgets(
+      'renders consistent actions, opens and dismisses CAD preview for DWG, and replaces file cleanly',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        var pickerCalls = 0;
+        await tester.pumpWidget(
+          _host(
+            container: container,
+            picker: ({required allowMultiple, allowedExtensions}) async {
+              pickerCalls++;
+              if (pickerCalls == 1) {
+                return [_file('site_plan_blok_a.dwg', 15 * 1024 * 1024)];
+              } else if (pickerCalls == 2) {
+                // Cancelled replace
+                return [];
+              } else {
+                // Successful replace
+                return [_file('site_plan_blok_a_v2.dwg', 16 * 1024 * 1024)];
+              }
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Add DWG file
+        await tester.tap(
+          find.widgetWithText(
+            OutlinedButton,
+            '+ Tambah File Site Plan (DWG/PDF)',
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('site_plan_blok_a.dwg'), findsOneWidget);
+        expect(find.byTooltip('Lihat Dokumen'), findsOneWidget);
+        expect(find.byTooltip('Ganti Dokumen'), findsOneWidget);
+        expect(find.byTooltip('Hapus Dokumen'), findsOneWidget);
+
+        // Tap Lihat Dokumen -> opens CAD preview bottom sheet
+        final lihatBtn = find.byTooltip('Lihat Dokumen');
+        await tester.ensureVisible(lihatBtn);
+        await tester.tap(lihatBtn);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('AutoCAD DWG (CAD Terunggah)'), findsOneWidget);
+        expect(find.text('Siap Diproses Survey Disperwaskim'), findsOneWidget);
+
+        // Tap Tutup Pratinjau
+        final closePreview = find.text('Tutup Pratinjau');
+        expect(closePreview, findsOneWidget);
+        await tester.tap(closePreview);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // State remains intact
+        expect(find.text('site_plan_blok_a.dwg'), findsOneWidget);
+        expect(container.read(pengajuanFormProvider).technicalFiles, [
+          'site_plan_blok_a.dwg',
+        ]);
+
+        // Tap Ganti Dokumen -> cancel picker
+        final gantiBtn = find.byTooltip('Ganti Dokumen');
+        await tester.ensureVisible(gantiBtn);
+        await tester.tap(gantiBtn);
+        await tester.pumpAndSettle();
+
+        // Cancelled picker preserves previous file
+        expect(find.text('site_plan_blok_a.dwg'), findsOneWidget);
+        expect(container.read(pengajuanFormProvider).technicalFiles, [
+          'site_plan_blok_a.dwg',
+        ]);
+
+        // Tap Ganti Dokumen again -> successful replace
+        await tester.tap(gantiBtn);
+        await tester.pumpAndSettle();
+
+        expect(find.text('site_plan_blok_a_v2.dwg'), findsOneWidget);
+        expect(container.read(pengajuanFormProvider).technicalFiles, [
+          'site_plan_blok_a_v2.dwg',
+        ]);
+      },
+    );
   });
 }

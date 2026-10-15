@@ -143,15 +143,15 @@ void main() {
 
         // Test with high text scaler
         await tester.pumpWidget(
-          ProviderScope(
+          const ProviderScope(
             child: MaterialApp(
               home: MediaQuery(
-                data: const MediaQueryData(
+                data: MediaQueryData(
                   size: Size(360, 800),
                   textScaler: TextScaler.linear(1.4),
                   padding: EdgeInsets.only(top: 44, bottom: 34),
                 ),
-                child: const ProfilScreen(),
+                child: ProfilScreen(),
               ),
             ),
           ),

@@ -693,17 +693,18 @@ class _StatusPerbaikanBerkasScreenState
                                         ),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFDCFCE7),
-                                          borderRadius:
-                                              BorderRadius.circular(4),
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
                                         ),
                                         child: Text(
                                           'Versi 2 (Terkirim)',
                                           style: AppTextStyles.labelSmall
                                               .copyWith(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w700,
-                                            color: const Color(0xFF16A34A),
-                                          ),
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w700,
+                                                color: const Color(0xFF16A34A),
+                                              ),
                                         ),
                                       ),
                                       InkWell(
@@ -724,10 +725,10 @@ class _StatusPerbaikanBerkasScreenState
                                               'Pratinjau',
                                               style: AppTextStyles.labelSmall
                                                   .copyWith(
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600,
-                                                color: AppColors.primaryRed,
-                                              ),
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: AppColors.primaryRed,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -788,8 +789,7 @@ class _StatusPerbaikanBerkasScreenState
                               children: [
                                 Wrap(
                                   alignment: WrapAlignment.spaceBetween,
-                                  crossAxisAlignment:
-                                      WrapCrossAlignment.center,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   spacing: 8,
                                   runSpacing: 4,
                                   children: [
@@ -804,12 +804,12 @@ class _StatusPerbaikanBerkasScreenState
                                       ),
                                       child: Text(
                                         'Versi 1 (Ditolak)',
-                                        style:
-                                            AppTextStyles.labelSmall.copyWith(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: const Color(0xFFD97706),
-                                        ),
+                                        style: AppTextStyles.labelSmall
+                                            .copyWith(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFFD97706),
+                                            ),
                                       ),
                                     ),
                                     InkWell(
@@ -830,10 +830,10 @@ class _StatusPerbaikanBerkasScreenState
                                             'Pratinjau',
                                             style: AppTextStyles.labelSmall
                                                 .copyWith(
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppColors.slate600,
-                                            ),
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: AppColors.slate600,
+                                                ),
                                           ),
                                         ],
                                       ),

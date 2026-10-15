@@ -623,9 +623,7 @@ class _PengajuanAdminDetailScreenState
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
-            child: AppLoadingSpinner.large(
-              color: AppColors.primaryRed,
-            ),
+            child: AppLoadingSpinner.large(color: AppColors.primaryRed),
           );
         }
         if (snapshot.hasError ||
@@ -1690,7 +1688,9 @@ class _PengajuanAdminDetailScreenState
                         decoration: BoxDecoration(
                           color: AppColors.statusSuccessSurface,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.statusSuccessText),
+                          border: Border.all(
+                            color: AppColors.statusSuccessText,
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1808,20 +1808,12 @@ class _PengajuanAdminDetailScreenState
                   isVerified: isVerified,
                   onVerified: () {
                     ref
-                        .read(
-                          pengajuanVerifikasiControllerProvider.notifier,
-                        )
-                        .verifikasiDokumen(
-                          pengajuan.id,
-                          'site_plan_dwg',
-                          true,
-                        );
+                        .read(pengajuanVerifikasiControllerProvider.notifier)
+                        .verifikasiDokumen(pengajuan.id, 'site_plan_dwg', true);
                   },
                   onRejected: () {
                     ref
-                        .read(
-                          pengajuanVerifikasiControllerProvider.notifier,
-                        )
+                        .read(pengajuanVerifikasiControllerProvider.notifier)
                         .verifikasiDokumen(
                           pengajuan.id,
                           'site_plan_dwg',

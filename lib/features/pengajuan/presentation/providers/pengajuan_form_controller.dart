@@ -519,6 +519,21 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
   }
 
+  void deleteMultiDocumentFile(String key, String file) {
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    final files = List<String>.from(multi[key] ?? const <String>[]);
+    files.remove(file);
+    final updated = Map<String, String>.from(state.uploadedDocs);
+    if (files.isEmpty) {
+      multi.remove(key);
+      updated.remove(key);
+    } else {
+      multi[key] = files;
+      updated[key] = files.first;
+    }
+    state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
+  }
+
   void addTechnicalFiles(List<String> filePaths) {
     final current = List<String>.from(state.technicalFiles);
     for (var path in filePaths) {
@@ -548,6 +563,18 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     state = state.copyWith(technicalFiles: current, uploadedDocs: updatedDocs);
   }
 
+  void replaceTechnicalFile(int index, String newFile) {
+    final current = List<String>.from(state.technicalFiles);
+    if (index >= 0 && index < current.length) {
+      current[index] = newFile;
+    }
+    final updatedDocs = Map<String, String>.from(state.uploadedDocs);
+    if (current.isNotEmpty) {
+      updatedDocs['site_plan_dwg'] = current.first;
+    }
+    state = state.copyWith(technicalFiles: current, uploadedDocs: updatedDocs);
+  }
+
   void removeTechnicalOtherFile(int index) {
     const key = PengajuanFormState.technicalOtherDocumentsKey;
     final current = List<String>.from(
@@ -564,6 +591,23 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
       multi[key] = current;
       uploaded[key] = current.first;
     }
+    state = state.copyWith(
+      uploadedDocs: uploaded,
+      multiUploadedDocs: multi,
+    );
+  }
+
+  void replaceTechnicalOtherFile(int index, String newFile) {
+    const key = PengajuanFormState.technicalOtherDocumentsKey;
+    final current = List<String>.from(
+      state.multiUploadedDocs[key] ?? const <String>[],
+    );
+    if (index < 0 || index >= current.length) return;
+    current[index] = newFile;
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    final uploaded = Map<String, String>.from(state.uploadedDocs);
+    multi[key] = current;
+    uploaded[key] = current.first;
     state = state.copyWith(
       uploadedDocs: uploaded,
       multiUploadedDocs: multi,
