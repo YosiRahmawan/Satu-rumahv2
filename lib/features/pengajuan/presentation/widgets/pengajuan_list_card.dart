@@ -311,69 +311,103 @@ class PengajuanListCard extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      Wrap(
-                        alignment: WrapAlignment.spaceBetween,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 220),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.schedule_outlined,
-                                  size: 14,
-                                  color: Color(0xFFB45309),
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: Text(
-                                    item.diperbarui ?? 'Diperbarui 2 hari lalu',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFFB45309),
-                                    ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final textScaler = MediaQuery.textScalerOf(context);
+                          final isTextScaled = textScaler.scale(1.0) > 1.15;
+
+                          final timestampWidget = Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.schedule_outlined,
+                                size: 14,
+                                color: Color(0xFFB45309),
+                              ),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  item.diperbarui ?? 'Diperbarui 2 hari lalu',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFB45309),
                                   ),
                                 ),
+                              ),
+                            ],
+                          );
+
+                          final actionWidget = canRevise
+                              ? ElevatedButton.icon(
+                                  onPressed: onOpen,
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    minimumSize: const Size(0, 36),
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    backgroundColor: AppColors.primaryRed,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    textStyle: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.edit_document, size: 16),
+                                  label: const Text('Perbaiki Berkas'),
+                                )
+                              : Text(
+                                  'Revisi terkirim · Menunggu pemeriksaan',
+                                  style: AppTextStyles.labelSmall.copyWith(
+                                    color: AppColors.statusWarningText,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                );
+
+                          final minWidthNeeded = canRevise ? 270.0 : 360.0;
+                          final bool useMultiRow =
+                              isTextScaled || constraints.maxWidth < minWidthNeeded;
+
+                          if (useMultiRow) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                timestampWidget,
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: actionWidget,
+                                ),
+                              ],
+                            );
+                          }
+
+                          return SizedBox(
+                            width: double.infinity,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: timestampWidget,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                actionWidget,
                               ],
                             ),
-                          ),
-                          if (canRevise)
-                            ElevatedButton.icon(
-                              onPressed: onOpen,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                backgroundColor: AppColors.primaryRed,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                textStyle: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              icon: const Icon(Icons.edit_document, size: 14),
-                              label: const Text('Perbaiki Berkas'),
-                            )
-                          else
-                            Text(
-                              'Revisi terkirim · Menunggu pemeriksaan',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.statusWarningText,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                        ],
+                          );
+                        },
                       ),
                     ],
                   ),

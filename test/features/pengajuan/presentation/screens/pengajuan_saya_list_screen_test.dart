@@ -259,6 +259,27 @@ void main() {
     );
   });
 
+  testWidgets(
+    'perbaiki berkas button is right-aligned while timestamp is left-aligned in warning panel',
+    (tester) async {
+      await _pump(tester, width: 390, height: 844);
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Perlu Perbaikan (1)'));
+      await tester.pumpAndSettle();
+
+      final buttonFinder = find.widgetWithText(ElevatedButton, 'Perbaiki Berkas');
+      expect(buttonFinder, findsOneWidget);
+
+      final timestampFinder = find.text('Diperbarui 2 hari lalu');
+      expect(timestampFinder, findsOneWidget);
+
+      final buttonRect = tester.getRect(buttonFinder);
+      final timestampRect = tester.getRect(timestampFinder);
+
+      expect(timestampRect.left, lessThan(buttonRect.left));
+      expect(buttonRect.left - timestampRect.right, greaterThanOrEqualTo(8.0));
+    },
+  );
+
   testWidgets('submitted revision never offers another edit action', (
     tester,
   ) async {

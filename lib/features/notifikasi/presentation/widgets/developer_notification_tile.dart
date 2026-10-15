@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
-import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/notifikasi_model.dart';
 
@@ -34,90 +32,138 @@ class DeveloperNotificationTile extends StatelessWidget {
         AppColors.statusUrgentSurface,
       ),
     };
-    final readLabel = item.isRead ? 'Sudah dibaca' : 'Belum dibaca';
+    final iconColor = item.isRead ? const Color(0xFF64748B) : color;
+    final iconSurface = item.isRead ? const Color(0xFFF1F5F9) : surface;
 
-    return Material(
-      color: item.isRead ? AppColors.cardSurface : AppColors.primarySurfaceSoft,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadii.card,
-        side: BorderSide(
-          color: item.isRead
-              ? AppColors.borderSubtle
-              : AppColors.primarySurfaceBorder,
+    return Semantics(
+      label: item.isRead ? 'Sudah dibaca' : 'Belum dibaca',
+      button: true,
+      child: Material(
+        color: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: item.isRead
+                ? const Color(0xFFE2E8F0)
+                : const Color(0xFFCBD5E1),
+            width: 1,
+          ),
         ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: surface,
-                  borderRadius: AppRadii.control,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            decoration: BoxDecoration(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
                 ),
-                child: Icon(item.jenis.icon, color: color, size: 20),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
+              ],
+            ),
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (item.isRead)
+                  Semantics(
+                    container: true,
+                    label: 'Sudah dibaca',
+                    child: const SizedBox.shrink(),
+                  ),
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      item.judul,
-                      style: AppTextStyles.titleMedium.copyWith(
-                        fontWeight: item.isRead
-                            ? FontWeight.w500
-                            : FontWeight.w700,
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: iconSurface,
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: Icon(item.jenis.icon, color: iconColor, size: 19),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      item.deskripsi,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      DateFormat('dd/MM/yyyy • HH:mm').format(item.waktu),
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Row(
-                      children: [
-                        Icon(
-                          item.isRead ? Icons.done_all_rounded : Icons.circle,
-                          size: item.isRead ? 14 : 8,
-                          color: item.isRead
-                              ? AppColors.textSecondary
-                              : AppColors.notificationUnread,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Flexible(
-                          child: Text(
-                            readLabel,
-                            style: AppTextStyles.labelMedium.copyWith(
-                              color: item.isRead
-                                  ? AppColors.textSecondary
-                                  : AppColors.primaryRed,
-                              fontWeight: FontWeight.w600,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.judul,
+                                  style: AppTextStyles.titleMedium.copyWith(
+                                    fontSize: 14,
+                                    fontWeight: item.isRead
+                                        ? FontWeight.w600
+                                        : FontWeight.w800,
+                                    color: item.isRead
+                                        ? const Color(0xFF1E293B)
+                                        : const Color(0xFF0F172A),
+                                    height: 1.25,
+                                  ),
+                                ),
+                              ),
+                              if (!item.isRead) ...[
+                                const SizedBox(width: 8),
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Container(
+                                    key: const ValueKey('unread-indicator'),
+                                    width: 8,
+                                    height: 8,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.primaryRed,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            item.deskripsi,
+                            style: AppTextStyles.bodySmall.copyWith(
+                              fontSize: 13,
+                              color: const Color(0xFF475569),
+                              height: 1.4,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.only(top: 8),
+                  decoration: const BoxDecoration(
+                    border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          DateFormat('dd/MM/yyyy • HH:mm').format(item.waktu),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

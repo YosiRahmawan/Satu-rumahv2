@@ -84,10 +84,11 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
     final notifier = ref.read(notifikasiProvider.notifier);
     final session = ref.watch(roleSessionProvider);
     final role = session.role;
-    final String? avatarInitials = (session.username != null && session.username!.trim().isNotEmpty)
+    final String? avatarInitials =
+        (session.username != null && session.username!.trim().isNotEmpty)
         ? (session.username!.trim().length >= 2
-            ? session.username!.trim().substring(0, 2).toUpperCase()
-            : session.username!.trim().toUpperCase())
+              ? session.username!.trim().substring(0, 2).toUpperCase()
+              : session.username!.trim().toUpperCase())
         : null;
 
     final filteredNotifs = _selectedFilter == 'Belum Dibaca'
@@ -107,8 +108,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           () => _selectedFilter = unreadOnly ? 'Belum Dibaca' : 'Semua',
         ),
         onMarkAllRead: notifier.markAllAsRead,
-        onAvatarTap: () =>
-            ref.read(dashboardTabProvider.notifier).state = 3,
+        onAvatarTap: () => ref.read(dashboardTabProvider.notifier).state = 3,
         onOpen: (item) {
           notifier.markAsRead(item.id);
           final route = notificationTargetForRole(item, role);

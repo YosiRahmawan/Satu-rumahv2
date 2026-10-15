@@ -50,7 +50,9 @@ Future<ProviderContainer> _pump(
   addTearDown(() => tester.binding.setSurfaceSize(null));
   final container = ProviderContainer(
     overrides: [
-      notifikasiProvider.overrideWith((ref) => _Notifications(items ?? _items())),
+      notifikasiProvider.overrideWith(
+        (ref) => _Notifications(items ?? _items()),
+      ),
     ],
   );
   addTearDown(container.dispose);
@@ -104,7 +106,8 @@ void main() {
         )
         .toList();
     expect(tiles.map((tile) => tile.item.id), ['unread', 'read']);
-    expect(find.text('Sudah dibaca'), findsOneWidget);
+    expect(find.bySemanticsLabel('Sudah dibaca'), findsOneWidget);
+    expect(find.byKey(const ValueKey('unread-indicator')), findsOneWidget);
     expect(find.text('05/10/2026 • 09:00'), findsOneWidget);
     final icon = tester.widget<Icon>(
       find.descendant(
@@ -119,7 +122,7 @@ void main() {
     'filters unread, marks all read and can return from empty filter',
     (tester) async {
       final container = await _pump(tester);
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Belum dibaca'));
+      await tester.tap(find.widgetWithText(ChoiceChip, 'Belum dibaca (1)'));
       await tester.pumpAndSettle();
       expect(find.text('Pengajuan diterima'), findsNothing);
       await tester.tap(find.text('Tandai semua dibaca'));
@@ -133,7 +136,8 @@ void main() {
       await tester.tap(find.text('Lihat semua notifikasi'));
       await tester.pumpAndSettle();
       expect(find.byType(DeveloperNotificationTile), findsNWidgets(2));
-      expect(find.text('Sudah dibaca'), findsNWidgets(2));
+      expect(find.bySemanticsLabel('Sudah dibaca'), findsNWidgets(2));
+      expect(find.byKey(const ValueKey('unread-indicator')), findsNothing);
     },
   );
 
@@ -147,7 +151,7 @@ void main() {
     expect(container.read(unreadCountProvider), 0);
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('Sudah dibaca'), findsNWidgets(2));
+    expect(find.bySemanticsLabel('Sudah dibaca'), findsNWidgets(2));
   });
 
   testWidgets('empty list has an explanation and no enabled read-all action', (
@@ -170,7 +174,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.byType(DeveloperNotificationView), findsOneWidget);
-    expect(find.text('Sudah dibaca'), findsOneWidget);
+    expect(find.bySemanticsLabel('Sudah dibaca'), findsOneWidget);
   });
 
   for (final width in [360.0, 412.0]) {
