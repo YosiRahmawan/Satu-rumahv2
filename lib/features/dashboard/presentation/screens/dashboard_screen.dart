@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
@@ -23,6 +24,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// Tab yang sudah pernah dibuka. Hanya tab ini yang dibangun dan
   /// dipertahankan, supaya frame pertama setelah login tidak berat.
   final Set<int> _builtTabs = {};
+
+  /// Ilustrasi SVG yang dipakai halaman sukses, empty state, dan notifikasi.
+  static const _illustrations = [
+    'assets/images/pengajuan_sukses_saved.svg',
+    'assets/images/pengajuan_empty_search.svg',
+    'assets/images/pengajuan_empty_onboarding.svg',
+    'assets/images/notifikasi_unread_empty.svg',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Setelah frame pertama, supaya tidak menunda tampilnya Beranda.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _precacheIllustrations());
+  }
+
+  /// Memuat dan mem-parse SVG lebih awal agar sudah ada di cache flutter_svg
+  /// saat ilustrasinya ditampilkan, jadi tidak muncul tiba-tiba.
+  Future<void> _precacheIllustrations() async {
+    for (final asset in _illustrations) {
+      try {
+        await SvgAssetLoader(asset).loadBytes(null);
+      } catch (_) {
+        // Gagal precache tidak boleh mengganggu dashboard.
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

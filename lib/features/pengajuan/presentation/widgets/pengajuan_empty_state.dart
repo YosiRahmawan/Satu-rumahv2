@@ -467,6 +467,7 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
                       'Maskot SATU RUMAH memeriksa dokumen tidak ada pengajuan ditemukan',
                   child: SvgPicture.asset(
                     'assets/images/pengajuan_empty_search.svg',
+                    width: 193,
                     height: 145,
                     fit: BoxFit.contain,
                   ),
@@ -476,6 +477,7 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
                   label: 'Maskot SATU RUMAH mengajak membuat pengajuan pertama',
                   child: SvgPicture.asset(
                     'assets/images/pengajuan_empty_onboarding.svg',
+                    width: 193,
                     height: 145,
                     fit: BoxFit.contain,
                   ),
