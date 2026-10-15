@@ -21,7 +21,7 @@ class PengajuanListCard extends StatelessWidget {
   final VoidCallback? onDownloadSk;
   static final _number = NumberFormat.decimalPattern('id_ID');
 
-  static (int step, int total, String tahapLabel, double progress) _getStepInfo(
+  static (int step, int total, String tahapLabel, double progress) stepInfoOf(
     StatusTahapPengajuan stage,
   ) {
     switch (stage) {
@@ -42,6 +42,18 @@ class PengajuanListCard extends StatelessWidget {
     }
   }
 
+  /// Label status yang sama dipakai kartu daftar dan kartu Beranda.
+  static String statusLabelOf(Pengajuan item) {
+    if (item.status.toLowerCase() == 'menunggu verifikasi perbaikan') {
+      return 'Menunggu Verifikasi Perbaikan';
+    }
+    if (item.statusTahap == StatusTahapPengajuan.perluPerbaikan) {
+      return 'Perlu Perbaikan';
+    }
+    if (item.statusTahap == StatusTahapPengajuan.selesai) return 'Disetujui';
+    return 'Dalam Proses';
+  }
+
   @override
   Widget build(BuildContext context) {
     final isWaitingVerification =
@@ -51,13 +63,7 @@ class PengajuanListCard extends StatelessWidget {
         !isWaitingVerification;
     final complete = item.statusTahap == StatusTahapPengajuan.selesai;
     final canRevise = revision && !item.revisionSubmitted;
-    final status = isWaitingVerification
-        ? 'Menunggu Verifikasi Perbaikan'
-        : revision
-        ? 'Perlu Perbaikan'
-        : complete
-        ? 'Disetujui'
-        : 'Dalam Proses';
+    final status = statusLabelOf(item);
 
     final tipeText =
         item.tipePengajuan ??
@@ -473,7 +479,7 @@ class PengajuanListCard extends StatelessWidget {
               ] else ...[
                 Builder(
                   builder: (context) {
-                    final stepInfo = _getStepInfo(item.statusTahap);
+                    final stepInfo = stepInfoOf(item.statusTahap);
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [

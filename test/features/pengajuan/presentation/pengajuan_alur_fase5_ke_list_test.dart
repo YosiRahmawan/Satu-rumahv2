@@ -68,7 +68,13 @@ void main() {
       expect(find.text('Menunggu Verifikasi Perbaikan'), findsWidgets);
       expect(find.text('REG-2026-0142'), findsOneWidget);
       expect(find.text('Perumahan Green Tasik'), findsOneWidget);
-      expect(find.text('Diperbarui 2 hari lalu'), findsOneWidget);
+      // Kartu yang menunggu verifikasi menampilkan penanda revisi terkirim,
+      // bukan tombol perbaiki lagi.
+      expect(
+        find.text('Revisi terkirim · Menunggu pemeriksaan'),
+        findsOneWidget,
+      );
+      expect(find.text('Perbaiki Berkas'), findsNothing);
     },
   );
 }

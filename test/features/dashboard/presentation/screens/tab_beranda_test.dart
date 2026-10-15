@@ -6,6 +6,7 @@ import 'package:satu_rumah/core/widgets/developer_header.dart';
 import 'package:satu_rumah/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:satu_rumah/features/dashboard/presentation/screens/tab_beranda.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
+import 'package:satu_rumah/features/pengajuan/data/models/status_tahap_pengajuan.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
 
 void main() {
@@ -105,10 +106,84 @@ void main() {
       expect(find.text('Dalam Proses'), findsOneWidget);
       expect(find.text('Mutiara Regency Tasik'), findsOneWidget);
       expect(find.text('REG - TSK-2026-084'), findsOneWidget);
-      expect(find.text('Tahap: Verifikasi Administrasi Dokumen (Langkah 2 dari 4)'), findsOneWidget);
-      expect(find.text('Progres kelengkapan (40%)'), findsOneWidget);
+      expect(find.text('Tahap: Verifikasi Administrasi (Langkah 2 dari 4)'), findsOneWidget);
+      expect(find.text('Progres kelengkapan (50%)'), findsOneWidget);
       expect(find.text('Cek Detail'), findsOneWidget);
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
+    });
+
+    Pengajuan contoh({
+      required StatusTahapPengajuan tahap,
+      required String status,
+    }) {
+      return Pengajuan(
+        id: 'REG-2026-0777',
+        namaPerumahan: 'Taman Asri Tasik',
+        namaPt: 'PT. Tasik Indah Sentosa',
+        namaDirektur: 'H. Tatang Sutisna',
+        npwpPerusahaan: '09.123.456.7-423.000',
+        luasLahan: 12500.0,
+        jumlahUnit: 45,
+        tipePerumahan: 'Subsidi',
+        status: status,
+        statusTahap: tahap,
+        tanggal: '20 Juli 2026',
+        uploadedDocs: const {},
+      );
+    }
+
+    Future<void> pumpDengan(WidgetTester tester, List<Pengajuan> items) async {
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          overrides: [
+            pengajuanListProvider.overrideWith((ref) {
+              final notifier = PengajuanListNotifier();
+              notifier.state = items;
+              return notifier;
+            }),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('kartu mengikuti tahap pengajuan, bukan angka tetap', (
+      tester,
+    ) async {
+      await pumpDengan(tester, [
+        contoh(tahap: StatusTahapPengajuan.surveyLapangan, status: 'Dalam Proses'),
+      ]);
+
+      expect(find.text('Dalam Proses'), findsOneWidget);
+      expect(find.text('Tahap: Verifikasi Lapangan (Langkah 3 dari 4)'), findsOneWidget);
+      expect(find.text('Progres kelengkapan (75%)'), findsOneWidget);
+    });
+
+    testWidgets('kartu menampilkan status perlu perbaikan', (tester) async {
+      await pumpDengan(tester, [
+        contoh(tahap: StatusTahapPengajuan.perluPerbaikan, status: 'Perlu Perbaikan'),
+      ]);
+      expect(find.text('Perlu Perbaikan'), findsOneWidget);
+      expect(find.text('Progres kelengkapan (40%)'), findsOneWidget);
+    });
+
+    testWidgets('kartu menampilkan status selesai sebagai Disetujui', (
+      tester,
+    ) async {
+      await pumpDengan(tester, [
+        contoh(tahap: StatusTahapPengajuan.selesai, status: 'Selesai'),
+      ]);
+      expect(find.text('Disetujui'), findsOneWidget);
+      expect(find.text('Progres kelengkapan (100%)'), findsOneWidget);
+    });
+
+    testWidgets('tanpa pengajuan tidak menampilkan data contoh', (tester) async {
+      await pumpDengan(tester, const []);
+
+      expect(find.text('Belum ada pengajuan'), findsOneWidget);
+      expect(find.text('Buat pengajuan'), findsOneWidget);
+      expect(find.text('Mutiara Regency Tasik'), findsNothing);
+      expect(find.byType(LinearProgressIndicator), findsNothing);
     });
 
     testWidgets('renders Menu Layanan Pengembang section with 4 services cards', (tester) async {

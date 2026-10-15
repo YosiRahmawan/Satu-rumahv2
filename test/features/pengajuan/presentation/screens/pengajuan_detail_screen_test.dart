@@ -295,8 +295,8 @@ void main() {
       // Find the card for REG-2026-0142
       expect(find.text('Perumahan Green Tasik'), findsOneWidget);
 
-      // Find and tap the "Perbaiki →" button on the card
-      final perbaikiBtn = find.text('Perbaiki →');
+      // Find and tap the "Perbaiki Berkas" button on the card
+      final perbaikiBtn = find.widgetWithText(ElevatedButton, 'Perbaiki Berkas');
       await tester.scrollUntilVisible(
         perbaikiBtn,
         200,
