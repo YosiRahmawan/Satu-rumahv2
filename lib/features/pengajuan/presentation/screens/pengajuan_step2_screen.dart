@@ -6,7 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
@@ -540,7 +539,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
-                      PhosphorIconsRegular.cloudArrowUp,
+                      FilePickerUtil.uploadIcon,
                       color: AppColors.primaryRed,
                       size: 22,
                     ),
@@ -570,7 +569,7 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
                   OutlinedButton.icon(
                     onPressed: () => _pickFile(slot.key),
                     icon: const Icon(
-                      Icons.add,
+                      FilePickerUtil.uploadIcon,
                       size: 16,
                       color: AppColors.primaryRed,
                     ),
@@ -970,70 +969,17 @@ class _PengajuanStep2ScreenState extends ConsumerState<PengajuanStep2Screen> {
             isTextScaled,
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundCanvas,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.borderSubtle),
+          UploadedFileTile(
+            fileName: fileName,
+            sizeBytes: effectiveSize,
+            onPreview: () => FilePickerUtil.showAppDocumentPreview(
+              context,
+              fileName: fileName,
+              title: slot.title,
+              fileSize: effectiveSize,
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.description_outlined,
-                    color: AppColors.primaryRed,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        fileName,
-                        style: const TextStyle(
-                          fontFamily: AppTextStyles.fontFamily,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          color: AppColors.textMain,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        effectiveSize > 0
-                            ? 'PDF · ${_formatFileSize(effectiveSize)} · Terunggah'
-                            : 'PDF · ${_formatFileSize(0)} · Terunggah',
-                        style: const TextStyle(
-                          fontFamily: AppTextStyles.fontFamily,
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                UploadedAttachmentActions(
-                  onPreview: () => FilePickerUtil.showAppDocumentPreview(
-                    context,
-                    fileName: fileName,
-                    title: slot.title,
-                    fileSize: effectiveSize,
-                  ),
-                  onReplace: () => _pickFile(slot.key),
-                  onDelete: () => _deleteFile(slot.key),
-                ),
-              ],
-            ),
+            onReplace: () => _pickFile(slot.key),
+            onDelete: () => _deleteFile(slot.key),
           ),
         ],
       ),

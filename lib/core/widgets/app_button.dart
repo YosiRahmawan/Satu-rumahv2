@@ -63,15 +63,25 @@ class AppButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (icon != null) ...[icon!, const SizedBox(width: 8)],
-              Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.2,
+              // Label mengecil seperlunya bila tombol sempit, bukan meluap.
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    text,
+                    maxLines: 1,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
                 ),
               ),
-              if (trailingIcon != null) ...[const SizedBox(width: 8), trailingIcon!],
+              if (trailingIcon != null) ...[
+                const SizedBox(width: 8),
+                trailingIcon!,
+              ],
             ],
           );
 
@@ -79,9 +89,16 @@ class AppButton extends StatelessWidget {
       width: double.infinity,
       height: 50,
       child: isPrimary
-          ? ElevatedButton(onPressed: isLoading ? null : onPressed, style: style, child: child)
-          : OutlinedButton(onPressed: isLoading ? null : onPressed, style: style, child: child),
+          ? ElevatedButton(
+              onPressed: isLoading ? null : onPressed,
+              style: style,
+              child: child,
+            )
+          : OutlinedButton(
+              onPressed: isLoading ? null : onPressed,
+              style: style,
+              child: child,
+            ),
     );
   }
 }
-

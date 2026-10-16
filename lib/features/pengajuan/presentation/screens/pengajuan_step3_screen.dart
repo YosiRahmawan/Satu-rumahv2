@@ -49,14 +49,6 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
   int get _totalSlotCount => _slots.length;
   int get _requiredCount => _slots.where((slot) => !slot.isOptional).length;
 
-  String _formatFileSize(int bytes) {
-    if (bytes <= 0) return 'Ukuran tidak tersedia';
-    if (bytes >= 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
-    return '${(bytes / 1024).toStringAsFixed(0)} KB';
-  }
-
   Future<List<PlatformFile>> _pick({required bool allowMultiple}) async {
     if (widget.pickerSeam != null) {
       return widget.pickerSeam!(
@@ -655,77 +647,19 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
             _slotFileSizes[file] ??
             _slotFileSizes[fileName] ??
             _slotFileSizes[slot.key];
-        final sizeText = size != null && size > 0
-            ? 'PDF · ${_formatFileSize(size)} · Terunggah'
-            : 'PDF · Terunggah';
-
         return Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.cardSurface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.borderSubtle),
+          child: UploadedFileTile(
+            fileName: fileName,
+            sizeBytes: size,
+            onPreview: () => FilePickerUtil.showAppDocumentPreview(
+              context,
+              fileName: fileName,
+              title: slot.label,
+              fileSize: size,
             ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFEE2E2),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFFECDD3)),
-                  ),
-                  child: const Icon(
-                    Icons.description_outlined,
-                    size: 20,
-                    color: AppColors.primaryRed,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        fileName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textMain,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        sizeText,
-                        style: const TextStyle(
-                          fontFamily: 'Plus Jakarta Sans',
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                UploadedAttachmentActions(
-                  onPreview: () => FilePickerUtil.showAppDocumentPreview(
-                    context,
-                    fileName: fileName,
-                    title: slot.label,
-                    fileSize: size,
-                  ),
-                  onReplace: () => _select(slot),
-                  onDelete: () => _deleteFile(slot, file),
-                ),
-              ],
-            ),
+            onReplace: () => _select(slot),
+            onDelete: () => _deleteFile(slot, file),
           ),
         );
       }),
@@ -736,7 +670,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: () => _select(slot),
-              icon: const Icon(Icons.add, size: 18),
+              icon: const Icon(FilePickerUtil.uploadIcon, size: 18),
               label: Text(slot.actionLabel),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryRed,
@@ -815,7 +749,7 @@ class _PengajuanStep3ScreenState extends ConsumerState<PengajuanStep3Screen> {
       child: OutlinedButton.icon(
         onPressed: () => _select(slot),
         icon: Icon(
-          Icons.cloud_upload_outlined,
+          FilePickerUtil.uploadIcon,
           size: 16,
           color: isOptional ? const Color(0xFF64748B) : AppColors.primaryRed,
         ),

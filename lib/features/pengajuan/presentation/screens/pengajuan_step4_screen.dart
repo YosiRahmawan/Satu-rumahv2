@@ -315,7 +315,11 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
           if (isLoading) _buildLoadingRow(group),
           if (failure != null) _buildFailureRow(group, failure),
           const SizedBox(height: AppSpacing.sm),
-          _buildAddButton(group: group, isLoading: isLoading),
+          _buildAddButton(
+            group: group,
+            isLoading: isLoading,
+            hasFiles: files.isNotEmpty,
+          ),
         ],
       ),
     );
@@ -415,101 +419,25 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
     required String reference,
   }) {
     final name = _displayName(reference);
-    final isDwg = _extension(name) == 'dwg';
     final size = _fileSizes[reference] ?? _fileSizes[name];
     final notifier = ref.read(pengajuanFormProvider.notifier);
-    return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderSubtle),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: isDwg
-                  ? AppColors.statusSurveySurface
-                  : const Color(0xFFFEE2E2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              isDwg ? Icons.architecture : Icons.description_outlined,
-              color: isDwg ? AppColors.statusSurveyText : AppColors.primaryRed,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: AppTextStyles.fontFamily,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    color: AppColors.textMain,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Wrap(
-                  spacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    if (size != null) ...[
-                      Text(
-                        _formatSize(size),
-                        style: const TextStyle(
-                          fontFamily: AppTextStyles.fontFamily,
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      const Text(
-                        '·',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                    Text(
-                      isDwg ? 'CAD Terunggah' : 'Terunggah',
-                      style: const TextStyle(
-                        fontFamily: AppTextStyles.fontFamily,
-                        fontSize: 11.5,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          UploadedAttachmentActions(
-            onPreview: () => FilePickerUtil.showAppDocumentPreview(
-              context,
-              fileName: name,
-              title: group == _sitePlanKey
-                  ? 'Site Plan & Gambar Kawasan'
-                  : 'Kajian Teknis & Lingkungan',
-              fileSize: size,
-            ),
-            onReplace: () => _replaceFile(group, index),
-            onDelete: () => group == _sitePlanKey
-                ? notifier.removeTechnicalFile(index)
-                : notifier.removeTechnicalOtherFile(index),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: UploadedFileTile(
+        fileName: name,
+        sizeBytes: size,
+        onPreview: () => FilePickerUtil.showAppDocumentPreview(
+          context,
+          fileName: name,
+          title: group == _sitePlanKey
+              ? 'Site Plan & Gambar Kawasan'
+              : 'Kajian Teknis & Lingkungan',
+          fileSize: size,
+        ),
+        onReplace: () => _replaceFile(group, index),
+        onDelete: () => group == _sitePlanKey
+            ? notifier.removeTechnicalFile(index)
+            : notifier.removeTechnicalOtherFile(index),
       ),
     );
   }
@@ -579,17 +507,21 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
     );
   }
 
-  Widget _buildAddButton({required String group, required bool isLoading}) {
+  Widget _buildAddButton({
+    required String group,
+    required bool isLoading,
+    required bool hasFiles,
+  }) {
     final isSitePlan = group == _sitePlanKey;
     return OutlinedButton.icon(
       onPressed: isLoading
           ? () => _cancelSelection(group)
           : () => _selectGroup(group: group),
-      icon: Icon(isLoading ? Icons.close : Icons.add_circle_outline, size: 18),
+      icon: Icon(isLoading ? Icons.close : FilePickerUtil.uploadIcon, size: 18),
       label: Text(
         isLoading
             ? 'Batal memilih berkas'
-            : '+ Tambah File ${isSitePlan ? 'Site Plan (DWG/PDF)' : 'Kajian (PDF)'}',
+            : '${hasFiles ? 'Tambah' : 'Unggah'} File ${isSitePlan ? 'Site Plan (DWG/PDF)' : 'Kajian (PDF)'}',
       ),
       style: OutlinedButton.styleFrom(
         foregroundColor: isLoading ? AppColors.error : AppColors.primaryRed,
@@ -602,8 +534,10 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
     );
   }
 
-
   Widget _buildBottomBar(bool isValid) {
+    final useStackedActions =
+        MediaQuery.textScalerOf(context).scale(14) > 20 ||
+        MediaQuery.sizeOf(context).width < 370;
     return Container(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -628,49 +562,33 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const DraftStatusRow(),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact =
-                    MediaQuery.sizeOf(context).width < 600 ||
-                    MediaQuery.textScalerOf(context).scale(14) > 18;
-                final back = AppButton.secondary(
-                  text: 'Kembali',
-                  onPressed: _backToStep3,
-                );
-                final next = isCompact
-                    ? _buildCompactNextButton(isValid)
-                    : AppButton.primary(
-                        text: 'Lanjut ke Review & Submit',
-                        onPressed: _onNext,
-                      );
-                if (isCompact) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      back,
-                      const SizedBox(height: AppSpacing.sm),
-                      next,
-                    ],
-                  );
-                }
-                return Row(
-                  children: [
-                    Expanded(child: back),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(child: next),
-                  ],
-                );
-              },
-            ),
+            const SizedBox(height: 10),
+            if (useStackedActions) ...[
+              AppButton.secondary(text: 'Kembali', onPressed: _backToStep3),
+              const SizedBox(height: AppSpacing.sm),
+              AppButton.primary(text: 'Lanjut ke Review', onPressed: _onNext),
+            ] else
+              Row(
+                children: [
+                  Expanded(
+                    child: AppButton.secondary(
+                      text: 'Kembali',
+                      onPressed: _backToStep3,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: AppButton.primary(
+                      text: 'Lanjut ke Review',
+                      onPressed: _onNext,
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
     );
-  }
-
-  String _formatSize(int bytes) {
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
   void _backToStep3() {
@@ -721,31 +639,5 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
     if (mounted) {
       _isModalShowing = false;
     }
-  }
-
-  Widget _buildCompactNextButton(bool isValid) {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton(
-        onPressed: _onNext,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primaryRed,
-          foregroundColor: AppColors.textOnRed,
-          elevation: 0,
-          shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
-        ),
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            'Lanjut ke Review & Submit',
-            style: AppTextStyles.labelLarge.copyWith(
-              color: AppColors.textOnRed,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

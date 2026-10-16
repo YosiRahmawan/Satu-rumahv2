@@ -974,7 +974,7 @@ class _DetailPerbaruiDokumenScreenState
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
-                      Icons.cloud_upload_outlined,
+                      FilePickerUtil.uploadIcon,
                       color: Color(0xFFB91C1C),
                       size: 26,
                     ),

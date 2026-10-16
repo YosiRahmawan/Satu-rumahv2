@@ -470,6 +470,21 @@ void main() {
       expect(find.text('Step 3 Screen'), findsOneWidget);
     });
 
+    testWidgets('dropzone dan tombol memakai ikon cloud-upload tanpa plus', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        createTestWidget(tester: tester, container: container),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.cloud_upload_outlined), findsWidgets);
+      expect(find.byIcon(Icons.add), findsNothing);
+      expect(find.byIcon(Icons.add_circle_outline), findsNothing);
+    });
+
     testWidgets(
       'Simpan Draft menyimpan draf ke perangkat dan memberi kabar jujur',
       (tester) async {

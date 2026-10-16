@@ -9,6 +9,8 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../theme/app_colors.dart';
+
 enum FilePickStatus { selected, cancelled, failed }
 
 class FilePickResult<T> {
@@ -107,7 +109,126 @@ class UploadedAttachmentActions extends StatelessWidget {
   }
 }
 
+/// Kotak ikon jenis file: PDF dan DWG punya ikon dan warna sendiri.
+class AttachmentTypeIcon extends StatelessWidget {
+  const AttachmentTypeIcon({super.key, required this.fileName});
+
+  final String fileName;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDwg = fileName.toLowerCase().endsWith('.dwg');
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: isDwg ? AppColors.statusSurveySurface : AppColors.primarySurface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDwg
+              ? AppColors.statusSurveyText.withValues(alpha: 0.25)
+              : AppColors.primarySurfaceBorder,
+        ),
+      ),
+      child: Icon(
+        isDwg ? Icons.architecture : Icons.description_outlined,
+        size: 20,
+        color: isDwg ? AppColors.statusSurveyText : AppColors.primaryRed,
+      ),
+    );
+  }
+}
+
+/// Baris lampiran terunggah yang sama di Langkah 2, 3, dan 4: ikon jenis file,
+/// nama asli, "FORMAT · ukuran · Terunggah", lalu aksi Lihat, Ganti, Hapus.
+class UploadedFileTile extends StatelessWidget {
+  const UploadedFileTile({
+    super.key,
+    required this.fileName,
+    required this.sizeBytes,
+    required this.onPreview,
+    required this.onReplace,
+    required this.onDelete,
+  });
+
+  final String fileName;
+  final int? sizeBytes;
+  final VoidCallback onPreview;
+  final VoidCallback onReplace;
+  final VoidCallback onDelete;
+
+  String get _meta {
+    final extension = fileName.contains('.')
+        ? fileName.split('.').last.toUpperCase()
+        : 'FILE';
+    final size = sizeBytes;
+    return [
+      extension,
+      if (size != null && size > 0)
+        FilePickerUtil.formatSize(size)
+      else
+        'Ukuran tidak tersedia',
+      'Terunggah',
+    ].join(' · ');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Row(
+        children: [
+          AttachmentTypeIcon(fileName: fileName),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textMain,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _meta,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          UploadedAttachmentActions(
+            onPreview: onPreview,
+            onReplace: onReplace,
+            onDelete: onDelete,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class FilePickerUtil {
+  /// Ikon unggah canonical untuk semua aksi mengunggah file di form pengajuan.
+  static const IconData uploadIcon = Icons.cloud_upload_outlined;
+
   static final Map<String, PlatformFile> _cachedFiles = {};
 
   static void cacheFile(PlatformFile file) {

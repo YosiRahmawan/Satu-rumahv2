@@ -54,7 +54,59 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Dokumen Kajian Teknis Lainnya'), findsOneWidget);
-      expect(find.text('Lanjut ke Review & Submit'), findsOneWidget);
+      expect(find.text('Lanjut ke Review'), findsOneWidget);
+    });
+
+    testWidgets('memakai satu ikon unggah dan label sesuai kondisi', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required allowMultiple, allowedExtensions}) async => [
+            _file('site-plan.dwg', 2 * 1024 * 1024),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Belum ada file: "Unggah", ikon cloud-upload, tanpa karakter plus.
+      expect(find.text('Unggah File Site Plan (DWG/PDF)'), findsOneWidget);
+      expect(find.text('Unggah File Kajian (PDF)'), findsOneWidget);
+      expect(find.byIcon(Icons.cloud_upload_outlined), findsNWidgets(2));
+      expect(find.byIcon(Icons.add_circle_outline), findsNothing);
+      expect(find.textContaining('+'), findsNothing);
+
+      await tester.tap(find.text('Unggah File Site Plan (DWG/PDF)'));
+      await tester.pumpAndSettle();
+
+      // Sudah ada file: label menjadi "Tambah", format dan ukuran konsisten.
+      expect(find.text('Tambah File Site Plan (DWG/PDF)'), findsOneWidget);
+      expect(find.text('Unggah File Kajian (PDF)'), findsOneWidget);
+      expect(find.text('DWG · 2.0 MB · Terunggah'), findsOneWidget);
+    });
+
+    testWidgets('footer sejajar tanpa overflow di 360, 390, dan 420dp', (
+      tester,
+    ) async {
+      for (final width in [360.0, 390.0, 420.0]) {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        await tester.pumpWidget(
+          _host(
+            container: container,
+            size: Size(width, 844),
+            picker: ({required allowMultiple, allowedExtensions}) async =>
+                const [],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: 'lebar $width');
+        expect(find.text('Kembali'), findsOneWidget);
+        expect(find.text('Lanjut ke Review'), findsOneWidget);
+      }
     });
 
     testWidgets('accepts DWG/PDF for site plan and PDF for kajian', (
@@ -81,21 +133,24 @@ void main() {
 
       tester
           .widget<OutlinedButton>(
-            find.widgetWithText(
-              OutlinedButton,
-              '+ Tambah File Site Plan (DWG/PDF)',
+            find.ancestor(
+              of: find.textContaining('File Site Plan (DWG/PDF)'),
+              matching: find.byType(OutlinedButton),
             ),
           )
           .onPressed!();
       await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
-        find.text('+ Tambah File Kajian (PDF)'),
+        find.textContaining('File Kajian (PDF)'),
         400,
         scrollable: find.byType(Scrollable).first,
       );
       tester
           .widget<OutlinedButton>(
-            find.widgetWithText(OutlinedButton, '+ Tambah File Kajian (PDF)'),
+            find.ancestor(
+              of: find.textContaining('File Kajian (PDF)'),
+              matching: find.byType(OutlinedButton),
+            ),
           )
           .onPressed!();
       await tester.pumpAndSettle();
@@ -104,8 +159,8 @@ void main() {
       expect(state.technicalFiles, ['site-plan.dwg', 'site-plan.pdf']);
       expect(state.technicalOtherFiles, ['soil-test.pdf']);
       expect(state.isStep4Valid, isTrue);
-      expect(find.text('18.0 MB'), findsOneWidget);
-      expect(find.text('8.0 MB'), findsOneWidget);
+      expect(find.text('DWG · 18.0 MB · Terunggah'), findsOneWidget);
+      expect(find.text('PDF · 8.0 MB · Terunggah'), findsOneWidget);
     });
 
     testWidgets(
@@ -128,13 +183,16 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.scrollUntilVisible(
-          find.text('+ Tambah File Kajian (PDF)'),
+          find.textContaining('File Kajian (PDF)'),
           400,
           scrollable: find.byType(Scrollable).first,
         );
         tester
             .widget<OutlinedButton>(
-              find.widgetWithText(OutlinedButton, '+ Tambah File Kajian (PDF)'),
+              find.ancestor(
+                of: find.textContaining('File Kajian (PDF)'),
+                matching: find.byType(OutlinedButton),
+              ),
             )
             .onPressed!();
         await tester.pumpAndSettle();
@@ -200,9 +258,9 @@ void main() {
 
       tester
           .widget<OutlinedButton>(
-            find.widgetWithText(
-              OutlinedButton,
-              '+ Tambah File Site Plan (DWG/PDF)',
+            find.ancestor(
+              of: find.textContaining('File Site Plan (DWG/PDF)'),
+              matching: find.byType(OutlinedButton),
             ),
           )
           .onPressed!();
@@ -237,9 +295,9 @@ void main() {
       await tester.pumpAndSettle();
       tester
           .widget<OutlinedButton>(
-            find.widgetWithText(
-              OutlinedButton,
-              '+ Tambah File Site Plan (DWG/PDF)',
+            find.ancestor(
+              of: find.textContaining('File Site Plan (DWG/PDF)'),
+              matching: find.byType(OutlinedButton),
             ),
           )
           .onPressed!();
@@ -267,9 +325,9 @@ void main() {
       await tester.pumpAndSettle();
       tester
           .widget<OutlinedButton>(
-            find.widgetWithText(
-              OutlinedButton,
-              '+ Tambah File Site Plan (DWG/PDF)',
+            find.ancestor(
+              of: find.textContaining('File Site Plan (DWG/PDF)'),
+              matching: find.byType(OutlinedButton),
             ),
           )
           .onPressed!();
@@ -294,9 +352,9 @@ void main() {
       await tester.pumpAndSettle();
       tester
           .widget<OutlinedButton>(
-            find.widgetWithText(
-              OutlinedButton,
-              '+ Tambah File Site Plan (DWG/PDF)',
+            find.ancestor(
+              of: find.textContaining('File Site Plan (DWG/PDF)'),
+              matching: find.byType(OutlinedButton),
             ),
           )
           .onPressed!();
@@ -353,13 +411,13 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Langkah 4 dari 5'), findsOneWidget);
       await tester.tap(
-        find.widgetWithText(
-          OutlinedButton,
-          '+ Tambah File Site Plan (DWG/PDF)',
+        find.ancestor(
+          of: find.textContaining('File Site Plan (DWG/PDF)'),
+          matching: find.byType(OutlinedButton),
         ),
       );
       await tester.pumpAndSettle();
-      final next = find.text('Lanjut ke Review & Submit');
+      final next = find.text('Lanjut ke Review');
       await tester.tap(next);
       await tester.pumpAndSettle();
       expect(find.text('step 5'), findsOneWidget);
@@ -393,9 +451,9 @@ void main() {
 
         // Add DWG file
         await tester.tap(
-          find.widgetWithText(
-            OutlinedButton,
-            '+ Tambah File Site Plan (DWG/PDF)',
+          find.ancestor(
+            of: find.textContaining('File Site Plan (DWG/PDF)'),
+            matching: find.byType(OutlinedButton),
           ),
         );
         await tester.pumpAndSettle();

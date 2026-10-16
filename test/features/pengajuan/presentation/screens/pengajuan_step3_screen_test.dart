@@ -33,6 +33,25 @@ PlatformFile _pdf(String name, int size, {String? path}) {
 
 void main() {
   group('PengajuanStep3Screen', () {
+    testWidgets('semua aksi unggah memakai ikon cloud-upload tanpa plus', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async =>
+              const [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.cloud_upload_outlined), findsWidgets);
+      expect(find.byIcon(Icons.add), findsNothing);
+      expect(find.byIcon(Icons.add_circle_outline), findsNothing);
+    });
+
     testWidgets('renders all 11 slots and mandatory/optional presentation', (
       tester,
     ) async {
