@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,7 +55,195 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
   final Map<String, String> fileErrors = {};
   Set<String> clearedDocs = {};
   bool _isSubmittingRevision = false;
-  int _selectedCategoryIndex = 2; // Default to 'Teknis (4)' matching prototype
+  int _selectedCategoryIndex = 2; // Default to 'Teknis' matching prototype
+
+  static const List<String> _perusahaanKeys = [
+    'legalitas',
+    'nib',
+    'npwp_doc',
+    'ktp',
+    'asosiasi',
+  ];
+
+  static const List<String> _teknisKeys = [
+    'info_intensitas_ruang',
+    'site_plan_dwg',
+    'andalalin',
+    'rekomendasi_lingkungan',
+  ];
+
+  static String _formatUnknownDocKey(String docKey) {
+    if (docKey.trim().isEmpty) return 'Dokumen Tambahan';
+    final words = docKey
+        .replaceAll('_', ' ')
+        .replaceAll('-', ' ')
+        .split(' ')
+        .where((w) => w.isNotEmpty)
+        .map((w) => w[0].toUpperCase() + w.substring(1))
+        .join(' ');
+    return words.isNotEmpty ? words : 'Dokumen: $docKey';
+  }
+
+  static String _getRevisionDocTitle(String docKey) {
+    switch (docKey) {
+      case 'site_plan_dwg':
+        return 'Gambar Rencana Site Plan (DWG/PDF)';
+      case 'bukti_kepemilikan_lahan':
+        return 'Sertifikat Tanah / Hak Milik (SHM/HGB)';
+      case 'ktp':
+        return 'KTP Direktur / Penanggung Jawab';
+      case 'nib':
+        return 'Nomor Induk Berusaha (NIB)';
+      case 'npwp_doc':
+        return 'NPWP Perusahaan Wajib Pajak';
+      case 'legalitas':
+        return 'Akta Pendirian Perusahaan';
+      case 'asosiasi':
+        return 'Keanggotaan Asosiasi Pengembang';
+      case 'surat_permohonan':
+        return 'Surat Permohonan Site Plan';
+      case 'info_intensitas_ruang':
+        return 'Informasi Intensitas Ruang (KRK)';
+      case 'bukti_tpu':
+        return 'Penyediaan Lahan TPU';
+      case 'kkpr_doc':
+        return 'KKPR Kesesuaian Tata Ruang';
+      case 'pbg_induk':
+        return 'PBG Induk Persetujuan Gedung';
+      case 'rekomendasi_lingkungan':
+        return 'Dokumen UKL-UPL DLH';
+      case 'pelepasan_lahan':
+        return 'Surat Pelepasan Lahan Kas Desa';
+      case 'pernyataan_pelepasan':
+        return 'Surat Pernyataan Pelepasan Hak Lahan';
+      case 'pernyataan_keabsahan':
+        return 'Surat Pernyataan Keabsahan Dokumen';
+      case 'pernyataan_psu':
+        return 'Surat Penyerahan PSU ke Pemkot';
+      case 'andalalin':
+        return 'Rekomendasi Andalalin';
+      case 'peta_kontur':
+        return 'Peta Kontur & Elevasi';
+      case 'penyelidikan_tanah':
+        return 'Laporan Penyelidikan Tanah (Soil Test)';
+      default:
+        return _formatUnknownDocKey(docKey);
+    }
+  }
+
+  static String _getDocTitle(String docKey) {
+    switch (docKey) {
+      case 'legalitas':
+        return 'Akta Pendirian Perusahaan';
+      case 'nib':
+        return 'Nomor Induk Berusaha (NIB)';
+      case 'npwp_doc':
+        return 'NPWP Perusahaan';
+      case 'ktp':
+        return 'KTP Direktur / Penanggung Jawab';
+      case 'asosiasi':
+        return 'Keanggotaan Asosiasi Pengembang';
+      case 'surat_permohonan':
+        return 'Surat Permohonan Site Plan';
+      case 'bukti_kepemilikan_lahan':
+        return 'Bukti Kepemilikan Lahan (SHM)';
+      case 'bukti_tpu':
+        return 'Penyediaan Lahan TPU';
+      case 'kkpr_doc':
+        return 'KKPR Kesesuaian Tata Ruang';
+      case 'pbg_induk':
+        return 'PBG Induk Persetujuan Gedung';
+      case 'pelepasan_lahan':
+        return 'Surat Pelepasan Lahan Kas Desa';
+      case 'pernyataan_pelepasan':
+        return 'Surat Pernyataan Pelepasan Hak Lahan';
+      case 'pernyataan_keabsahan':
+        return 'Surat Pernyataan Keabsahan Dokumen';
+      case 'pernyataan_psu':
+        return 'Surat Penyerahan PSU ke Pemkot';
+      case 'info_intensitas_ruang':
+        return 'KRK Kota Tasikmalaya';
+      case 'site_plan_dwg':
+        return 'Peta Kontur & Elevasi';
+      case 'andalalin':
+        return 'Rekomendasi Andalalin';
+      case 'rekomendasi_lingkungan':
+        return 'Dokumen UKL-UPL DLH';
+      case 'peta_kontur':
+        return 'Peta Kontur & Topografi';
+      case 'penyelidikan_tanah':
+        return 'Laporan Penyelidikan Tanah';
+      default:
+        return _formatUnknownDocKey(docKey);
+    }
+  }
+
+  static IconData _getDocIcon(String docKey) {
+    switch (docKey) {
+      case 'site_plan_dwg':
+        return Icons.architecture;
+      case 'bukti_kepemilikan_lahan':
+        return Icons.verified_user_outlined;
+      case 'ktp':
+        return Icons.badge_outlined;
+      case 'nib':
+      case 'npwp_doc':
+      case 'legalitas':
+      case 'asosiasi':
+        return Icons.business_outlined;
+      case 'info_intensitas_ruang':
+      case 'peta_kontur':
+        return Icons.map_outlined;
+      case 'rekomendasi_lingkungan':
+      case 'bukti_tpu':
+        return Icons.park_outlined;
+      default:
+        return Icons.description_outlined;
+    }
+  }
+
+  List<String> _getCategoryKeys(int categoryIndex, Pengajuan item) {
+    final allKeys = item.uploadedDocs.keys.toList();
+    if (categoryIndex == 0) {
+      return allKeys.where((k) => _perusahaanKeys.contains(k)).toList();
+    } else if (categoryIndex == 2) {
+      return allKeys.where((k) => _teknisKeys.contains(k)).toList();
+    } else {
+      return allKeys
+          .where(
+            (k) => !_perusahaanKeys.contains(k) && !_teknisKeys.contains(k),
+          )
+          .toList();
+    }
+  }
+
+  String _computeDocSubtitle(String fileName, Pengajuan item, String docKey) {
+    if (fileName.isEmpty) return 'Berkas belum diunggah';
+
+    if (docKey == 'site_plan_dwg' && item.technicalFiles.length > 1) {
+      return '$fileName (+${item.technicalFiles.length - 1} berkas teknis lainnya)';
+    }
+
+    try {
+      final file = File(fileName);
+      if (file.existsSync()) {
+        final stat = file.statSync();
+        final sizeBytes = stat.size;
+        final sizeStr = sizeBytes >= 1024 * 1024
+            ? '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB'
+            : '${(sizeBytes / 1024).toStringAsFixed(0)} KB';
+        final dateStr = DateFormat('d MMM yyyy, HH:mm').format(stat.modified);
+        return '$fileName • $sizeStr • $dateStr';
+      }
+    } catch (_) {}
+
+    final ext = fileName.contains('.')
+        ? fileName.split('.').last.toUpperCase()
+        : 'DOC';
+    return item.tanggal.isNotEmpty
+        ? '$fileName • $ext • ${item.tanggal}'
+        : '$fileName • $ext';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -502,17 +691,19 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
 
   // ─── 3. PERSENTASE VERIFIKASI BERKAS ─────────────────────────────────────
   Widget _buildPersentaseCard(Pengajuan item) {
-    final totalCount = item.uploadedDocs.isNotEmpty
+    final bool hasVerifiedData = item.verifiedDocs.isNotEmpty;
+    final int totalCount = item.uploadedDocs.isNotEmpty
         ? item.uploadedDocs.length
-        : 20;
-    final verifiedCount = item.verifiedDocs.values
+        : item.verifiedDocs.length;
+    final int verifiedCount = item.verifiedDocs.values
         .where((v) => v == true)
         .length;
+
     // Calculate percentage dynamically from verified documents ratio
-    final percentage = totalCount > 0
-        ? ((verifiedCount / totalCount) * 100).round()
-        : 65;
-    final progress = (percentage / 100.0).clamp(0.0, 1.0);
+    final int? percentage = (hasVerifiedData && totalCount > 0)
+        ? ((verifiedCount / totalCount) * 100).round().clamp(0, 100)
+        : null;
+    final double progress = percentage != null ? (percentage / 100.0) : 0.0;
 
     return Card(
       elevation: 0,
@@ -542,11 +733,18 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      '$percentage%',
-                      style: AppTextStyles.titleLarge.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryRed,
-                      ),
+                      percentage != null
+                          ? '$percentage%'
+                          : 'Belum diverifikasi',
+                      style: percentage != null
+                          ? AppTextStyles.titleLarge.copyWith(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryRed,
+                            )
+                          : AppTextStyles.labelSmall.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
+                            ),
                     ),
                   ),
                 ),
@@ -559,23 +757,27 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 value: progress,
                 minHeight: 8,
                 backgroundColor: AppColors.primarySurfaceSoft,
-                valueColor: const AlwaysStoppedAnimation<Color>(
-                  AppColors.primaryRed,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  percentage != null ? AppColors.primaryRed : AppColors.grey300,
                 ),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.verified_outlined,
                   size: 16,
-                  color: AppColors.primaryRed,
+                  color: percentage != null
+                      ? AppColors.primaryRed
+                      : AppColors.textSecondary,
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
-                    '$verifiedCount dari $totalCount berkas terverifikasi resmi oleh verifikator Disperwaskim',
+                    percentage != null
+                        ? '$verifiedCount dari $totalCount berkas terverifikasi resmi oleh verifikator Disperwaskim'
+                        : 'Belum ada data verifikasi resmi oleh verifikator Disperwaskim',
                     style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
@@ -591,9 +793,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
 
   // ─── 4. SECTION PERLU PERBAIKAN ──────────────────────────────────────────
   Widget _buildSectionPerluPerbaikan(BuildContext context, Pengajuan item) {
-    final count = item.dokumenPerluRevisi.isNotEmpty
-        ? item.dokumenPerluRevisi.length
-        : 2;
+    final count = item.dokumenPerluRevisi.length;
 
     return Container(
       decoration: BoxDecoration(
@@ -687,7 +887,10 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  '"${item.catatanPerbaikan ?? 'Format site plan teknis belum mencantumkan koordinat UTM dan luasan RTH minimum 30%. Bukti kepemilikan tanah belum dilegalisir basah.'}"',
+                  item.catatanPerbaikan != null &&
+                          item.catatanPerbaikan!.trim().isNotEmpty
+                      ? '"${item.catatanPerbaikan!}"'
+                      : '"Tidak ada catatan perbaikan tambahan dari tim verifikator."',
                   style: AppTextStyles.bodyMedium.copyWith(
                     fontStyle: FontStyle.italic,
                     color: AppColors.textMain,
@@ -741,29 +944,47 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          // Item 1: Gambar Rencana Site Plan (DWG/PDF)
-          _buildRevisionItemCard(
-            context: context,
-            item: item,
-            docKey: 'site_plan_dwg',
-            icon: Icons.architecture,
-            title: 'Gambar Rencana Site Plan (DWG/PDF)',
-            status: 'Belum Diperbaiki',
-            catatan:
-                'Catatan: Tambahkan koordinat UTM & persentase luasan RTH minimum 30%.',
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          // Item 2: Sertifikat Tanah / Hak Milik (SHM/HGB)
-          _buildRevisionItemCard(
-            context: context,
-            item: item,
-            docKey: 'bukti_kepemilikan_lahan',
-            icon: Icons.verified_user_outlined,
-            title: 'Sertifikat Tanah / Hak Milik (SHM/HGB)',
-            status: 'Belum Diperbaiki',
-            catatan:
-                'Catatan: Bukti legalisir basah notaris/kantah belum terlihat jelas pada scan berkas.',
-          ),
+          if (item.dokumenPerluRevisi.isEmpty)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Text(
+                'Tidak ada berkas khusus yang ditandai untuk perbaikan saat ini.',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            )
+          else
+            ...item.dokumenPerluRevisi.map((docKey) {
+              final title = _getRevisionDocTitle(docKey);
+              final icon = _getDocIcon(docKey);
+              final note =
+                  (item.catatanPerbaikan != null &&
+                      item.catatanPerbaikan!.trim().isNotEmpty)
+                  ? 'Catatan verifikator: ${item.catatanPerbaikan!}'
+                  : 'Catatan: Berkas perlu diperbaiki dan diunggah ulang.';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                child: _buildRevisionItemCard(
+                  context: context,
+                  item: item,
+                  docKey: docKey,
+                  icon: icon,
+                  title: title,
+                  status: item.revisionSubmitted
+                      ? 'Sudah Diperbarui'
+                      : 'Belum Diperbaiki',
+                  catatan: note,
+                ),
+              );
+            }),
         ],
       ),
     );
@@ -1178,6 +1399,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
 
   // ─── 6. RIWAYAT CATATAN PERBAIKAN ────────────────────────────────────────
   Widget _buildRiwayatCatatanCard(Pengajuan item) {
+    final bool isDemo = item.id == 'REG-2026-0142';
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1215,10 +1438,10 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                     shape: BoxShape.circle,
                     color: Color(0xFFFEE2E2),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Text(
-                      '1',
-                      style: TextStyle(
+                      isDemo ? '1' : '0',
+                      style: const TextStyle(
                         color: AppColors.primaryRed,
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
@@ -1229,88 +1452,119 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Perbaikan ke-1',
-                    style: AppTextStyles.titleSmall.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textMain,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Flexible(
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      '15 Sep 2026',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF5F5),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFFECACA)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            if (isDemo) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.badge_outlined,
-                        size: 16,
-                        color: AppColors.primaryRed,
+                  Expanded(
+                    child: Text(
+                      'Perbaikan ke-1',
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMain,
                       ),
-                      const SizedBox(width: AppSpacing.xs),
-                      Expanded(
-                        child: Text(
-                          'Admin Verifikator: Ir. Deden Permana (Disperwaskim)',
-                          style: AppTextStyles.labelSmall.copyWith(
-                            color: AppColors.primaryRed,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11,
-                          ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        '15 Sep 2026',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    '"Mohon perbarui Keterangan Rencana Kota (KRK) terbaru dan peta kontur site plan elevasi format DWG/PDF berkoordinat."',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: AppColors.textMain,
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            // Document 1
-            _buildRiwayatDocRow(
-              icon: Icons.event_note_outlined,
-              name: 'Surat KRK',
-              status: 'Belum diperbaiki',
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            // Document 2
-            _buildRiwayatDocRow(
-              icon: Icons.map_outlined,
-              name: 'Peta Kontur & Topografi',
-              status: 'Belum diperbaiki',
-            ),
+              const SizedBox(height: AppSpacing.sm),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF5F5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.badge_outlined,
+                          size: 16,
+                          color: AppColors.primaryRed,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Expanded(
+                          child: Text(
+                            'Admin Verifikator: Ir. Deden Permana (Disperwaskim)',
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.primaryRed,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '"Mohon perbarui Keterangan Rencana Kota (KRK) terbaru dan peta kontur site plan elevasi format DWG/PDF berkoordinat."',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textMain,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              // Document 1
+              _buildRiwayatDocRow(
+                icon: Icons.event_note_outlined,
+                name: 'Surat KRK',
+                status: 'Belum diperbaiki',
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              // Document 2
+              _buildRiwayatDocRow(
+                icon: Icons.map_outlined,
+                name: 'Peta Kontur & Topografi',
+                status: 'Belum diperbaiki',
+              ),
+            ] else ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF8FAFC),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderSubtle),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.history_toggle_off_outlined,
+                      size: 20,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        'Belum ada riwayat perbaikan terdahulu untuk pengajuan ini.',
+                        style: AppTextStyles.bodySmall.copyWith(
+                          color: AppColors.textSecondary,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -1371,6 +1625,15 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
 
   // ─── 7. BERKAS TERKIRIM ──────────────────────────────────────────────────
   Widget _buildBerkasTerkirimCard(BuildContext context, Pengajuan item) {
+    final perusahaanKeys = _getCategoryKeys(0, item);
+    final perumahanKeys = _getCategoryKeys(1, item);
+    final teknisKeys = _getCategoryKeys(2, item);
+    final totalDocs = item.uploadedDocs.length;
+
+    final activeKeys = _selectedCategoryIndex == 0
+        ? perusahaanKeys
+        : (_selectedCategoryIndex == 1 ? perumahanKeys : teknisKeys);
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
@@ -1405,7 +1668,9 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      'Total 20 Berkas',
+                      totalDocs > 0
+                          ? 'Total $totalDocs Berkas'
+                          : 'Belum Ada Berkas',
                       style: AppTextStyles.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                       ),
@@ -1418,160 +1683,76 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
             // Category Tab Pills
             Row(
               children: [
-                _buildCategoryTab(0, 'Perusahaan (5)'),
+                _buildCategoryTab(0, 'Perusahaan (${perusahaanKeys.length})'),
                 const SizedBox(width: AppSpacing.xs),
-                _buildCategoryTab(1, 'Perumahan (11)'),
+                _buildCategoryTab(1, 'Perumahan (${perumahanKeys.length})'),
                 const SizedBox(width: AppSpacing.xs),
-                _buildCategoryTab(2, 'Teknis (4)'),
+                _buildCategoryTab(2, 'Teknis (${teknisKeys.length})'),
               ],
             ),
             const SizedBox(height: AppSpacing.md),
             // Tab Content
-            if (_selectedCategoryIndex == 2) ...[
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'KRK Kota Tasikmalaya',
-                subtitle: 'krk_greentasik_2024.pdf • 2.4 MB • 12 Sep',
-                status: 'Perlu Perbaikan',
-                isNeedsRevision: true,
-                fileName: 'krk_greentasik_2024.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'dwg',
-                name: 'Peta Kontur & Elevasi',
-                subtitle: 'siteplan_topografi_v1.dwg • 8.1 MB • 12 Sep',
-                status: 'Perlu Perbaikan',
-                isNeedsRevision: true,
-                fileName: 'siteplan_topografi_v1.dwg',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'doc',
-                name: 'Rekomendasi Andalalin',
-                subtitle: 'andalalin_dishub_final.pdf • 3.2 MB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'andalalin_dishub_final.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'doc',
-                name: 'Dokumen UKL-UPL DLH',
-                subtitle: 'persetujuan_lingkungan.pdf • 4.5 MB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'persetujuan_lingkungan.pdf',
-              ),
-            ] else if (_selectedCategoryIndex == 0) ...[
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'Akta Pendirian Perusahaan',
-                subtitle: 'akta_pendirian_pt_tasik_indah.pdf • 3.8 MB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'akta_pendirian_pt_tasik_indah.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'Nomor Induk Berusaha (NIB)',
-                subtitle: 'nib_tasik_indah_sentosa.pdf • 1.2 MB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'nib_tasik_indah_sentosa.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'NPWP Perusahaan',
-                subtitle: 'npwp_perusahaan_tasik_indah.pdf • 850 KB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'npwp_perusahaan_tasik_indah.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'KTP Direktur / Penanggung Jawab',
-                subtitle: 'ktp_direktur_rahmat.pdf • 920 KB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'ktp_direktur_rahmat.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'Keanggotaan Asosiasi Pengembang',
-                subtitle: 'kta_asosiasi_pengembang_rei.pdf • 1.5 MB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'kta_asosiasi_pengembang_rei.pdf',
-              ),
-            ] else ...[
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'Surat Permohonan Site Plan',
-                subtitle:
-                    'surat_permohonan_pengesahan_siteplan.pdf • 1.1 MB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'surat_permohonan_pengesahan_siteplan.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'Bukti Kepemilikan Lahan (SHM)',
-                subtitle:
-                    'sertifikat_shm_tanah_greentasik.pdf • 5.4 MB • 12 Sep',
-                status: 'Perlu Perbaikan',
-                isNeedsRevision: true,
-                fileName: 'sertifikat_shm_tanah_greentasik.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'Penyediaan Lahan TPU',
-                subtitle:
-                    'perjanjian_penyediaan_lahan_tpu.pdf • 2.1 MB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'perjanjian_penyediaan_lahan_tpu.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'KKPR Kesesuaian Tata Ruang',
-                subtitle:
-                    'kesesuaian_pemanfaatan_ruang_kkpr.pdf • 2.8 MB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'kesesuaian_pemanfaatan_ruang_kkpr.pdf',
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              _buildSentDocTile(
-                context: context,
-                iconType: 'pdf',
-                name: 'PBG Induk Persetujuan Gedung',
-                subtitle: 'pbg_induk_persetujuan_gedung.pdf • 4.2 MB • 12 Sep',
-                status: 'Terverifikasi',
-                isNeedsRevision: false,
-                fileName: 'pbg_induk_persetujuan_gedung.pdf',
-              ),
-            ],
+            if (activeKeys.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24,
+                  horizontal: 16,
+                ),
+                alignment: Alignment.center,
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.folder_open_outlined,
+                      size: 36,
+                      color: AppColors.grey400,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Belum ada berkas pada kategori ini.',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...activeKeys.map((docKey) {
+                final fileName = item.uploadedDocs[docKey] ?? '';
+                final name = _getDocTitle(docKey);
+                final isNeedsRev =
+                    item.dokumenPerluRevisi.contains(docKey) ||
+                    item.verifiedDocs[docKey] == false;
+                final status = isNeedsRev
+                    ? 'Perlu Perbaikan'
+                    : (item.verifiedDocs[docKey] == true
+                          ? 'Terverifikasi'
+                          : (item.verifiedDocs.containsKey(docKey)
+                                ? 'Belum Diverifikasi'
+                                : 'Terkirim'));
+                final lower = fileName.toLowerCase();
+                final iconType = lower.endsWith('.pdf')
+                    ? 'pdf'
+                    : (lower.endsWith('.dwg') || lower.endsWith('.dxf')
+                          ? 'dwg'
+                          : 'doc');
+                final subtitle = _computeDocSubtitle(fileName, item, docKey);
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: _buildSentDocTile(
+                    context: context,
+                    iconType: iconType,
+                    name: name,
+                    subtitle: subtitle,
+                    status: status,
+                    isNeedsRevision: isNeedsRev,
+                    fileName: fileName,
+                  ),
+                );
+              }),
           ],
         ),
       ),
@@ -1780,19 +1961,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
-            final Map<String, String> docLabels = {
-              'site_plan_dwg': 'Gambar Rencana Site Plan (DWG/PDF)',
-              'bukti_kepemilikan_lahan':
-                  'Sertifikat Tanah / Hak Milik (SHM/HGB)',
-              'ktp': 'KTP Direktur / Penanggung Jawab',
-              'nib': 'Nomor Induk Berusaha (NIB / OSS)',
-              'npwp_doc': 'NPWP Perusahaan Wajib Pajak',
-            };
-            final revKeys = List<String>.from(
-              item.dokumenPerluRevisi.isNotEmpty
-                  ? item.dokumenPerluRevisi
-                  : ['site_plan_dwg', 'bukti_kepemilikan_lahan'],
-            );
+            final revKeys = List<String>.from(item.dokumenPerluRevisi);
 
             return Container(
               decoration: const BoxDecoration(
@@ -1886,67 +2055,80 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    ...revKeys.map((key) {
-                      final label = docLabels[key] ?? key;
-                      final currentVal = clearedDocs.contains(key)
-                          ? localDocs[key]
-                          : (localDocs[key] ?? item.uploadedDocs[key]);
-                      final rule = FilePickerUtil.revisionRule(key);
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: DocUploadTile(
-                          title: label,
-                          subtitle:
-                              'Format ${rule.formatLabel}, maks. ${rule.maxMb} MB',
-                          fileName: currentVal,
-                          errorText: fileErrors[key],
-                          onUpload: () async {
-                            final file = await FilePickerUtil.pickSingleFile(
-                              allowedExtensions: rule.allowed,
-                            );
-                            if (!ctx.mounted || file == null) return;
-                            final violation = FilePickerUtil.violationOf(
-                              file,
-                              rule,
-                            );
-                            if (violation != null) {
-                              final text =
-                                  '${file.name}: ${violation.message} Berkas lama tetap tersimpan.';
-                              setModalState(() => fileErrors[key] = text);
-                              setState(() => fileErrors[key] = text);
-                              return;
-                            }
-                            setModalState(() {
-                              localDocs[key] = file.path ?? file.name;
-                              clearedDocs.remove(key);
-                              fileErrors.remove(key);
-                            });
-                            setState(() {
-                              localDocs[key] = file.path ?? file.name;
-                              clearedDocs.remove(key);
-                              fileErrors.remove(key);
-                            });
-                          },
-                          onDelete: () {
-                            setModalState(() {
-                              localDocs.remove(key);
-                              clearedDocs.add(key);
-                            });
-                            setState(() {
-                              localDocs.remove(key);
-                              clearedDocs.add(key);
-                            });
-                          },
+                    if (revKeys.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Text(
+                          'Tidak ada berkas yang perlu direvisi saat ini.',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: AppColors.textSecondary,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          textAlign: TextAlign.center,
                         ),
-                      );
-                    }),
+                      )
+                    else
+                      ...revKeys.map((key) {
+                        final label = _getRevisionDocTitle(key);
+                        final currentVal = clearedDocs.contains(key)
+                            ? localDocs[key]
+                            : (localDocs[key] ?? item.uploadedDocs[key]);
+                        final rule = FilePickerUtil.revisionRule(key);
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: DocUploadTile(
+                            title: label,
+                            subtitle:
+                                'Format ${rule.formatLabel}, maks. ${rule.maxMb} MB',
+                            fileName: currentVal,
+                            errorText: fileErrors[key],
+                            onUpload: () async {
+                              final file = await FilePickerUtil.pickSingleFile(
+                                allowedExtensions: rule.allowed,
+                              );
+                              if (!ctx.mounted || file == null) return;
+                              final violation = FilePickerUtil.violationOf(
+                                file,
+                                rule,
+                              );
+                              if (violation != null) {
+                                final text =
+                                    '${file.name}: ${violation.message} Berkas lama tetap tersimpan.';
+                                setModalState(() => fileErrors[key] = text);
+                                setState(() => fileErrors[key] = text);
+                                return;
+                              }
+                              setModalState(() {
+                                localDocs[key] = file.path ?? file.name;
+                                clearedDocs.remove(key);
+                                fileErrors.remove(key);
+                              });
+                              setState(() {
+                                localDocs[key] = file.path ?? file.name;
+                                clearedDocs.remove(key);
+                                fileErrors.remove(key);
+                              });
+                            },
+                            onDelete: () {
+                              setModalState(() {
+                                localDocs.remove(key);
+                                clearedDocs.add(key);
+                              });
+                              setState(() {
+                                localDocs.remove(key);
+                                clearedDocs.add(key);
+                              });
+                            },
+                          ),
+                        );
+                      }),
                     const SizedBox(height: 12),
                     AppButton.primary(
                       text: _isSubmittingRevision
                           ? 'Mengirim Revisi...'
                           : 'Kirim Revisi Dokumen',
-                      onPressed: _isSubmittingRevision
+                      onPressed: (_isSubmittingRevision || revKeys.isEmpty)
                           ? null
                           : () {
                               final missing = revKeys
@@ -1960,7 +2142,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      'Pilih berkas revisi untuk: ${missing.map((k) => docLabels[k] ?? k).join(', ')}.',
+                                      'Pilih berkas revisi untuk: ${missing.map((k) => _getRevisionDocTitle(k)).join(', ')}.',
                                     ),
                                   ),
                                 );
@@ -1982,7 +2164,9 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(result.message)),
                               );
-                              Navigator.of(ctx).pop();
+                              if (result.success) {
+                                Navigator.of(ctx).pop();
+                              }
                             },
                     ),
                   ],
@@ -2525,22 +2709,16 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Membuka SK Persetujuan Site Plan: ${item.skPersetujuanPath}',
-                        ),
-                      ),
-                    );
-                  },
+                  onPressed: () => context.push(
+                    '/unduh-sk-ba?id=${Uri.encodeComponent(item.id)}',
+                  ),
                   icon: const Icon(
                     Icons.card_membership,
                     color: Colors.white,
                     size: 16,
                   ),
                   label: const Text(
-                    'Unduh SK Persetujuan Site Plan (PDF)',
+                    'Lihat SK Persetujuan Site Plan',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

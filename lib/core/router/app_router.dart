@@ -259,8 +259,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/unduh-sk-ba',
-        builder: (_, state) =>
-            _withNotice(state, const UnduhSkBaScreen()),
+        builder: (_, state) => _withNotice(
+          state,
+          UnduhSkBaScreen(focusId: state.uri.queryParameters['id']),
+        ),
       ),
       GoRoute(
         path: '/template-berkas',

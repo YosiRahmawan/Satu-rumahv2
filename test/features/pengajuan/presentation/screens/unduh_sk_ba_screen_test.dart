@@ -78,6 +78,7 @@ void main() {
     Widget createWidgetUnderTest({
       List<Pengajuan>? submissions,
       MonitoringRepository? repo,
+      String? focusId,
     }) {
       return ProviderScope(
         overrides: [
@@ -88,9 +89,37 @@ void main() {
             repo ?? mockMonitoringRepo,
           ),
         ],
-        child: const MaterialApp(home: UnduhSkBaScreen()),
+        child: MaterialApp(home: UnduhSkBaScreen(focusId: focusId)),
       );
     }
+
+    testWidgets(
+      'focusId menaruh pengajuan yang dituju paling atas dan terbuka',
+      (tester) async {
+        await tester.pumpWidget(
+          createWidgetUnderTest(focusId: 'REG-2026-0084'),
+        );
+        await tester.pumpAndSettle();
+
+        final dituju = tester.getTopLeft(find.text('Mutiara Regency Tasik')).dy;
+        expect(
+          find.text('Griya Mangkubumi Asri'),
+          findsNothing,
+          reason: 'urutan kedua, di bawah layar atau belum terbangun',
+        );
+        expect(dituju, lessThan(500));
+        // Kartu dituju terbuka: keterangan SK belum tersedia terlihat.
+        expect(find.textContaining('belum disahkan'), findsWidgets);
+      },
+    );
+
+    testWidgets('tanpa focusId card pertama tetap yang terbuka', (
+      tester,
+    ) async {
+      await tester.pumpWidget(createWidgetUnderTest());
+      await tester.pumpAndSettle();
+      expect(find.text('Griya Mangkubumi Asri'), findsOneWidget);
+    });
 
     testWidgets('1. Renders header, search bar, and filter pills correctly', (
       tester,

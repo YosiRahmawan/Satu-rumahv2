@@ -13,12 +13,14 @@ class PengajuanListCard extends StatelessWidget {
     super.key,
     required this.item,
     required this.onOpen,
-    this.onDownloadSk,
+    this.onOpenSk,
   });
 
   final Pengajuan item;
   final VoidCallback onOpen;
-  final VoidCallback? onDownloadSk;
+
+  /// Membuka SK pengesahan pengajuan ini (layar Unduh SK & BA).
+  final VoidCallback? onOpenSk;
   static final _number = NumberFormat.decimalPattern('id_ID');
 
   static (int step, int total, String tahapLabel, double progress) stepInfoOf(
@@ -52,6 +54,59 @@ class PengajuanListCard extends StatelessWidget {
     }
     if (item.statusTahap == StatusTahapPengajuan.selesai) return 'Disetujui';
     return 'Dalam Proses';
+  }
+
+  /// "Lihat SK" membuka layar Unduh SK & BA untuk pengajuan ini. Tanpa berkas
+  /// SK tercatat, teks tenang "SK belum tersedia" menggantikannya.
+  Widget _buildSkLink() {
+    final hasSk = (item.skPersetujuanPath ?? '').trim().isNotEmpty;
+    if (!hasSk || onOpenSk == null) {
+      return const Flexible(
+        child: Text(
+          'SK belum tersedia',
+          textAlign: TextAlign.end,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.slate400,
+          ),
+        ),
+      );
+    }
+    return Semantics(
+      button: true,
+      label: 'Lihat SK Pengesahan',
+      child: InkWell(
+        onTap: onOpenSk,
+        borderRadius: BorderRadius.circular(8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.description_outlined,
+                  size: 14,
+                  color: Color(0xFF15803D),
+                ),
+                SizedBox(width: 4),
+                Text(
+                  'Lihat SK',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF15803D),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -355,7 +410,8 @@ class PengajuanListCard extends StatelessWidget {
                                       vertical: 8,
                                     ),
                                     minimumSize: const Size(0, 36),
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
                                     backgroundColor: AppColors.primaryRed,
                                     foregroundColor: Colors.white,
                                     elevation: 0,
@@ -367,7 +423,10 @@ class PengajuanListCard extends StatelessWidget {
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                  icon: const Icon(Icons.edit_document, size: 16),
+                                  icon: const Icon(
+                                    Icons.edit_document,
+                                    size: 16,
+                                  ),
                                   label: const Text('Perbaiki Berkas'),
                                 )
                               : Text(
@@ -380,7 +439,8 @@ class PengajuanListCard extends StatelessWidget {
 
                           final minWidthNeeded = canRevise ? 270.0 : 360.0;
                           final bool useMultiRow =
-                              isTextScaled || constraints.maxWidth < minWidthNeeded;
+                              isTextScaled ||
+                              constraints.maxWidth < minWidthNeeded;
 
                           if (useMultiRow) {
                             return Column(
@@ -439,7 +499,7 @@ class PengajuanListCard extends StatelessWidget {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              item.nomorSk ?? '648/SK-SP/DPKP/2026',
+                              item.nomorSk ?? 'Belum tersedia',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
@@ -452,26 +512,28 @@ class PengajuanListCard extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFECFDF5),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFA7F3D0)),
-                        ),
-                        child: Text(
-                          item.tanggalSk ?? item.tanggal,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF065F46),
+                      if (item.tanggalSk != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFECFDF5),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFA7F3D0)),
+                          ),
+                          child: Text(
+                            item.tanggalSk!,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF065F46),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -583,78 +645,7 @@ class PengajuanListCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    if (complete)
-                      InkWell(
-                        onTap: () {
-                          if (onDownloadSk != null) {
-                            onDownloadSk!();
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Mengunduh SK Pengesahan: ${item.nomorSk ?? "648/SK-SP/DPKP/2026"} (Dummy/Local Preview)',
-                                ),
-                                backgroundColor: AppColors.statusSuccessText,
-                                duration: const Duration(seconds: 3),
-                              ),
-                            );
-                          }
-                        },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.description_outlined,
-                                size: 14,
-                                color: Color(0xFF15803D),
-                              ),
-                              SizedBox(width: 4),
-                              Text(
-                                'Lihat SK',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF15803D),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      )
-                    else
-                      InkWell(
-                        onTap: onOpen,
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 4,
-                            vertical: 2,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'Detail',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryRed,
-                                ),
-                              ),
-                              SizedBox(width: 2),
-                              Icon(
-                                Icons.chevron_right,
-                                size: 15,
-                                color: AppColors.primaryRed,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                    if (complete) _buildSkLink(),
                   ],
                 ),
               ),

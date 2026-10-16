@@ -47,7 +47,10 @@ enum DocFilterCategory {
 /// - UI States: Loading (AppHousingLoader), Error, Empty State, Search Not Found, Data Cards
 /// - Expandable Project Cards dengan status validitas dokumen riil
 class UnduhSkBaScreen extends ConsumerStatefulWidget {
-  const UnduhSkBaScreen({super.key});
+  const UnduhSkBaScreen({super.key, this.focusId});
+
+  /// Pengajuan yang dibuka dan ditaruh paling atas (dari tombol Lihat SK).
+  final String? focusId;
 
   @override
   ConsumerState<UnduhSkBaScreen> createState() => _UnduhSkBaScreenState();
@@ -157,8 +160,18 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
               data: (allSubmissions) {
                 if (!_hasInitializedExpandedState &&
                     allSubmissions.isNotEmpty) {
-                  // Default card pertama dibuka agar pengguna langsung melihat contoh dokumen
-                  _expandedProjectIds.add(allSubmissions.first.id);
+                  // Pengajuan yang dituju (dari Lihat SK) dibuka; bila tidak ada,
+                  // card pertama dibuka agar pengguna langsung melihat contoh.
+                  final focusId = widget.focusId;
+                  final target = focusId == null
+                      ? null
+                      : allSubmissions.where((e) => e.id == focusId).toList();
+                  _expandedProjectIds.add(
+                    (target != null && target.isNotEmpty
+                            ? target.first
+                            : allSubmissions.first)
+                        .id,
+                  );
                   _hasInitializedExpandedState = true;
                 }
                 return _buildDataView(allSubmissions);
@@ -268,6 +281,13 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildDataView(List<Pengajuan> allSubmissions) {
     final filteredItems = _filterSubmissions(allSubmissions);
+    final focusId = widget.focusId;
+    if (focusId != null) {
+      // Pengajuan yang dituju ditaruh paling atas agar langsung terlihat.
+      filteredItems.sort(
+        (a, b) => (a.id == focusId ? 0 : 1).compareTo(b.id == focusId ? 0 : 1),
+      );
+    }
     final bool isDatabaseEmpty = allSubmissions.isEmpty;
     final bool isFilteredEmpty = !isDatabaseEmpty && filteredItems.isEmpty;
 
@@ -922,7 +942,7 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
                   Expanded(
                     child: Text(
                       item.statusTahap == StatusTahapPengajuan.selesai
-                          ? 'Dokumen SK telah disahkan, berkas fisik sedang disinkronisasikan oleh sistem.'
+                          ? 'Berkas SK belum tersedia untuk dibuka di perangkat ini.'
                           : 'Pengajuan masih dalam proses verifikasi atau belum disahkan oleh Disperwaskim.',
                       style: const TextStyle(
                         fontFamily: 'Plus Jakarta Sans',

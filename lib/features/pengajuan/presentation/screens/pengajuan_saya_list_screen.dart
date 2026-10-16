@@ -192,6 +192,9 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                           onOpen: () => context.push(
                             '/pengajuan/detail/${Uri.encodeComponent(item.id)}',
                           ),
+                          onOpenSk: () => context.push(
+                            '/unduh-sk-ba?id=${Uri.encodeComponent(item.id)}',
+                          ),
                         ),
                       ),
                     ],

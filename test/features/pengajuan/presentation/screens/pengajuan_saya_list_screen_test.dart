@@ -121,6 +121,12 @@ Future<ProviderContainer> _pump(
         path: '/pengajuan/step1',
         builder: (_, __) => const Scaffold(body: Text('Form pengajuan baru')),
       ),
+      GoRoute(
+        path: '/unduh-sk-ba',
+        builder: (_, state) => Scaffold(
+          body: Text('Layar SK id=${state.uri.queryParameters['id']}'),
+        ),
+      ),
     ],
   );
   addTearDown(router.dispose);
@@ -292,6 +298,41 @@ void main() {
       expect(buttonRect.left - timestampRect.right, greaterThanOrEqualTo(8.0));
     },
   );
+
+  testWidgets('Lihat SK pada kartu selesai membuka layar SK pengajuan itu', (
+    tester,
+  ) async {
+    final items = _items();
+    items[2] = items[2].copyWith(skPersetujuanPath: 'SK_Persetujuan.pdf');
+    await _pump(tester, items: items);
+    await tester.scrollUntilVisible(
+      find.text('Lihat SK'),
+      200,
+      scrollable: _scroll,
+    );
+    await tester.ensureVisible(find.text('Lihat SK'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Lihat SK'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Layar SK id='), findsOneWidget);
+    expect(find.text('Layar SK id=REG-2025-0310'), findsOneWidget);
+    // Tidak ada snackbar "Dummy/Local Preview" lagi.
+    expect(find.textContaining('Dummy'), findsNothing);
+  });
+
+  testWidgets('kartu selesai tanpa berkas SK menampilkan keterangan tenang', (
+    tester,
+  ) async {
+    await _pump(tester);
+    await tester.scrollUntilVisible(
+      find.text('SK belum tersedia'),
+      200,
+      scrollable: _scroll,
+    );
+    expect(find.text('SK belum tersedia'), findsOneWidget);
+    expect(find.text('Lihat SK'), findsNothing);
+  });
 
   testWidgets('submitted revision never offers another edit action', (
     tester,
