@@ -70,7 +70,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('BERKAS SAAT INI (DITOLAK)'), findsOneWidget);
-        expect(find.text('Versi 1'), findsOneWidget);
+        expect(find.text('Versi 1'), findsNothing);
         expect(find.text('KTP_Direktur_Lama.pdf'), findsOneWidget);
         expect(find.textContaining('1.2 MB'), findsOneWidget);
 
@@ -268,16 +268,31 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
-        find.text('Lihat Riwayat Versi Dokumen (2 Versi)'),
+        find.text('Lihat Riwayat Versi Dokumen'),
         100,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.tap(find.text('Lihat Riwayat Versi Dokumen (2 Versi)'));
+      await tester.tap(find.text('Lihat Riwayat Versi Dokumen'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Riwayat Versi Dokumen (2 Versi)'), findsWidgets);
-      expect(find.text('Versi 2 (Revisi Siap Kirim)'), findsOneWidget);
-      expect(find.text('Versi 1 (Ditolak Verifikator)'), findsOneWidget);
+      // Belum ada data versi di model: empty state, tanpa versi karangan.
+      expect(find.text('Riwayat Versi Dokumen'), findsWidgets);
+      expect(find.text('Belum ada riwayat versi'), findsOneWidget);
+      expect(
+        find.text(
+          'Riwayat perubahan dokumen akan muncul setelah berkas diperbarui.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Versi 2'), findsNothing);
+      expect(find.textContaining('Versi 1'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byType(BottomSheet),
+          matching: find.textContaining('Mar 2026'),
+        ),
+        findsNothing,
+      );
       expect(find.text('Tutup'), findsOneWidget);
 
       await tester.tap(find.text('Tutup'));

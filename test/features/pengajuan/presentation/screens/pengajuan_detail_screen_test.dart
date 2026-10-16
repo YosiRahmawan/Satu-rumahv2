@@ -97,7 +97,14 @@ void main() {
         // 5. Linimasa Status (6 Tahapan)
         await tester.scrollUntilVisible(find.text('Linimasa Status'), 200);
         expect(find.text('Linimasa Status'), findsOneWidget);
-        expect(find.text('6 Tahapan'), findsOneWidget);
+        // Accordion default tertutup: ringkasan terlihat, tahapan belum.
+        expect(
+          find.text('6 Tahapan · Saat ini: Perlu Perbaikan'),
+          findsOneWidget,
+        );
+        expect(find.text('Pengajuan Dibuat (Draft)'), findsNothing);
+        await tester.tap(find.text('Linimasa Status'));
+        await tester.pumpAndSettle();
         expect(find.text('Pengajuan Dibuat (Draft)'), findsOneWidget);
         expect(find.text('Pengajuan Dikirim'), findsOneWidget);
         expect(find.text('Verifikasi Berkas oleh Admin'), findsOneWidget);
@@ -113,6 +120,9 @@ void main() {
           200,
         );
         expect(find.text('Riwayat Catatan Perbaikan'), findsOneWidget);
+        expect(find.text('Perbaikan ke-1'), findsNothing);
+        await tester.tap(find.text('Riwayat Catatan Perbaikan'));
+        await tester.pumpAndSettle();
         expect(find.text('Perbaikan ke-1'), findsOneWidget);
         expect(find.textContaining('Ir. Deden Permana'), findsOneWidget);
         expect(find.text('Surat KRK'), findsOneWidget);
@@ -408,5 +418,597 @@ void main() {
         expect(find.text('Belum'), findsWidgets);
       },
     );
+  });
+
+  group('Phase 1: Dynamic Data Binding & Integrity Tests', () {
+    testWidgets(
+      '2. & 3. Renders dynamic revision documents for 1, 2, and 3 docs with different keys',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // 1 revision doc
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'REG-TEST-REV-1',
+                namaPerumahan: 'Perumahan Single Revision',
+                namaPt: 'PT Single',
+                namaDirektur: 'Direktur A',
+                npwpPerusahaan: '01.111.111.1-111.000',
+                luasLahan: 10000,
+                jumlahUnit: 50,
+                tipePerumahan: 'Komersil',
+                status: 'Perlu Perbaikan',
+                statusTahap: StatusTahapPengajuan.perluPerbaikan,
+                tanggal: '16 Okt 2026',
+                uploadedDocs: const {'ktp': 'ktp_direktur.pdf'},
+                verifiedDocs: const {'ktp': false},
+                dokumenPerluRevisi: const ['ktp'],
+              ),
+            );
+
+        // 3 revision docs
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'REG-TEST-REV-3',
+                namaPerumahan: 'Perumahan Triple Revision',
+                namaPt: 'PT Triple',
+                namaDirektur: 'Direktur B',
+                npwpPerusahaan: '02.222.222.2-222.000',
+                luasLahan: 20000,
+                jumlahUnit: 100,
+                tipePerumahan: 'Subsidi',
+                status: 'Perlu Perbaikan',
+                statusTahap: StatusTahapPengajuan.perluPerbaikan,
+                tanggal: '16 Okt 2026',
+                uploadedDocs: const {
+                  'ktp': 'ktp_direktur.pdf',
+                  'surat_permohonan': 'surat_permohonan.pdf',
+                  'pbg_induk': 'pbg_induk.pdf',
+                },
+                verifiedDocs: const {
+                  'ktp': false,
+                  'surat_permohonan': false,
+                  'pbg_induk': false,
+                },
+                dokumenPerluRevisi: const [
+                  'ktp',
+                  'surat_permohonan',
+                  'pbg_induk',
+                ],
+              ),
+            );
+
+        // Test 1 revision doc
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-TEST-REV-1'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Perlu Perbaikan (1 Berkas)'), findsOneWidget);
+        expect(find.text('KTP Direktur / Penanggung Jawab'), findsOneWidget);
+
+        // Test 3 revision docs
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-TEST-REV-3'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Perlu Perbaikan (3 Berkas)'), findsOneWidget);
+        expect(find.text('KTP Direktur / Penanggung Jawab'), findsOneWidget);
+        expect(find.text('Surat Permohonan Site Plan'), findsOneWidget);
+        expect(find.text('PBG Induk Persetujuan Gedung'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '4. Fallback for unknown docKey displays formatted title safely without dropping item',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'REG-TEST-UNKNOWN-KEY',
+                namaPerumahan: 'Perumahan Unknown Key',
+                namaPt: 'PT Unknown',
+                namaDirektur: 'Direktur X',
+                npwpPerusahaan: '03.333.333.3-333.000',
+                luasLahan: 15000,
+                jumlahUnit: 80,
+                tipePerumahan: 'Komersil',
+                status: 'Perlu Perbaikan',
+                statusTahap: StatusTahapPengajuan.perluPerbaikan,
+                tanggal: '16 Okt 2026',
+                uploadedDocs: const {
+                  'surat_rekomendasi_bupati_khusus': 'rekom_bupati.pdf',
+                },
+                verifiedDocs: const {'surat_rekomendasi_bupati_khusus': false},
+                dokumenPerluRevisi: const ['surat_rekomendasi_bupati_khusus'],
+              ),
+            );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-TEST-UNKNOWN-KEY'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Perlu Perbaikan (1 Berkas)'), findsOneWidget);
+        expect(find.text('Surat Rekomendasi Bupati Khusus'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      '5. & 6. Verification progress: shows "Belum diverifikasi" when no data, and accurate % when partial',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // No verification data
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'REG-TEST-NO-VERIF',
+                namaPerumahan: 'Perumahan No Verif',
+                namaPt: 'PT No Verif',
+                namaDirektur: 'Direktur N',
+                npwpPerusahaan: '04.444.444.4-444.000',
+                luasLahan: 12000,
+                jumlahUnit: 60,
+                tipePerumahan: 'Subsidi',
+                status: 'Perlu Perbaikan',
+                statusTahap: StatusTahapPengajuan.perluPerbaikan,
+                tanggal: '16 Okt 2026',
+                uploadedDocs: const {'ktp': 'ktp.pdf', 'nib': 'nib.pdf'},
+                verifiedDocs: const {},
+                dokumenPerluRevisi: const ['ktp'],
+              ),
+            );
+
+        // Partial verification data: 2 of 4 = 50%
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'REG-TEST-PARTIAL-VERIF',
+                namaPerumahan: 'Perumahan Partial Verif',
+                namaPt: 'PT Partial',
+                namaDirektur: 'Direktur P',
+                npwpPerusahaan: '05.555.555.5-555.000',
+                luasLahan: 14000,
+                jumlahUnit: 70,
+                tipePerumahan: 'Komersil',
+                status: 'Perlu Perbaikan',
+                statusTahap: StatusTahapPengajuan.perluPerbaikan,
+                tanggal: '16 Okt 2026',
+                uploadedDocs: const {
+                  'ktp': 'ktp.pdf',
+                  'nib': 'nib.pdf',
+                  'npwp_doc': 'npwp.pdf',
+                  'legalitas': 'akta.pdf',
+                },
+                verifiedDocs: const {
+                  'ktp': true,
+                  'nib': true,
+                  'npwp_doc': false,
+                  'legalitas': false,
+                },
+                dokumenPerluRevisi: const ['npwp_doc'],
+              ),
+            );
+
+        // Test unverified state
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-TEST-NO-VERIF'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Belum diverifikasi'), findsOneWidget);
+        expect(
+          find.text(
+            'Belum ada data verifikasi resmi oleh verifikator Disperwaskim',
+          ),
+          findsOneWidget,
+        );
+        expect(find.text('0%'), findsNothing);
+        expect(find.text('65%'), findsNothing);
+
+        // Test partial verification state
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-TEST-PARTIAL-VERIF'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('50%'), findsOneWidget);
+        expect(
+          find.text(
+            '2 dari 4 berkas terverifikasi resmi oleh verifikator Disperwaskim',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('7. Empty uploaded docs renders empty state without crashing', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container
+          .read(pengajuanListProvider.notifier)
+          .addPengajuan(
+            Pengajuan(
+              id: 'REG-TEST-EMPTY-DOCS',
+              namaPerumahan: 'Perumahan Empty Docs',
+              namaPt: 'PT Empty',
+              namaDirektur: 'Direktur E',
+              npwpPerusahaan: '06.666.666.6-666.000',
+              luasLahan: 10000,
+              jumlahUnit: 40,
+              tipePerumahan: 'Subsidi',
+              status: 'Perlu Perbaikan',
+              statusTahap: StatusTahapPengajuan.perluPerbaikan,
+              tanggal: '16 Okt 2026',
+              uploadedDocs: const {},
+              verifiedDocs: const {},
+              dokumenPerluRevisi: const [],
+            ),
+          );
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: PengajuanDetailScreen(id: 'REG-TEST-EMPTY-DOCS'),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(find.text('Berkas Terkirim'), 200);
+      expect(find.text('Belum Ada Berkas'), findsOneWidget);
+      expect(find.text('Belum ada berkas pada kategori ini.'), findsOneWidget);
+    });
+
+    testWidgets(
+      '8. & 9. Correct file icons for PDF and DWG and multi-file technical subtitle',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'REG-TEST-FORMATS',
+                namaPerumahan: 'Perumahan Formats',
+                namaPt: 'PT Formats',
+                namaDirektur: 'Direktur F',
+                npwpPerusahaan: '07.777.777.7-777.000',
+                luasLahan: 18000,
+                jumlahUnit: 90,
+                tipePerumahan: 'Komersil',
+                status: 'Perlu Perbaikan',
+                statusTahap: StatusTahapPengajuan.perluPerbaikan,
+                tanggal: '16 Okt 2026',
+                uploadedDocs: const {
+                  'site_plan_dwg': 'design_siteplan.dwg',
+                  'rekomendasi_lingkungan': 'amdal_lingkungan.pdf',
+                },
+                technicalFiles: const [
+                  'design_siteplan.dwg',
+                  'kontur_tambahan.dwg',
+                ],
+                verifiedDocs: const {
+                  'site_plan_dwg': false,
+                  'rekomendasi_lingkungan': true,
+                },
+                dokumenPerluRevisi: const ['site_plan_dwg'],
+              ),
+            );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-TEST-FORMATS'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(find.text('Berkas Terkirim'), 200);
+        expect(find.byIcon(Icons.picture_as_pdf), findsOneWidget);
+        expect(find.byIcon(Icons.map_outlined), findsOneWidget);
+        // Multi-file subtitle
+        expect(
+          find.textContaining('(+1 berkas teknis lainnya)'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      '10. Pratinjau Dokumen opens simulation bottom sheet for valid file',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-2026-0142'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.scrollUntilVisible(find.text('Berkas Terkirim'), 200);
+
+        // Tap the preview icon for KRK
+        final previewBtns = find.byTooltip('Lihat Dokumen');
+        expect(previewBtns, findsWidgets);
+        await tester.tap(previewBtns.first);
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Pratinjau Dokumen Simulasi'),
+          findsOneWidget,
+        );
+        expect(find.text('Tutup'), findsOneWidget);
+        await tester.tap(find.text('Tutup'));
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      '12. Non-Perlu Perbaikan submission (Dalam Proses / Selesai) does not show Perlu Perbaikan section',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'REG-TEST-SELESAI',
+                namaPerumahan: 'Perumahan Green Park Selesai',
+                namaPt: 'PT Green Park',
+                namaDirektur: 'Direktur S',
+                npwpPerusahaan: '08.888.888.8-888.000',
+                luasLahan: 25000,
+                jumlahUnit: 150,
+                tipePerumahan: 'Komersil',
+                status: 'Selesai',
+                statusTahap: StatusTahapPengajuan.selesai,
+                tanggal: '16 Okt 2026',
+                uploadedDocs: const {'ktp': 'ktp.pdf'},
+                verifiedDocs: const {'ktp': true},
+                dokumenPerluRevisi: const [],
+              ),
+            );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-TEST-SELESAI'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Perlu Perbaikan'), findsNothing);
+        expect(find.text('Perbaiki Sekarang'), findsNothing);
+        expect(find.text('Timeline Pengajuan'), findsOneWidget);
+      },
+    );
+  });
+
+  group('Phase 2: Detail Perlu Perbaikan - accordion dan revisi', () {
+    Pengajuan revisi(String id, {String? catatan}) => Pengajuan(
+      id: id,
+      namaPerumahan: 'Perumahan Fase Dua',
+      namaPt: 'PT Dua',
+      namaDirektur: 'Direktur Dua',
+      npwpPerusahaan: '03.333.333.3-333.000',
+      luasLahan: 5000,
+      jumlahUnit: 30,
+      tipePerumahan: 'Subsidi',
+      status: 'Perlu Perbaikan',
+      statusTahap: StatusTahapPengajuan.perluPerbaikan,
+      tanggal: '16 Okt 2026',
+      uploadedDocs: const {'ktp': 'ktp.pdf'},
+      verifiedDocs: const {'ktp': false},
+      dokumenPerluRevisi: const ['ktp'],
+      catatanPerbaikan: catatan,
+    );
+
+    Future<void> pumpDetail(
+      WidgetTester tester,
+      Pengajuan item, {
+      double width = 390,
+      double scale = 1,
+    }) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(pengajuanListProvider.notifier).addPengajuan(item);
+      await tester.binding.setSurfaceSize(Size(width, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            theme: AppTheme.lightTheme,
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: Size(width, 844),
+                textScaler: TextScaler.linear(scale),
+              ),
+              child: PengajuanDetailScreen(id: item.id),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('Linimasa dan Riwayat default tertutup, buka-tutup berfungsi', (
+      tester,
+    ) async {
+      await pumpDetail(tester, revisi('REG-P2-1'));
+
+      await tester.scrollUntilVisible(find.text('Linimasa Status'), 200);
+      expect(find.text('Pengajuan Dikirim'), findsNothing);
+      await tester.tap(find.text('Linimasa Status'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pengajuan Dikirim'), findsOneWidget);
+      await tester.tap(find.text('Linimasa Status'));
+      await tester.pumpAndSettle();
+      expect(find.text('Pengajuan Dikirim'), findsNothing);
+
+      await tester.scrollUntilVisible(
+        find.text('Riwayat Catatan Perbaikan'),
+        200,
+      );
+      expect(find.textContaining('Belum ada riwayat'), findsNothing);
+      await tester.tap(find.text('Riwayat Catatan Perbaikan'));
+      await tester.pumpAndSettle();
+      // Tanpa data riwayat: empty state jujur, tanpa verifikator karangan.
+      expect(find.textContaining('Belum ada riwayat'), findsOneWidget);
+      expect(find.textContaining('Deden'), findsNothing);
+    });
+
+    testWidgets('catatan global tampil sekali dan tidak diulang per berkas', (
+      tester,
+    ) async {
+      await pumpDetail(
+        tester,
+        revisi('REG-P2-2', catatan: 'Koordinat UTM belum ada.'),
+      );
+
+      expect(find.text('"Koordinat UTM belum ada."'), findsOneWidget);
+      expect(find.textContaining('Catatan verifikator:'), findsNothing);
+      expect(find.text('KTP Direktur / Penanggung Jawab'), findsWidgets);
+    });
+
+    testWidgets(
+      'pengajuan non-demo tidak menampilkan waktu atau catatan karangan',
+      (tester) async {
+        await pumpDetail(tester, revisi('REG-P2-7'));
+        await tester.scrollUntilVisible(find.text('Linimasa Status'), 200);
+        await tester.tap(find.text('Linimasa Status'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('10 Sep 2026, 09:30 WIB'), findsNothing);
+        expect(find.text('14 Sep 2026, 11:00 WIB'), findsNothing);
+        expect(find.text('15 Sep 2026, 16:20 WIB'), findsNothing);
+        expect(find.textContaining('14:15 WIB'), findsNothing);
+        expect(find.text('Waktu belum tercatat'), findsWidgets);
+        expect(find.textContaining('masa berlaku habis'), findsNothing);
+      },
+    );
+
+    testWidgets('bottom sheet tidak menampilkan berkas lama sebagai Dipilih', (
+      tester,
+    ) async {
+      await pumpDetail(tester, revisi('REG-P2-8'));
+      await tester.tap(find.text('Perbaiki Sekarang'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(find.textContaining('Dipilih'), findsNothing);
+      expect(find.text('ktp.pdf'), findsNothing);
+    });
+
+    testWidgets('CTA Perbaiki Sekarang tetap fixed dan membuka bottom sheet', (
+      tester,
+    ) async {
+      await pumpDetail(tester, revisi('REG-P2-3'));
+      final cta = find.text('Perbaiki Sekarang');
+      expect(cta, findsOneWidget);
+      // Fixed di bawah layar: posisi tidak berubah saat konten digulir.
+      final before = tester.getTopLeft(cta);
+      await tester.drag(
+        find.byType(SingleChildScrollView),
+        const Offset(0, -400),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(cta), before);
+
+      await tester.tap(cta);
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+    });
+
+    testWidgets('tautan Perbarui Berkas berukuran minimal 44dp', (
+      tester,
+    ) async {
+      await pumpDetail(tester, revisi('REG-P2-4'));
+      final link = find
+          .ancestor(
+            of: find.text('Perbarui Berkas'),
+            matching: find.byType(InkWell),
+          )
+          .first;
+      expect(tester.getSize(link).height, greaterThanOrEqualTo(44));
+    });
+
+    for (final width in [360.0, 390.0, 420.0]) {
+      testWidgets('tanpa overflow saat semua accordion terbuka ($width)', (
+        tester,
+      ) async {
+        await pumpDetail(tester, revisi('REG-P2-5'), width: width);
+        for (final title in ['Linimasa Status', 'Riwayat Catatan Perbaikan']) {
+          await tester.scrollUntilVisible(find.text(title), 200);
+          await tester.tap(find.text(title));
+          await tester.pumpAndSettle();
+        }
+        expect(tester.takeException(), isNull);
+      });
+    }
+
+    testWidgets('tanpa overflow pada teks 2x dengan accordion terbuka', (
+      tester,
+    ) async {
+      await pumpDetail(tester, revisi('REG-P2-6'), scale: 2);
+      for (final title in ['Linimasa Status', 'Riwayat Catatan Perbaikan']) {
+        await tester.scrollUntilVisible(find.text(title), 200);
+        await tester.tap(find.text(title));
+        await tester.pumpAndSettle();
+      }
+      expect(tester.takeException(), isNull);
+    });
   });
 }

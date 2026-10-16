@@ -19,6 +19,7 @@ import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 import '../providers/pengajuan_form_controller.dart';
 import '../providers/pengajuan_verifikasi_controller.dart';
+import '../widgets/pengajuan_list_card.dart';
 
 /// Returns a real linked final monitoring record with an available BA path.
 /// A developer detail must never synthesize a report for export.
@@ -39,6 +40,14 @@ MonitoringModel? findLinkedFinalMonitoring(
   }
   return null;
 }
+
+/// Judul dokumen yang sama dengan yang dipakai Detail Pengajuan, dibagikan ke
+/// layar lain (Perbarui Berkas) agar nama dokumen tidak tersalin ganda.
+String pengajuanRevisionDocTitle(String docKey) =>
+    _PengajuanDetailScreenState._getRevisionDocTitle(docKey);
+
+String pengajuanDocTitle(String docKey) =>
+    _PengajuanDetailScreenState._getDocTitle(docKey);
 
 class PengajuanDetailScreen extends ConsumerStatefulWidget {
   final String id;
@@ -605,6 +614,13 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
         ? 'Belum tersedia'
         : (formattedValue ?? rawValue!.trim());
 
+    final valueStyle = AppTextStyles.bodyMedium.copyWith(
+      fontWeight: FontWeight.w700,
+      color: AppColors.textMain,
+      fontSize: 13.5,
+      height: 1.3,
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -622,25 +638,28 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
           overflow: TextOverflow.ellipsis,
         ),
         const SizedBox(height: 3),
-        Text(
-          displayText,
-          style: isUnavailable
-              ? AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textTertiary,
-                  fontStyle: FontStyle.italic,
-                  fontSize: 13,
-                  height: 1.3,
-                )
-              : AppTextStyles.bodyMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textMain,
-                  fontSize: 13.5,
-                  height: 1.3,
-                ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
+        // Nomor tanpa spasi (NPWP, NIB) mengecil agar tidak terpotong di
+        // tengah angka pada layar sempit; teks biasa tetap membungkus.
+        isUnavailable || displayText.contains(' ')
+            ? Text(
+                displayText,
+                style: isUnavailable
+                    ? AppTextStyles.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textTertiary,
+                        fontStyle: FontStyle.italic,
+                        fontSize: 13,
+                        height: 1.3,
+                      )
+                    : valueStyle,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              )
+            : FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(displayText, style: valueStyle, maxLines: 1),
+              ),
       ],
     );
   }
@@ -918,26 +937,33 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
               InkWell(
                 onTap: () =>
                     context.push('/pengajuan/perbarui-berkas/${item.id}'),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Perbarui Berkas',
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.primaryRed,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
-                        ),
+                borderRadius: BorderRadius.circular(8),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 44),
+                  child: Align(
+                    widthFactor: 1,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Perbarui Berkas',
+                            style: AppTextStyles.labelSmall.copyWith(
+                              color: AppColors.primaryRed,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          const Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 10,
+                            color: AppColors.primaryRed,
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 2),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 10,
-                        color: AppColors.primaryRed,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -965,11 +991,6 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
             ...item.dokumenPerluRevisi.map((docKey) {
               final title = _getRevisionDocTitle(docKey);
               final icon = _getDocIcon(docKey);
-              final note =
-                  (item.catatanPerbaikan != null &&
-                      item.catatanPerbaikan!.trim().isNotEmpty)
-                  ? 'Catatan verifikator: ${item.catatanPerbaikan!}'
-                  : 'Catatan: Berkas perlu diperbaiki dan diunggah ulang.';
               return Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
                 child: _buildRevisionItemCard(
@@ -981,7 +1002,6 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                   status: item.revisionSubmitted
                       ? 'Sudah Diperbarui'
                       : 'Belum Diperbaiki',
-                  catatan: note,
                 ),
               );
             }),
@@ -997,7 +1017,6 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
     required IconData icon,
     required String title,
     required String status,
-    required String catatan,
   }) {
     final hasNewUpload = localDocs[docKey]?.trim().isNotEmpty == true;
     final displayStatus = hasNewUpload ? 'File Dipilih' : status;
@@ -1070,22 +1089,6 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(AppRadii.small.topLeft.x),
-              border: Border.all(color: AppColors.borderSubtle),
-            ),
-            child: Text(
-              catatan,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -1093,137 +1096,92 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
 
   // ─── 5. LINIMASA STATUS (6 TAHAPAN) ──────────────────────────────────────
   Widget _buildLinimasaStatusCard(Pengajuan item) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.borderSubtle),
-      ),
-      color: AppColors.cardSurface,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.trending_up,
-                  color: AppColors.primaryRed,
-                  size: 20,
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    'Linimasa Status',
-                    style: AppTextStyles.titleMedium.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textMain,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(
-                        AppRadii.small.topLeft.x,
-                      ),
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '6 Tahapan',
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            // 6 Steps
-            _buildStepRow(
-              title: 'Pengajuan Dibuat (Draft)',
-              timestamp: '10 Sep 2026, 09:30 WIB',
-              statusBadge: 'Selesai',
-              badgeColor: const Color(0xFFDCFCE7),
-              badgeTextColor: const Color(0xFF16A34A),
-              isCompleted: true,
-              isActive: false,
-              isLast: false,
-            ),
-            _buildStepRow(
-              title: 'Pengajuan Dikirim',
-              timestamp: item.tanggal.trim().isNotEmpty
-                  ? '${item.tanggal}, 14:15 WIB'
-                  : '12 Sep 2026, 14:15 WIB',
-              statusBadge: 'Selesai',
-              badgeColor: const Color(0xFFDCFCE7),
-              badgeTextColor: const Color(0xFF16A34A),
-              isCompleted: true,
-              isActive: false,
-              isLast: false,
-            ),
-            _buildStepRow(
-              title: 'Verifikasi Berkas oleh Admin',
-              timestamp: '14 Sep 2026, 11:00 WIB',
-              statusBadge: 'Selesai',
-              badgeColor: const Color(0xFFDCFCE7),
-              badgeTextColor: const Color(0xFF16A34A),
-              isCompleted: true,
-              isActive: false,
-              isLast: false,
-            ),
-            _buildStepRow(
-              title: 'Perlu Perbaikan',
-              timestamp: item.revisionSubmitted
-                  ? 'Revisi terkirim, menunggu verifikasi Admin'
-                  : '15 Sep 2026, 16:20 WIB',
-              statusBadge: item.revisionSubmitted ? 'Menunggu Review' : 'Aktif',
-              badgeColor: item.revisionSubmitted
-                  ? const Color(0xFFEFF6FF)
-                  : const Color(0xFFFEF3C7),
-              badgeTextColor: item.revisionSubmitted
-                  ? const Color(0xFF1D4ED8)
-                  : const Color(0xFFB45309),
-              isCompleted: false,
-              isActive: true,
-              isLast: false,
-              calloutNote: item.catatanPerbaikan?.trim().isNotEmpty == true
-                  ? item.catatanPerbaikan
-                  : 'Terdapat 2 berkas teknis yang masa berlaku habis dan format peta kontur belum sesuai koordinat UTM.',
-            ),
-            _buildStepRow(
-              title: 'Survey Lapangan Dijadwalkan',
-              timestamp: 'Menunggu perbaikan diserahkan',
-              statusBadge: 'Belum',
-              badgeColor: const Color(0xFFF1F5F9),
-              badgeTextColor: const Color(0xFF94A3B8),
-              isCompleted: false,
-              isActive: false,
-              isLast: false,
-            ),
-            _buildStepRow(
-              title: 'Hasil Verifikasi: SK Disetujui / Ditolak',
-              timestamp: 'Menunggu seluruh tahapan selesai',
-              statusBadge: 'Belum',
-              badgeColor: const Color(0xFFF1F5F9),
-              badgeTextColor: const Color(0xFF94A3B8),
-              isCompleted: false,
-              isActive: false,
-              isLast: true,
-            ),
-          ],
-        ),
+    // Waktu per tahap belum dicatat di model; contoh waktu hanya untuk seed
+    // demo REG-2026-0142. Pengajuan lain tidak boleh menampilkan waktu karangan.
+    final isDemo = item.id == 'REG-2026-0142';
+    const belumTercatat = 'Waktu belum tercatat';
+    return _DetailAccordion(
+      icon: Icons.trending_up,
+      title: 'Linimasa Status',
+      summary: '6 Tahapan · Saat ini: ${PengajuanListCard.statusLabelOf(item)}',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 6 Steps
+          _buildStepRow(
+            title: 'Pengajuan Dibuat (Draft)',
+            timestamp: isDemo ? '10 Sep 2026, 09:30 WIB' : belumTercatat,
+            statusBadge: 'Selesai',
+            badgeColor: const Color(0xFFDCFCE7),
+            badgeTextColor: const Color(0xFF16A34A),
+            isCompleted: true,
+            isActive: false,
+            isLast: false,
+          ),
+          _buildStepRow(
+            title: 'Pengajuan Dikirim',
+            timestamp: item.tanggal.trim().isEmpty
+                ? belumTercatat
+                : (isDemo ? '${item.tanggal}, 14:15 WIB' : item.tanggal),
+            statusBadge: 'Selesai',
+            badgeColor: const Color(0xFFDCFCE7),
+            badgeTextColor: const Color(0xFF16A34A),
+            isCompleted: true,
+            isActive: false,
+            isLast: false,
+          ),
+          _buildStepRow(
+            title: 'Verifikasi Berkas oleh Admin',
+            timestamp: isDemo ? '14 Sep 2026, 11:00 WIB' : belumTercatat,
+            statusBadge: 'Selesai',
+            badgeColor: const Color(0xFFDCFCE7),
+            badgeTextColor: const Color(0xFF16A34A),
+            isCompleted: true,
+            isActive: false,
+            isLast: false,
+          ),
+          _buildStepRow(
+            title: 'Perlu Perbaikan',
+            timestamp: item.revisionSubmitted
+                ? 'Revisi terkirim, menunggu verifikasi Admin'
+                : (isDemo
+                      ? '15 Sep 2026, 16:20 WIB'
+                      : (item.diperbarui ?? belumTercatat)),
+            statusBadge: item.revisionSubmitted ? 'Menunggu Review' : 'Aktif',
+            badgeColor: item.revisionSubmitted
+                ? const Color(0xFFEFF6FF)
+                : const Color(0xFFFEF3C7),
+            badgeTextColor: item.revisionSubmitted
+                ? const Color(0xFF1D4ED8)
+                : const Color(0xFFB45309),
+            isCompleted: false,
+            isActive: true,
+            isLast: false,
+            calloutNote: item.catatanPerbaikan?.trim().isNotEmpty == true
+                ? item.catatanPerbaikan
+                : null,
+          ),
+          _buildStepRow(
+            title: 'Survey Lapangan Dijadwalkan',
+            timestamp: 'Menunggu perbaikan diserahkan',
+            statusBadge: 'Belum',
+            badgeColor: const Color(0xFFF1F5F9),
+            badgeTextColor: const Color(0xFF94A3B8),
+            isCompleted: false,
+            isActive: false,
+            isLast: false,
+          ),
+          _buildStepRow(
+            title: 'Hasil Verifikasi: SK Disetujui / Ditolak',
+            timestamp: 'Menunggu seluruh tahapan selesai',
+            statusBadge: 'Belum',
+            badgeColor: const Color(0xFFF1F5F9),
+            badgeTextColor: const Color(0xFF94A3B8),
+            isCompleted: false,
+            isActive: false,
+            isLast: true,
+          ),
+        ],
       ),
     );
   }
@@ -1401,172 +1359,144 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
   Widget _buildRiwayatCatatanCard(Pengajuan item) {
     final bool isDemo = item.id == 'REG-2026-0142';
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: AppColors.borderSubtle),
+    return _DetailAccordion(
+      icon: Icons.speaker_notes_outlined,
+      title: 'Riwayat Catatan Perbaikan',
+      trailing: Container(
+        width: 22,
+        height: 22,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color(0xFFFEE2E2),
+        ),
+        child: Center(
+          child: Text(
+            isDemo ? '1' : '0',
+            style: const TextStyle(
+              color: AppColors.primaryRed,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+            ),
+          ),
+        ),
       ),
-      color: AppColors.cardSurface,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (isDemo) ...[
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(
-                  Icons.speaker_notes_outlined,
-                  color: AppColors.primaryRed,
-                  size: 20,
-                ),
-                const SizedBox(width: AppSpacing.xs),
                 Expanded(
                   child: Text(
-                    'Riwayat Catatan Perbaikan',
-                    style: AppTextStyles.titleMedium.copyWith(
+                    'Perbaikan ke-1',
+                    style: AppTextStyles.titleSmall.copyWith(
                       fontWeight: FontWeight.w700,
                       color: AppColors.textMain,
                     ),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.xs),
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xFFFEE2E2),
-                  ),
-                  child: Center(
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
                     child: Text(
-                      isDemo ? '1' : '0',
-                      style: const TextStyle(
-                        color: AppColors.primaryRed,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
+                      '15 Sep 2026',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.md),
-            if (isDemo) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF5F5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Perbaikan ke-1',
-                      style: AppTextStyles.titleSmall.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textMain,
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.badge_outlined,
+                        size: 16,
+                        color: AppColors.primaryRed,
                       ),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Text(
+                          'Admin Verifikator: Ir. Deden Permana (Disperwaskim)',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.primaryRed,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '"Mohon perbarui Keterangan Rencana Kota (KRK) terbaru dan peta kontur site plan elevasi format DWG/PDF berkoordinat."',
+                    style: AppTextStyles.bodyMedium.copyWith(
+                      color: AppColors.textMain,
                     ),
                   ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Flexible(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        '15 Sep 2026',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            // Document 1
+            _buildRiwayatDocRow(
+              icon: Icons.event_note_outlined,
+              name: 'Surat KRK',
+              status: 'Belum diperbaiki',
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            // Document 2
+            _buildRiwayatDocRow(
+              icon: Icons.map_outlined,
+              name: 'Peta Kontur & Topografi',
+              status: 'Belum diperbaiki',
+            ),
+          ] else ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.borderSubtle),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.history_toggle_off_outlined,
+                    size: 20,
+                    color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Belum ada riwayat perbaikan terdahulu untuk pengajuan ini.',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.sm),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF5F5),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFFECACA)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.badge_outlined,
-                          size: 16,
-                          color: AppColors.primaryRed,
-                        ),
-                        const SizedBox(width: AppSpacing.xs),
-                        Expanded(
-                          child: Text(
-                            'Admin Verifikator: Ir. Deden Permana (Disperwaskim)',
-                            style: AppTextStyles.labelSmall.copyWith(
-                              color: AppColors.primaryRed,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      '"Mohon perbarui Keterangan Rencana Kota (KRK) terbaru dan peta kontur site plan elevasi format DWG/PDF berkoordinat."',
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        color: AppColors.textMain,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              // Document 1
-              _buildRiwayatDocRow(
-                icon: Icons.event_note_outlined,
-                name: 'Surat KRK',
-                status: 'Belum diperbaiki',
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              // Document 2
-              _buildRiwayatDocRow(
-                icon: Icons.map_outlined,
-                name: 'Peta Kontur & Topografi',
-                status: 'Belum diperbaiki',
-              ),
-            ] else ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(AppSpacing.md),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.borderSubtle),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.history_toggle_off_outlined,
-                      size: 20,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        'Belum ada riwayat perbaikan terdahulu untuk pengajuan ini.',
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -1843,6 +1773,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
               children: [
                 Text(
                   name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.titleSmall.copyWith(
                     fontWeight: FontWeight.w700,
                     color: AppColors.textMain,
@@ -1852,6 +1784,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 11,
@@ -1997,10 +1931,12 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                           color: AppColors.primaryRed,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          'Upload Berkas Perbaikan',
-                          style: AppTextStyles.titleMedium.copyWith(
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            'Upload Berkas Perbaikan',
+                            style: AppTextStyles.titleMedium.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ],
@@ -2070,9 +2006,9 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                     else
                       ...revKeys.map((key) {
                         final label = _getRevisionDocTitle(key);
-                        final currentVal = clearedDocs.contains(key)
-                            ? localDocs[key]
-                            : (localDocs[key] ?? item.uploadedDocs[key]);
+                        // Hanya berkas pengganti yang baru dipilih; berkas lama
+                        // tidak ditampilkan sebagai "Dipilih".
+                        final currentVal = localDocs[key];
                         final rule = FilePickerUtil.revisionRule(key);
 
                         return Padding(
@@ -2885,6 +2821,122 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Kartu lipat untuk bagian sekunder Detail Pengajuan (Linimasa, Riwayat).
+/// Default tertutup; isi muncul dengan animasi singkat.
+class _DetailAccordion extends StatefulWidget {
+  const _DetailAccordion({
+    required this.icon,
+    required this.title,
+    required this.child,
+    this.summary,
+    this.trailing,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? summary;
+  final Widget? trailing;
+  final Widget child;
+
+  @override
+  State<_DetailAccordion> createState() => _DetailAccordionState();
+}
+
+class _DetailAccordionState extends State<_DetailAccordion> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: const BorderSide(color: AppColors.borderSubtle),
+      ),
+      color: AppColors.cardSurface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Semantics(
+            button: true,
+            expanded: _expanded,
+            label: widget.title,
+            child: InkWell(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 56),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(widget.icon, color: AppColors.primaryRed, size: 20),
+                      const SizedBox(width: AppSpacing.xs),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.title,
+                              style: AppTextStyles.titleMedium.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textMain,
+                              ),
+                            ),
+                            if (widget.summary != null)
+                              Text(
+                                widget.summary!,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (widget.trailing != null) ...[
+                        const SizedBox(width: AppSpacing.xs),
+                        widget.trailing!,
+                      ],
+                      const SizedBox(width: AppSpacing.xs),
+                      AnimatedRotation(
+                        turns: _expanded ? 0.5 : 0,
+                        duration: const Duration(milliseconds: 200),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _expanded
+                ? Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.xs,
+                      AppSpacing.md,
+                      AppSpacing.md,
+                    ),
+                    child: widget.child,
+                  )
+                : const SizedBox(width: double.infinity),
           ),
         ],
       ),

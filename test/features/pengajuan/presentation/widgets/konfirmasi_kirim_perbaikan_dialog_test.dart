@@ -1,7 +1,9 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satu_rumah/core/theme/app_theme.dart';
+import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/perbarui_berkas_screen.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/widgets/konfirmasi_kirim_perbaikan_dialog.dart';
 
@@ -53,7 +55,11 @@ void main() {
             child: child!,
           );
         },
-        home: PerbaruiBerkasScreen(id: id),
+        home: PerbaruiBerkasScreen(
+          id: id,
+          pickerSeam: ({allowedExtensions}) async =>
+              PlatformFile(name: 'berkas_pengganti.pdf', size: 1024 * 1024),
+        ),
       ),
     );
   }
@@ -119,34 +125,35 @@ void main() {
       expect(confirmCalled, isFalse);
     });
 
-    testWidgets('tapping Ya, Kirim calls onConfirm and prevents double submit', (
-      tester,
-    ) async {
-      int confirmCalls = 0;
-      await tester.pumpWidget(
-        buildDialogTestWidget(
-          jumlahBerkas: 3,
-          onConfirm: () async {
-            confirmCalls++;
-            await Future.delayed(const Duration(milliseconds: 100));
-          },
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'tapping Ya, Kirim calls onConfirm and prevents double submit',
+      (tester) async {
+        int confirmCalls = 0;
+        await tester.pumpWidget(
+          buildDialogTestWidget(
+            jumlahBerkas: 3,
+            onConfirm: () async {
+              confirmCalls++;
+              await Future.delayed(const Duration(milliseconds: 100));
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Open Dialog'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Dialog'));
+        await tester.pumpAndSettle();
 
-      // Tap Ya, Kirim twice rapidly
-      await tester.tap(find.text('Ya, Kirim'));
-      await tester.pump(const Duration(milliseconds: 20));
-      // Second tap while submitting should be ignored
-      await tester.tap(find.byType(ElevatedButton).last, warnIfMissed: false);
-      await tester.pumpAndSettle();
+        // Tap Ya, Kirim twice rapidly
+        await tester.tap(find.text('Ya, Kirim'));
+        await tester.pump(const Duration(milliseconds: 20));
+        // Second tap while submitting should be ignored
+        await tester.tap(find.byType(ElevatedButton).last, warnIfMissed: false);
+        await tester.pumpAndSettle();
 
-      expect(confirmCalls, equals(1));
-      expect(find.text('Kirim Perbaikan Berkas?'), findsNothing);
-    });
+        expect(confirmCalls, equals(1));
+        expect(find.text('Kirim Perbaikan Berkas?'), findsNothing);
+      },
+    );
 
     testWidgets('dialog responsive at 360dp without overflow', (tester) async {
       await tester.binding.setSurfaceSize(const Size(360, 800));
@@ -188,82 +195,79 @@ void main() {
         await tester.pumpWidget(buildScreenTestWidget());
         await tester.pumpAndSettle();
 
-        // Initial: 1/3 Berkas updated
-        expect(find.text('1/3 Berkas'), findsOneWidget);
+        final pengajuan =
+            ProviderScope.containerOf(
+                  tester.element(find.byType(PerbaruiBerkasScreen)),
+                )
+                .read(pengajuanListProvider)
+                .firstWhere((e) => e.id == 'REG-2026-0142');
+        final total = pengajuan.dokumenPerluRevisi.length;
+        expect(total, 2);
 
-        // Update Card 2 (Bukti Kepemilikan Lahan): Fase 2 -> Fase 3
-        await tester.scrollUntilVisible(
-          find.widgetWithText(ElevatedButton, 'Perbarui Berkas').first,
-          100,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.tap(
-          find.widgetWithText(ElevatedButton, 'Perbarui Berkas').first,
-        );
-        await tester.pumpAndSettle();
+        // Awal: belum ada dokumen yang diperbarui.
+        expect(find.text('0/$total Berkas'), findsOneWidget);
 
-        // Fase 3 -> Fase 2: Kirim Perbaikan pops back
-        expect(find.text('Kirim Perbaikan'), findsOneWidget);
-        await tester.tap(find.text('Kirim Perbaikan'));
-        await tester.pumpAndSettle();
+        Future<void> perbaruiDokumenPertama() async {
+          final button = find
+              .ancestor(
+                of: find.textContaining('Perbarui Berkas'),
+                matching: find.byType(ElevatedButton),
+              )
+              .first;
+          await tester.ensureVisible(button);
+          await tester.pumpAndSettle();
+          await tester.tap(button);
+          await tester.pumpAndSettle();
 
-        // Now 2/3 Berkas updated
-        expect(find.text('2/3 Berkas'), findsOneWidget);
+          // Fase 3: pilih berkas pengganti lalu kirim.
+          await tester.scrollUntilVisible(
+            find.text('Pilih Berkas'),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.tap(find.text('Pilih Berkas'));
+          await tester.pumpAndSettle();
+          expect(find.text('Kirim Perbaikan'), findsOneWidget);
+          await tester.tap(find.text('Kirim Perbaikan'));
+          await tester.pumpAndSettle();
+        }
 
-        // Update Card 3 (Site Plan): Fase 2 -> Fase 3
-        await tester.scrollUntilVisible(
-          find.widgetWithText(ElevatedButton, 'Perbarui Berkas (3 File)'),
-          100,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.tap(
-          find.widgetWithText(ElevatedButton, 'Perbarui Berkas (3 File)'),
-        );
-        await tester.pumpAndSettle();
+        await perbaruiDokumenPertama();
+        expect(find.text('1/$total Berkas'), findsOneWidget);
 
-        // Fase 3 -> Fase 2: Kirim Perbaikan pops back
-        expect(find.text('Kirim Perbaikan'), findsOneWidget);
-        await tester.tap(find.text('Kirim Perbaikan'));
-        await tester.pumpAndSettle();
-
-        // Clear snackbars immediately
+        await perbaruiDokumenPertama();
         ScaffoldMessenger.of(
           tester.element(find.byType(PerbaruiBerkasScreen)),
         ).clearSnackBars();
         await tester.pumpAndSettle();
 
-        // Now 3/3 Berkas updated! All revised documents are ready.
-        expect(find.text('3/3 Berkas'), findsOneWidget);
+        expect(find.text('$total/$total Berkas'), findsOneWidget);
         expect(
           find.text('Semua berkas siap ditinjau dan dikirim'),
           findsOneWidget,
         );
 
-        // Tap Tinjau Perbaikan -> Fase 4 Dialog appears!
+        // Tinjau Perbaikan -> dialog Fase 4.
         await tester.tap(find.text('Tinjau Perbaikan'));
         await tester.pumpAndSettle();
 
         expect(find.text('Kirim Perbaikan Berkas?'), findsOneWidget);
-        expect(find.textContaining('3 berkas'), findsOneWidget);
+        expect(find.textContaining('$total berkas'), findsOneWidget);
         expect(find.text('Batal'), findsOneWidget);
         expect(find.text('Ya, Kirim'), findsOneWidget);
 
-        // Test Batal: closes dialog without sending
+        // Batal: dialog tertutup tanpa mengirim.
         await tester.tap(find.text('Batal'));
         await tester.pumpAndSettle();
-
         expect(find.text('Kirim Perbaikan Berkas?'), findsNothing);
-        expect(find.text('3/3 Berkas'), findsOneWidget);
+        expect(find.text('$total/$total Berkas'), findsOneWidget);
 
-        // Re-open Fase 4 dialog and confirm with Ya, Kirim
+        // Buka lagi dan konfirmasi.
         await tester.tap(find.text('Tinjau Perbaikan'));
         await tester.pumpAndSettle();
-
-        expect(find.text('Kirim Perbaikan Berkas?'), findsOneWidget);
         await tester.tap(find.text('Ya, Kirim'));
         await tester.pumpAndSettle();
 
-        // Verifies success SnackBar and transition to Fase 5 (StatusPerbaikanBerkasScreen)
         expect(
           find.text('Revisi berkas berhasil dikirim ke Verifikator!'),
           findsOneWidget,

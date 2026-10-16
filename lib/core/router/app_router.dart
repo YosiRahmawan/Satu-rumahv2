@@ -227,6 +227,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/pengajuan/perbarui-berkas/:id/dokumen/:docKey',
+        // Tanpa data dokumen layar ini hanya menampilkan contoh prototipe,
+        // jadi akses langsung dialihkan ke daftar dokumen pengajuan.
+        redirect: (_, state) => state.extra == null
+            ? '/pengajuan/perbarui-berkas/${state.pathParameters['id'] ?? ''}'
+            : null,
         builder: (_, state) {
           final id = state.pathParameters['id'] ?? 'REG-2026-0142';
           final docKey = state.pathParameters['docKey'] ?? 'ktp';

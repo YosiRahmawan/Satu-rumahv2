@@ -39,17 +39,23 @@ class _DetailPerbaruiDokumenScreenState
   @override
   void initState() {
     super.initState();
+    // Contoh prototipe (berkas dan catatan terisi) hanya saat layar dibuka
+    // tanpa data dokumen. Dengan data dokumen nyata, tidak ada berkas
+    // pengganti sampai pengguna memilihnya.
+    final isPrototype = widget.docData == null;
     final defaultCatatan =
         widget.docData?['catatanPengembang'] as String? ??
-        'Sudah dipindai ulang dengan resolusi 300 DPI warna jelas.';
+        (isPrototype
+            ? 'Sudah dipindai ulang dengan resolusi 300 DPI warna jelas.'
+            : '');
     _catatanController = TextEditingController(text: defaultCatatan);
 
-    // Default file terpilih sesuai acceptance prototype Fase 3
     _selectedFileName =
         widget.docData?['revisiFileName'] as String? ??
-        'KTP_Direktur_Revisi_2026.pdf';
+        (isPrototype ? 'KTP_Direktur_Revisi_2026.pdf' : null);
     _selectedFileSize =
-        widget.docData?['revisiFileSize'] as String? ?? '2.1 MB';
+        widget.docData?['revisiFileSize'] as String? ??
+        (isPrototype ? '2.1 MB' : null);
   }
 
   @override
@@ -57,6 +63,15 @@ class _DetailPerbaruiDokumenScreenState
     _catatanController.dispose();
     super.dispose();
   }
+
+  /// Tanpa data dokumen, layar menampilkan contoh prototipe (termasuk tanggal
+  /// contoh). Dengan data dokumen nyata, waktu yang tidak tercatat ditulis
+  /// apa adanya, bukan dikarang.
+  bool get _isPrototype => widget.docData == null;
+  String get _adminDateText =>
+      _isPrototype ? '14 Mar 2026' : 'Waktu belum tercatat';
+  String get _oldUploadText =>
+      _isPrototype ? 'Diunggah 12 Mar 2026' : 'Waktu unggah belum tercatat';
 
   FileRule get _rule => FilePickerUtil.revisionRule(widget.docKey);
 
@@ -80,8 +95,10 @@ class _DetailPerbaruiDokumenScreenState
 
   String get _adminReason {
     if (widget.docData != null && widget.docData!['catatan'] != null) {
-      final c = widget.docData!['catatan'] as String;
-      return c.replaceFirst(RegExp(r'^Catatan:\s*'), '');
+      final c = (widget.docData!['catatan'] as String)
+          .replaceFirst(RegExp(r'^Catatan:\s*'), '')
+          .trim();
+      return c.isEmpty ? 'Belum ada catatan revisi dari verifikator.' : c;
     }
     return 'Scan buram, nomor NIK dan tanda tangan pada halaman depan tidak terbaca jelas saat verifikasi keabsahan.';
   }
@@ -395,7 +412,7 @@ class _DetailPerbaruiDokumenScreenState
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Riwayat Versi Dokumen (2 Versi)',
+                      'Riwayat Versi Dokumen',
                       style: AppTextStyles.titleMedium.copyWith(
                         fontWeight: FontWeight.w700,
                         color: AppColors.textMain,
@@ -413,28 +430,41 @@ class _DetailPerbaruiDokumenScreenState
                 ),
               ),
               const SizedBox(height: 16),
-              _buildRiwayatCard(
-                versionLabel: 'Versi 2 (Revisi Siap Kirim)',
-                badgeLabel: 'Siap Diunggah',
-                badgeBg: AppColors.statusSuccessSurface,
-                badgeFg: AppColors.statusSuccessText,
-                fileName: _selectedFileName ?? 'KTP_Direktur_Revisi_2026.pdf',
-                metaText:
-                    '${_selectedFileSize ?? '2.1 MB'} • 14 Mar 2026, 10:20 WIB',
-                noteText:
-                    'Catatan Pengembang: ${_catatanController.text.trim()}',
-                iconColor: AppColors.statusSuccessText,
-              ),
-              const SizedBox(height: 12),
-              _buildRiwayatCard(
-                versionLabel: 'Versi 1 (Ditolak Verifikator)',
-                badgeLabel: 'Ditolak',
-                badgeBg: const Color(0xFFFEE2E2),
-                badgeFg: const Color(0xFFDC2626),
-                fileName: _oldFileName,
-                metaText: '$_oldFileSize • 12 Mar 2026, 09:15 WIB',
-                noteText: 'Catatan Admin: $_adminReason',
-                iconColor: const Color(0xFFDC2626),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.slate50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderSubtle),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.history_toggle_off_outlined,
+                      size: 32,
+                      color: AppColors.slate400,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Belum ada riwayat versi',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.titleSmall.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMain,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Riwayat perubahan dokumen akan muncul setelah berkas diperbarui.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               SizedBox(
@@ -455,99 +485,6 @@ class _DetailPerbaruiDokumenScreenState
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildRiwayatCard({
-    required String versionLabel,
-    required String badgeLabel,
-    required Color badgeBg,
-    required Color badgeFg,
-    required String fileName,
-    required String metaText,
-    required String noteText,
-    required Color iconColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.slate50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderSubtle),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
-            children: [
-              Text(
-                versionLabel,
-                style: AppTextStyles.labelMedium.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textMain,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: badgeBg,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  badgeLabel,
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: badgeFg,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 10,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.picture_as_pdf_outlined, size: 20, color: iconColor),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fileName,
-                      style: AppTextStyles.bodyMedium.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textMain,
-                        fontSize: 13,
-                      ),
-                    ),
-                    Text(
-                      metaText,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textMuted,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            noteText,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.slate600,
-              fontSize: 11,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -691,7 +628,7 @@ class _DetailPerbaruiDokumenScreenState
               ),
               const SizedBox(width: 8),
               Text(
-                '14 Mar 2026',
+                _adminDateText,
                 style: AppTextStyles.bodySmall.copyWith(
                   color: AppColors.textMuted,
                   fontSize: 11,
@@ -729,22 +666,6 @@ class _DetailPerbaruiDokumenScreenState
                     color: AppColors.textSecondary,
                     letterSpacing: 0.4,
                     fontSize: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.slate100,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'Versi 1',
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.slate500,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 11,
                   ),
                 ),
               ),
@@ -794,7 +715,7 @@ class _DetailPerbaruiDokumenScreenState
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  '$_oldFileSize • Diunggah 12 Mar 2026',
+                                  '$_oldFileSize • $_oldUploadText',
                                   style: AppTextStyles.bodySmall.copyWith(
                                     color: AppColors.textMuted,
                                     fontSize: 11,
@@ -816,7 +737,7 @@ class _DetailPerbaruiDokumenScreenState
                         ),
                         onPressed: () => _showPratinjauDialog(
                           _oldFileName,
-                          'Berkas Saat Ini (Ditolak) - Versi 1',
+                          'Berkas Saat Ini',
                         ),
                         icon: const Icon(Icons.visibility_outlined, size: 16),
                         label: const Text(
@@ -858,7 +779,7 @@ class _DetailPerbaruiDokumenScreenState
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '$_oldFileSize • Diunggah 12 Mar 2026',
+                              '$_oldFileSize • $_oldUploadText',
                               style: AppTextStyles.bodySmall.copyWith(
                                 color: AppColors.textMuted,
                                 fontSize: 11,
@@ -883,7 +804,7 @@ class _DetailPerbaruiDokumenScreenState
                         ),
                         onPressed: () => _showPratinjauDialog(
                           _oldFileName,
-                          'Berkas Saat Ini (Ditolak) - Versi 1',
+                          'Berkas Saat Ini',
                         ),
                         icon: const Icon(Icons.visibility_outlined, size: 16),
                         label: const Text(
@@ -1392,7 +1313,7 @@ class _DetailPerbaruiDokumenScreenState
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                'Lihat Riwayat Versi Dokumen (2 Versi)',
+                'Lihat Riwayat Versi Dokumen',
                 style: AppTextStyles.labelMedium.copyWith(
                   color: const Color(0xFFB91C1C),
                   fontWeight: FontWeight.w700,
