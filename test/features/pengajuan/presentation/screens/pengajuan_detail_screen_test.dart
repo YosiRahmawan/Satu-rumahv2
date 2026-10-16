@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satu_rumah/core/theme/app_theme.dart';
+import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
+import 'package:satu_rumah/features/pengajuan/data/models/status_tahap_pengajuan.dart';
+import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_detail_screen.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_saya_list_screen.dart';
 
@@ -298,6 +301,111 @@ void main() {
         expect(find.text('REG-2026-0142'), findsOneWidget);
         expect(find.text('Perumahan Green Tasik'), findsOneWidget);
         expect(find.text('Perbaiki Sekarang'), findsOneWidget);
+      },
+    );
+  });
+
+  group('PengajuanDetailScreen - Micro-refinements', () {
+    testWidgets(
+      'renders Belum tersedia with secondary styling for placeholders and zero values',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'REG-TEST-ZERO',
+                namaPerumahan: 'Perumahan Zero Placeholder',
+                namaPt: '',
+                namaDirektur: '-',
+                nib: '0000000000000',
+                npwpPerusahaan: '00.000.000.0-000.000',
+                luasLahan: 0,
+                jumlahUnit: 0,
+                tipePengajuan: 'Pengajuan Site Plan Baru',
+                tipePerumahan: '',
+                status: 'Dalam Proses',
+                statusTahap: StatusTahapPengajuan.verifikasiTeknis,
+                tanggal: '16 Okt 2026',
+                uploadedDocs: const {},
+                alamatProyek: null,
+              ),
+            );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-TEST-ZERO'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Zero and placeholder items should show "Belum tersedia"
+        expect(find.text('Belum tersedia'), findsWidgets);
+        // Ensure deretan nol are NOT shown as valid text
+        expect(find.text('0000000000000'), findsNothing);
+        expect(find.text('00.000.000.0-000.000'), findsNothing);
+        expect(find.text('0 m²'), findsNothing);
+        expect(find.text('0 Unit'), findsNothing);
+
+        // Check ALAMAT PROYEK label is present
+        expect(find.text('ALAMAT PROYEK'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders project address when available and timeline shows accurate statuses',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        container
+            .read(pengajuanListProvider.notifier)
+            .addPengajuan(
+              Pengajuan(
+                id: 'REG-TEST-VALID',
+                namaPerumahan: 'Perumahan Sukamukti Asri',
+                namaPt: 'PT Sukamukti Indah',
+                namaDirektur: 'Budi Santoso',
+                nib: '1234567890123',
+                npwpPerusahaan: '12.345.678.9-423.000',
+                luasLahan: 12000,
+                jumlahUnit: 80,
+                tipePengajuan: 'Pengajuan Site Plan Baru',
+                tipePerumahan: 'Komersil',
+                status: 'Dalam Proses',
+                statusTahap: StatusTahapPengajuan.verifikasiTeknis,
+                tanggal: '16 Okt 2026',
+                uploadedDocs: const {},
+                alamatProyek: 'Jl. Ir. H. Juanda No. 12, Tasikmalaya',
+              ),
+            );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              home: PengajuanDetailScreen(id: 'REG-TEST-VALID'),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Project address should be visible
+        expect(
+          find.text('Jl. Ir. H. Juanda No. 12, Tasikmalaya'),
+          findsOneWidget,
+        );
+
+        // Timeline should display Selesai, Aktif, and Belum badges
+        expect(find.text('Timeline Pengajuan'), findsOneWidget);
+        expect(find.text('Selesai'), findsWidgets);
+        expect(find.text('Aktif'), findsWidgets);
+        expect(find.text('Belum'), findsWidgets);
       },
     );
   });
