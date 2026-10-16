@@ -109,6 +109,45 @@ class PengajuanListCard extends StatelessWidget {
     );
   }
 
+  /// Aksi "Detail" di footer kartu non-selesai. Warna merah kanonis agar
+  /// kontras di atas kartu putih; area ketuk minimal 44dp.
+  Widget _buildDetailLink() {
+    return Semantics(
+      button: true,
+      label: 'Lihat detail pengajuan',
+      child: InkWell(
+        onTap: onOpen,
+        borderRadius: BorderRadius.circular(8),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44, minWidth: 44),
+          child: const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  'Detail',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primaryRed,
+                  ),
+                ),
+                SizedBox(width: 2),
+                Icon(
+                  Icons.chevron_right,
+                  size: 16,
+                  color: AppColors.primaryRed,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isWaitingVerification =
@@ -360,7 +399,7 @@ class PengajuanListCard extends StatelessWidget {
                                 item.catatanPerbaikan!.trim().isNotEmpty)
                             ? item.catatanPerbaikan!
                             : (item.dokumenPerluRevisi.isEmpty
-                                  ? 'Format site plan teknis belum mencantumkan koordinat UTM dan luasan RTH minimum 30%. Bukti kepemilikan tanah belum dilegalisir basah.'
+                                  ? 'Pengajuan perlu diperbaiki. Buka detail untuk melihat berkas yang diminta.'
                                   : '${item.dokumenPerluRevisi.length} berkas perlu diperbaiki.'),
                         style: const TextStyle(
                           fontSize: 12,
@@ -377,29 +416,31 @@ class PengajuanListCard extends StatelessWidget {
                           final textScaler = MediaQuery.textScalerOf(context);
                           final isTextScaled = textScaler.scale(1.0) > 1.15;
 
-                          final timestampWidget = Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.schedule_outlined,
-                                size: 14,
-                                color: Color(0xFFB45309),
-                              ),
-                              const SizedBox(width: 4),
-                              Flexible(
-                                child: Text(
-                                  item.diperbarui ?? 'Diperbarui 2 hari lalu',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFFB45309),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          );
+                          final Widget timestampWidget = item.diperbarui == null
+                              ? const SizedBox.shrink()
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.schedule_outlined,
+                                      size: 14,
+                                      color: Color(0xFFB45309),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Flexible(
+                                      child: Text(
+                                        item.diperbarui!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFFB45309),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                );
 
                           final actionWidget = canRevise
                               ? ElevatedButton.icon(
@@ -645,7 +686,7 @@ class PengajuanListCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    if (complete) _buildSkLink(),
+                    if (complete) _buildSkLink() else _buildDetailLink(),
                   ],
                 ),
               ),

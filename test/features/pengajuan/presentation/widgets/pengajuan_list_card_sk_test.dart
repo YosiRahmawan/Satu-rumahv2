@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/core/theme/app_colors.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/status_tahap_pengajuan.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_list_card.dart';
@@ -28,23 +29,25 @@ void main() {
     WidgetTester tester,
     Pengajuan item, {
     VoidCallback? onOpenSk,
+    VoidCallback? onOpen,
     double scale = 1,
+    double width = 390,
   }) async {
-    tester.view.physicalSize = const Size(390, 900);
+    tester.view.physicalSize = Size(width, 900);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     await tester.pumpWidget(
       MaterialApp(
         home: MediaQuery(
           data: MediaQueryData(
-            size: const Size(390, 900),
+            size: Size(width, 900),
             textScaler: TextScaler.linear(scale),
           ),
           child: Scaffold(
             body: SingleChildScrollView(
               child: PengajuanListCard(
                 item: item,
-                onOpen: () {},
+                onOpen: onOpen ?? () {},
                 onOpenSk: onOpenSk,
               ),
             ),
@@ -111,5 +114,65 @@ void main() {
       scale: 2,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  group('aksi Detail di footer kartu non-selesai', () {
+    for (final tahap in [
+      StatusTahapPengajuan.verifikasiAdministrasi,
+      StatusTahapPengajuan.perluPerbaikan,
+    ]) {
+      for (final width in [360.0, 390.0, 420.0]) {
+        testWidgets(
+          'terlihat, merah, 44dp, dan bisa diketuk ($tahap, $width)',
+          (tester) async {
+            var opened = 0;
+            await pump(
+              tester,
+              selesai().copyWith(status: 'Dalam Proses', statusTahap: tahap),
+              onOpen: () => opened++,
+              width: width,
+            );
+
+            final label = tester.widget<Text>(find.text('Detail'));
+            expect(label.style?.color, AppColors.primaryRed);
+            final link = find
+                .ancestor(
+                  of: find.text('Detail'),
+                  matching: find.byType(InkWell),
+                )
+                .first;
+            final size = tester.getSize(link);
+            expect(size.height, greaterThanOrEqualTo(44));
+            expect(size.width, greaterThanOrEqualTo(44));
+            expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+
+            await tester.tap(find.text('Detail'));
+            expect(opened, 1);
+            expect(tester.takeException(), isNull);
+          },
+        );
+      }
+    }
+
+    testWidgets(
+      'kartu perbaikan tanpa data tidak mengarang catatan atau waktu',
+      (tester) async {
+        await pump(
+          tester,
+          selesai().copyWith(
+            status: 'Perlu Perbaikan',
+            statusTahap: StatusTahapPengajuan.perluPerbaikan,
+          ),
+        );
+        expect(find.textContaining('koordinat UTM'), findsNothing);
+        expect(find.textContaining('2 hari lalu'), findsNothing);
+        expect(find.textContaining('Buka detail'), findsOneWidget);
+      },
+    );
+
+    testWidgets('kartu selesai memakai Lihat SK, bukan Detail', (tester) async {
+      await pump(tester, selesai(skPath: 'SK.pdf'), onOpenSk: () {});
+      expect(find.text('Detail'), findsNothing);
+    });
   });
 }
