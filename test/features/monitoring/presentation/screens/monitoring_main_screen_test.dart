@@ -17,10 +17,7 @@ void main() {
       overrides: [
         roleSessionProvider.overrideWith(
           (ref) => RoleSessionNotifier()
-            ..signIn(
-              AppRole.perwaskim,
-              username: 'tim_monitoring_perwaskim',
-            ),
+            ..signIn(AppRole.perwaskim, username: 'tim_monitoring_perwaskim'),
         ),
       ],
       child: MaterialApp(
@@ -93,47 +90,46 @@ void main() {
       },
     );
 
-    testWidgets(
-      'transitions icons and pages cleanly when tapping each tab',
-      (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(390, 844));
-        await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+    testWidgets('transitions icons and pages cleanly when tapping each tab', (
+      WidgetTester tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
 
-        // 1. Initial State: Beranda active
-        expect(navIcon(Icons.home_rounded), findsOneWidget);
-        expect(navIcon(Icons.assignment_outlined), findsOneWidget);
-        expect(navIcon(Icons.person_outline), findsOneWidget);
-        expect(find.text('Hasil Survey Terbaru'), findsOneWidget);
+      // 1. Initial State: Beranda active
+      expect(navIcon(Icons.home_rounded), findsOneWidget);
+      expect(navIcon(Icons.assignment_outlined), findsOneWidget);
+      expect(navIcon(Icons.person_outline), findsOneWidget);
+      expect(find.text('Hasil Survey Terbaru'), findsOneWidget);
 
-        // 2. Switch to Tab 1: Riwayat
-        await tester.tap(find.text('Riwayat'));
-        await tester.pumpAndSettle();
+      // 2. Switch to Tab 1: Riwayat
+      await tester.tap(find.text('Riwayat'));
+      await tester.pumpAndSettle();
 
-        expect(navIcon(Icons.home_outlined), findsOneWidget);
-        expect(navIcon(Icons.assignment_rounded), findsOneWidget);
-        expect(navIcon(Icons.person_outline), findsOneWidget);
-        // Verify Riwayat screen content is displayed
-        expect(find.text('Riwayat Survey & BA'), findsOneWidget);
+      expect(navIcon(Icons.home_outlined), findsOneWidget);
+      expect(navIcon(Icons.assignment_rounded), findsOneWidget);
+      expect(navIcon(Icons.person_outline), findsOneWidget);
+      // Verify Riwayat screen content is displayed
+      expect(find.text('Riwayat Survey & BA'), findsOneWidget);
 
-        // 3. Switch to Tab 2: Profil
-        await tester.tap(find.text('Profil'));
-        await tester.pumpAndSettle();
+      // 3. Switch to Tab 2: Profil
+      await tester.tap(find.text('Profil'));
+      await tester.pumpAndSettle();
 
-        expect(navIcon(Icons.home_outlined), findsOneWidget);
-        expect(navIcon(Icons.assignment_outlined), findsOneWidget);
-        expect(navIcon(Icons.person_rounded), findsOneWidget);
+      expect(navIcon(Icons.home_outlined), findsOneWidget);
+      expect(navIcon(Icons.assignment_outlined), findsOneWidget);
+      expect(navIcon(Icons.person_rounded), findsOneWidget);
 
-        // 4. Switch back to Tab 0: Beranda
-        await tester.tap(find.text('Beranda'));
-        await tester.pumpAndSettle();
+      // 4. Switch back to Tab 0: Beranda
+      await tester.tap(find.text('Beranda'));
+      await tester.pumpAndSettle();
 
-        expect(navIcon(Icons.home_rounded), findsOneWidget);
-        expect(navIcon(Icons.assignment_outlined), findsOneWidget);
-        expect(navIcon(Icons.person_outline), findsOneWidget);
-        expect(find.text('Hasil Survey Terbaru'), findsOneWidget);
-      },
-    );
+      expect(navIcon(Icons.home_rounded), findsOneWidget);
+      expect(navIcon(Icons.assignment_outlined), findsOneWidget);
+      expect(navIcon(Icons.person_outline), findsOneWidget);
+      expect(find.text('Hasil Survey Terbaru'), findsOneWidget);
+    });
 
     for (final width in [360.0, 390.0, 412.0]) {
       testWidgets(

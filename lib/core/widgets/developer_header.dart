@@ -26,6 +26,7 @@ class DeveloperHeader extends StatelessWidget {
     this.isVerified = false,
     this.showNotification = false,
     this.notificationCount,
+    this.showNotificationCount = false,
     this.onNotificationTap,
     this.notificationTooltip,
     this.onAvatarTap,
@@ -65,6 +66,9 @@ class DeveloperHeader extends StatelessWidget {
 
   /// Number of unread notifications to display on the badge.
   final int? notificationCount;
+
+  /// Show the unread number on the badge instead of a plain dot.
+  final bool showNotificationCount;
 
   /// Callback when the notification icon button is tapped.
   final VoidCallback? onNotificationTap;
@@ -138,6 +142,10 @@ class DeveloperHeader extends StatelessWidget {
       icon: Badge(
         isLabelVisible: hasUnread,
         backgroundColor: AppColors.statusWarningSurface,
+        textColor: AppColors.primaryRed,
+        label: showNotificationCount && hasUnread
+            ? Text(notificationCount! > 9 ? '9+' : '$notificationCount')
+            : null,
         child: const Icon(
           Icons.notifications_none_rounded,
           color: AppColors.textOnRed,

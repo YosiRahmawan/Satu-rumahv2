@@ -182,10 +182,7 @@ class AppBottomNavigation extends StatelessWidget {
         color: effectiveBg,
         border: showTopBorder
             ? const Border(
-                top: BorderSide(
-                  color: AppColors.enterpriseBorder,
-                  width: 1.0,
-                ),
+                top: BorderSide(color: AppColors.enterpriseBorder, width: 1.0),
               )
             : null,
         boxShadow: showTopBorder

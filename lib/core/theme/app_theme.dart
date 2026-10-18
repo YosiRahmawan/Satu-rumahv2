@@ -7,6 +7,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: AppTextStyles.fontFamily,
       primaryColor: AppColors.chilliDust,
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: const ColorScheme.light(

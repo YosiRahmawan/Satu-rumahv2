@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart';
+import 'package:satu_rumah/features/notifikasi/presentation/providers/notifikasi_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/widgets/tab_beranda_monitoring.dart';
 
 void main() {
@@ -67,57 +68,88 @@ void main() {
       expect(find.text('Drs. Rian Hidayat, M.Si'), findsOneWidget);
       expect(find.text('Tim Verifikator Lapangan (Perwaskim)'), findsOneWidget);
       expect(find.text('NIP: 197805122006041008'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle), findsWidgets);
+      expect(find.text('Satu Rumah'), findsNothing);
+      expect(find.text('PORTAL PERWASKIM'), findsNothing);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
 
       // Canonical header: identity on the left, notification then avatar on the top-right controls
       final avatarDx = tester.getTopLeft(find.text('RH')).dx;
-      final profileDx = tester.getTopLeft(find.text('Drs. Rian Hidayat, M.Si')).dx;
-      final notifDx = tester.getTopLeft(find.byIcon(Icons.notifications_none_rounded)).dx;
+      final profileDx = tester
+          .getTopLeft(find.text('Drs. Rian Hidayat, M.Si'))
+          .dx;
+      final notifDx = tester
+          .getTopLeft(find.byIcon(Icons.notifications_none_rounded))
+          .dx;
       expect(notifDx, greaterThan(profileDx));
       expect(avatarDx, greaterThan(notifDx));
 
       // Verify Active Survey Task Card
-      expect(find.textContaining('TUGAS SURVEY'), findsWidgets);
-      expect(find.text('INSTRUKSI PENUGASAN ADMIN'), findsWidgets);
-      expect(find.text('Buka Berita Acara & Mulai Survey'), findsWidgets);
+      expect(find.text('Tugas Survey Aktif'), findsOneWidget);
+      expect(find.text('INSTRUKSI ADMIN'), findsOneWidget);
+      expect(find.text('Buka Berita Acara & Mulai Survey'), findsOneWidget);
 
       // Verify Latest Survey Results section
       expect(find.text('Hasil Survey Terbaru'), findsOneWidget);
       expect(find.text('Lihat Semua'), findsOneWidget);
-      expect(find.textContaining('Lihat Dokumen BA'), findsWidgets);
+      expect(find.text('Mode prototipe lokal · data contoh'), findsOneWidget);
     });
 
-    testWidgets('avoids horizontal overflow on small 360dp viewport and keeps notification on right', (
-      WidgetTester tester,
-    ) async {
-      await tester.binding.setSurfaceSize(const Size(360, 640));
+    testWidgets(
+      'avoids horizontal overflow on small 360dp viewport and keeps notification on right',
+      (WidgetTester tester) async {
+        await tester.binding.setSurfaceSize(const Size(360, 640));
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            roleSessionProvider.overrideWith(
-              (ref) => RoleSessionNotifier()
-                ..signIn(
-                  AppRole.perwaskim,
-                  username: 'tim_monitoring_perwaskim',
-                ),
-            ),
-          ],
-          child: const MaterialApp(home: TabBerandaMonitoring()),
-        ),
-      );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              roleSessionProvider.overrideWith(
+                (ref) => RoleSessionNotifier()
+                  ..signIn(
+                    AppRole.perwaskim,
+                    username: 'tim_monitoring_perwaskim',
+                  ),
+              ),
+            ],
+            child: const MaterialApp(home: TabBerandaMonitoring()),
+          ),
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
+        expect(tester.takeException(), isNull);
 
-      final avatarDx = tester.getTopLeft(find.text('RH')).dx;
-      final profileDx = tester.getTopLeft(find.text('Drs. Rian Hidayat, M.Si')).dx;
-      final notifDx = tester.getTopLeft(find.byIcon(Icons.notifications_none_rounded)).dx;
-      expect(notifDx, greaterThan(profileDx));
-      expect(avatarDx, greaterThan(notifDx));
-    });
+        final avatarDx = tester.getTopLeft(find.text('RH')).dx;
+        final profileDx = tester
+            .getTopLeft(find.text('Drs. Rian Hidayat, M.Si'))
+            .dx;
+        final notifDx = tester
+            .getTopLeft(find.byIcon(Icons.notifications_none_rounded))
+            .dx;
+        expect(notifDx, greaterThan(profileDx));
+        expect(avatarDx, greaterThan(notifDx));
+      },
+    );
+
+    for (final unread in [0, 3, 12]) {
+      testWidgets('notification badge reflects $unread unread', (tester) async {
+        await tester.binding.setSurfaceSize(const Size(390, 844));
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              unreadNotifikasiCountProvider.overrideWithValue(unread),
+            ],
+            child: const MaterialApp(home: TabBerandaMonitoring()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final badge = tester.widget<Badge>(find.byType(Badge));
+        expect(badge.isLabelVisible, unread > 0);
+        if (unread > 0) {
+          expect(find.text(unread > 9 ? '9+' : '$unread'), findsOneWidget);
+        }
+      });
+    }
 
     testWidgets('renders all monitoring card metadata fields and status badge', (
       WidgetTester tester,
@@ -144,13 +176,11 @@ void main() {
       // Ensure Hasil Survey section is present
       expect(find.text('Hasil Survey Terbaru'), findsOneWidget);
       // Ensure BA number badges, housing names, developer names, and action buttons are rendered
-      expect(find.textContaining('BA-MON'), findsWidgets);
-      expect(find.textContaining('Lihat Dokumen BA'), findsWidgets);
-      expect(find.text('Dokumen Draft'), findsOneWidget);
-      expect(find.byIcon(Icons.calendar_today_outlined), findsWidgets);
+      expect(find.textContaining('Draf · '), findsOneWidget);
+      expect(find.text('Lihat Dokumen BA'), findsNothing);
     });
 
-    testWidgets('renders Dokumen Draft button for draft items and tapping it navigates to /monitoring/draft', (
+    testWidgets('tapping a draft result row navigates to /monitoring/draft', (
       WidgetTester tester,
     ) async {
       await tester.binding.setSurfaceSize(const Size(390, 844));
@@ -166,7 +196,9 @@ void main() {
             path: '/monitoring/draft',
             builder: (_, state) {
               final model = state.extra as MonitoringModel;
-              return Scaffold(body: Text('DRAFT_SCREEN:${model.namaPerumahan}'));
+              return Scaffold(
+                body: Text('DRAFT_SCREEN:${model.namaPerumahan}'),
+              );
             },
           ),
         ],
@@ -189,7 +221,7 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      final draftButton = find.text('Dokumen Draft');
+      final draftButton = find.textContaining('Draf · ');
       expect(draftButton, findsOneWidget);
 
       await tester.scrollUntilVisible(draftButton, 300);
@@ -197,6 +229,49 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('DRAFT_SCREEN:Griya Mangkubumi Asri'), findsOneWidget);
+    });
+
+    testWidgets('tapping a compact task row starts the survey for it', (
+      WidgetTester tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+
+      final router = GoRouter(
+        initialLocation: '/monitoring/lapangan',
+        routes: [
+          GoRoute(
+            path: '/monitoring/lapangan',
+            builder: (_, __) => const TabBerandaMonitoring(),
+          ),
+          GoRoute(
+            path: '/monitoring/tambah',
+            builder: (_, __) => const Scaffold(body: Text('TAMBAH_SCREEN')),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            roleSessionProvider.overrideWith(
+              (ref) => RoleSessionNotifier()
+                ..signIn(
+                  AppRole.perwaskim,
+                  username: 'tim_monitoring_perwaskim',
+                ),
+            ),
+          ],
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final secondTask = find.text('Kencana Kawalu Regency');
+      expect(secondTask, findsOneWidget);
+      await tester.tap(secondTask);
+      await tester.pumpAndSettle();
+
+      expect(find.text('TAMBAH_SCREEN'), findsOneWidget);
     });
 
     for (final width in [360.0, 390.0, 412.0]) {
