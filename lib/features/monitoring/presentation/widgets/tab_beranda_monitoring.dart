@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
-import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/data_state_view.dart';
-import '../../../../core/widgets/developer_header.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../data/models/monitoring_model.dart';
+import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
 import '../providers/monitoring_list_provider.dart';
-import 'status_hasil_evaluasi_badge_widget.dart';
 
 /// Helper model for Perwaskim identity resolution
 class PerwaskimIdentity {
@@ -157,12 +152,7 @@ class TabBerandaMonitoring extends ConsumerWidget {
                 onProfileTap: () => context.go('/monitoring/lapangan/profil'),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.md,
-                  AppSpacing.lg,
-                  AppSpacing.xxl,
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
                 child: _DashboardContent(
                   monitoring: list,
                   onStartSurvey: (pengajuan) => _startSurveyForPengajuan(
@@ -200,39 +190,134 @@ class _PerwaskimHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DeveloperHeader(
-      showBrandBar: false,
-      pageTitle: identity.nama,
-      pageSubtitle: identity.jabatan,
-      avatarLabel: identity.initials,
-      avatarTooltip: 'Buka profil',
-      onAvatarTap: onProfileTap,
-      showOnlineIndicator: true,
-      showNotification: true,
-      notificationCount: unreadNotifications,
-      showNotificationCount: true,
-      notificationTooltip: unreadNotifications > 0
-          ? 'Buka notifikasi ($unreadNotifications belum dibaca)'
-          : 'Buka notifikasi',
-      onNotificationTap: onNotificationsTap,
-      bottomPadding: 24.0,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md - 2,
-            vertical: AppSpacing.xs,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.enterprisePrimary,
+            AppColors.enterprisePrimaryDark,
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x14000000),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
-          decoration: const BoxDecoration(
-            color: AppColors.cardSurface,
-            borderRadius: AppRadii.pill,
-          ),
-          child: Text(
-            identity.nip,
-            style: AppTextStyles.labelMedium.copyWith(
-              color: AppColors.primaryRed,
-              fontWeight: FontWeight.w700,
-            ),
+        ],
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Selamat bertugas,',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withValues(alpha: 0.8),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      identity.nama,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        letterSpacing: -0.2,
+                        height: 1.25,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Semantics(
+                    button: true,
+                    label: unreadNotifications > 0
+                        ? 'Buka notifikasi ($unreadNotifications belum dibaca)'
+                        : 'Buka notifikasi',
+                    child: IconButton(
+                      onPressed: onNotificationsTap,
+                      tooltip: unreadNotifications > 0
+                          ? 'Buka notifikasi ($unreadNotifications belum dibaca)'
+                          : 'Buka notifikasi',
+                      icon: Badge(
+                        isLabelVisible: unreadNotifications > 0,
+                        backgroundColor: const Color(0xFFF59E0B),
+                        textColor: Colors.white,
+                        textStyle: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        label: Text(
+                          unreadNotifications > 9
+                              ? '9+'
+                              : '$unreadNotifications',
+                        ),
+                        child: const Icon(
+                          Icons.notifications_none_rounded,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Semantics(
+                    button: true,
+                    label: 'Buka profil',
+                    child: InkWell(
+                      onTap: onProfileTap,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: const [
+                            BoxShadow(
+                              color: Color(0x14000000),
+                              blurRadius: 4,
+                              offset: Offset(0, 1),
+                            ),
+                          ],
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          identity.initials,
+                          style: const TextStyle(
+                            color: AppColors.enterprisePrimaryDark,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -257,125 +342,171 @@ class _DashboardContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final assignments = ref.watch(surveyAktifProvider);
+    final rawAssignments = ref.watch(surveyAktifProvider);
+
+    // Keep assignments in the priority order established by the provider/model
+    final assignments = List<Pengajuan>.from(rawAssignments);
+
+    // Sort monitoring results descending by monitoring date, then created date
+    final sortedMonitoring = List<MonitoringModel>.from(monitoring)
+      ..sort((a, b) {
+        final cmp = b.tanggalMonitoring.compareTo(a.tanggalMonitoring);
+        if (cmp != 0) return cmp;
+        return b.createdAt.compareTo(a.createdAt);
+      });
+    final recentResults = sortedMonitoring.take(3).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // --- SECTION: Tugas Survey Aktif ---
+        _buildSectionHeader(
+          title: 'Tugas Survey Aktif',
+          trailing: Text(
+            '${rawAssignments.length} tugas',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.enterpriseTextMuted,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         if (assignments.isEmpty)
           const DataStateView.empty(
             title: 'Tidak ada tugas survey aktif',
             message: 'Penugasan dari Admin akan muncul di sini.',
           )
         else ...[
-          _SectionHeader(
-            title: 'Tugas Survey Aktif',
-            trailing: Text(
-              '${assignments.length} tugas',
-              style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          _SurveyTaskCard(
+          _PrimaryTaskCard(
             assignment: assignments.first,
             onStartSurvey: () => onStartSurvey(assignments.first),
           ),
           if (assignments.length > 1) ...[
-            const SizedBox(height: AppSpacing.sm),
-            _SurveyTaskList(
-              assignments: assignments.skip(1).toList(),
+            const SizedBox(height: 12),
+            _SecondaryTasksList(
+              tasks: assignments.skip(1).take(2).toList(),
               onStartSurvey: onStartSurvey,
             ),
           ],
         ],
-        const SizedBox(height: AppSpacing.xl),
-        _SectionHeader(
+
+        const SizedBox(height: 24),
+
+        // --- SECTION: Hasil Survey Terbaru ---
+        _buildSectionHeader(
           title: 'Hasil Survey Terbaru',
-          trailing: TextButton(
-            onPressed: onOpenHistory,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: const Size(0, 36),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            child: Text(
-              'Lihat Semua',
-              style: AppTextStyles.labelLarge.copyWith(
-                color: AppColors.primaryRed,
-                fontWeight: FontWeight.w700,
+          trailing: InkWell(
+            onTap: onOpenHistory,
+            borderRadius: BorderRadius.circular(4),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Text(
+                'Lihat Semua →',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.primaryRed,
+                ),
               ),
             ),
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: 12),
         if (monitoring.isEmpty)
           const DataStateView.empty(
             title: 'Belum ada hasil survey',
             message: 'Hasil survey yang sudah dicatat akan tampil di sini.',
           )
         else
-          _SurveyResultList(
-            items: monitoring.take(5).toList(),
+          _SurveyResultCardsList(
+            items: recentResults,
             onOpenBeritaAcara: onOpenBeritaAcara,
             onOpenDraft: onOpenDraft,
           ),
-        const SizedBox(height: AppSpacing.lg),
+
+        const SizedBox(height: 20),
+
         Center(
           child: Text(
             'Mode prototipe lokal · data contoh',
-            style: AppTextStyles.bodySmall.copyWith(
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: AppColors.enterpriseTextMuted.withValues(alpha: 0.8),
             ),
           ),
         ),
       ],
     );
   }
-}
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
-  final Widget trailing;
-
-  const _SectionHeader({required this.title, required this.trailing});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildSectionHeader({
+    required String title,
+    required Widget trailing,
+  }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Expanded(
           child: Text(
             title,
-            style: AppTextStyles.headlineSmall.copyWith(
-              fontWeight: FontWeight.w800,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
               color: AppColors.enterpriseTextMain,
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.sm),
+        const SizedBox(width: 8),
         trailing,
       ],
     );
   }
 }
 
+String _formatDate(DateTime date) {
+  const months = [
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+  return '${date.day} ${months[date.month - 1]} ${date.year}';
+}
+
+String _formatTime(DateTime date) {
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  return '$hour:$minute WIB';
+}
+
+String _formatShortTime(DateTime date) {
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+
 String? _scheduleLabel(Pengajuan assignment) {
   final date = assignment.tanggalSurvey;
   if (date == null) return null;
-  final time = '${DateFormat('HH:mm').format(date)} WIB';
-  return DateUtils.isSameDay(date, DateTime.now())
-      ? 'Hari ini, $time'
-      : '${DateFormat('d MMM yyyy', 'id').format(date)}, $time';
+  return '${_formatDate(date)}, ${_formatTime(date)}';
 }
 
-class _SurveyTaskCard extends StatelessWidget {
+class _PrimaryTaskCard extends StatelessWidget {
   final Pengajuan assignment;
   final VoidCallback onStartSurvey;
 
-  const _SurveyTaskCard({
+  const _PrimaryTaskCard({
     required this.assignment,
     required this.onStartSurvey,
   });
@@ -387,218 +518,246 @@ class _SurveyTaskCard extends StatelessWidget {
         (assignment.catatanSurvey != null &&
             assignment.catatanSurvey!.trim().isNotEmpty)
         ? assignment.catatanSurvey!.trim()
-        : 'Titik kumpul di gerbang utama. Wajib cek drainase dan ketersediaan lahan PSU bersama Site Manager.';
+        : 'Tinjau kesesuaian site plan, drainase, akses jalan, dan fasilitas umum di lokasi perumahan.';
 
     return Container(
-      decoration: _cardDecoration,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (schedule != null) ...[
-              Row(
-                children: [
-                  const Icon(
-                    Icons.schedule_outlined,
-                    size: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    schedule,
-                    style: AppTextStyles.labelMedium.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-            Text(
-              assignment.namaPerumahan,
-              style: AppTextStyles.headlineMedium.copyWith(
-                fontWeight: FontWeight.w800,
-                color: AppColors.enterpriseTextMain,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '${assignment.namaPt} · ${assignment.id}',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Text(
-              'INSTRUKSI ADMIN',
-              style: AppTextStyles.labelMedium.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.6,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              instructionText,
-              style: AppTextStyles.bodyMedium.copyWith(
-                color: AppColors.enterpriseTextMain,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: onStartSurvey,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryRed,
-                  foregroundColor: AppColors.textOnRed,
-                  elevation: 0,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: AppRadii.control,
-                  ),
-                ),
-                icon: const Icon(Icons.assignment_outlined, size: 18),
-                label: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    'Buka Berita Acara & Mulai Survey',
-                    maxLines: 1,
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: AppColors.textOnRed,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.enterpriseBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _ListRow extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final Widget trailing;
-  final VoidCallback onTap;
-  final bool showDivider;
-
-  const _ListRow({
-    required this.title,
-    required this.subtitle,
-    required this.trailing,
-    required this.onTap,
-    required this.showDivider,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.lg,
-              vertical: AppSpacing.md,
-            ),
-            child: Row(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (schedule != null) ...[
+            Row(
               children: [
+                const Icon(
+                  Icons.access_time_rounded,
+                  size: 16,
+                  color: Color(0xFF94A3B8),
+                ),
+                const SizedBox(width: 6),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.titleMedium.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.enterpriseTextMain,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xs / 2),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    schedule,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.enterpriseTextMuted,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                trailing,
+              ],
+            ),
+            const SizedBox(height: 6),
+          ],
+          Text(
+            assignment.namaPerumahan,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.enterpriseTextMain,
+              letterSpacing: -0.2,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${assignment.namaPt} · ${assignment.id}',
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.enterpriseTextMuted,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'INSTRUKSI ADMIN',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.6,
+                    color: AppColors.enterpriseTextMuted,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  instructionText,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                    color: Color(0xFF334155),
+                  ),
+                ),
               ],
             ),
           ),
-        ),
-        if (showDivider)
-          const Divider(height: 1, color: AppColors.enterpriseBorder),
-      ],
-    );
-  }
-}
-
-class _SurveyTaskList extends StatelessWidget {
-  final List<Pengajuan> assignments;
-  final ValueChanged<Pengajuan> onStartSurvey;
-
-  const _SurveyTaskList({
-    required this.assignments,
-    required this.onStartSurvey,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: _cardDecoration,
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          for (var i = 0; i < assignments.length; i++)
-            _ListRow(
-              title: assignments[i].namaPerumahan,
-              subtitle: assignments[i].namaPt,
-              showDivider: i < assignments.length - 1,
-              onTap: () => onStartSurvey(assignments[i]),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: ElevatedButton(
+              onPressed: onStartSurvey,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryRed,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (assignments[i].tanggalSurvey != null)
-                    Text(
-                      DateFormat('HH:mm').format(assignments[i].tanggalSurvey!),
-                      style: AppTextStyles.labelMedium.copyWith(
-                        color: AppColors.textSecondary,
+                  Icon(Icons.assignment_outlined, size: 18),
+                  SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'Buka Berita Acara & Mulai Survei',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  const Icon(
-                    Icons.chevron_right,
-                    size: 20,
-                    color: AppColors.textSecondary,
                   ),
                 ],
               ),
             ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _SurveyResultList extends StatelessWidget {
+class _SecondaryTasksList extends StatelessWidget {
+  final List<Pengajuan> tasks;
+  final ValueChanged<Pengajuan> onStartSurvey;
+
+  const _SecondaryTasksList({required this.tasks, required this.onStartSurvey});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.enterpriseBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < tasks.length; i++) ...[
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onStartSurvey(tasks[i]),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tasks[i].namaPerumahan,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.enterpriseTextMain,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              tasks[i].namaPt,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                                color: AppColors.enterpriseTextMuted,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      if (tasks[i].tanggalSurvey != null)
+                        Text(
+                          _formatShortTime(tasks[i].tanggalSurvey!),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.enterpriseTextMuted,
+                          ),
+                        ),
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.chevron_right,
+                        size: 18,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (i < tasks.length - 1)
+              const Divider(height: 1, color: AppColors.enterpriseBorder),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SurveyResultCardsList extends StatelessWidget {
   final List<MonitoringModel> items;
   final ValueChanged<MonitoringModel> onOpenBeritaAcara;
   final ValueChanged<MonitoringModel> onOpenDraft;
 
-  const _SurveyResultList({
+  const _SurveyResultCardsList({
     required this.items,
     required this.onOpenBeritaAcara,
     required this.onOpenDraft,
@@ -606,39 +765,195 @@ class _SurveyResultList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: _cardDecoration,
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          for (var i = 0; i < items.length; i++)
-            _resultRow(items[i], showDivider: i < items.length - 1),
+    return Column(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          _SurveyResultCard(
+            item: items[i],
+            onTap: () => items[i].isDraft
+                ? onOpenDraft(items[i])
+                : onOpenBeritaAcara(items[i]),
+          ),
+          if (i < items.length - 1) const SizedBox(height: 12),
         ],
-      ),
-    );
-  }
-
-  Widget _resultRow(MonitoringModel item, {required bool showDivider}) {
-    final date = DateFormat('d MMM yyyy', 'id').format(item.tanggalMonitoring);
-    return _ListRow(
-      title: item.namaPerumahan,
-      subtitle: item.isDraft ? 'Draf · $date' : date,
-      showDivider: showDivider,
-      onTap: () => item.isDraft ? onOpenDraft(item) : onOpenBeritaAcara(item),
-      trailing: StatusHasilEvaluasiBadgeWidget(
-        status: item.statusHasilEvaluasi,
-        isCompact: true,
-        showIcon: false,
-      ),
+      ],
     );
   }
 }
 
-const _cardDecoration = BoxDecoration(
-  color: AppColors.cardSurface,
-  borderRadius: AppRadii.card,
-  border: Border.fromBorderSide(BorderSide(color: AppColors.enterpriseBorder)),
-  boxShadow: [
-    BoxShadow(color: Color(0x0A000000), blurRadius: 10, offset: Offset(0, 4)),
-  ],
-);
+class _SurveyResultCard extends StatelessWidget {
+  final MonitoringModel item;
+  final VoidCallback onTap;
+
+  const _SurveyResultCard({required this.item, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final dateStr = _formatDate(item.tanggalMonitoring);
+    final developerStr = item.namaDeveloper.isNotEmpty
+        ? item.namaDeveloper
+        : 'Kota Tasikmalaya';
+    final actionLabel = item.isDraft
+        ? 'Lanjutkan Draf Survei'
+        : 'Lihat Detail Hasil';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.enterpriseBorder),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 6,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      dateStr,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.enterpriseTextMuted,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(child: _buildResultBadge(item)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  item.namaPerumahan,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.enterpriseTextMain,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  developerStr,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppColors.enterpriseTextMuted,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        actionLabel,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primaryRed,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.chevron_right,
+                      size: 16,
+                      color: AppColors.primaryRed,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResultBadge(MonitoringModel item) {
+    if (item.isDraft) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: const Text(
+          'Draf',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF334155),
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      );
+    }
+
+    Color bgColor;
+    Color borderColor;
+    Color textColor;
+    String label = item.statusHasilEvaluasi.label;
+
+    switch (item.statusHasilEvaluasi) {
+      case StatusHasilEvaluasi.sesuaiSiteplan:
+        bgColor = const Color(0xFFECFDF5);
+        borderColor = const Color(0xFFA7F3D0);
+        textColor = const Color(0xFF047857);
+        break;
+      case StatusHasilEvaluasi.perluEvaluasiLanjutan:
+        bgColor = const Color(0xFFFFFBEB);
+        borderColor = const Color(0xFFFDE68A);
+        textColor = const Color(0xFFB45309);
+        break;
+      case StatusHasilEvaluasi.tidakSesuaiSiteplan:
+        bgColor = const Color(0xFFFEF2F2);
+        borderColor = const Color(0xFFFECDD3);
+        textColor = const Color(0xFFB91C1C);
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: textColor,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
