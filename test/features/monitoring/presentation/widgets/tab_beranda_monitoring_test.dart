@@ -70,12 +70,12 @@ void main() {
       expect(find.byIcon(Icons.check_circle), findsWidgets);
       expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
 
-      // Verify Header horizontal alignment: avatar (left) -> profile (center) -> notification (right)
+      // Canonical header: identity on the left, notification then avatar on the top-right controls
       final avatarDx = tester.getTopLeft(find.text('RH')).dx;
       final profileDx = tester.getTopLeft(find.text('Drs. Rian Hidayat, M.Si')).dx;
       final notifDx = tester.getTopLeft(find.byIcon(Icons.notifications_none_rounded)).dx;
-      expect(profileDx, greaterThan(avatarDx));
       expect(notifDx, greaterThan(profileDx));
+      expect(avatarDx, greaterThan(notifDx));
 
       // Verify Active Survey Task Card
       expect(find.textContaining('TUGAS SURVEY'), findsWidgets);
@@ -115,8 +115,8 @@ void main() {
       final avatarDx = tester.getTopLeft(find.text('RH')).dx;
       final profileDx = tester.getTopLeft(find.text('Drs. Rian Hidayat, M.Si')).dx;
       final notifDx = tester.getTopLeft(find.byIcon(Icons.notifications_none_rounded)).dx;
-      expect(profileDx, greaterThan(avatarDx));
       expect(notifDx, greaterThan(profileDx));
+      expect(avatarDx, greaterThan(notifDx));
     });
 
     testWidgets('renders all monitoring card metadata fields and status badge', (

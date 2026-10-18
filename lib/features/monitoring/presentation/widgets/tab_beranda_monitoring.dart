@@ -5,8 +5,11 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/data_state_view.dart';
+import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
@@ -155,6 +158,7 @@ class TabBerandaMonitoring extends ConsumerWidget {
                 unreadNotifications: unreadCount > 0 ? unreadCount : 1,
                 onNotificationsTap: () =>
                     context.push('/monitoring/lapangan/notifikasi'),
+                onProfileTap: () => context.go('/monitoring/lapangan/profil'),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(
@@ -189,185 +193,82 @@ class _PerwaskimHeader extends StatelessWidget {
   final PerwaskimIdentity identity;
   final int unreadNotifications;
   final VoidCallback onNotificationsTap;
+  final VoidCallback onProfileTap;
 
   const _PerwaskimHeader({
     required this.identity,
     required this.unreadNotifications,
     required this.onNotificationsTap,
+    required this.onProfileTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.enterprisePrimary,
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.enterprisePrimary, AppColors.enterprisePrimaryDark],
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
+    return DeveloperHeader(
+      brandTitle: 'Satu Rumah',
+      brandSubtitle: 'PORTAL PERWASKIM',
+      avatarLabel: identity.initials,
+      avatarTooltip: 'Buka profil',
+      onAvatarTap: onProfileTap,
+      showOnlineIndicator: true,
+      showNotification: true,
+      notificationCount: unreadNotifications,
+      notificationTooltip: 'Buka notifikasi ($unreadNotifications belum dibaca)',
+      onNotificationTap: onNotificationsTap,
+      bottomPadding: 24.0,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    identity.initials,
-                    style: const TextStyle(
-                      color: AppColors.enterprisePrimaryDark,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                    ),
+              Flexible(
+                child: Text(
+                  identity.nama,
+                  style: AppTextStyles.headlineSmall.copyWith(
+                    color: AppColors.textOnRed,
+                    fontWeight: FontWeight.w800,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            identity.nama,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 16.5,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Icon(
-                          Icons.check_circle,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      identity.jabatan,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.88),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.22),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        identity.nip,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Semantics(
-                button: true,
-                label:
-                    'Buka notifikasi ($unreadNotifications belum dibaca)',
-                child: InkWell(
-                  onTap: onNotificationsTap,
-                  borderRadius: BorderRadius.circular(24),
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.22),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      alignment: Alignment.center,
-                      children: [
-                        const Icon(
-                          Icons.notifications_none_rounded,
-                          color: Colors.white,
-                          size: 22,
-                        ),
-                        if (unreadNotifications > 0)
-                          Positioned(
-                            top: 1,
-                            right: 1,
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: AppColors.enterprisePrimary,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                  width: 1.5,
-                                ),
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 17,
-                                minHeight: 17,
-                              ),
-                              child: Center(
-                                child: Text(
-                                  unreadNotifications > 9
-                                      ? '9+'
-                                      : '$unreadNotifications',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
+              const SizedBox(width: AppSpacing.xs),
+              const Icon(
+                Icons.check_circle,
+                color: AppColors.textOnRed,
+                size: 16,
               ),
             ],
           ),
-        ),
+          const SizedBox(height: AppSpacing.xs / 2),
+          Text(
+            identity.jabatan,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textOnRedSubtle,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md - 2,
+              vertical: AppSpacing.xs - 1,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface.withValues(alpha: 0.18),
+              borderRadius: AppRadii.pill,
+              border: Border.all(
+                color: AppColors.cardSurface.withValues(alpha: 0.28),
+              ),
+            ),
+            child: Text(
+              identity.nip,
+              style: AppTextStyles.labelSmall.copyWith(
+                color: AppColors.textOnRed,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

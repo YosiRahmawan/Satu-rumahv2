@@ -65,4 +65,20 @@ class AppColors {
   static const Color enterpriseSuccessSurface = Color(0xFFDCFCE7);
   static const Color enterpriseWarning = Color(0xFFB45309);
   static const Color enterpriseWarningSurface = Color(0xFFFEF3C7);
+
+  // Canonical SATU RUMAH tokens, same names and values as feat/alur-pengembang.
+  static const Color primaryRed = enterprisePrimary;
+  static const Color primaryDark = enterprisePrimaryDark;
+  static const LinearGradient heroGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primaryRed, primaryDark],
+  );
+  static const Color backgroundCanvas = enterpriseCanvas;
+  static const Color cardSurface = enterpriseSurface;
+  static const Color textSecondary = enterpriseTextMuted;
+  static const Color textOnRed = Color(0xFFFFFFFF);
+  static const Color textOnRedSubtle = Color(0xFFFECDD3);
+  static const Color statusSuccessText = enterpriseSuccess;
+  static const Color statusWarningSurface = enterpriseWarningSurface;
 }

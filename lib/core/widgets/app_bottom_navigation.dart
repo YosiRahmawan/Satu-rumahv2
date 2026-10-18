@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_radii.dart';
+import '../theme/app_text_styles.dart';
 
 class AppBottomNavigationItem {
   final IconData icon;
@@ -102,6 +104,50 @@ class AppBottomNavigation extends StatelessWidget {
     );
   }
 
+  /// Canonical Pengembang item: 22dp icon in a soft pill when active.
+  Widget _enterpriseItem(BuildContext context, int index) {
+    final item = items[index];
+    final active = index == currentIndex;
+    final color = active ? AppColors.primaryRed : AppColors.textSecondary;
+    return Expanded(
+      child: InkWell(
+        onTap: () => onTap(index),
+        borderRadius: AppRadii.control,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
+              decoration: BoxDecoration(
+                color: active ? const Color(0xFFFEF2F2) : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: IconTheme(
+                data: IconThemeData(color: color, size: 22),
+                child: _icon(item, active: active),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              item.label,
+              textScaler: MediaQuery.textScalerOf(
+                context,
+              ).clamp(maxScaleFactor: 1.0),
+              style: AppTextStyles.labelSmall.copyWith(
+                color: color,
+                fontSize: 11,
+                fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveBg = backgroundColor ?? AppColors.surface;
@@ -154,7 +200,17 @@ class AppBottomNavigation extends StatelessWidget {
       ),
       child: SafeArea(
         top: false,
-        child: navBar,
+        child: showTopBorder
+            ? SizedBox(
+                height: 64,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < items.length; i++)
+                      _enterpriseItem(context, i),
+                  ],
+                ),
+              )
+            : navBar,
       ),
     );
   }

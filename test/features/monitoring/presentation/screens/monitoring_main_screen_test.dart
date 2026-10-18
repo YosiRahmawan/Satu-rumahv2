@@ -68,20 +68,18 @@ void main() {
         await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        final bottomNavFinder = find.byType(BottomNavigationBar);
+        final bottomNavFinder = find.byType(AppBottomNavigation);
         expect(bottomNavFinder, findsOneWidget);
 
-        final bottomNav = tester.widget<BottomNavigationBar>(bottomNavFinder);
-        expect(bottomNav.selectedItemColor, equals(AppColors.enterprisePrimary));
-        expect(
-          bottomNav.unselectedItemColor,
-          equals(AppColors.enterpriseTextMuted),
-        );
-        expect(bottomNav.selectedLabelStyle?.fontWeight, equals(FontWeight.w600));
-        expect(bottomNav.unselectedLabelStyle?.fontWeight, equals(FontWeight.w500));
+        TextStyle? labelStyle(String label) =>
+            tester.widget<Text>(find.text(label)).style;
+        expect(labelStyle('Beranda')?.color, equals(AppColors.primaryRed));
+        expect(labelStyle('Beranda')?.fontWeight, equals(FontWeight.w700));
+        expect(labelStyle('Riwayat')?.color, equals(AppColors.textSecondary));
+        expect(labelStyle('Riwayat')?.fontWeight, equals(FontWeight.w500));
 
         // Top border check
-        final containerFinder = find.ancestor(
+        final containerFinder = find.descendant(
           of: bottomNavFinder,
           matching: find.byType(Container),
         );
