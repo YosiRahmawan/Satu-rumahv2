@@ -7,12 +7,10 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_header.dart';
-import '../../../../core/widgets/prototype_data_banner.dart';
+import '../../../../core/widgets/developer_header.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_list_provider.dart';
-import '../widgets/status_hasil_evaluasi_badge_widget.dart';
 
 class MonitoringListScreen extends ConsumerStatefulWidget {
   final bool showBottomNav;
@@ -24,7 +22,16 @@ class MonitoringListScreen extends ConsumerStatefulWidget {
       _MonitoringListScreenState();
 }
 
-enum _HistoryFilter { all, sesuai, perluEvaluasi }
+enum _HistoryFilter { all, draf, sesuai, perluEvaluasi }
+
+const _filterLabels = {
+  _HistoryFilter.all: 'Semua',
+  _HistoryFilter.draf: 'Draf',
+  _HistoryFilter.sesuai: 'Sesuai',
+  _HistoryFilter.perluEvaluasi: 'Perlu evaluasi',
+};
+
+const _searchBandHeight = 112.0;
 
 class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
   final TextEditingController _searchController = TextEditingController();
@@ -44,50 +51,32 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.enterpriseCanvas,
-      appBar: AppHeader(
-        variant: AppHeaderVariant.authority,
-        title: 'Riwayat Survey & BA',
-        subtitle: 'Arsip resmi berita acara dan evaluasi lapangan',
-        showAuthorityIcon: false,
-        authorityGradient: true,
-        uppercaseAuthoritySubtitle: false,
-        height: 96,
-        bottomRadius: AppRadii.hero,
-        actions: [_buildArchiveCount(allMonitoring.length)],
-      ),
-      body: monitoringAsync.when(
-        loading: _buildLoadingState,
-        error: (error, stackTrace) => _buildErrorState(),
-        data: _buildHistoryContent,
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: DeveloperHeader(
+              showBrandBar: false,
+              pageTitle: 'Riwayat Survey & BA',
+              pageSubtitle: '${allMonitoring.length} laporan',
+              bottomPadding: AppSpacing.xl,
+            ),
+          ),
+          ...monitoringAsync.when(
+            loading: () => [_fillState(_buildLoadingState())],
+            error: (error, stackTrace) => [_fillState(_buildErrorState())],
+            data: _buildHistorySlivers,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildArchiveCount(int count) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: AppRadii.pill,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.24)),
-      ),
-      child: Text(
-        '$count Arsip',
-        style: AppTextStyles.labelMedium.copyWith(
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-          fontFamily: AppTextStyles.enterpriseFontFamily,
-        ),
-      ),
-    );
-  }
+  Widget _fillState(Widget child) =>
+      SliverFillRemaining(hasScrollBody: false, child: child);
 
   Widget _buildLoadingState() {
     return const Center(
-      child: CircularProgressIndicator(color: AppColors.enterprisePrimary),
+      child: CircularProgressIndicator(color: AppColors.primaryRed),
     );
   }
 
@@ -101,14 +90,14 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
             const Icon(
               Icons.cloud_off_outlined,
               size: 48,
-              color: AppColors.enterpriseTextMuted,
+              color: AppColors.textSecondary,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
               'Riwayat survey belum dapat dimuat.',
               textAlign: TextAlign.center,
-              style: _text(
-                AppTextStyles.titleMedium,
+              style: AppTextStyles.titleMedium.copyWith(
+                color: AppColors.enterpriseTextMain,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -116,16 +105,20 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
             Text(
               'Coba muat ulang data untuk melihat laporan yang tersedia.',
               textAlign: TextAlign.center,
-              style: _text(
-                AppTextStyles.bodySmall,
-                color: AppColors.enterpriseTextMuted,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
             OutlinedButton.icon(
               onPressed: () => ref.invalidate(monitoringListAsyncProvider),
               icon: const Icon(Icons.refresh, size: 18),
-              label: Text('Coba lagi', style: _text(AppTextStyles.labelLarge)),
+              label: Text(
+                'Coba lagi',
+                style: AppTextStyles.labelLarge.copyWith(
+                  color: AppColors.primaryRed,
+                ),
+              ),
             ),
           ],
         ),
@@ -133,98 +126,102 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
     );
   }
 
-  Widget _buildHistoryContent(List<MonitoringModel> allItems) {
+  List<Widget> _buildHistorySlivers(List<MonitoringModel> allItems) {
     final filteredItems = _filterItems(allItems);
-    final counts = _filterCounts(allItems);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(
+    return [
+      SliverPersistentHeader(
+        pinned: true,
+        delegate: _SearchBandDelegate(
+          builder: (context, pinned) => _buildSearchBand(pinned),
+        ),
+      ),
+      if (filteredItems.isEmpty)
+        _fillState(_buildEmptyState())
+      else
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
-            AppSpacing.md,
+            AppSpacing.sm,
             AppSpacing.lg,
             0,
           ),
-          child: PrototypeDataBanner(),
+          sliver: SliverList.separated(
+            itemCount: filteredItems.length,
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
+            itemBuilder: (context, index) =>
+                _buildReportCard(filteredItems[index]),
+          ),
         ),
-        _buildSearchField(),
-        _buildFilterChips(counts),
-        Padding(
+      SliverToBoxAdapter(
+        child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
             AppSpacing.lg,
             AppSpacing.lg,
-            AppSpacing.sm,
+            AppSpacing.xl,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  'DAFTAR LAPORAN TERVERIFIKASI',
-                  style: _text(
-                    AppTextStyles.labelMedium,
-                    color: AppColors.enterpriseTextMuted,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.7,
-                  ),
-                ),
+          child: Center(
+            child: Text(
+              'Mode prototipe lokal · data contoh',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                '${filteredItems.length} laporan',
-                style: _text(
-                  AppTextStyles.bodySmall,
-                  color: AppColors.enterpriseTextMuted,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-        Expanded(
-          child: filteredItems.isEmpty
-              ? _buildEmptyState()
-              : ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.lg,
-                    AppSpacing.sm,
-                    AppSpacing.lg,
-                    AppSpacing.xl,
-                  ),
-                  itemCount: filteredItems.length,
-                  itemBuilder: (context, index) =>
-                      _buildReportCard(filteredItems[index]),
-                ),
-        ),
-      ],
-    );
+      ),
+    ];
   }
 
-  Widget _buildSearchField() {
-    return Padding(
+  Widget _buildSearchBand(bool pinned) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseCanvas,
+        border: Border(
+          bottom: BorderSide(
+            color: pinned ? AppColors.enterpriseBorder : Colors.transparent,
+          ),
+        ),
+      ),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.md,
         AppSpacing.lg,
         AppSpacing.sm,
       ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildSearchField(),
+          const SizedBox(height: AppSpacing.sm),
+          _buildFilterChips(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchField() {
+    return SizedBox(
+      height: 44,
       child: TextField(
         controller: _searchController,
         onChanged: (value) => setState(() => _searchQuery = value),
         textInputAction: TextInputAction.search,
-        style: _text(AppTextStyles.bodyMedium),
+        style: AppTextStyles.bodyMedium.copyWith(
+          color: AppColors.enterpriseTextMain,
+          fontWeight: FontWeight.w500,
+        ),
         decoration: InputDecoration(
-          hintText: 'Cari nama perumahan, pengembang...',
-          hintStyle: _text(
-            AppTextStyles.bodySmall,
-            color: AppColors.enterpriseTextMuted,
+          hintText: 'Cari perumahan atau pengembang',
+          hintStyle: AppTextStyles.bodyMedium.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
           ),
           prefixIcon: const Icon(
             Icons.search,
-            color: AppColors.enterpriseTextMuted,
+            color: AppColors.textSecondary,
             size: 20,
           ),
           suffixIcon: _searchQuery.isEmpty
@@ -237,16 +234,13 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
                   },
                   icon: const Icon(
                     Icons.close,
-                    color: AppColors.enterpriseTextMuted,
+                    color: AppColors.textSecondary,
                     size: 18,
                   ),
                 ),
           filled: true,
-          fillColor: AppColors.enterpriseSurface,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.md,
-          ),
+          fillColor: AppColors.cardSurface,
+          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           border: const OutlineInputBorder(
             borderRadius: AppRadii.control,
             borderSide: BorderSide(color: AppColors.enterpriseBorder),
@@ -257,46 +251,41 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
           ),
           focusedBorder: const OutlineInputBorder(
             borderRadius: AppRadii.control,
-            borderSide: BorderSide(color: AppColors.enterprisePrimary),
+            borderSide: BorderSide(color: AppColors.primaryRed),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildFilterChips(Map<_HistoryFilter, int> counts) {
-    final labels = {
-      _HistoryFilter.all: 'Semua',
-      _HistoryFilter.sesuai: 'Sesuai',
-      _HistoryFilter.perluEvaluasi: 'Perlu Evaluasi',
-    };
-
+  Widget _buildFilterChips() {
     return SizedBox(
-      height: 42,
+      height: 36,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         scrollDirection: Axis.horizontal,
-        itemCount: labels.length,
+        itemCount: _filterLabels.length,
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
         itemBuilder: (context, index) {
-          final filter = labels.keys.elementAt(index);
+          final filter = _filterLabels.keys.elementAt(index);
           final selected = filter == _selectedFilter;
           return ChoiceChip(
             selected: selected,
             showCheckmark: false,
+            visualDensity: VisualDensity.compact,
             label: Text(
-              '${labels[filter]} (${counts[filter] ?? 0})',
-              style: _text(
-                AppTextStyles.labelMedium,
-                color: selected ? Colors.white : AppColors.enterpriseTextMain,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              _filterLabels[filter]!,
+              style: AppTextStyles.labelLarge.copyWith(
+                color: selected
+                    ? AppColors.textOnRed
+                    : AppColors.enterpriseTextMain,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
-            selectedColor: AppColors.enterprisePrimary,
-            backgroundColor: AppColors.enterpriseSurface,
+            selectedColor: AppColors.primaryRed,
+            backgroundColor: AppColors.cardSurface,
             side: BorderSide(
               color: selected
-                  ? AppColors.enterprisePrimary
+                  ? AppColors.primaryRed
                   : AppColors.enterpriseBorder,
             ),
             shape: const StadiumBorder(),
@@ -319,7 +308,7 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
             const Icon(
               Icons.assignment_outlined,
               size: 48,
-              color: AppColors.enterpriseTextMuted,
+              color: AppColors.textSecondary,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
@@ -327,8 +316,8 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
                   ? 'Tidak ada laporan yang sesuai filter.'
                   : 'Belum ada laporan survey.',
               textAlign: TextAlign.center,
-              style: _text(
-                AppTextStyles.titleMedium,
+              style: AppTextStyles.titleMedium.copyWith(
+                color: AppColors.enterpriseTextMain,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -336,11 +325,10 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
             Text(
               hasFilters
                   ? 'Coba ubah kata kunci atau status filter.'
-                  : 'Laporan final akan tampil di sini.',
+                  : 'Laporan akan tampil di sini setelah survey dicatat.',
               textAlign: TextAlign.center,
-              style: _text(
-                AppTextStyles.bodySmall,
-                color: AppColors.enterpriseTextMuted,
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.textSecondary,
               ),
             ),
           ],
@@ -350,20 +338,18 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
   }
 
   Widget _buildReportCard(MonitoringModel item) {
-    final date = DateFormat('d MMM yyyy').format(item.tanggalMonitoring);
+    final date = DateFormat('d MMM yyyy', 'id').format(item.tanggalMonitoring);
+    final nomorBA = item.nomorSuratBA.trim().isNotEmpty
+        ? item.nomorSuratBA.trim()
+        : MonitoringModel.generateNomorSuratBA(item.tanggalMonitoring);
+    final meta = '$date · $nomorBA';
     return Container(
-      margin: const EdgeInsets.only(bottom: AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.enterpriseSurface,
+      decoration: const BoxDecoration(
+        color: AppColors.cardSurface,
         borderRadius: AppRadii.card,
-        border: Border.all(color: AppColors.enterpriseBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.fromBorderSide(
+          BorderSide(color: AppColors.enterpriseBorder),
+        ),
       ),
       child: Material(
         color: Colors.transparent,
@@ -371,7 +357,9 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
           borderRadius: AppRadii.card,
           onTap: () => context.push(
             item.isDraft ? '/monitoring/draft' : '/monitoring/preview',
-            extra: item.isDraft ? item : {'model': item, 'isDraft': item.isDraft},
+            extra: item.isDraft
+                ? item
+                : {'model': item, 'isDraft': item.isDraft},
           ),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -382,120 +370,37 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.5,
-                          vertical: 3.5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.enterprisePrimarySurfaceSoft,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          item.nomorSuratBA,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: _text(
-                            AppTextStyles.labelSmall,
-                            color: AppColors.enterprisePrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
+                      child: Text(
+                        item.namaPerumahan,
+                        style: AppTextStyles.headlineSmall.copyWith(
+                          color: AppColors.enterpriseTextMain,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    Flexible(
-                      child: StatusHasilEvaluasiBadgeWidget(
-                        status: item.statusHasilEvaluasi,
-                        isCompact: true,
-                        showIcon: false,
-                      ),
-                    ),
+                    _StatusPill(item: item),
                   ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  item.namaPerumahan,
-                  style: _text(
-                    AppTextStyles.headlineSmall,
-                    color: AppColors.enterpriseTextMain,
-                    fontWeight: FontWeight.w700,
-                  ),
                 ),
                 if (item.namaDeveloper.trim().isNotEmpty) ...[
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     item.namaDeveloper,
-                    style: _text(
-                      AppTextStyles.bodySmall,
-                      color: AppColors.enterpriseTextMuted,
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
-                if (item.lokasiPerumahan.trim().isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    item.lokasiPerumahan,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: _text(
-                      AppTextStyles.bodySmall,
-                      color: AppColors.enterpriseTextMuted,
-                    ),
+                const SizedBox(height: AppSpacing.xs / 2),
+                Text(
+                  meta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
-                ],
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  child: Divider(height: 1, color: AppColors.enterpriseBorder),
-                ),
-                Wrap(
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  runSpacing: AppSpacing.sm,
-                  children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 16,
-                          color: AppColors.enterpriseTextMuted,
-                        ),
-                        const SizedBox(width: AppSpacing.sm),
-                        Text(
-                          date,
-                          style: _text(
-                            AppTextStyles.bodySmall,
-                            color: AppColors.enterpriseTextMuted,
-                          ),
-                        ),
-                      ],
-                    ),
-                    TextButton(
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.sm,
-                          vertical: AppSpacing.xs,
-                        ),
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      onPressed: () => context.push(
-                        item.isDraft ? '/monitoring/draft' : '/monitoring/preview',
-                        extra: item.isDraft ? item : {'model': item, 'isDraft': item.isDraft},
-                      ),
-                      child: Text(
-                        item.isDraft ? 'Dokumen Draft' : 'Lihat Dokumen BA',
-                        style: _text(
-                          AppTextStyles.labelMedium,
-                          color: item.isDraft
-                              ? AppColors.enterpriseTextMuted
-                              : AppColors.enterprisePrimary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -507,7 +412,7 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
 
   List<MonitoringModel> _filterItems(List<MonitoringModel> items) {
     final query = _searchQuery.trim().toLowerCase();
-    return items.where((item) {
+    final filtered = items.where((item) {
       final matchesQuery =
           query.isEmpty ||
           item.namaPerumahan.toLowerCase().contains(query) ||
@@ -515,42 +420,97 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
           item.lokasiPerumahan.toLowerCase().contains(query);
       return matchesQuery && _matchesFilter(item, _selectedFilter);
     }).toList();
-  }
-
-  Map<_HistoryFilter, int> _filterCounts(List<MonitoringModel> items) {
-    return {
-      _HistoryFilter.all: items.length,
-      _HistoryFilter.sesuai: items
-          .where((item) => _matchesFilter(item, _HistoryFilter.sesuai))
-          .length,
-      _HistoryFilter.perluEvaluasi: items
-          .where((item) => _matchesFilter(item, _HistoryFilter.perluEvaluasi))
-          .length,
-    };
+    filtered.sort((a, b) => b.tanggalMonitoring.compareTo(a.tanggalMonitoring));
+    return filtered;
   }
 
   bool _matchesFilter(MonitoringModel item, _HistoryFilter filter) {
     switch (filter) {
       case _HistoryFilter.all:
         return true;
+      case _HistoryFilter.draf:
+        return item.isDraft;
       case _HistoryFilter.sesuai:
-        return item.statusHasilEvaluasi == StatusHasilEvaluasi.sesuaiSiteplan;
+        return !item.isDraft &&
+            item.statusHasilEvaluasi == StatusHasilEvaluasi.sesuaiSiteplan;
       case _HistoryFilter.perluEvaluasi:
-        return item.statusHasilEvaluasi != StatusHasilEvaluasi.sesuaiSiteplan;
+        return !item.isDraft &&
+            item.statusHasilEvaluasi != StatusHasilEvaluasi.sesuaiSiteplan;
     }
   }
+}
 
-  TextStyle _text(
-    TextStyle base, {
-    Color? color,
-    FontWeight? fontWeight,
-    double? letterSpacing,
-  }) {
-    return base.copyWith(
-      color: color ?? base.color,
-      fontWeight: fontWeight ?? base.fontWeight,
-      letterSpacing: letterSpacing ?? base.letterSpacing,
-      fontFamily: AppTextStyles.enterpriseFontFamily,
+/// Satu status per kartu: draf belum punya hasil evaluasi final.
+class _StatusPill extends StatelessWidget {
+  final MonitoringModel item;
+
+  const _StatusPill({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, background, foreground) = item.isDraft
+        ? ('Draf', AppColors.enterpriseBorder, const Color(0xFF334155))
+        : switch (item.statusHasilEvaluasi) {
+            StatusHasilEvaluasi.sesuaiSiteplan => (
+              'Sesuai',
+              AppColors.enterpriseSuccessSurface,
+              const Color(0xFF166534),
+            ),
+            StatusHasilEvaluasi.tidakSesuaiSiteplan => (
+              'Tidak sesuai',
+              AppColors.enterprisePrimarySurface,
+              const Color(0xFF991B1B),
+            ),
+            StatusHasilEvaluasi.perluEvaluasiLanjutan => (
+              'Perlu evaluasi',
+              AppColors.enterpriseWarningSurface,
+              const Color(0xFF92400E),
+            ),
+          };
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md - 3,
+        vertical: AppSpacing.xs - 1,
+      ),
+      decoration: BoxDecoration(color: background, borderRadius: AppRadii.pill),
+      child: Text(
+        label,
+        textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
+        style: AppTextStyles.labelMedium.copyWith(
+          color: foreground,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
     );
   }
+}
+
+class _SearchBandDelegate extends SliverPersistentHeaderDelegate {
+  final Widget Function(BuildContext context, bool pinned) builder;
+
+  const _SearchBandDelegate({required this.builder});
+
+  @override
+  double get minExtent => _searchBandHeight;
+
+  @override
+  double get maxExtent => _searchBandHeight;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    // Skala teks dibatasi agar band yang menempel tidak membengkak.
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(
+        textScaler: MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3),
+      ),
+      child: builder(context, overlapsContent),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _SearchBandDelegate oldDelegate) => true;
 }
