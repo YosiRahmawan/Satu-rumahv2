@@ -10,10 +10,24 @@ class DeveloperNotificationTile extends StatelessWidget {
     super.key,
     required this.item,
     required this.onTap,
+    this.actionRequired = false,
   });
 
   final NotifikasiModel item;
   final VoidCallback onTap;
+
+  /// Permintaan revisi yang masih aktif: satu-satunya kartu yang memakai
+  /// aksen amber. Kartu lain tetap netral.
+  final bool actionRequired;
+
+  String get _kategori => switch (item.jenis) {
+    JenisNotifikasi.pengajuanBaru => 'PENGAJUAN',
+    JenisNotifikasi.reminderSurvey => 'JADWAL SURVEY',
+    JenisNotifikasi.deadlineVerifikasi => 'VERIFIKASI',
+    JenisNotifikasi.dokumenDiunggahUlang => 'DOKUMEN',
+    JenisNotifikasi.perluRevisi =>
+      actionRequired ? 'TINDAKAN DIPERLUKAN' : 'REVISI',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -31,9 +45,14 @@ class DeveloperNotificationTile extends StatelessWidget {
         AppColors.statusUrgentText,
         AppColors.statusUrgentSurface,
       ),
+      JenisNotifikasi.perluRevisi =>
+        actionRequired
+            ? (AppColors.statusWarningText, AppColors.statusWarningSurface)
+            : (AppColors.slate500, AppColors.slate100),
     };
-    final iconColor = item.isRead ? const Color(0xFF64748B) : color;
-    final iconSurface = item.isRead ? const Color(0xFFF1F5F9) : surface;
+    final emphasised = !item.isRead || actionRequired;
+    final iconColor = emphasised ? color : const Color(0xFF64748B);
+    final iconSurface = emphasised ? surface : const Color(0xFFF1F5F9);
 
     return Semantics(
       label: item.isRead ? 'Sudah dibaca' : 'Belum dibaca',
@@ -43,9 +62,11 @@ class DeveloperNotificationTile extends StatelessWidget {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: BorderSide(
-            color: item.isRead
-                ? const Color(0xFFE2E8F0)
-                : const Color(0xFFCBD5E1),
+            color: actionRequired
+                ? AppColors.statusWarningText.withValues(alpha: 0.35)
+                : (item.isRead
+                      ? const Color(0xFFE2E8F0)
+                      : const Color(0xFFCBD5E1)),
             width: 1,
           ),
         ),
@@ -53,102 +74,100 @@ class DeveloperNotificationTile extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
-          child: Container(
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (item.isRead)
-                  Semantics(
-                    container: true,
-                    label: 'Sudah dibaca',
-                    child: const SizedBox.shrink(),
-                  ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: iconSurface,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(item.jenis.icon, color: iconColor, size: 19),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 44),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: iconSurface,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  item.judul,
-                                  style: AppTextStyles.titleMedium.copyWith(
-                                    fontSize: 14,
-                                    fontWeight: item.isRead
-                                        ? FontWeight.w600
-                                        : FontWeight.w800,
-                                    color: item.isRead
-                                        ? const Color(0xFF1E293B)
-                                        : const Color(0xFF0F172A),
-                                    height: 1.25,
+                    child: Icon(item.jenis.icon, color: iconColor, size: 19),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Semantics(
+                          container: true,
+                          label: item.isRead ? 'Sudah dibaca' : 'Belum dibaca',
+                          child: const SizedBox.shrink(),
+                        ),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: [
+                                  _pill(
+                                    _kategori,
+                                    emphasised
+                                        ? color
+                                        : const Color(0xFF64748B),
+                                    emphasised
+                                        ? surface
+                                        : const Color(0xFFF1F5F9),
+                                  ),
+                                  if (item.isSimulasi)
+                                    _pill(
+                                      'SIMULASI',
+                                      const Color(0xFF64748B),
+                                      const Color(0xFFF1F5F9),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            if (!item.isRead) ...[
+                              const SizedBox(width: 8),
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Container(
+                                  key: const ValueKey('unread-indicator'),
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primaryRed,
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
                               ),
-                              if (!item.isRead) ...[
-                                const SizedBox(width: 8),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Container(
-                                    key: const ValueKey('unread-indicator'),
-                                    width: 8,
-                                    height: 8,
-                                    decoration: const BoxDecoration(
-                                      color: AppColors.primaryRed,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ],
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item.judul,
+                          style: AppTextStyles.titleMedium.copyWith(
+                            fontSize: 14,
+                            fontWeight: item.isRead
+                                ? FontWeight.w600
+                                : FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                            height: 1.25,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            item.deskripsi,
-                            style: AppTextStyles.bodySmall.copyWith(
-                              fontSize: 13,
-                              color: const Color(0xFF475569),
-                              height: 1.4,
-                            ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          item.deskripsi,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.bodySmall.copyWith(
+                            fontSize: 13,
+                            color: const Color(0xFF64748B),
+                            height: 1.4,
                           ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.only(top: 8),
-                  decoration: const BoxDecoration(
-                    border: Border(top: BorderSide(color: Color(0xFFF1F5F9))),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
                           DateFormat('dd/MM/yyyy • HH:mm').format(item.waktu),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -158,13 +177,32 @@ class DeveloperNotificationTile extends StatelessWidget {
                             color: Color(0xFF94A3B8),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pill(String text, Color color, Color surface) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
+          color: color,
         ),
       ),
     );

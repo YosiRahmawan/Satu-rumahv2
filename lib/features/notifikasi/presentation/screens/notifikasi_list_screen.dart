@@ -10,6 +10,9 @@ import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
+import '../../../pengajuan/data/models/pengajuan_model.dart';
+import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
+import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../data/models/notifikasi_model.dart';
 import '../providers/notifikasi_provider.dart';
 import '../widgets/developer_notification_view.dart';
@@ -67,6 +70,54 @@ String? notificationTargetForRole(NotifikasiModel item, AppRole role) {
   }
 }
 
+/// Id notifikasi revisi yang masih aktif. Aktif bila jenisnya `perluRevisi`,
+/// merujuk pengajuan yang ada, pengajuan itu masih `perluPerbaikan`, belum
+/// dikirim ulang, dan masih punya dokumen yang diminta revisi. Bila satu
+/// pengajuan punya beberapa permintaan, hanya yang terbaru yang aktif.
+Set<String> activeRevisionNotificationIds(
+  List<NotifikasiModel> items,
+  List<Pengajuan> pengajuan,
+) {
+  final latest = <String, NotifikasiModel>{};
+  for (final item in items) {
+    final id = item.pengajuanId;
+    if (item.jenis != JenisNotifikasi.perluRevisi || id == null) continue;
+    final current = latest[id];
+    if (current == null || item.waktu.isAfter(current.waktu)) latest[id] = item;
+  }
+  final active = <String>{};
+  for (final entry in latest.entries) {
+    final match = pengajuan.where((e) => e.id == entry.key);
+    if (match.isEmpty) continue;
+    final item = match.first;
+    if (item.statusTahap == StatusTahapPengajuan.perluPerbaikan &&
+        !item.revisionSubmitted &&
+        item.dokumenPerluRevisi.isNotEmpty) {
+      active.add(entry.value.id);
+    }
+  }
+  return active;
+}
+
+/// Tujuan ketuk notifikasi Pengembang. Relasi utama adalah `pengajuanId`;
+/// pengajuan yang tidak ada berarti tujuan tidak tersedia (null), bukan
+/// navigasi ke layar kosong. Tanpa `pengajuanId`, dipakai pemetaan rute lama.
+String? developerNotificationTarget(
+  NotifikasiModel item,
+  List<Pengajuan> pengajuan, {
+  required bool revisiAktif,
+}) {
+  final id = item.pengajuanId;
+  if (id != null) {
+    if (!pengajuan.any((e) => e.id == id)) return null;
+    final encoded = Uri.encodeComponent(id);
+    return revisiAktif
+        ? '/pengajuan/perbarui-berkas/$encoded'
+        : '/pengajuan/detail/$encoded';
+  }
+  return notificationTargetForRole(item, AppRole.developer);
+}
+
 class NotifikasiListScreen extends ConsumerStatefulWidget {
   const NotifikasiListScreen({super.key});
 
@@ -77,13 +128,19 @@ class NotifikasiListScreen extends ConsumerStatefulWidget {
 
 class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
   String _selectedFilter = 'Semua';
+  NotifikasiFilter _developerFilter = NotifikasiFilter.semua;
 
   @override
   Widget build(BuildContext context) {
-    final allNotifs = ref.watch(notifikasiProvider);
     final notifier = ref.read(notifikasiProvider.notifier);
     final session = ref.watch(roleSessionProvider);
     final role = session.role;
+    // Hanya notifikasi yang ditujukan ke role aktif (Pengembang tidak melihat
+    // notifikasi Admin/Perwaskim, dan sebaliknya).
+    final allNotifs = ref
+        .watch(notifikasiProvider)
+        .where((item) => item.untukRole(role))
+        .toList();
     final String? avatarInitials =
         (session.username != null && session.username!.trim().isNotEmpty)
         ? (session.username!.trim().length >= 2
@@ -96,27 +153,40 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
         : allNotifs;
 
     if (role == AppRole.developer) {
-      final sortedNotifs = [...filteredNotifs]
+      final pengajuan = ref.watch(pengajuanListProvider);
+      final activeIds = activeRevisionNotificationIds(allNotifs, pengajuan);
+      final shown = switch (_developerFilter) {
+        NotifikasiFilter.semua => allNotifs,
+        NotifikasiFilter.belumDibaca =>
+          allNotifs.where((e) => !e.isRead).toList(),
+        NotifikasiFilter.perluRevisi =>
+          allNotifs.where((e) => activeIds.contains(e.id)).toList(),
+      };
+      final sortedNotifs = [...shown]
         ..sort((a, b) => b.waktu.compareTo(a.waktu));
       return DeveloperNotificationView(
         items: sortedNotifs,
         unreadCount: allNotifs.where((item) => !item.isRead).length,
-        unreadOnly: _selectedFilter == 'Belum Dibaca',
+        filter: _developerFilter,
+        activeRevisionIds: activeIds,
         avatarLabel: avatarInitials,
         showOnlineIndicator: session.isAuthenticated,
-        onFilterChanged: (unreadOnly) => setState(
-          () => _selectedFilter = unreadOnly ? 'Belum Dibaca' : 'Semua',
-        ),
-        onMarkAllRead: notifier.markAllAsRead,
+        onFilterChanged: (filter) => setState(() => _developerFilter = filter),
+        onMarkAllRead: () => notifier.markAllAsRead(untuk: role),
         onAvatarTap: () => ref.read(dashboardTabProvider.notifier).state = 3,
         onOpen: (item) {
-          notifier.markAsRead(item.id);
-          final route = notificationTargetForRole(item, role);
+          final route = developerNotificationTarget(
+            item,
+            pengajuan,
+            revisiAktif: activeIds.contains(item.id),
+          );
           if (route == null) {
+            // Tujuan gagal dibuka: jangan tandai dibaca.
             showUnavailableAction(context, 'Tujuan notifikasi ini');
-          } else {
-            context.push(route);
+            return;
           }
+          notifier.markAsRead(item.id);
+          context.push(route);
         },
       );
     }
@@ -209,7 +279,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: allNotifs.any((item) => !item.isRead)
-                        ? notifier.markAllAsRead
+                        ? () => notifier.markAllAsRead(untuk: role)
                         : null,
                     child: const Text('Tandai semua dibaca'),
                   ),

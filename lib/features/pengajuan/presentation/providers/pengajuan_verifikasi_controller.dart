@@ -1,3 +1,4 @@
+import '../../../../core/auth/role_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
@@ -430,13 +431,15 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
         .addNotification(
           NotifikasiModel(
             id: 'n-${DateTime.now().millisecondsSinceEpoch}',
-            jenis: JenisNotifikasi.dokumenDiunggahUlang,
+            jenis: JenisNotifikasi.perluRevisi,
             judul: 'Perbaikan Dokumen Diumumkan',
             deskripsi:
                 'Catatan perbaikan untuk ${current.namaPerumahan}: $note',
             waktu: DateTime.now(),
             isRead: false,
             targetRoute: '/pengajuan/detail/${current.id}',
+            pengajuanId: current.id,
+            penerima: AppRole.developer,
           ),
         );
     return PengajuanOperationResult.changed(
@@ -533,6 +536,8 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
             waktu: DateTime.now(),
             isRead: false,
             targetRoute: '/admin/pengajuan/detail/${current.id}',
+            pengajuanId: current.id,
+            penerima: AppRole.admin,
           ),
         );
 
@@ -621,6 +626,8 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
             waktu: DateTime.now(),
             isRead: false,
             targetRoute: '/pengajuan/detail/${current.id}',
+            pengajuanId: current.id,
+            penerima: AppRole.perwaskim,
           ),
         );
     return PengajuanOperationResult.changed(

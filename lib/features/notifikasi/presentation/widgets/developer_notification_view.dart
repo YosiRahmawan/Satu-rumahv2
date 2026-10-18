@@ -8,14 +8,18 @@ import '../../../../core/widgets/developer_header.dart';
 import '../../data/models/notifikasi_model.dart';
 import 'developer_notification_tile.dart';
 
+/// Filter daftar notifikasi Pengembang.
+enum NotifikasiFilter { semua, belumDibaca, perluRevisi }
+
 /// Content of the existing Pengembang tab; navigation belongs to its dashboard.
 class DeveloperNotificationView extends StatelessWidget {
   const DeveloperNotificationView({
     super.key,
     required this.items,
     required this.unreadCount,
-    required this.unreadOnly,
+    required this.filter,
     required this.onFilterChanged,
+    this.activeRevisionIds = const {},
     required this.onMarkAllRead,
     required this.onOpen,
     this.onAvatarTap,
@@ -25,8 +29,11 @@ class DeveloperNotificationView extends StatelessWidget {
 
   final List<NotifikasiModel> items;
   final int unreadCount;
-  final bool unreadOnly;
-  final ValueChanged<bool> onFilterChanged;
+  final NotifikasiFilter filter;
+  final ValueChanged<NotifikasiFilter> onFilterChanged;
+
+  /// Id notifikasi revisi yang masih aktif (kartu dengan aksen perhatian).
+  final Set<String> activeRevisionIds;
   final VoidCallback onMarkAllRead;
   final ValueChanged<NotifikasiModel> onOpen;
   final VoidCallback? onAvatarTap;
@@ -84,58 +91,49 @@ class DeveloperNotificationView extends StatelessWidget {
                         ),
                       ),
                     ),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final filterChips = Wrap(
-                          spacing: AppSpacing.xs,
-                          runSpacing: AppSpacing.xs,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            _filter('Semua', false),
-                            _filter(
-                              unreadCount > 0
-                                  ? 'Belum dibaca ($unreadCount)'
-                                  : 'Belum dibaca',
-                              true,
-                            ),
-                          ],
-                        );
-
-                        final markAllReadButton = TextButton.icon(
-                          onPressed: unreadCount > 0 ? onMarkAllRead : null,
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.primaryRed,
-                            disabledForegroundColor: const Color(0xFF94A3B8),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 4,
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            textStyle: const TextStyle(
-                              fontFamily: 'Plus Jakarta Sans',
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w700,
-                            ),
+                    Wrap(
+                      spacing: AppSpacing.xs,
+                      runSpacing: AppSpacing.xs,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _filter('Semua', NotifikasiFilter.semua),
+                        _filter(
+                          unreadCount > 0
+                              ? 'Belum dibaca ($unreadCount)'
+                              : 'Belum dibaca',
+                          NotifikasiFilter.belumDibaca,
+                        ),
+                        _filter('Perlu Revisi', NotifikasiFilter.perluRevisi),
+                      ],
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: unreadCount > 0 ? onMarkAllRead : null,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primaryRed,
+                          disabledForegroundColor: const Color(0xFF94A3B8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                          icon: Icon(
-                            Icons.done_all_rounded,
-                            size: 15,
-                            color: unreadCount > 0
-                                ? AppColors.primaryRed
-                                : const Color(0xFF94A3B8),
+                          minimumSize: const Size(44, 44),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          textStyle: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
                           ),
-                          label: const Text('Tandai semua dibaca'),
-                        );
-
-                        return Wrap(
-                          alignment: WrapAlignment.spaceBetween,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.xs,
-                          children: [filterChips, markAllReadButton],
-                        );
-                      },
+                        ),
+                        icon: Icon(
+                          Icons.done_all_rounded,
+                          size: 15,
+                          color: unreadCount > 0
+                              ? AppColors.primaryRed
+                              : const Color(0xFF94A3B8),
+                        ),
+                        label: const Text('Tandai semua dibaca'),
+                      ),
                     ),
                   ],
                 ),
@@ -156,30 +154,9 @@ class DeveloperNotificationView extends StatelessWidget {
                     return FadeTransition(opacity: animation, child: child);
                   },
                   child: KeyedSubtree(
-                    key: ValueKey<bool>(unreadOnly),
+                    key: ValueKey<NotifikasiFilter>(filter),
                     child: items.isEmpty
-                        ? DataStateView.empty(
-                            illustration: unreadOnly
-                                ? SvgPicture.asset(
-                                    'assets/images/notifikasi_unread_empty.svg',
-                                    width: 180,
-                                    height: 135,
-                                    fit: BoxFit.contain,
-                                  )
-                                : null,
-                            title: unreadOnly
-                                ? 'Tidak ada notifikasi belum dibaca'
-                                : 'Belum ada notifikasi',
-                            message: unreadOnly
-                                ? 'Semua notifikasi sudah dibaca. Anda dapat melihatnya kembali di daftar semua notifikasi.'
-                                : 'Informasi terkait pengajuan akan ditampilkan di sini.',
-                            actionLabel: unreadOnly
-                                ? 'Lihat semua notifikasi'
-                                : null,
-                            onAction: unreadOnly
-                                ? () => onFilterChanged(false)
-                                : null,
-                          )
+                        ? _emptyState()
                         : Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
@@ -191,6 +168,9 @@ class DeveloperNotificationView extends StatelessWidget {
                                   child: DeveloperNotificationTile(
                                     key: ValueKey(item.id),
                                     item: item,
+                                    actionRequired: activeRevisionIds.contains(
+                                      item.id,
+                                    ),
                                     onTap: () => onOpen(item),
                                   ),
                                 ),
@@ -212,16 +192,48 @@ class DeveloperNotificationView extends StatelessWidget {
     );
   }
 
-  Widget _filter(String label, bool value) {
-    final selected = unreadOnly == value;
+  Widget _emptyState() {
+    switch (filter) {
+      case NotifikasiFilter.belumDibaca:
+        return DataStateView.empty(
+          illustration: SvgPicture.asset(
+            'assets/images/notifikasi_unread_empty.svg',
+            width: 180,
+            height: 135,
+            fit: BoxFit.contain,
+          ),
+          title: 'Tidak ada notifikasi belum dibaca',
+          message:
+              'Semua notifikasi sudah dibaca. Anda dapat melihatnya kembali di daftar semua notifikasi.',
+          actionLabel: 'Lihat semua notifikasi',
+          onAction: () => onFilterChanged(NotifikasiFilter.semua),
+        );
+      case NotifikasiFilter.perluRevisi:
+        return DataStateView.empty(
+          title: 'Tidak ada revisi aktif',
+          message:
+              'Pengajuan Anda belum memiliki permintaan perbaikan yang perlu ditindaklanjuti.',
+          actionLabel: 'Lihat semua notifikasi',
+          onAction: () => onFilterChanged(NotifikasiFilter.semua),
+        );
+      case NotifikasiFilter.semua:
+        return const DataStateView.empty(
+          title: 'Belum ada notifikasi',
+          message: 'Informasi terkait pengajuan akan ditampilkan di sini.',
+        );
+    }
+  }
+
+  Widget _filter(String label, NotifikasiFilter value) {
+    final selected = filter == value;
     return ChoiceChip(
       label: Text(label),
       selected: selected,
       onSelected: (_) => onFilterChanged(value),
       showCheckmark: false,
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      visualDensity: const VisualDensity(horizontal: -1, vertical: -1),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       backgroundColor: Colors.white,
       selectedColor: AppColors.primaryRed,
       side: selected

@@ -1,3 +1,4 @@
+import '../../../../core/auth/role_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -857,7 +858,9 @@ class _PengajuanStep5ReviewScreenState
             deskripsi:
                 'Pengajuan ($id) telah diterima dan dalam verifikasi administrasi.',
             waktu: DateTime.now(),
-            targetRoute: '/admin/pengajuan/detail/$id',
+            targetRoute: '/pengajuan/detail/$id',
+            pengajuanId: id,
+            penerima: AppRole.developer,
           ),
         );
     ref.read(pengajuanFormProvider.notifier).reset();

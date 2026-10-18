@@ -1,3 +1,4 @@
+import '../../../../core/auth/role_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
@@ -360,6 +361,8 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
                 waktu: DateTime.now(),
                 isRead: false,
                 targetRoute: '/pengajuan/detail/${pengajuan.id}',
+                pengajuanId: pengajuan.id,
+                penerima: AppRole.admin,
               ),
             );
       }

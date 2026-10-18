@@ -708,7 +708,7 @@ final pengajuanFormProvider =
       );
     });
 
-// Repository data pengajuan disinkronkan dengan database satu_rumah.sql (Admin Disperwaskim)
+// Repository data pengajuan lokal (data contoh prototipe, bukan database server)
 class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
   PengajuanListNotifier()
     : super([

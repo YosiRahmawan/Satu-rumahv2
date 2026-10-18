@@ -26,7 +26,7 @@ void main() {
 
   Widget buildView({
     required bool unreadOnly,
-    required ValueChanged<bool> onFilterChanged,
+    required ValueChanged<NotifikasiFilter> onFilterChanged,
     int unreadCount = 1,
     bool disableAnimations = false,
   }) {
@@ -39,7 +39,9 @@ void main() {
         child: DeveloperNotificationView(
           items: filtered,
           unreadCount: unreadCount,
-          unreadOnly: unreadOnly,
+          filter: unreadOnly
+              ? NotifikasiFilter.belumDibaca
+              : NotifikasiFilter.semua,
           onFilterChanged: onFilterChanged,
           onMarkAllRead: () {},
           onOpen: (_) {},
@@ -58,7 +60,9 @@ void main() {
           builder: (context, setState) {
             return buildView(
               unreadOnly: currentFilter,
-              onFilterChanged: (val) => setState(() => currentFilter = val),
+              onFilterChanged: (val) => setState(
+                () => currentFilter = val == NotifikasiFilter.belumDibaca,
+              ),
               unreadCount: 3,
             );
           },
@@ -105,7 +109,9 @@ void main() {
         builder: (context, setState) {
           return buildView(
             unreadOnly: currentFilter,
-            onFilterChanged: (val) => setState(() => currentFilter = val),
+            onFilterChanged: (val) => setState(
+              () => currentFilter = val == NotifikasiFilter.belumDibaca,
+            ),
             disableAnimations: true,
           );
         },

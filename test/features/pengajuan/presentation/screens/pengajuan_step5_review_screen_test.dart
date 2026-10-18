@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satu_rumah/features/notifikasi/presentation/providers/notifikasi_provider.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
@@ -355,10 +356,9 @@ void main() {
       final notification = container.read(notifikasiProvider).first;
       expect(notification.id, 'notif-${submitted.id}');
       expect(notification.deskripsi, contains('(${submitted.id})'));
-      expect(
-        notification.targetRoute,
-        '/admin/pengajuan/detail/${submitted.id}',
-      );
+      expect(notification.targetRoute, '/pengajuan/detail/${submitted.id}');
+      expect(notification.pengajuanId, submitted.id);
+      expect(notification.penerima, AppRole.developer);
       expect(find.text('Pengajuan berhasil'), findsOneWidget);
     },
   );
