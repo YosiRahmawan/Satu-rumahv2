@@ -9,6 +9,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../providers/monitoring_form_provider.dart';
+import '../providers/monitoring_list_provider.dart';
 import '../widgets/status_hasil_evaluasi_badge_widget.dart';
 
 /// Screen displaying the inspection details for an in-progress draft monitoring report.
@@ -19,13 +20,17 @@ import '../widgets/status_hasil_evaluasi_badge_widget.dart';
 class MonitoringDraftScreen extends ConsumerWidget {
   final MonitoringModel monitoring;
 
-  const MonitoringDraftScreen({
-    super.key,
-    required this.monitoring,
-  });
+  const MonitoringDraftScreen({super.key, required this.monitoring});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Ambil versi terbaru dari repository agar perubahan dari "Simpan Draft"
+    // di formulir langsung terlihat setelah kembali ke layar ini.
+    final latest = ref
+        .watch(monitoringListProvider)
+        .where((e) => e.id == monitoring.id);
+    final item = latest.isEmpty ? monitoring : latest.first;
+
     return Scaffold(
       backgroundColor: AppColors.enterpriseCanvas,
       appBar: AppBar(
@@ -69,20 +74,20 @@ class MonitoringDraftScreen extends ConsumerWidget {
                   children: [
                     _buildDraftNoticeBanner(),
                     const SizedBox(height: 16),
-                    _buildObjectCard(monitoring),
+                    _buildObjectCard(item),
                     const SizedBox(height: 16),
-                    _buildEvaluationCard(monitoring),
+                    _buildEvaluationCard(item),
                     const SizedBox(height: 16),
-                    _buildPeopleCard(monitoring),
-                    if (monitoring.photoPaths.isNotEmpty) ...[
+                    _buildPeopleCard(item),
+                    if (item.photoPaths.isNotEmpty) ...[
                       const SizedBox(height: 16),
-                      _buildPhotosCard(monitoring),
+                      _buildPhotosCard(item),
                     ],
                   ],
                 ),
               ),
             ),
-            _buildBottomActionBar(context, ref),
+            _buildBottomActionBar(context, ref, item),
           ],
         ),
       ),
@@ -172,7 +177,10 @@ class MonitoringDraftScreen extends ConsumerWidget {
   Widget _buildObjectCard(MonitoringModel item) {
     String formattedDate = '-';
     try {
-      formattedDate = DateFormat('d MMMM yyyy', 'id').format(item.tanggalMonitoring);
+      formattedDate = DateFormat(
+        'd MMMM yyyy',
+        'id',
+      ).format(item.tanggalMonitoring);
     } catch (_) {
       formattedDate = DateFormat('d MMM yyyy').format(item.tanggalMonitoring);
     }
@@ -272,14 +280,24 @@ class MonitoringDraftScreen extends ConsumerWidget {
     final pelaksanaList = item.pelaksana.isNotEmpty
         ? item.pelaksana
         : (item.pelaksanaNama.isNotEmpty
-            ? [MonitoringPerson(nama: item.pelaksanaNama, jabatan: item.pelaksanaJabatan)]
-            : <MonitoringPerson>[]);
+              ? [
+                  MonitoringPerson(
+                    nama: item.pelaksanaNama,
+                    jabatan: item.pelaksanaJabatan,
+                  ),
+                ]
+              : <MonitoringPerson>[]);
 
     final ditemuiList = item.ditemui.isNotEmpty
         ? item.ditemui
         : (item.ditemuiNama.isNotEmpty
-            ? [MonitoringPerson(nama: item.ditemuiNama, jabatan: item.ditemuiJabatan)]
-            : <MonitoringPerson>[]);
+              ? [
+                  MonitoringPerson(
+                    nama: item.ditemuiNama,
+                    jabatan: item.ditemuiJabatan,
+                  ),
+                ]
+              : <MonitoringPerson>[]);
 
     return Container(
       width: double.infinity,
@@ -308,7 +326,11 @@ class MonitoringDraftScreen extends ConsumerWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.person, size: 16, color: AppColors.enterprisePrimary),
+                    const Icon(
+                      Icons.person,
+                      size: 16,
+                      color: AppColors.enterprisePrimary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -349,7 +371,11 @@ class MonitoringDraftScreen extends ConsumerWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.person_outline, size: 16, color: AppColors.enterpriseTextMuted),
+                    const Icon(
+                      Icons.person_outline,
+                      size: 16,
+                      color: AppColors.enterpriseTextMuted,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Column(
@@ -425,7 +451,11 @@ class MonitoringDraftScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBottomActionBar(BuildContext context, WidgetRef ref) {
+  Widget _buildBottomActionBar(
+    BuildContext context,
+    WidgetRef ref,
+    MonitoringModel item,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
       decoration: BoxDecoration(
@@ -453,14 +483,20 @@ class MonitoringDraftScreen extends ConsumerWidget {
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(48),
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                shape: const RoundedRectangleBorder(borderRadius: AppRadii.pill),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadii.pill,
+                ),
                 elevation: 1,
               ),
               onPressed: () {
-                ref.read(monitoringFormProvider.notifier).loadDraft(monitoring);
+                ref.read(monitoringFormProvider.notifier).loadDraft(item);
                 context.push('/monitoring/tambah');
               },
-              icon: const Icon(Icons.edit_note_rounded, size: 20, color: Colors.white),
+              icon: const Icon(
+                Icons.edit_note_rounded,
+                size: 20,
+                color: Colors.white,
+              ),
               label: Text(
                 'Lanjutkan Pengisian',
                 style: AppTextStyles.labelLarge.copyWith(
@@ -480,14 +516,13 @@ class MonitoringDraftScreen extends ConsumerWidget {
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: AppColors.enterpriseBorder),
                 minimumSize: const Size.fromHeight(42),
-                shape: const RoundedRectangleBorder(borderRadius: AppRadii.pill),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadii.pill,
+                ),
               ),
               onPressed: () {
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  context.go('/monitoring/lapangan');
-                }
+                ref.read(monitoringTabProvider.notifier).state = 0;
+                context.go('/monitoring/lapangan');
               },
               child: Text(
                 'Kembali ke Beranda',
@@ -607,10 +642,7 @@ class MonitoringDraftScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(width: 8),
-            Expanded(
-              flex: 5,
-              child: valueWidget,
-            ),
+            Expanded(flex: 5, child: valueWidget),
           ],
         );
       },

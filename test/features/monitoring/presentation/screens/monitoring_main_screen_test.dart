@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:satu_rumah/core/theme/app_colors.dart';
 import 'package:satu_rumah/core/widgets/app_bottom_navigation.dart';
+import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/screens/monitoring_main_screen.dart';
 
 void main() {
@@ -89,6 +90,27 @@ void main() {
         expect(topSide.color, equals(AppColors.enterpriseBorder));
       },
     );
+
+    testWidgets('tab can be reset to Beranda from another screen', (
+      WidgetTester tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Riwayat'));
+      await tester.pumpAndSettle();
+      expect(navIcon(Icons.assignment_rounded), findsOneWidget);
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(MonitoringMainScreen)),
+      );
+      container.read(monitoringTabProvider.notifier).state = 0;
+      await tester.pumpAndSettle();
+
+      expect(navIcon(Icons.home_rounded), findsOneWidget);
+      expect(navIcon(Icons.assignment_outlined), findsOneWidget);
+    });
 
     testWidgets('transitions icons and pages cleanly when tapping each tab', (
       WidgetTester tester,

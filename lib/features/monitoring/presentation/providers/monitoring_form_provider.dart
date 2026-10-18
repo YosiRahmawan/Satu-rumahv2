@@ -196,6 +196,28 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     state = state.copyWith(currentStep: step);
   }
 
+  /// Sidik isian formulir (tanpa langkah aktif) untuk mendeteksi perubahan
+  /// yang belum disimpan.
+  static String signature(MonitoringFormState s) {
+    String people(List<MonitoringPerson> list) =>
+        list.map((p) => '${p.nama}|${p.jabatan}').join(';');
+    return [
+      s.tanggalMonitoring.toIso8601String(),
+      s.namaPerumahan,
+      s.namaDeveloper,
+      s.lokasiPerumahan,
+      s.maksudTujuan,
+      s.temuanLapangan.join(';'),
+      s.kesimpulan.join(';'),
+      s.kesepakatan.join(';'),
+      s.rencanaTindakLanjut.join(';'),
+      s.statusHasilEvaluasi.name,
+      people(s.pelaksana),
+      people(s.ditemui),
+      s.photoPaths.join(';'),
+    ].join('\u0001');
+  }
+
   void updateTanggal(DateTime date) {
     state = state.copyWith(tanggalMonitoring: date);
   }
@@ -359,24 +381,24 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     final pelaksanaList = draft.pelaksana.isNotEmpty
         ? draft.pelaksana
         : (draft.pelaksanaNama.isNotEmpty
-            ? [
-                MonitoringPerson.create(
-                  nama: draft.pelaksanaNama,
-                  jabatan: draft.pelaksanaJabatan,
-                ),
-              ]
-            : [MonitoringPerson.create()]);
+              ? [
+                  MonitoringPerson.create(
+                    nama: draft.pelaksanaNama,
+                    jabatan: draft.pelaksanaJabatan,
+                  ),
+                ]
+              : [MonitoringPerson.create()]);
 
     final ditemuiList = draft.ditemui.isNotEmpty
         ? draft.ditemui
         : (draft.ditemuiNama.isNotEmpty
-            ? [
-                MonitoringPerson.create(
-                  nama: draft.ditemuiNama,
-                  jabatan: draft.ditemuiJabatan,
-                ),
-              ]
-            : [MonitoringPerson.create()]);
+              ? [
+                  MonitoringPerson.create(
+                    nama: draft.ditemuiNama,
+                    jabatan: draft.ditemuiJabatan,
+                  ),
+                ]
+              : [MonitoringPerson.create()]);
 
     state = MonitoringFormState(
       draftId: draft.id,
@@ -392,9 +414,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       temuanLapangan: draft.temuanLapangan.isNotEmpty
           ? draft.temuanLapangan
           : const [''],
-      kesimpulan: draft.kesimpulan.isNotEmpty
-          ? draft.kesimpulan
-          : const [''],
+      kesimpulan: draft.kesimpulan.isNotEmpty ? draft.kesimpulan : const [''],
       kesepakatan: draft.kesepakatan.isNotEmpty
           ? draft.kesepakatan
           : const [''],
@@ -441,8 +461,31 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       return null;
     }
 
+    return _modelFromState();
+  }
+
+  /// Menyimpan isian saat ini sebagai draf di repository lokal prototipe.
+  /// Hanya Nama Perumahan yang wajib; kelengkapan lain diperiksa saat submit.
+  MonitoringModel? saveDraft() {
+    if (state.namaPerumahan.trim().isEmpty) {
+      state = state.copyWith(errorMessage: 'Nama Perumahan wajib diisi.');
+      return null;
+    }
+    final draft = _modelFromState();
+    _repository.saveDraft(draft);
+    state = state.copyWith(draftId: draft.id);
+    _ref.read(monitoringListProvider.notifier).refresh();
+    return draft;
+  }
+
+  MonitoringModel _modelFromState() {
+    // Draf yang dilanjutkan harus mempertahankan nomor BA aslinya.
+    final existing = state.draftId == null
+        ? null
+        : _repository.getMonitoringById(state.draftId!);
     return MonitoringModel(
       id: state.draftId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      nomorSuratBA: existing?.nomorSuratBA,
       pengajuanId: state.pengajuanId,
       tanggalMonitoring: state.tanggalMonitoring,
       namaPerumahan: state.namaPerumahan,
@@ -454,7 +497,9 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
           .toList(),
       kesimpulan: state.kesimpulan.where((e) => e.trim().isNotEmpty).toList(),
       kesepakatan: state.kesepakatan.where((e) => e.trim().isNotEmpty).toList(),
-      rencanaTindakLanjut: filteredRTL,
+      rencanaTindakLanjut: state.rencanaTindakLanjut
+          .where((e) => e.trim().isNotEmpty)
+          .toList(),
       statusHasilEvaluasi: state.statusHasilEvaluasi,
       pelaksanaNama: state.pelaksanaNama,
       pelaksanaJabatan: state.pelaksanaJabatan,

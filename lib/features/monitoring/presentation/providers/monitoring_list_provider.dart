@@ -11,6 +11,10 @@ final monitoringListProvider =
       return MonitoringListNotifier(repo);
     });
 
+/// Tab aktif pada halaman utama Tim Monitoring (0 Beranda, 1 Riwayat, 2 Profil).
+/// Dipegang di provider agar layar lain bisa mengembalikan pengguna ke Beranda.
+final monitoringTabProvider = StateProvider<int>((ref) => 0);
+
 /// Async facade keeps loading and retry states explicit while the prototype
 /// still reads from its local in-memory repository.
 final monitoringListAsyncProvider = FutureProvider<List<MonitoringModel>>((

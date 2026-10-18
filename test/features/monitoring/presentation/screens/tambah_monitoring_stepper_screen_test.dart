@@ -2,12 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
+import 'package:satu_rumah/features/monitoring/data/models/status_hasil_evaluasi.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_form_provider.dart';
+import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/screens/tambah_monitoring_stepper_screen.dart';
 
 void main() {
   late ProviderContainer container;
+
+  setUpAll(() async {
+    await initializeDateFormatting('id', null);
+  });
 
   setUp(() {
     container = ProviderContainer();
@@ -63,7 +70,7 @@ void main() {
 
     expect(find.text('Formulir Pengawasan'), findsOneWidget);
     expect(find.text('Langkah 1 dari 3: Info Umum'), findsOneWidget);
-    expect(find.textContaining('2 January 2026'), findsOneWidget);
+    expect(find.textContaining('2 Januari 2026'), findsOneWidget);
     expect(find.text('Perumahan Uji'), findsOneWidget);
     expect(find.text('Jl. Uji No. 1'), findsOneWidget);
     expect(
@@ -73,10 +80,8 @@ void main() {
     expect(find.text('Temuan tersimpan'), findsOneWidget);
     expect(find.text('Kesimpulan tersimpan'), findsOneWidget);
     expect(find.text('Simpan Draft'), findsOneWidget);
-    expect(
-      find.byTooltip('Simpan Draft belum tersedia untuk sesi ini'),
-      findsOneWidget,
-    );
+    expect(find.text('DISPERWASKIM KOTA TASIKMALAYA'), findsNothing);
+    expect(find.text('Tersimpan di sesi formulir ini'), findsNothing);
     expect(find.text('Wajib'), findsNWidgets(2));
     expect(find.text('Opsional'), findsNWidgets(3));
     expect(tester.takeException(), isNull);
@@ -298,7 +303,7 @@ void main() {
 
     expect(find.text('Kembali'), findsOneWidget);
     expect(find.text('Lanjut ke Langkah 3'), findsOneWidget);
-    expect(find.text('Simpan Draft'), findsNothing);
+    expect(find.text('Simpan Draft'), findsOneWidget);
     expect(find.text('Status Hasil Evaluasi'), findsNothing);
     expect(tester.takeException(), isNull);
   });
@@ -431,10 +436,6 @@ void main() {
         expect(cancel, findsOneWidget);
         expect(saveDraft, findsOneWidget);
         expect(next, findsOneWidget);
-        expect(
-          find.byTooltip('Simpan Draft belum tersedia untuk sesi ini'),
-          findsOneWidget,
-        );
 
         for (final finder in [cancel, saveDraft, next]) {
           await tester.ensureVisible(finder);
@@ -462,80 +463,286 @@ void main() {
   });
 
   group('Stepper 3 Visual States & Bottom Action Bar Refinement', () {
-    testWidgets('Langkah 1 active: [1 MERAH] - [2 ABU] - [3 ABU] and correct footer actions', (
-      tester,
-    ) async {
-      container.read(monitoringFormProvider.notifier).setStep(0);
-      await pumpStep1(tester, size: const Size(390, 844));
+    testWidgets(
+      'Langkah 1 active: [1 MERAH] - [2 ABU] - [3 ABU] and correct footer actions',
+      (tester) async {
+        container.read(monitoringFormProvider.notifier).setStep(0);
+        await pumpStep1(tester, size: const Size(390, 844));
 
-      // Stepper circles
-      expect(find.text('1'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
-      expect(find.byIcon(Icons.check), findsNothing);
+        // Stepper circles
+        expect(find.text('1'), findsOneWidget);
+        expect(find.text('2'), findsOneWidget);
+        expect(find.text('3'), findsOneWidget);
+        expect(find.byIcon(Icons.check), findsNothing);
 
-      // Footer actions for Langkah 1
-      expect(find.text('Batal'), findsOneWidget);
-      expect(find.text('Simpan Draft'), findsOneWidget);
-      expect(find.text('Lanjut ke Langkah 2'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
-      expect(find.text('Kembali'), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        // Footer actions for Langkah 1
+        expect(find.text('Batal'), findsOneWidget);
+        expect(find.text('Simpan Draft'), findsOneWidget);
+        expect(find.text('Lanjut ke Langkah 2'), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+        expect(find.text('Kembali'), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('Langkah 2 active: [✓ HIJAU] - [2 MERAH] - [3 ABU] and correct footer actions', (
-      tester,
-    ) async {
-      container.read(monitoringFormProvider.notifier).setStep(1);
-      await pumpStep1(tester, size: const Size(390, 844));
+    testWidgets(
+      'Langkah 2 active: [✓ HIJAU] - [2 MERAH] - [3 ABU] and correct footer actions',
+      (tester) async {
+        container.read(monitoringFormProvider.notifier).setStep(1);
+        await pumpStep1(tester, size: const Size(390, 844));
 
-      // Step 1 completed (check icon), Step 2 active (number 2), Step 3 upcoming (number 3)
-      expect(find.byIcon(Icons.check), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
-      expect(find.text('3'), findsOneWidget);
-      // Number 1 should not be displayed because it has check icon
-      expect(find.text('1'), findsNothing);
+        // Step 1 completed (check icon), Step 2 active (number 2), Step 3 upcoming (number 3)
+        expect(find.byIcon(Icons.check), findsOneWidget);
+        expect(find.text('2'), findsOneWidget);
+        expect(find.text('3'), findsOneWidget);
+        // Number 1 should not be displayed because it has check icon
+        expect(find.text('1'), findsNothing);
 
-      // Footer actions for Langkah 2
-      expect(find.text('Kembali'), findsOneWidget);
-      expect(find.text('Lanjut ke Langkah 3'), findsOneWidget);
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
-      expect(find.text('Batal'), findsNothing);
-      expect(find.text('Simpan Draft'), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        // Footer actions for Langkah 2
+        expect(find.text('Kembali'), findsOneWidget);
+        expect(find.text('Lanjut ke Langkah 3'), findsOneWidget);
+        expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+        expect(find.text('Batal'), findsNothing);
+        expect(find.text('Simpan Draft'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
-    testWidgets('Langkah 3 active: [✓ HIJAU] - [✓ HIJAU] - [3 MERAH] and correct footer actions', (
-      tester,
-    ) async {
-      container.read(monitoringFormProvider.notifier).setStep(2);
-      await pumpStep1(tester, size: const Size(390, 844));
+    testWidgets(
+      'Langkah 3 active: [✓ HIJAU] - [✓ HIJAU] - [3 MERAH] and correct footer actions',
+      (tester) async {
+        container.read(monitoringFormProvider.notifier).setStep(2);
+        await pumpStep1(tester, size: const Size(390, 844));
 
-      // Step 1 & 2 completed (2 check icons), Step 3 active (number 3)
-      expect(find.byIcon(Icons.check), findsNWidgets(2));
-      expect(find.text('3'), findsOneWidget);
-      expect(find.text('1'), findsNothing);
-      expect(find.text('2'), findsNothing);
+        // Step 1 & 2 completed (2 check icons), Step 3 active (number 3)
+        expect(find.byIcon(Icons.check), findsNWidgets(2));
+        expect(find.text('3'), findsOneWidget);
+        expect(find.text('1'), findsNothing);
+        expect(find.text('2'), findsNothing);
 
-      // Footer actions for Langkah 3
-      expect(find.text('Kembali'), findsOneWidget);
-      expect(find.text('Submit & Buat Berita Acara'), findsOneWidget);
-      expect(find.byIcon(Icons.check_box_outlined), findsNothing);
-      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
-      expect(tester.takeException(), isNull);
-    });
+        // Footer actions for Langkah 3
+        expect(find.text('Kembali'), findsOneWidget);
+        expect(find.text('Submit & Buat Berita Acara'), findsOneWidget);
+        expect(find.byIcon(Icons.check_box_outlined), findsNothing);
+        expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     for (final width in [360.0, 390.0, 412.0]) {
-      testWidgets('stepper and bottom action bar render without overflow on ${width}dp', (
-        tester,
-      ) async {
-        for (var step = 0; step < 3; step++) {
-          container.read(monitoringFormProvider.notifier).setStep(step);
-          await pumpStep1(tester, size: Size(width, 844));
-          expect(tester.takeException(), isNull);
-        }
-      });
+      testWidgets(
+        'stepper and bottom action bar render without overflow on ${width}dp',
+        (tester) async {
+          for (var step = 0; step < 3; step++) {
+            container.read(monitoringFormProvider.notifier).setStep(step);
+            await pumpStep1(tester, size: Size(width, 844));
+            expect(tester.takeException(), isNull);
+          }
+        },
+      );
     }
+  });
+  testWidgets('Simpan Draft menyimpan draf ke riwayat tanpa duplikat', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Griya Uji Draf');
+    await pumpStep1(tester);
+    final before = container.read(monitoringListProvider).length;
+
+    await tester.tap(find.text('Simpan Draft'));
+    await tester.pump();
+
+    expect(find.text('Draf berhasil disimpan.'), findsOneWidget);
+    var drafts = container
+        .read(monitoringListProvider)
+        .where((e) => e.namaPerumahan == 'Griya Uji Draf')
+        .toList();
+    expect(container.read(monitoringListProvider).length, before + 1);
+    expect(drafts.single.isDraft, isTrue);
+
+    notifier.updateNamaPerumahan('Griya Uji Draf Revisi');
+    await tester.tap(find.text('Simpan Draft'));
+    await tester.pump();
+
+    expect(container.read(monitoringListProvider).length, before + 1);
+    drafts = container
+        .read(monitoringListProvider)
+        .where((e) => e.namaPerumahan == 'Griya Uji Draf Revisi')
+        .toList();
+    expect(drafts.single.isDraft, isTrue);
+  });
+
+  test(
+    'menyimpan draf yang dilanjutkan mempertahankan nomor BA dan tidak menggandakan',
+    () {
+      final repo = container.read(monitoringRepositoryProvider);
+      final draft = repo.getAllMonitoring().firstWhere((e) => e.isDraft);
+      final before = repo.getAllMonitoring().length;
+      final notifier = container.read(monitoringFormProvider.notifier);
+
+      notifier.loadDraft(draft);
+      notifier.updateNamaPerumahan('${draft.namaPerumahan} Revisi');
+      final saved = notifier.saveDraft();
+
+      expect(saved, isNotNull);
+      expect(saved!.id, draft.id);
+      expect(saved.nomorSuratBA, draft.nomorSuratBA);
+      expect(repo.getAllMonitoring().length, before);
+      expect(
+        repo.getMonitoringById(draft.id)!.namaPerumahan,
+        '${draft.namaPerumahan} Revisi',
+      );
+    },
+  );
+
+  testWidgets('Batal tanpa perubahan langsung keluar tanpa dialog', (
+    tester,
+  ) async {
+    await pumpStep1(tester);
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Simpan draf sebelum keluar?'), findsNothing);
+    expect(find.text('Monitoring'), findsOneWidget);
+  });
+
+  testWidgets('Batal dengan isian belum tersimpan menanyakan dulu', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    await pumpStep1(tester);
+    notifier.updateNamaPerumahan('Griya Belum Disimpan');
+    await tester.pump();
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+    expect(find.text('Simpan draf sebelum keluar?'), findsOneWidget);
+
+    await tester.tap(find.text('Lanjut mengisi'));
+    await tester.pumpAndSettle();
+    expect(find.text('Simpan draf sebelum keluar?'), findsNothing);
+    expect(find.text('Formulir Pengawasan'), findsOneWidget);
+  });
+
+  testWidgets('dialog keluar tersusun rapi di 360dp dengan teks 200%', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    await pumpStep1(
+      tester,
+      size: const Size(360, 640),
+      textScaler: const TextScaler.linear(2),
+    );
+    notifier.updateNamaPerumahan('Griya Dialog');
+    await tester.pump();
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+
+    final save = find.widgetWithText(ElevatedButton, 'Simpan draf');
+    final discard = find.widgetWithText(OutlinedButton, 'Buang');
+    final stay = find.widgetWithText(TextButton, 'Lanjut mengisi');
+    expect(save, findsOneWidget);
+    expect(discard, findsOneWidget);
+    expect(stay, findsOneWidget);
+    // Aksi utama paling atas, lalu Buang, lalu Lanjut mengisi; sama lebar.
+    expect(tester.getTopLeft(save).dy, lessThan(tester.getTopLeft(discard).dy));
+    expect(tester.getTopLeft(discard).dy, lessThan(tester.getTopLeft(stay).dy));
+    expect(tester.getSize(save).width, tester.getSize(discard).width);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Buang keluar tanpa menyimpan draf', (tester) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    await pumpStep1(tester);
+    final before = container.read(monitoringListProvider).length;
+    notifier.updateNamaPerumahan('Griya Dibuang');
+    await tester.pump();
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Buang'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Monitoring'), findsOneWidget);
+    expect(container.read(monitoringListProvider).length, before);
+  });
+
+  testWidgets(
+    'Simpan draf dari dialog menyimpan lalu keluar dan memberi tahu',
+    (tester) async {
+      final notifier = container.read(monitoringFormProvider.notifier);
+      await pumpStep1(tester);
+      final before = container.read(monitoringListProvider).length;
+      notifier.updateNamaPerumahan('Griya Disimpan Lewat Dialog');
+      await tester.pump();
+
+      await tester.tap(find.text('Batal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Simpan draf'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Monitoring'), findsOneWidget);
+      expect(find.text('Draf berhasil disimpan.'), findsOneWidget);
+      final list = container.read(monitoringListProvider);
+      expect(list.length, before + 1);
+      expect(
+        list
+            .firstWhere((e) => e.namaPerumahan == 'Griya Disimpan Lewat Dialog')
+            .isDraft,
+        isTrue,
+      );
+    },
+  );
+
+  testWidgets('Simpan draf dari dialog tanpa nama tetap di form dengan pesan', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    await pumpStep1(tester);
+    notifier.updateNamaPerumahan('Sementara');
+    await tester.pump();
+    notifier.updateNamaPerumahan('');
+    notifier.updateLokasi('Jl. Berubah');
+    await tester.pump();
+
+    await tester.tap(find.text('Batal'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan draf'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nama Perumahan wajib diisi.'), findsOneWidget);
+    expect(find.text('Formulir Pengawasan'), findsOneWidget);
+  });
+
+  test('draf yang dikirim final tidak tersisa sebagai draf', () {
+    final repo = container.read(monitoringRepositoryProvider);
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updatePengajuanId('SR-20260720-612');
+    notifier.updateNamaPerumahan('Green Tasik');
+    notifier.updateStatusHasilEvaluasi(StatusHasilEvaluasi.sesuaiSiteplan);
+    final draft = notifier.saveDraft()!;
+    expect(repo.getMonitoringById(draft.id)!.isDraft, isTrue);
+
+    final result = notifier.submitFinal(draft);
+
+    expect(result.status, MonitoringSubmitStatus.success);
+    final all = repo.getAllMonitoring().where((e) => e.id == draft.id).toList();
+    expect(all.length, 1);
+    expect(all.single.isDraft, isFalse);
+  });
+
+  testWidgets('Simpan Draft menolak form tanpa Nama Perumahan', (tester) async {
+    await pumpStep1(tester);
+    final before = container.read(monitoringListProvider).length;
+
+    await tester.tap(find.text('Simpan Draft'));
+    await tester.pump();
+
+    expect(find.text('Nama Perumahan wajib diisi.'), findsOneWidget);
+    expect(container.read(monitoringListProvider).length, before);
   });
 }
 
