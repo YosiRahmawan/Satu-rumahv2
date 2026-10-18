@@ -6,7 +6,6 @@ import '../../../../core/auth/role_session.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/route_feedback.dart';
-import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_list_provider.dart';
@@ -20,10 +19,10 @@ class TabProfilMonitoring extends ConsumerWidget {
     final monitoring = ref.watch(monitoringListProvider);
     final session = ref.watch(roleSessionProvider);
     final assignments = ref.watch(surveyAktifProvider);
-    final unreadCount = ref.watch(unreadNotifikasiCountProvider);
 
-    final completedSurveyCount =
-        monitoring.where((item) => !item.isDraft).length;
+    final completedSurveyCount = monitoring
+        .where((item) => !item.isDraft)
+        .length;
     final needsEvaluationCount = monitoring
         .where(
           (item) =>
@@ -35,42 +34,41 @@ class TabProfilMonitoring extends ConsumerWidget {
     final identity = PerwaskimIdentity.fromSession(session);
     final assignment = assignments.isNotEmpty ? assignments.first : null;
 
+    final isVerified =
+        session.isAuthenticated &&
+        identity.nip.isNotEmpty &&
+        !identity.nip.toLowerCase().contains('belum tersedia');
+
     return Scaffold(
       backgroundColor: AppColors.enterpriseCanvas,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildHeader(
+            _buildHeaderAndStats(
               context: context,
               identity: identity,
-              unreadCount: unreadCount,
-              onNotificationsTap: () =>
-                  context.push('/monitoring/lapangan/notifikasi'),
+              isVerified: isVerified,
+              activeTasks: assignments.length,
+              completedSurveys: completedSurveyCount,
+              needEvaluation: needsEvaluationCount,
             ),
-            Transform.translate(
-              offset: const Offset(0, -28),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    _buildStatsCard(
-                      activeTasks: assignments.length,
-                      completedSurveys: completedSurveyCount,
-                      needEvaluation: needsEvaluationCount,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildAssignmentCard(context, assignment),
-                    const SizedBox(height: 20),
-                    _buildAccountInfoSection(identity, session),
-                    const SizedBox(height: 20),
-                    _buildSettingsSection(context),
-                    const SizedBox(height: 24),
-                    _buildLogoutButton(context, ref),
-                    const SizedBox(height: 24),
-                    _buildFooter(),
-                  ],
-                ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  _buildAssignmentCard(context, assignment),
+                  const SizedBox(height: 20),
+                  _buildAccountInfoSection(identity, session),
+                  const SizedBox(height: 20),
+                  _buildSettingsSection(context),
+                  const SizedBox(height: 20),
+                  _buildLogoutButton(context, ref),
+                  const SizedBox(height: 16),
+                  _buildFooter(),
+                  const SizedBox(height: 36),
+                ],
               ),
             ),
           ],
@@ -79,240 +77,178 @@ class TabProfilMonitoring extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader({
+  Widget _buildHeaderAndStats({
     required BuildContext context,
     required PerwaskimIdentity identity,
-    required int unreadCount,
-    required VoidCallback onNotificationsTap,
+    required bool isVerified,
+    required int activeTasks,
+    required int completedSurveys,
+    required int needEvaluation,
   }) {
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.enterprisePrimary,
-            AppColors.enterprisePrimaryDark,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return Stack(
+      children: [
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 36,
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.enterprisePrimary,
+                  AppColors.enterprisePrimaryDark,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
+            ),
+          ),
         ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(36)),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 48),
-          child: Column(
-            children: [
-              // Top Bar: Institution Badge & Notification Button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.22),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.account_balance_outlined,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          SizedBox(width: 6),
-                          Flexible(
-                            child: Text(
-                              'DINAS PERKIM KOTA TASIKMALAYA',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+        Column(
+          children: [
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                child: Column(
+                  children: [
+                    // Avatar: 68x68 white circle with bold red initials (no checkmark, no decorative rings)
+                    Container(
+                      width: 68,
+                      height: 68,
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black12,
+                            blurRadius: 4,
+                            offset: Offset(0, 2),
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Semantics(
-                    button: true,
-                    label: 'Buka notifikasi ($unreadCount belum dibaca)',
-                    child: InkWell(
-                      onTap: onNotificationsTap,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.16),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Icon(
-                              Icons.notifications_none_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            if (unreadCount > 0)
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: Container(
-                                  width: 8.5,
-                                  height: 8.5,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF59E0B),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                      color: AppColors.enterprisePrimary,
-                                      width: 1.5,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              // Center Avatar with verified check badge
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 76,
-                    height: 76,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 10,
-                          offset: Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Center(
+                      alignment: Alignment.center,
                       child: Text(
                         identity.initials,
                         style: const TextStyle(
-                          color: AppColors.enterprisePrimaryDark,
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
+                          color: AppColors.enterprisePrimary,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
-                  ),
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 22,
-                      height: 22,
-                      decoration: BoxDecoration(
-                        color: AppColors.enterpriseSuccess,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                      child: const Icon(
-                        Icons.check,
-                        size: 13,
+                    const SizedBox(height: 12),
+                    // Name
+                    Text(
+                      identity.nama,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
                         color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              // Name
-              Text(
-                identity.nama,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18.5,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.1,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              // NIP
-              Text(
-                identity.nip,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.88),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.2,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              // Role Badge Pill
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.16),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.22),
-                  ),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.verified_user_outlined,
-                      size: 13,
-                      color: Colors.white,
-                    ),
-                    SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        'Tim Verifikator Perwaskim',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 0.2,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 4),
+                    // NIP
+                    Text(
+                      identity.nip,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.2,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 10),
+                    // Verification Badge
+                    _buildVerificationBadge(isVerified),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _buildStatsCard(
+                activeTasks: activeTasks,
+                completedSurveys: completedSurveys,
+                needEvaluation: needEvaluation,
+              ),
+            ),
+          ],
         ),
+      ],
+    );
+  }
+
+  Widget _buildVerificationBadge(bool isVerified) {
+    if (!isVerified) {
+      return Container(
+        constraints: const BoxConstraints(maxWidth: 240),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF3C7),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFDE68A)),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.schedule, size: 13, color: Color(0xFFD97706)),
+            SizedBox(width: 5),
+            Flexible(
+              child: Text(
+                'Belum Terverifikasi',
+                style: TextStyle(
+                  color: Color(0xFF92400E),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 240),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFECFDF5),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFA7F3D0)),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.check, size: 13, color: Color(0xFF059669)),
+          SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              'Terverifikasi',
+              style: TextStyle(
+                color: Color(0xFF065F46),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -325,13 +261,13 @@ class TabProfilMonitoring extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.enterpriseBorder),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -342,31 +278,23 @@ class TabProfilMonitoring extends ConsumerWidget {
             child: _buildStatColumn(
               '$activeTasks',
               'Tugas Aktif',
-              AppColors.enterprisePrimary,
+              const Color(0xFF0F172A),
             ),
           ),
-          Container(
-            width: 1,
-            height: 38,
-            color: AppColors.enterpriseBorder,
-          ),
+          Container(width: 1, height: 38, color: AppColors.enterpriseBorder),
           Expanded(
             child: _buildStatColumn(
               '$completedSurveys',
-              'Survey Selesai',
-              AppColors.enterpriseTextMain,
+              'Survei Selesai',
+              const Color(0xFFD97706),
             ),
           ),
-          Container(
-            width: 1,
-            height: 38,
-            color: AppColors.enterpriseBorder,
-          ),
+          Container(width: 1, height: 38, color: AppColors.enterpriseBorder),
           Expanded(
             child: _buildStatColumn(
               '$needEvaluation',
               'Perlu Evaluasi',
-              AppColors.enterpriseWarning,
+              const Color(0xFF059669),
             ),
           ),
         ],
@@ -390,16 +318,19 @@ class TabProfilMonitoring extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.enterpriseTextMuted,
-            fontSize: 11.5,
-            fontWeight: FontWeight.w500,
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppColors.enterpriseTextMuted,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ],
     );
@@ -407,7 +338,8 @@ class TabProfilMonitoring extends ConsumerWidget {
 
   Widget _buildAssignmentCard(BuildContext context, Pengajuan? assignment) {
     final hasAssignment = assignment != null;
-    final isToday = hasAssignment &&
+    final isToday =
+        hasAssignment &&
         assignment.tanggalSurvey != null &&
         DateUtils.isSameDay(assignment.tanggalSurvey!, DateTime.now());
     final title = isToday
@@ -433,56 +365,28 @@ class TabProfilMonitoring extends ConsumerWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: hasAssignment ? () => context.go('/monitoring/lapangan') : null,
+          onTap: hasAssignment
+              ? () => context.go('/monitoring/lapangan')
+              : null,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Container(
-                  width: 3.5,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: hasAssignment
-                        ? AppColors.enterprisePrimary
-                        : AppColors.enterpriseTextMuted.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              title,
-                              style: TextStyle(
-                                color: hasAssignment
-                                    ? AppColors.enterprisePrimary
-                                    : AppColors.enterpriseTextMuted,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 0.3,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (hasAssignment) ...[
-                            const SizedBox(width: 5),
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: const BoxDecoration(
-                                color: AppColors.enterprisePrimary,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ],
-                        ],
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: AppColors.enterpriseTextMuted,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 0.5,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -491,7 +395,7 @@ class TabProfilMonitoring extends ConsumerWidget {
                           color: hasAssignment
                               ? AppColors.enterpriseTextMain
                               : AppColors.enterpriseTextMuted,
-                          fontSize: 14.5,
+                          fontSize: 14,
                           fontWeight: hasAssignment
                               ? FontWeight.w700
                               : FontWeight.w500,
@@ -502,14 +406,14 @@ class TabProfilMonitoring extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                Icon(
-                  Icons.near_me_outlined,
-                  color: hasAssignment
-                      ? AppColors.enterprisePrimary
-                      : AppColors.enterpriseTextMuted.withValues(alpha: 0.4),
-                  size: 22,
-                ),
+                if (hasAssignment) ...[
+                  const SizedBox(width: 8),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 18,
+                    color: AppColors.enterpriseTextMuted,
+                  ),
+                ],
               ],
             ),
           ),
@@ -541,7 +445,7 @@ class TabProfilMonitoring extends ConsumerWidget {
             color: AppColors.enterpriseTextMuted,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -558,7 +462,7 @@ class TabProfilMonitoring extends ConsumerWidget {
               const Divider(
                 height: 1,
                 color: AppColors.enterpriseBorder,
-                indent: 64,
+                indent: 58,
               ),
               _buildInfoRow(
                 icon: Icons.phone_outlined,
@@ -568,7 +472,7 @@ class TabProfilMonitoring extends ConsumerWidget {
               const Divider(
                 height: 1,
                 color: AppColors.enterpriseBorder,
-                indent: 64,
+                indent: 58,
               ),
               _buildInfoRow(
                 icon: Icons.apartment_outlined,
@@ -578,7 +482,7 @@ class TabProfilMonitoring extends ConsumerWidget {
               const Divider(
                 height: 1,
                 color: AppColors.enterpriseBorder,
-                indent: 64,
+                indent: 58,
               ),
               _buildInfoRow(
                 icon: Icons.person_outline,
@@ -588,7 +492,7 @@ class TabProfilMonitoring extends ConsumerWidget {
               const Divider(
                 height: 1,
                 color: AppColors.enterpriseBorder,
-                indent: 64,
+                indent: 58,
               ),
               _buildInfoRow(
                 icon: Icons.badge_outlined,
@@ -610,21 +514,18 @@ class TabProfilMonitoring extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              color: AppColors.enterprisePrimarySurfaceSoft,
-              borderRadius: BorderRadius.circular(10),
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(
-              icon,
-              size: 20,
-              color: AppColors.enterprisePrimary,
-            ),
+            child: Icon(icon, size: 16, color: const Color(0xFF475569)),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -642,11 +543,10 @@ class TabProfilMonitoring extends ConsumerWidget {
                   value,
                   style: const TextStyle(
                     fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.enterpriseTextMain,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  softWrap: true,
                 ),
               ],
             ),
@@ -669,7 +569,7 @@ class TabProfilMonitoring extends ConsumerWidget {
             color: AppColors.enterpriseTextMuted,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
@@ -679,31 +579,21 @@ class TabProfilMonitoring extends ConsumerWidget {
           child: Column(
             children: [
               _buildMenuRow(
-                icon: Icons.lock_outline,
-                title: 'Ubah Password',
-                onTap: () => showUnavailableAction(context, 'Ubah Password'),
+                icon: Icons.headset_mic_outlined,
+                title: 'Hubungi Admin / CS',
+                subtitle: 'Bantuan akun, NIP, dan reset password',
+                onTap: () =>
+                    showUnavailableAction(context, 'Hubungi Admin / CS'),
               ),
               const Divider(
                 height: 1,
                 color: AppColors.enterpriseBorder,
-                indent: 64,
-              ),
-              _buildMenuRow(
-                icon: Icons.support_agent_outlined,
-                title: 'Kontak Admin Kantor / Verifikator',
-                onTap: () => showUnavailableAction(
-                  context,
-                  'Kontak Admin Kantor / Verifikator',
-                ),
-              ),
-              const Divider(
-                height: 1,
-                color: AppColors.enterpriseBorder,
-                indent: 64,
+                indent: 58,
               ),
               _buildMenuRow(
                 icon: Icons.menu_book_outlined,
                 title: 'Panduan SOP Verifikasi Lapangan',
+                subtitle: 'Panduan pelaksanaan verifikasi lapangan',
                 onTap: () => showUnavailableAction(
                   context,
                   'Panduan SOP Verifikasi Lapangan',
@@ -719,6 +609,7 @@ class TabProfilMonitoring extends ConsumerWidget {
   Widget _buildMenuRow({
     required IconData icon,
     required String title,
+    required String subtitle,
     required VoidCallback onTap,
   }) {
     return Material(
@@ -731,32 +622,43 @@ class TabProfilMonitoring extends ConsumerWidget {
           child: Row(
             children: [
               Container(
-                width: 38,
-                height: 38,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: AppColors.enterprisePrimarySurfaceSoft,
-                  borderRadius: BorderRadius.circular(10),
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: AppColors.enterprisePrimary,
-                ),
+                child: Icon(icon, size: 16, color: const Color(0xFF475569)),
               ),
-              const SizedBox(width: 14),
+              const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.enterpriseTextMain,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.enterpriseTextMain,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.enterpriseTextMuted,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
               const Icon(
                 Icons.chevron_right,
-                size: 20,
+                size: 18,
                 color: AppColors.enterpriseTextMuted,
               ),
             ],
@@ -794,18 +696,14 @@ class TabProfilMonitoring extends ConsumerWidget {
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.logout,
-              size: 19,
-              color: AppColors.enterprisePrimary,
-            ),
+            Icon(Icons.logout, size: 18, color: AppColors.enterprisePrimary),
             SizedBox(width: 8),
             Flexible(
               child: Text(
                 'Keluar dari Akun',
                 style: TextStyle(
-                  fontSize: 14.5,
-                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
                   color: AppColors.enterprisePrimary,
                 ),
                 maxLines: 1,
@@ -827,17 +725,16 @@ class TabProfilMonitoring extends ConsumerWidget {
               TextSpan(
                 text: AppConfig.appName,
                 style: TextStyle(
-                  color: AppColors.enterprisePrimary,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.3,
+                  color: AppColors.enterpriseTextMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
               TextSpan(
-                text: ' • v${AppConfig.appVersion} Production Build 2026',
+                text: ' • v${AppConfig.appVersion}',
                 style: TextStyle(
                   color: AppColors.enterpriseTextMuted,
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -845,14 +742,15 @@ class TabProfilMonitoring extends ConsumerWidget {
           ),
           textAlign: TextAlign.center,
         ),
-        SizedBox(height: 3),
+        SizedBox(height: 2),
         Text(
           'Sistem Integrasi Perumahan & Kawasan Permukiman',
           style: TextStyle(
             color: AppColors.enterpriseTextMuted,
-            fontSize: 10.5,
+            fontSize: 11,
             fontWeight: FontWeight.w400,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );

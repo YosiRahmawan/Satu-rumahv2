@@ -48,7 +48,7 @@ void main() {
   );
 
   Widget buildSubject({
-    String? username = 'petugas_lapangan',
+    String? username = 'tim_monitoring_perwaskim',
     List<Pengajuan>? assignments,
     RoleSessionNotifier? customNotifier,
   }) {
@@ -76,14 +76,20 @@ void main() {
     await tester.pumpWidget(buildSubject(assignments: [activeAssignment]));
     await tester.pumpAndSettle();
 
-    // 1. Header elements
-    expect(find.text('DINAS PERKIM KOTA TASIKMALAYA'), findsOneWidget);
-    expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
-    expect(find.text('Tim Verifikator Perwaskim'), findsOneWidget);
+    // 1. Header elements: Centered identity, avatar initials, verified badge
+    expect(find.text('RH'), findsOneWidget);
+    expect(find.text('Drs. Rian Hidayat, M.Si'), findsOneWidget);
+    expect(find.text('NIP: 197805122006041008'), findsOneWidget);
+    expect(find.text('Terverifikasi'), findsOneWidget);
+
+    // Removed elements must not be present
+    expect(find.text('DINAS PERKIM KOTA TASIKMALAYA'), findsNothing);
+    expect(find.byIcon(Icons.notifications_none_rounded), findsNothing);
+    expect(find.text('Tim Verifikator Perwaskim'), findsNothing);
 
     // 2. Stats
     expect(find.text('Tugas Aktif'), findsOneWidget);
-    expect(find.text('Survey Selesai'), findsOneWidget);
+    expect(find.text('Survei Selesai'), findsOneWidget);
     expect(find.text('Perlu Evaluasi'), findsOneWidget);
     expect(find.text('1'), findsWidgets); // 1 active task & 1 perlu evaluasi
     expect(find.text('2'), findsOneWidget); // 2 completed surveys
@@ -98,27 +104,35 @@ void main() {
     expect(find.text('Nomor Kontak'), findsOneWidget);
     expect(find.text('Belum ditautkan'), findsOneWidget);
     expect(find.text('Instansi Kerja'), findsOneWidget);
-    expect(
-      find.text('Dinas Perumahan & Kawasan Permukiman'),
-      findsOneWidget,
-    );
+    expect(find.text('Dinas Perumahan & Kawasan Permukiman'), findsOneWidget);
     expect(find.text('Akun login'), findsOneWidget);
     expect(find.text('Peran akses'), findsOneWidget);
 
     // 5. Settings & Guides
     expect(find.text('PENGATURAN & PANDUAN'), findsOneWidget);
-    expect(find.text('Ubah Password'), findsOneWidget);
-    expect(find.text('Kontak Admin Kantor / Verifikator'), findsOneWidget);
+    expect(find.text('Hubungi Admin / CS'), findsOneWidget);
     expect(find.text('Panduan SOP Verifikasi Lapangan'), findsOneWidget);
+    expect(find.text('Ubah Password'), findsNothing);
 
     // 6. Logout & Footer
     expect(find.text('Keluar dari Akun'), findsOneWidget);
     expect(find.textContaining('SATU RUMAH'), findsOneWidget);
     expect(find.textContaining('v1.0.0'), findsOneWidget);
+    expect(find.textContaining('Production Build'), findsNothing);
     expect(
       find.text('Sistem Integrasi Perumahan & Kawasan Permukiman'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('renders unverified badge when officer NIP is not available', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    await tester.pumpWidget(buildSubject(username: 'petugas_baru'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Belum Terverifikasi'), findsOneWidget);
   });
 
   testWidgets('renders empty state when no assignments available', (
@@ -139,12 +153,14 @@ void main() {
     await tester.pumpWidget(buildSubject());
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('Ubah Password'));
-    await tester.tap(find.text('Ubah Password'));
+    await tester.ensureVisible(find.text('Hubungi Admin / CS'));
+    await tester.tap(find.text('Hubungi Admin / CS'));
     await tester.pump();
 
     expect(
-      find.textContaining('Ubah Password belum tersedia di prototipe lokal.'),
+      find.textContaining(
+        'Hubungi Admin / CS belum tersedia di prototipe lokal.',
+      ),
       findsOneWidget,
     );
   });
@@ -167,20 +183,21 @@ void main() {
     expect(notifier.state.isAuthenticated, isFalse);
   });
 
-  for (final width in [360.0, 390.0, 412.0]) {
-    testWidgets('responsive layout on width ${width}dp with 200% text scale without overflow', (
-      tester,
-    ) async {
-      await tester.binding.setSurfaceSize(Size(width, 800));
-      await tester.pumpWidget(
-        MediaQuery(
-          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
-          child: buildSubject(assignments: [activeAssignment]),
-        ),
-      );
-      await tester.pumpAndSettle();
+  for (final width in [360.0, 390.0, 412.0, 420.0]) {
+    testWidgets(
+      'responsive layout on width ${width}dp with 200% text scale without overflow',
+      (tester) async {
+        await tester.binding.setSurfaceSize(Size(width, 800));
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+            child: buildSubject(assignments: [activeAssignment]),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      expect(tester.takeException(), isNull);
-    });
+        expect(tester.takeException(), isNull);
+      },
+    );
   }
 }
