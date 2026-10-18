@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satu_rumah/features/dashboard/presentation/providers/admin_dashboard_provider.dart';
+import 'package:satu_rumah/features/monitoring/data/models/evidence_photo_item.dart';
 import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart';
 import 'package:satu_rumah/features/monitoring/data/models/status_hasil_evaluasi.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/monitoring_repository.dart';
@@ -313,6 +314,271 @@ void main() {
     expect(
       container.read(adminDashboardMetricsProvider).monitoringTerbaru.length,
       before + 1,
+    );
+  });
+
+  group('foto dokumentasi dan adaptor photoPaths', () {
+    OfficerLocation pin() => OfficerLocation(
+      latitude: -7.3274,
+      longitude: 108.2207,
+      method: LocationMethod.manualPin,
+      selectedAt: DateTime(2026, 10, 20, 9),
+    );
+
+    test(
+      'updatePhotos mempertahankan metadata saat foto ditambah atau dibuang',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(monitoringFormProvider.notifier);
+        final withLocation = EvidencePhotoItem.fromPath(
+          'a.jpg',
+          origin: PhotoOrigin.camera,
+        ).copyWith(location: pin());
+        notifier.updatePhotoItems([withLocation]);
+
+        notifier.updatePhotos(['a.jpg', 'b.jpg']);
+        var state = container.read(monitoringFormProvider);
+        expect(state.photoPaths, ['a.jpg', 'b.jpg']);
+        expect(state.photos[0], same(withLocation));
+        expect(state.photos[1].location, isNull);
+
+        notifier.updatePhotos(['b.jpg']);
+        state = container.read(monitoringFormProvider);
+        expect(state.photoPaths, ['b.jpg']);
+      },
+    );
+
+    test(
+      'menampilkan ulang daftar yang sama tidak mengubah ID maupun sidik form',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(monitoringFormProvider.notifier);
+        notifier.updatePhotos(['a.jpg', 'b.jpg']);
+        final before = container.read(monitoringFormProvider);
+
+        notifier.updatePhotos(['a.jpg', 'b.jpg']);
+        final after = container.read(monitoringFormProvider);
+
+        expect(after.photos.map((p) => p.id), before.photos.map((p) => p.id));
+        expect(
+          MonitoringFormNotifier.signature(after),
+          MonitoringFormNotifier.signature(before),
+        );
+      },
+    );
+
+    test(
+      'menentukan lokasi foto mengubah sidik form (perubahan belum tersimpan)',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(monitoringFormProvider.notifier);
+        notifier.updatePhotos(['a.jpg']);
+        final before = MonitoringFormNotifier.signature(
+          container.read(monitoringFormProvider),
+        );
+
+        final photo = container.read(monitoringFormProvider).photos.single;
+        notifier.updatePhotoItems([photo.copyWith(location: pin())]);
+
+        expect(
+          MonitoringFormNotifier.signature(
+            container.read(monitoringFormProvider),
+          ),
+          isNot(before),
+        );
+      },
+    );
+
+    test('draf menyimpan dan memuat kembali metadata foto', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(monitoringFormProvider.notifier);
+      notifier.updateNamaPerumahan('Griya Foto');
+      final photo =
+          EvidencePhotoItem.fromPath(
+            'a.jpg',
+            origin: PhotoOrigin.gallery,
+          ).copyWith(
+            exif: const ExifGeo(latitude: -7.3, longitude: 108.2),
+            location: pin(),
+          );
+      notifier.updatePhotoItems([
+        photo,
+        EvidencePhotoItem.fromPath('lama.jpg'),
+      ]);
+
+      final saved = notifier.saveDraft()!;
+      expect(saved.photos.first, photo);
+
+      notifier.resetForm();
+      expect(container.read(monitoringFormProvider).photos, isEmpty);
+      notifier.loadDraft(repository.getMonitoringById(saved.id)!);
+
+      final loaded = container.read(monitoringFormProvider).photos;
+      expect(loaded.length, 2);
+      expect(loaded.first, photo);
+      expect(loaded.first.exif, isNotNull);
+      expect(loaded.first.location!.method, LocationMethod.manualPin);
+      expect(loaded.last.location, isNull);
+    });
+
+    test('draf lama tanpa metadata dimuat tanpa koordinat palsu', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final notifier = container.read(monitoringFormProvider.notifier);
+      final legacy = MonitoringModel(
+        id: 'draft-lama',
+        tanggalMonitoring: DateTime(2026, 5, 1),
+        namaPerumahan: 'Perumahan Lama',
+        photoPaths: ['x.jpg', 'y.jpg'],
+        isDraft: true,
+      );
+
+      notifier.loadDraft(legacy);
+
+      final state = container.read(monitoringFormProvider);
+      expect(state.photoPaths, ['x.jpg', 'y.jpg']);
+      expect(
+        state.photos.every((p) => p.location == null && p.exif == null),
+        isTrue,
+      );
+    });
+
+    test(
+      'setPhotoLocation dan clearPhotoLocation hanya menyentuh satu foto',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(monitoringFormProvider.notifier);
+        notifier.updatePhotos(['a.jpg', 'b.jpg']);
+        final ids = container
+            .read(monitoringFormProvider)
+            .photos
+            .map((p) => p.id)
+            .toList();
+
+        notifier.setPhotoLocation(ids[1], pin());
+        var photos = container.read(monitoringFormProvider).photos;
+        expect(photos[0].location, isNull);
+        expect(photos[1].location!.latitude, -7.3274);
+
+        notifier.clearPhotoLocation(ids[1]);
+        photos = container.read(monitoringFormProvider).photos;
+        expect(photos[1].location, isNull);
+      },
+    );
+
+    test(
+      'attachPhotoMeta mengisi asal dan EXIF sekali, tanpa menyentuh lokasi',
+      () {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(monitoringFormProvider.notifier);
+        notifier.updatePhotos(['a.jpg']);
+        final id = container.read(monitoringFormProvider).photos.single.id;
+        notifier.setPhotoLocation(id, pin());
+
+        notifier.attachPhotoMeta(
+          'a.jpg',
+          origin: PhotoOrigin.camera,
+          exif: const ExifGeo(latitude: -7.1, longitude: 108.1),
+        );
+        var photo = container.read(monitoringFormProvider).photos.single;
+        expect(photo.origin, PhotoOrigin.camera);
+        expect(photo.exif!.latitude, -7.1);
+        expect(photo.location!.latitude, -7.3274);
+
+        // Panggilan kedua tidak menimpa nilai yang sudah ada.
+        notifier.attachPhotoMeta(
+          'a.jpg',
+          origin: PhotoOrigin.gallery,
+          exif: const ExifGeo(latitude: 1, longitude: 2),
+        );
+        photo = container.read(monitoringFormProvider).photos.single;
+        expect(photo.origin, PhotoOrigin.camera);
+        expect(photo.exif!.latitude, -7.1);
+      },
+    );
+
+    test('submit final ditolak bila ada foto tanpa lokasi', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(monitoringFormProvider.notifier);
+      final draft = _draft(id: 'monitoring-foto-tanpa-lokasi').copyWith(
+        photos: [
+          EvidencePhotoItem.fromPath('a.jpg').copyWith(location: pin()),
+          EvidencePhotoItem.fromPath('b.jpg'),
+        ],
+      );
+
+      final result = notifier.submitFinal(draft);
+
+      expect(result.status, isNot(MonitoringSubmitStatus.success));
+      expect(result.errorMessage, contains('1 foto belum memiliki lokasi'));
+      expect(
+        repository.getAllMonitoring().where(
+          (item) => item.id == 'monitoring-foto-tanpa-lokasi',
+        ),
+        isEmpty,
+      );
+    });
+
+    test('submit final tanpa foto tetap diterima (foto opsional)', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final result = container
+          .read(monitoringFormProvider.notifier)
+          .submitFinal(_draft(id: 'monitoring-tanpa-foto'));
+
+      expect(result.status, MonitoringSubmitStatus.success);
+    });
+
+    test(
+      'submit final mempertahankan foto beserta metadata dan photoPaths',
+      () {
+        final repository = MonitoringRepository();
+        final container = ProviderContainer(
+          overrides: [
+            monitoringRepositoryProvider.overrideWithValue(repository),
+          ],
+        );
+        addTearDown(container.dispose);
+        final photo = EvidencePhotoItem.fromPath(
+          'foto.jpg',
+        ).copyWith(location: pin());
+        final draft = _draft(
+          id: 'monitoring-foto-final',
+        ).copyWith(photos: [photo]);
+
+        final result = container
+            .read(monitoringFormProvider.notifier)
+            .submitFinal(draft);
+
+        expect(result.isSuccess, isTrue);
+        final saved = repository.getMonitoringById('monitoring-foto-final')!;
+        expect(saved.isDraft, isFalse);
+        expect(saved.photos.single, photo);
+        expect(saved.photoPaths, ['foto.jpg']);
+        final hasil = container
+            .read(pengajuanListProvider)
+            .singleWhere((item) => item.id == draft.pengajuanId)
+            .riwayatSurvey
+            .singleWhere((item) => item.id == 'monitoring-foto-final');
+        expect(hasil.photoPaths, ['foto.jpg']);
+      },
     );
   });
 }

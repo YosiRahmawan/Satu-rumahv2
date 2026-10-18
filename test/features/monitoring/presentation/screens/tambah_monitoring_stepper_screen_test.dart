@@ -320,15 +320,12 @@ void main() {
 
     expect(find.text('Dokumentasi Lapangan'), findsOneWidget);
     expect(find.text('Langkah 3 dari 3: Dokumentasi Lapangan'), findsOneWidget);
-    expect(find.text('2 foto tersimpan di sesi ini'), findsOneWidget);
+    expect(find.text('2 foto · 0 sudah berlokasi'), findsOneWidget);
     expect(find.text('2/10'), findsOneWidget);
     expect(find.text('Ringkasan validasi'), findsOneWidget);
-    expect(
-      find.textContaining(
-        'Data lokasi, waktu pengambilan, dan caption belum tersedia.',
-      ),
-      findsOneWidget,
-    );
+    expect(find.text('Lokasi setiap foto (0 dari 2)'), findsOneWidget);
+    expect(find.text('Belum ada lokasi'), findsNWidgets(2));
+    expect(find.text('Titik proyek dari Pengembang'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -352,7 +349,7 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Hapus'));
       await tester.pumpAndSettle();
       expect(container.read(monitoringFormProvider).photoPaths, ['second.jpg']);
-      expect(find.text('1 foto tersimpan di sesi ini'), findsOneWidget);
+      expect(find.text('1 foto · 0 sudah berlokasi'), findsOneWidget);
       expect(tester.takeException(), isNull);
     },
   );
@@ -381,6 +378,84 @@ void main() {
     expect(container.read(monitoringFormProvider).errorMessage, isNull);
     expect(find.text('Preview Berita Acara'), findsOneWidget);
     expect(container.read(monitoringFormProvider).isSubmitting, isFalse);
+  });
+
+  testWidgets('Step 3 menentukan lokasi foto lewat lembar lokasi', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Lokasi');
+    notifier.updatePhotos(['first.jpg', 'second.jpg']);
+    notifier.setStep(2);
+    await pumpStep1(tester);
+
+    await tester.ensureVisible(find.text('Belum ada lokasi').first);
+    await tester.tap(find.text('Belum ada lokasi').first);
+    await tester.pumpAndSettle();
+    expect(find.text('Lokasi Foto 1'), findsOneWidget);
+
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '-7.3274');
+    await tester.enterText(fields.at(1), '108.2207');
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Simpan lokasi'));
+    await tester.tap(find.text('Simpan lokasi'));
+    await tester.pumpAndSettle();
+
+    final photos = container.read(monitoringFormProvider).photos;
+    expect(photos[0].location!.latitude, closeTo(-7.3274, 1e-9));
+    expect(photos[1].location, isNull);
+    expect(find.text('Lokasi Foto 1 disimpan.'), findsOneWidget);
+    expect(find.text('2 foto · 1 sudah berlokasi'), findsOneWidget);
+    expect(find.text('Lokasi setiap foto (1 dari 2)'), findsOneWidget);
+    expect(find.text('Titik manual'), findsOneWidget);
+    expect(find.text('Belum ada lokasi'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Step 3 menahan lanjut ke preview bila ada foto tanpa lokasi', (
+    tester,
+  ) async {
+    final router = _router();
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Blokir');
+    notifier.updatePhotos(['first.jpg']);
+    notifier.setStep(2);
+    await pumpStep1(tester, router: router);
+
+    final previewButton = find.ancestor(
+      of: find.text('Submit & Buat Berita Acara'),
+      matching: find.byType(ElevatedButton),
+    );
+    await tester.ensureVisible(previewButton);
+    await tester.tap(previewButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Preview Berita Acara'), findsNothing);
+    expect(find.textContaining('1 foto belum memiliki lokasi'), findsOneWidget);
+  });
+
+  testWidgets('Simpan Draft tetap boleh walau foto belum berlokasi', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Draf Foto');
+    notifier.updatePhotos(['first.jpg']);
+    notifier.setStep(2);
+    await pumpStep1(tester);
+
+    await tester.ensureVisible(find.text('Simpan Draft'));
+    await tester.tap(find.text('Simpan Draft'));
+    await tester.pumpAndSettle();
+
+    expect(container.read(monitoringFormProvider).errorMessage, isNull);
+    expect(
+      container
+          .read(monitoringRepositoryProvider)
+          .getAllMonitoring()
+          .where((m) => m.isDraft && m.namaPerumahan == 'Perumahan Draf Foto'),
+      hasLength(1),
+    );
   });
 
   testWidgets('Step 3 remains usable at 360dp and 412dp with 200% text', (
@@ -752,7 +827,9 @@ GoRouter _router() {
     routes: [
       GoRoute(
         path: '/monitoring/tambah',
-        builder: (_, __) => const TambahMonitoringStepperScreen(),
+        builder: (_, __) => TambahMonitoringStepperScreen(
+          locationMapBuilder: (_) => const SizedBox.shrink(),
+        ),
       ),
       GoRoute(
         path: '/monitoring/lapangan',

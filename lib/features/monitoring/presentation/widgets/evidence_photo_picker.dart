@@ -4,6 +4,8 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/file_picker_util.dart';
+import '../../data/models/evidence_photo_item.dart';
+import '../../utils/exif_geo_reader.dart';
 
 typedef PhotoPathPicker = Future<List<String>> Function();
 typedef CameraPhotoPicker = Future<String?> Function();
@@ -15,6 +17,19 @@ class EvidencePhotoPicker extends StatefulWidget {
   final PhotoPathPicker? pickPhotoPaths;
   final CameraPhotoPicker? pickCameraPhoto;
 
+  /// Baris status lokasi di bagian bawah kartu foto (indeks mengikuti
+  /// [photoPaths]). Bila null, kartu tidak menampilkan status.
+  final Widget Function(int index)? photoStatusBuilder;
+
+  /// Dipanggil untuk setiap foto yang baru ditambahkan: pertama dengan asal
+  /// foto saja, lalu sekali lagi bila berkas memuat GPS tertanam (EXIF).
+  /// Hanya melaporkan; tidak pernah menentukan lokasi petugas.
+  final void Function(String path, PhotoOrigin origin, ExifGeo? exif)?
+  onPhotoPicked;
+
+  /// Dipanggil saat kartu foto diketuk (mis. membuka lembar lokasi).
+  final ValueChanged<int>? onPhotoTap;
+
   const EvidencePhotoPicker({
     super.key,
     required this.photoPaths,
@@ -22,6 +37,9 @@ class EvidencePhotoPicker extends StatefulWidget {
     this.maxPhotos = 10,
     this.pickPhotoPaths,
     this.pickCameraPhoto,
+    this.photoStatusBuilder,
+    this.onPhotoTap,
+    this.onPhotoPicked,
   });
 
   static final Map<String, Uint8List> _bytesCache = {};
@@ -126,8 +144,15 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
         if (updated.length >= widget.maxPhotos) break;
         if (!updated.contains(path)) updated.add(path);
       }
+      final added = updated
+          .where((path) => !widget.photoPaths.contains(path))
+          .toList();
       if (updated.length != widget.photoPaths.length) {
         widget.onPhotosChanged(updated);
+        await _reportPicked(
+          added,
+          camera ? PhotoOrigin.camera : PhotoOrigin.gallery,
+        );
       }
     } catch (error) {
       if (mounted && requestId == _pickRequestId) {
@@ -145,6 +170,21 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
       if (mounted && requestId == _pickRequestId) {
         setState(() => _isPicking = false);
       }
+    }
+  }
+
+  Future<void> _reportPicked(List<String> paths, PhotoOrigin origin) async {
+    final report = widget.onPhotoPicked;
+    if (report == null) return;
+    for (final path in paths) {
+      report(path, origin, null);
+    }
+    for (final path in paths) {
+      final bytes = EvidencePhotoPicker.getCachedBytes(path);
+      if (bytes == null) continue;
+      final exif = await readExifGeo(bytes);
+      if (exif == null || !mounted) continue;
+      report(path, origin, exif);
     }
   }
 
@@ -404,122 +444,128 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 8,
-            runSpacing: 4,
-            children: [
               Wrap(
+                alignment: WrapAlignment.spaceBetween,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 spacing: 8,
                 runSpacing: 4,
                 children: [
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: [
+                      const Text(
+                        'Foto dokumentasi',
+                        style: TextStyle(
+                          fontFamily: AppTextStyles.enterpriseFontFamily,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.enterpriseTextMain,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.enterprisePrimarySurface,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '${photoPaths.length}/${widget.maxPhotos}',
+                          style: const TextStyle(
+                            fontFamily: AppTextStyles.enterpriseFontFamily,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.enterprisePrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const Text(
-                    'Foto dokumentasi',
+                    'Maks. 10MB/foto',
                     style: TextStyle(
                       fontFamily: AppTextStyles.enterpriseFontFamily,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.enterpriseTextMain,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.enterprisePrimarySurface,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      '${photoPaths.length}/${widget.maxPhotos}',
-                      style: const TextStyle(
-                        fontFamily: AppTextStyles.enterpriseFontFamily,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.enterprisePrimary,
-                      ),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.enterpriseTextMuted,
                     ),
                   ),
                 ],
               ),
-              const Text(
-                'Maks. 10MB/foto',
-                style: TextStyle(
-                  fontFamily: AppTextStyles.enterpriseFontFamily,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.enterpriseTextMuted,
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(999),
+                child: LinearProgressIndicator(
+                  value: photoPaths.isEmpty
+                      ? 0
+                      : photoPaths.length / widget.maxPhotos,
+                  minHeight: 4,
+                  backgroundColor: const Color(0xFFF1F5F9),
+                  valueColor: const AlwaysStoppedAnimation(
+                    AppColors.enterprisePrimary,
+                  ),
                 ),
               ),
+              const SizedBox(height: 16),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 14,
+                  mainAxisSpacing: 14,
+                  childAspectRatio: 3 / 4,
+                ),
+                itemCount: (photoPaths.length < widget.maxPhotos)
+                    ? photoPaths.length + 1
+                    : photoPaths.length,
+                itemBuilder: (context, index) {
+                  if (index == photoPaths.length &&
+                      photoPaths.length < widget.maxPhotos) {
+                    return _buildAddPhotoCard();
+                  }
+
+                  final path = photoPaths[index];
+                  return _buildPhotoCard(path, index);
+                },
+              ),
+              if (_isPicking) ...[
+                const SizedBox(height: 14),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: const LinearProgressIndicator(
+                    minHeight: 4,
+                    backgroundColor: Color(0xFFF1F5F9),
+                    valueColor: AlwaysStoppedAnimation(
+                      AppColors.enterprisePrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Memproses foto…',
+                  style: TextStyle(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    fontSize: 11,
+                    color: AppColors.enterpriseTextMuted,
+                  ),
+                ),
+              ],
             ],
           ),
-          const SizedBox(height: 12),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              value: photoPaths.isEmpty ? 0 : photoPaths.length / widget.maxPhotos,
-              minHeight: 4,
-              backgroundColor: const Color(0xFFF1F5F9),
-              valueColor: const AlwaysStoppedAnimation(AppColors.enterprisePrimary),
-            ),
-          ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 14,
-              mainAxisSpacing: 14,
-              childAspectRatio: 3 / 4,
-            ),
-            itemCount: (photoPaths.length < widget.maxPhotos)
-                ? photoPaths.length + 1
-                : photoPaths.length,
-            itemBuilder: (context, index) {
-              if (index == photoPaths.length &&
-                  photoPaths.length < widget.maxPhotos) {
-                return _buildAddPhotoCard();
-              }
+        );
 
-              final path = photoPaths[index];
-              return _buildPhotoCard(path, index);
-            },
-          ),
-          if (_isPicking) ...[
-            const SizedBox(height: 14),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(999),
-              child: const LinearProgressIndicator(
-                minHeight: 4,
-                backgroundColor: Color(0xFFF1F5F9),
-                valueColor: AlwaysStoppedAnimation(AppColors.enterprisePrimary),
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Memproses foto…',
-              style: TextStyle(
-                fontFamily: AppTextStyles.enterpriseFontFamily,
-                fontSize: 11,
-                color: AppColors.enterpriseTextMuted,
-              ),
-            ),
-          ],
-        ],
-      ),
+        if (constraints.hasBoundedHeight) {
+          return SingleChildScrollView(child: content);
+        }
+        return content;
+      },
     );
-
-    if (constraints.hasBoundedHeight) {
-      return SingleChildScrollView(child: content);
-    }
-    return content;
-  },
-);
-}
+  }
 
   Widget _buildPhotoCard(String path, int index) {
     return TweenAnimationBuilder<double>(
@@ -529,161 +575,108 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
       builder: (context, animValue, child) {
         return Transform.scale(
           scale: 0.95 + (0.05 * animValue),
-          child: Opacity(
-            opacity: animValue,
-            child: child,
-          ),
+          child: Opacity(opacity: animValue, child: child),
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            _buildPhotoPreview(path),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black54,
-                      Colors.transparent,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onPhotoTap == null
+            ? null
+            : () => widget.onPhotoTap!(index),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildPhotoPreview(path),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.black54, Colors.transparent],
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      IconButton(
+                        tooltip: 'Hapus foto ${index + 1}',
+                        onPressed: () => _confirmDelete(index),
+                        icon: const Icon(
+                          Icons.close,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                        style: IconButton.styleFrom(
+                          backgroundColor: AppColors.enterprisePrimary,
+                          minimumSize: const Size(28, 28),
+                          padding: EdgeInsets.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF059669).withValues(alpha: 0.9),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              width: 5,
-                              height: 5,
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            const Flexible(
-                              child: Text(
-                                'Tersimpan',
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontFamily: AppTextStyles.enterpriseFontFamily,
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Hapus foto ${index + 1}',
-                      onPressed: () => _confirmDelete(index),
-                      icon: const Icon(Icons.close, size: 16, color: Colors.white),
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppColors.enterprisePrimary,
-                        minimumSize: const Size(28, 28),
-                        padding: EdgeInsets.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                padding: const EdgeInsets.fromLTRB(10, 20, 10, 8),
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [
-                      Colors.black87,
-                      Colors.black45,
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Dokumentasi ${index + 1}',
-                      style: const TextStyle(
-                        fontFamily: AppTextStyles.enterpriseFontFamily,
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.location_on,
-                          size: 11,
-                          color: Color(0xFFF87171),
-                        ),
-                        const SizedBox(width: 3),
-                        Expanded(
-                          child: Text(
-                            'Tasikmalaya • Siap',
-                            style: TextStyle(
-                              fontFamily: AppTextStyles.enterpriseFontFamily,
-                              color: Colors.grey[300],
-                              fontSize: 10,
-                              fontWeight: FontWeight.w400,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(10, 20, 10, 8),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black87,
+                        Colors.black45,
+                        Colors.transparent,
                       ],
                     ),
-                  ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Dokumentasi ${index + 1}',
+                        style: const TextStyle(
+                          fontFamily: AppTextStyles.enterpriseFontFamily,
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (widget.photoStatusBuilder != null) ...[
+                        const SizedBox(height: 2),
+                        widget.photoStatusBuilder!(index),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -719,7 +712,9 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: AppColors.enterprisePrimarySurface.withValues(alpha: 0.6),
+                        color: AppColors.enterprisePrimarySurface.withValues(
+                          alpha: 0.6,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(

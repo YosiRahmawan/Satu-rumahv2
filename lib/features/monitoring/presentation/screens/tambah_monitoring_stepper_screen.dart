@@ -6,16 +6,26 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../data/models/evidence_photo_item.dart';
 import '../../data/models/monitoring_model.dart';
+import '../../data/models/project_reference.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
+import '../providers/project_reference_provider.dart';
+import '../../utils/geo_distance.dart';
 import '../widgets/dynamic_bullet_field.dart';
 import '../widgets/evidence_photo_picker.dart';
+import '../widgets/photo_location_map.dart';
+import '../widgets/photo_location_sheet.dart';
 
 enum _ExitChoice { save, discard }
 
 class TambahMonitoringStepperScreen extends ConsumerStatefulWidget {
-  const TambahMonitoringStepperScreen({super.key});
+  /// Mengganti peta pada lembar lokasi foto (mis. di tes tanpa jaringan).
+  final Widget Function(PhotoLocationMapController controller)?
+  locationMapBuilder;
+
+  const TambahMonitoringStepperScreen({super.key, this.locationMapBuilder});
 
   @override
   ConsumerState<TambahMonitoringStepperScreen> createState() =>
@@ -1305,9 +1315,11 @@ class _TambahMonitoringStepperScreenState
     MonitoringFormState state,
     MonitoringFormNotifier notifier,
   ) {
-    final validPaths = state.photoPaths
-        .where((path) => path.trim().isNotEmpty)
+    final photos = state.photos
+        .where((photo) => photo.localRef.trim().isNotEmpty)
         .toList();
+    final located = photos.where((photo) => photo.hasLocation).length;
+    final reference = ref.watch(projectReferenceProvider(state.pengajuanId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1321,18 +1333,26 @@ class _TambahMonitoringStepperScreenState
         ),
         const SizedBox(height: 6),
         Text(
-          '${validPaths.length} foto tersimpan di sesi ini',
+          photos.isEmpty
+              ? 'Belum ada foto'
+              : '${photos.length} foto · $located sudah berlokasi',
           style: AppTextStyles.bodySmall.copyWith(
             fontFamily: AppTextStyles.enterpriseFontFamily,
             color: AppColors.enterpriseTextMuted,
           ),
         ),
         const SizedBox(height: 16),
-        _buildDocumentationInfoBanner(),
+        _buildProjectReferenceBanner(reference),
         const SizedBox(height: 16),
         EvidencePhotoPicker(
-          photoPaths: validPaths,
+          photoPaths: [for (final photo in photos) photo.localRef],
           onPhotosChanged: notifier.updatePhotos,
+          onPhotoPicked: (path, origin, exif) =>
+              notifier.attachPhotoMeta(path, origin: origin, exif: exif),
+          photoStatusBuilder: (index) =>
+              _buildPhotoStatus(photos[index], reference),
+          onPhotoTap: (index) =>
+              _openPhotoLocation(photos[index], index + 1, reference, notifier),
         ),
         const SizedBox(height: 16),
         _buildStep3ValidationSummary(state),
@@ -1340,28 +1360,49 @@ class _TambahMonitoringStepperScreenState
     );
   }
 
-  Widget _buildDocumentationInfoBanner() {
+  Widget _buildProjectReferenceBanner(ProjectReference? reference) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.statusInfo.withValues(alpha: .08),
-        border: Border.all(color: AppColors.statusInfo.withValues(alpha: .28)),
+        color: AppColors.cardSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
         borderRadius: AppRadii.control,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline, color: AppColors.statusInfo, size: 20),
+          const Icon(
+            Icons.lock_outline,
+            color: AppColors.enterpriseTextMuted,
+            size: 18,
+          ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              'Foto dipilih dari kamera atau galeri/berkas perangkat dan hanya disimpan sebagai path lokal pada sesi formulir ini. Data lokasi, waktu pengambilan, dan caption belum tersedia.',
-              style: AppTextStyles.bodySmall.copyWith(
-                fontFamily: AppTextStyles.enterpriseFontFamily,
-                color: AppColors.enterpriseTextMain,
-                height: 1.45,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Titik proyek dari Pengembang',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    color: AppColors.enterpriseTextMain,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  reference == null
+                      ? 'Belum tersedia. Jarak ke proyek tidak dapat dihitung, tetapi setiap foto tetap perlu ditentukan lokasinya.'
+                      : '${formatCoordinate(reference.latitude)}, '
+                            '${formatCoordinate(reference.longitude)} · tidak dapat diubah',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    color: AppColors.enterpriseTextMuted,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -1369,11 +1410,136 @@ class _TambahMonitoringStepperScreenState
     );
   }
 
+  /// Baris status lokasi pada kartu foto; hanya menampilkan data nyata.
+  Widget _buildPhotoStatus(
+    EvidencePhotoItem photo,
+    ProjectReference? reference,
+  ) {
+    final proximity = evaluatePhotoProximity(
+      location: photo.location,
+      reference: reference,
+    );
+    late final IconData icon;
+    late final Color color;
+    late final String title;
+    late final String detail;
+    switch (proximity.status) {
+      case ProximityStatus.noLocation:
+        icon = Icons.location_off_outlined;
+        color = const Color(0xFFFCA5A5);
+        title = 'Belum ada lokasi';
+        detail = 'Ketuk untuk menentukan';
+      case ProximityStatus.noReference:
+        icon = Icons.location_on;
+        color = Colors.white70;
+        title = _shortMethodLabel(photo.location!.method);
+        detail = 'Jarak tidak dihitung';
+      case ProximityStatus.withinTolerance:
+        icon = Icons.location_on;
+        color = const Color(0xFF86EFAC);
+        title = _shortMethodLabel(photo.location!.method);
+        detail =
+            '${formatDistance(proximity.distanceMeters!)} dari proyek'
+            '${proximity.lowAccuracy ? ' · akurasi rendah' : ''}';
+      case ProximityStatus.outsideTolerance:
+        icon = Icons.warning_amber_rounded;
+        color = const Color(0xFFFCD34D);
+        title = _shortMethodLabel(photo.location!.method);
+        detail = '${formatDistance(proximity.distanceMeters!)} dari proyek';
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 3),
+            Expanded(
+              child: Text(
+                title,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: AppTextStyles.enterpriseFontFamily,
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Text(
+          detail,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: Colors.grey[300],
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _shortMethodLabel(LocationMethod method) => switch (method) {
+    LocationMethod.exifConfirmed => 'GPS dari foto',
+    LocationMethod.manualPin => 'Titik manual',
+    LocationMethod.deviceAtEntry => 'Posisi saat input',
+  };
+
+  Future<void> _openPhotoLocation(
+    EvidencePhotoItem photo,
+    int number,
+    ProjectReference? reference,
+    MonitoringFormNotifier notifier,
+  ) async {
+    final result = await showPhotoLocationSheet(
+      context,
+      photo: photo,
+      photoNumber: number,
+      reference: reference,
+      mapBuilder: _locationMapBuilder,
+    );
+    if (!mounted || result == null) return;
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    if (result.cleared) {
+      notifier.clearPhotoLocation(photo.id);
+      messenger.showSnackBar(
+        _buildSnackBar(
+          icon: Icons.check_circle,
+          message: 'Lokasi Foto $number dihapus.',
+          color: const Color(0xFF166534),
+        ),
+      );
+    } else {
+      notifier.setPhotoLocation(photo.id, result.location!);
+      messenger.showSnackBar(
+        _buildSnackBar(
+          icon: Icons.check_circle,
+          message: 'Lokasi Foto $number disimpan.',
+          color: const Color(0xFF166534),
+        ),
+      );
+    }
+  }
+
+  /// Peta untuk lembar lokasi; tes dapat menggantinya lewat [locationMapBuilder].
+  Widget Function(PhotoLocationMapController controller)?
+  get _locationMapBuilder =>
+      widget.locationMapBuilder ??
+      (controller) => PhotoLocationMap(controller: controller);
+
   Widget _buildStep3ValidationSummary(MonitoringFormState state) {
     final hasHousing = state.namaPerumahan.trim().isNotEmpty;
     final hasRequiredRtl =
         !state.statusHasilEvaluasi.wajibRencanaTindakLanjut ||
         state.rencanaTindakLanjut.any((item) => item.trim().isNotEmpty);
+    final tracked = state.photos
+        .where((photo) => photo.localRef.trim().isNotEmpty)
+        .toList();
+    final photoCount = tracked.length;
+    final locatedCount = tracked.where((photo) => photo.hasLocation).length;
     final checks = [
       (hasHousing, 'Nama perumahan dari Langkah 1'),
       (hasRequiredRtl, 'Rencana tindak lanjut dari Langkah 2'),
@@ -1381,6 +1547,11 @@ class _TambahMonitoringStepperScreenState
         state.photoPaths.any((path) => path.trim().isNotEmpty),
         'Foto dokumentasi (opsional)',
       ),
+      if (photoCount > 0)
+        (
+          photoCount == locatedCount,
+          'Lokasi setiap foto ($locatedCount dari $photoCount)',
+        ),
     ];
     return Container(
       width: double.infinity,
@@ -1517,6 +1688,25 @@ class _TambahMonitoringStepperScreenState
             notifier.setStep(2);
           } else {
             // Last step -> Navigate to Preview Screen
+            final unlocated = formState.photos
+                .where(
+                  (photo) =>
+                      photo.localRef.trim().isNotEmpty && !photo.hasLocation,
+                )
+                .length;
+            if (unlocated > 0) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  _buildSnackBar(
+                    icon: Icons.error_outline,
+                    message:
+                        '$unlocated foto belum memiliki lokasi. Tentukan lokasi setiap foto sebelum submit.',
+                    color: AppColors.enterprisePrimary,
+                  ),
+                );
+              return;
+            }
             final previewModel = notifier.buildPreviewModel();
             if (previewModel != null) {
               context.push(

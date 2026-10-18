@@ -1,3 +1,4 @@
+import 'evidence_photo_item.dart';
 import 'status_hasil_evaluasi.dart';
 
 /// A repeatable person captured during a field monitoring session.
@@ -77,7 +78,14 @@ class MonitoringModel {
   final String ditemuiJabatan;
   final List<MonitoringPerson> pelaksana;
   final List<MonitoringPerson> ditemui;
-  final List<String> photoPaths;
+
+  /// Sumber kebenaran foto beserta metadatanya.
+  final List<EvidencePhotoItem> photos;
+
+  /// Adaptor kompatibilitas: daftar referensi berkas seperti sebelumnya.
+  List<String> get photoPaths =>
+      photos.map((photo) => photo.localRef).toList(growable: false);
+
   final DateTime createdAt;
   final String nomorSuratBA;
   final bool isDraft;
@@ -101,11 +109,13 @@ class MonitoringModel {
     this.ditemuiJabatan = '',
     this.pelaksana = const [],
     this.ditemui = const [],
-    this.photoPaths = const [],
+    List<String>? photoPaths,
+    List<EvidencePhotoItem>? photos,
     DateTime? createdAt,
     String? nomorSuratBA,
     this.isDraft = false,
-  }) : createdAt = createdAt ?? DateTime.now(),
+  }) : photos = photos ?? EvidencePhotoItem.fromPaths(photoPaths ?? const []),
+       createdAt = createdAt ?? DateTime.now(),
        nomorSuratBA = nomorSuratBA ?? generateNomorSuratBA(tanggalMonitoring);
 
   MonitoringModel copyWith({
@@ -128,6 +138,7 @@ class MonitoringModel {
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
     List<String>? photoPaths,
+    List<EvidencePhotoItem>? photos,
     DateTime? createdAt,
     String? nomorSuratBA,
     bool? isDraft,
@@ -151,7 +162,11 @@ class MonitoringModel {
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
       pelaksana: pelaksana ?? this.pelaksana,
       ditemui: ditemui ?? this.ditemui,
-      photoPaths: photoPaths ?? this.photoPaths,
+      photos:
+          photos ??
+          (photoPaths != null
+              ? EvidencePhotoItem.reconcile(this.photos, photoPaths)
+              : this.photos),
       createdAt: createdAt ?? this.createdAt,
       nomorSuratBA: nomorSuratBA ?? this.nomorSuratBA,
       isDraft: isDraft ?? this.isDraft,

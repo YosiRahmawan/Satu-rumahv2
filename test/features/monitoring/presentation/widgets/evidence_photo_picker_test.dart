@@ -3,13 +3,17 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/features/monitoring/data/models/evidence_photo_item.dart';
 import 'package:satu_rumah/features/monitoring/presentation/widgets/evidence_photo_picker.dart';
+
+import '../../utils/exif_test_jpeg.dart';
 
 Future<void> _pumpPicker(
   WidgetTester tester, {
   required PhotoPathPicker picker,
   CameraPhotoPicker? cameraPicker,
   required ValueChanged<List<String>> onChanged,
+  void Function(String, PhotoOrigin, ExifGeo?)? onPicked,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
@@ -19,6 +23,7 @@ Future<void> _pumpPicker(
           onPhotosChanged: onChanged,
           pickPhotoPaths: picker,
           pickCameraPhoto: cameraPicker,
+          onPhotoPicked: onPicked,
         ),
       ),
     ),
@@ -108,7 +113,50 @@ void main() {
     await tester.tap(find.text('Ambil Foto Langsung'));
     await tester.pumpAndSettle();
 
-    expect(updates, [<String>['camera-photo.jpg']]);
+    expect(updates, [
+      <String>['camera-photo.jpg'],
+    ]);
+  });
+
+  testWidgets('foto galeri dilaporkan dengan asal dan GPS tertanam', (
+    tester,
+  ) async {
+    EvidencePhotoPicker.cacheBytes('geo.jpg', jpegWithGps());
+    final reports = <(String, PhotoOrigin, ExifGeo?)>[];
+    await _pumpPicker(
+      tester,
+      picker: () async => ['geo.jpg'],
+      onChanged: (_) {},
+      onPicked: (path, origin, exif) => reports.add((path, origin, exif)),
+    );
+
+    await tester.tap(_addPhotoButton());
+    await tester.pumpAndSettle();
+
+    expect(reports.first, ('geo.jpg', PhotoOrigin.gallery, null));
+    expect(reports.last.$3, isNotNull);
+    expect(reports.last.$3!.latitude, closeTo(-7.3274, 1e-5));
+  });
+
+  testWidgets('foto kamera tanpa EXIF hanya dilaporkan asalnya', (
+    tester,
+  ) async {
+    EvidencePhotoPicker.cacheBytes('cam.jpg', Uint8List.fromList([1, 2, 3]));
+    final reports = <(String, PhotoOrigin, ExifGeo?)>[];
+    await _pumpPicker(
+      tester,
+      picker: () async => const [],
+      cameraPicker: () async => 'cam.jpg',
+      onChanged: (_) {},
+      onPicked: (path, origin, exif) => reports.add((path, origin, exif)),
+    );
+
+    await tester.tap(_addPhotoButton());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Ambil Foto Langsung'));
+    await tester.pumpAndSettle();
+
+    expect(reports, [('cam.jpg', PhotoOrigin.camera, null)]);
   });
 
   testWidgets('camera picker error keeps state unchanged and shows feedback', (
@@ -131,34 +179,96 @@ void main() {
     expect(find.textContaining('Kamera tidak dapat digunakan'), findsOneWidget);
   });
 
-  testWidgets('renders photo preview using Image.memory when bytes are cached without Image.file', (
-    tester,
-  ) async {
-    final transparentPng = Uint8List.fromList(<int>[
-      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-      0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89, 0x00, 0x00, 0x00,
-      0x0A, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-      0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00, 0x00, 0x00, 0x00, 0x49,
-      0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82,
-    ]);
-    EvidencePhotoPicker.cacheBytes('test-photo.jpg', transparentPng);
+  testWidgets(
+    'renders photo preview using Image.memory when bytes are cached without Image.file',
+    (tester) async {
+      final transparentPng = Uint8List.fromList(<int>[
+        0x89,
+        0x50,
+        0x4E,
+        0x47,
+        0x0D,
+        0x0A,
+        0x1A,
+        0x0A,
+        0x00,
+        0x00,
+        0x00,
+        0x0D,
+        0x49,
+        0x48,
+        0x44,
+        0x52,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x01,
+        0x08,
+        0x06,
+        0x00,
+        0x00,
+        0x00,
+        0x1F,
+        0x15,
+        0xC4,
+        0x89,
+        0x00,
+        0x00,
+        0x00,
+        0x0A,
+        0x49,
+        0x44,
+        0x41,
+        0x54,
+        0x78,
+        0x9C,
+        0x63,
+        0x00,
+        0x01,
+        0x00,
+        0x00,
+        0x05,
+        0x00,
+        0x01,
+        0x0D,
+        0x0A,
+        0x2D,
+        0xB4,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x49,
+        0x45,
+        0x4E,
+        0x44,
+        0xAE,
+        0x42,
+        0x60,
+        0x82,
+      ]);
+      EvidencePhotoPicker.cacheBytes('test-photo.jpg', transparentPng);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: EvidencePhotoPicker(
-            photoPaths: const ['test-photo.jpg'],
-            onPhotosChanged: (_) {},
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: EvidencePhotoPicker(
+              photoPaths: const ['test-photo.jpg'],
+              onPhotosChanged: (_) {},
+            ),
           ),
         ),
-      ),
-    );
-    await tester.pumpAndSettle();
+      );
+      await tester.pumpAndSettle();
 
-    expect(find.byType(Image), findsOneWidget);
-    final imageWidget = tester.widget<Image>(find.byType(Image));
-    expect(imageWidget.image, isA<MemoryImage>());
-    expect(find.text('Tambah foto'), findsOneWidget);
-  });
+      expect(find.byType(Image), findsOneWidget);
+      final imageWidget = tester.widget<Image>(find.byType(Image));
+      expect(imageWidget.image, isA<MemoryImage>());
+      expect(find.text('Tambah foto'), findsOneWidget);
+    },
+  );
 }
