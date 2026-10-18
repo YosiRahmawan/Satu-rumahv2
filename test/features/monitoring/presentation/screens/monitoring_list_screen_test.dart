@@ -7,6 +7,7 @@ import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart
 import 'package:satu_rumah/features/monitoring/data/models/status_hasil_evaluasi.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/screens/monitoring_list_screen.dart';
+import 'package:satu_rumah/features/pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 
 class _FakeMonitoringRepository {
   final List<MonitoringModel> items;
@@ -141,17 +142,125 @@ void main() {
     expect(find.text('Grand Tasik Harmoni'), findsNothing);
   });
 
-  testWidgets('explains an empty result when filters match nothing', (
+  testWidgets('renders condition 1: empty database when no reports exist', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));
+    await tester.pumpWidget(buildSubject([]));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+    expect(find.byIcon(Icons.assignment_outlined), findsNothing);
+    expect(find.text('Belum ada laporan survey'), findsOneWidget);
+    expect(
+      find.text(
+        'Laporan hasil survey dan berita acara akan tampil di sini setelah survey dicatat.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Reset Filter'), findsNothing);
+    expect(find.text('Hapus Pencarian'), findsNothing);
+  });
+
+  testWidgets(
+    'renders condition 2: search has no matches and allows clearing',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      await tester.pumpWidget(buildSubject(items));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'tidak ada nama ini');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+      expect(find.text('Laporan tidak ditemukan'), findsOneWidget);
+      expect(find.textContaining('tidak ada nama ini'), findsWidgets);
+      final clearButton = find.text('Hapus Pencarian');
+      expect(clearButton, findsOneWidget);
+
+      await tester.tap(clearButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Permata Hijau Residence'), findsOneWidget);
+      expect(find.text('Laporan tidak ditemukan'), findsNothing);
+    },
+  );
+
+  testWidgets('renders condition 3: filter has no matches and allows reset', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    // Provide items with NO draft
     await tester.pumpWidget(buildSubject(items));
     await tester.pumpAndSettle();
 
-    await tester.enterText(find.byType(TextField), 'tidak ada nama ini');
-    await tester.pump();
-    expect(find.text('Tidak ada laporan yang sesuai filter.'), findsOneWidget);
+    await tester.tap(find.text('Draf'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+    expect(find.text('Tidak ada laporan dengan status ini'), findsOneWidget);
+    expect(
+      find.text(
+        'Tidak ada laporan survey dengan status "Draf". Coba pilih status filter lainnya.',
+      ),
+      findsOneWidget,
+    );
+    final resetButton = find.text('Reset Filter');
+    expect(resetButton, findsOneWidget);
+
+    await tester.tap(resetButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Permata Hijau Residence'), findsOneWidget);
   });
+
+  testWidgets(
+    'renders condition 4: combined search and filter has no matches and resets both',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      await tester.pumpWidget(buildSubject([...items, draft]));
+      await tester.pumpAndSettle();
+
+      // Select Draf filter
+      await tester.tap(find.text('Draf').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Griya Draf Asri'), findsOneWidget);
+
+      // Search something that doesn't match the draft
+      await tester.enterText(find.byType(TextField), 'Permata');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+      expect(find.text('Tidak ada laporan yang sesuai filter'), findsOneWidget);
+      expect(
+        find.text(
+          'Tidak ada laporan dengan kata kunci "Permata" dan status "Draf".',
+        ),
+        findsOneWidget,
+      );
+      final resetAllButton = find.text('Reset Pencarian & Filter');
+      expect(resetAllButton, findsOneWidget);
+
+      await tester.tap(resetAllButton);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Permata Hijau Residence'), findsOneWidget);
+      expect(find.text('Griya Draf Asri'), findsOneWidget);
+    },
+  );
+
+  for (final width in [360.0, 390.0, 420.0]) {
+    testWidgets('empty state renders without overflow on ${width}dp viewport', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(Size(width, 640));
+      await tester.pumpWidget(buildSubject([]));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+    });
+  }
 
   testWidgets('tapping a card opens its document', (tester) async {
     await tester.binding.setSurfaceSize(const Size(390, 844));

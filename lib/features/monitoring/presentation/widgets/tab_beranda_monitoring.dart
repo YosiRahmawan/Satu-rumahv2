@@ -424,19 +424,6 @@ class _DashboardContent extends ConsumerWidget {
             onOpenBeritaAcara: onOpenBeritaAcara,
             onOpenDraft: onOpenDraft,
           ),
-
-        const SizedBox(height: 20),
-
-        Center(
-          child: Text(
-            'Mode prototipe lokal · data contoh',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: AppColors.enterpriseTextMuted.withValues(alpha: 0.8),
-            ),
-          ),
-        ),
       ],
     );
   }

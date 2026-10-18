@@ -10,6 +10,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
+import '../../../pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 import '../providers/monitoring_list_provider.dart';
 
 class MonitoringListScreen extends ConsumerStatefulWidget {
@@ -153,25 +154,7 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
                 _buildReportCard(filteredItems[index]),
           ),
         ),
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.lg,
-            AppSpacing.xl,
-          ),
-          child: Center(
-            child: Text(
-              'Mode prototipe lokal · data contoh',
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-      ),
+      const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
     ];
   }
 
@@ -297,40 +280,131 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
   }
 
   Widget _buildEmptyState() {
-    final hasFilters =
-        _searchQuery.trim().isNotEmpty || _selectedFilter != _HistoryFilter.all;
+    final query = _searchQuery.trim();
+    final hasQuery = query.isNotEmpty;
+    final hasFilter = _selectedFilter != _HistoryFilter.all;
+
+    final String title;
+    final String description;
+    final String? actionLabel;
+    final IconData? actionIcon;
+    final VoidCallback? onReset;
+
+    if (hasQuery && hasFilter) {
+      // Kondisi 4: Kombinasi pencarian dan filter tidak menemukan hasil
+      title = 'Tidak ada laporan yang sesuai filter';
+      description =
+          'Tidak ada laporan dengan kata kunci "$query" dan status "${_filterLabels[_selectedFilter]}".';
+      actionLabel = 'Reset Pencarian & Filter';
+      actionIcon = Icons.refresh_rounded;
+      onReset = () {
+        _searchController.clear();
+        setState(() {
+          _searchQuery = '';
+          _selectedFilter = _HistoryFilter.all;
+        });
+      };
+    } else if (hasQuery) {
+      // Kondisi 2: Pencarian tidak menemukan hasil
+      title = 'Laporan tidak ditemukan';
+      description =
+          'Tidak ada laporan yang sesuai dengan kata kunci "$query". Periksa kembali ejaan Anda.';
+      actionLabel = 'Hapus Pencarian';
+      actionIcon = Icons.close_rounded;
+      onReset = () {
+        _searchController.clear();
+        setState(() => _searchQuery = '');
+      };
+    } else if (hasFilter) {
+      // Kondisi 3: Filter status tidak menemukan hasil
+      title = 'Tidak ada laporan dengan status ini';
+      description =
+          'Tidak ada laporan survey dengan status "${_filterLabels[_selectedFilter]}". Coba pilih status filter lainnya.';
+      actionLabel = 'Reset Filter';
+      actionIcon = Icons.refresh_rounded;
+      onReset = () {
+        setState(() => _selectedFilter = _HistoryFilter.all);
+      };
+    } else {
+      // Kondisi 1: Belum ada laporan
+      title = 'Belum ada laporan survey';
+      description =
+          'Laporan hasil survey dan berita acara akan tampil di sini setelah survey dicatat.';
+      actionLabel = null;
+      actionIcon = null;
+      onReset = null;
+    }
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.lg,
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.assignment_outlined,
-              size: 48,
-              color: AppColors.textSecondary,
-            ),
+            const SurveyNotFoundIllustration(width: 150, height: 118),
             const SizedBox(height: AppSpacing.md),
             Text(
-              hasFilters
-                  ? 'Tidak ada laporan yang sesuai filter.'
-                  : 'Belum ada laporan survey.',
+              title,
               textAlign: TextAlign.center,
               style: AppTextStyles.titleMedium.copyWith(
                 color: AppColors.enterpriseTextMain,
                 fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
               ),
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              hasFilters
-                  ? 'Coba ubah kata kunci atau status filter.'
-                  : 'Laporan akan tampil di sini setelah survey dicatat.',
-              textAlign: TextAlign.center,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textSecondary,
+            const SizedBox(height: AppSpacing.xs),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 290),
+              child: Text(
+                description,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                  height: 1.45,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
+            if (actionLabel != null && onReset != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              OutlinedButton.icon(
+                onPressed: onReset,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.enterpriseTextMain,
+                  side: const BorderSide(
+                    color: AppColors.enterpriseBorder,
+                    width: 1.2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                  backgroundColor: AppColors.cardSurface,
+                  elevation: 0,
+                ),
+                icon: Icon(
+                  actionIcon ?? Icons.refresh_rounded,
+                  size: 16,
+                  color: AppColors.enterpriseTextMain,
+                ),
+                label: Text(
+                  actionLabel,
+                  style: const TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.enterpriseTextMain,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

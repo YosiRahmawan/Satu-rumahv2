@@ -105,13 +105,14 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
 
     final filteredNotifs = switch (_selectedFilter) {
       'Belum Dibaca' => allNotifs.where((e) => !e.isRead).toList(),
-      'Perlu Tindak Lanjut' => allNotifs
-          .where(
-            (e) =>
-                e.jenis == JenisNotifikasi.dokumenDiunggahUlang ||
-                e.jenis == JenisNotifikasi.deadlineVerifikasi,
-          )
-          .toList(),
+      'Perlu Tindak Lanjut' =>
+        allNotifs
+            .where(
+              (e) =>
+                  e.jenis == JenisNotifikasi.dokumenDiunggahUlang ||
+                  e.jenis == JenisNotifikasi.deadlineVerifikasi,
+            )
+            .toList(),
       _ => allNotifs,
     };
 
@@ -126,20 +127,14 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
               SliverToBoxAdapter(
                 child: _buildPerwaskimHeader(context, identity),
               ),
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-                  child: PrototypeDataBanner(),
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
+              SliverToBoxAdapter(child: _buildFilterChips(unreadCount)),
+              SliverToBoxAdapter(
+                child: _buildFilterSummaryRow(
+                  allNotifs,
+                  filteredNotifs,
+                  notifier,
                 ),
-              ),
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 12),
-              ),
-              SliverToBoxAdapter(
-                child: _buildFilterChips(unreadCount),
-              ),
-              SliverToBoxAdapter(
-                child: _buildFilterSummaryRow(allNotifs, filteredNotifs, notifier),
               ),
               if (filteredNotifs.isEmpty)
                 SliverFillRemaining(
@@ -150,17 +145,14 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        return _buildPerwaskimCard(
-                          context: context,
-                          item: filteredNotifs[index],
-                          notifier: notifier,
-                          role: session.role,
-                        );
-                      },
-                      childCount: filteredNotifs.length,
-                    ),
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      return _buildPerwaskimCard(
+                        context: context,
+                        item: filteredNotifs[index],
+                        notifier: notifier,
+                        role: session.role,
+                      );
+                    }, childCount: filteredNotifs.length),
                   ),
                 ),
             ],
@@ -373,23 +365,25 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          TextButton(
-            onPressed: allNotifs.any((item) => !item.isRead)
-                ? notifier.markAllAsRead
-                : null,
-            style: TextButton.styleFrom(
-              padding: EdgeInsets.zero,
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              foregroundColor: AppColors.enterprisePrimary,
-              disabledForegroundColor:
-                  AppColors.enterpriseTextMuted.withValues(alpha: 0.4),
-            ),
-            child: const Text(
-              'Tandai semua dibaca',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+          Flexible(
+            child: TextButton(
+              onPressed: allNotifs.any((item) => !item.isRead)
+                  ? notifier.markAllAsRead
+                  : null,
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor: AppColors.enterprisePrimary,
+                disabledForegroundColor: AppColors.enterpriseTextMuted
+                    .withValues(alpha: 0.4),
+              ),
+              child: const Text(
+                'Tandai semua dibaca',
+                textAlign: TextAlign.end,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -487,10 +481,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
             notifier.markAsRead(item.id);
             final route = notificationTargetForRole(item, role);
             if (route == null) {
-              showUnavailableAction(
-                context,
-                'Tujuan notifikasi ini',
-              );
+              showUnavailableAction(context, 'Tujuan notifikasi ini');
             } else {
               try {
                 context.push(route);
@@ -794,8 +785,10 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                                 borderRadius: BorderRadius.circular(16),
                                 onTap: () {
                                   notifier.markAsRead(item.id);
-                                  final route =
-                                      notificationTargetForRole(item, role);
+                                  final route = notificationTargetForRole(
+                                    item,
+                                    role,
+                                  );
                                   if (route == null) {
                                     showUnavailableAction(
                                       context,

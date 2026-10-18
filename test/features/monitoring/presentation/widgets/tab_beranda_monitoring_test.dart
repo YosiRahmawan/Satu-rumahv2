@@ -102,7 +102,7 @@ void main() {
       // Verify Latest Survey Results section
       expect(find.text('Hasil Survey Terbaru'), findsOneWidget);
       expect(find.text('Lihat Semua →'), findsOneWidget);
-      expect(find.text('Mode prototipe lokal · data contoh'), findsOneWidget);
+      expect(find.textContaining('Mode prototipe'), findsNothing);
     });
 
     testWidgets(
