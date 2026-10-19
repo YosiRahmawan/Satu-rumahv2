@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
+import '../../../pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 import '../../data/models/notifikasi_model.dart';
 import '../providers/notifikasi_provider.dart';
 import '../../../monitoring/presentation/widgets/tab_beranda_monitoring.dart';
@@ -106,13 +108,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
     final filteredNotifs = switch (_selectedFilter) {
       'Belum Dibaca' => allNotifs.where((e) => !e.isRead).toList(),
       'Perlu Tindak Lanjut' =>
-        allNotifs
-            .where(
-              (e) =>
-                  e.jenis == JenisNotifikasi.dokumenDiunggahUlang ||
-                  e.jenis == JenisNotifikasi.deadlineVerifikasi,
-            )
-            .toList(),
+        allNotifs.where(_isPerluTindakLanjutPerwaskim).toList(),
       _ => allNotifs,
     };
 
@@ -162,6 +158,40 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
     );
   }
 
+  bool _isPerluTindakLanjutPerwaskim(NotifikasiModel item) {
+    final titleLower = item.judul.toLowerCase();
+    final descLower = item.deskripsi.toLowerCase();
+
+    // Notifikasi yang sudah final atau selesai diverifikasi tidak membutuhkan aksi aktif petugas
+    if (titleLower.contains('final') ||
+        titleLower.contains('disahkan') ||
+        descLower.contains('telah disahkan') ||
+        descLower.contains('telah final') ||
+        descLower.contains('telah diverifikasi')) {
+      return false;
+    }
+
+    // Penugasan survei baru atau agenda survei lapangan aktif
+    if (item.jenis == JenisNotifikasi.reminderSurvey) {
+      return true;
+    }
+
+    // Tindakan perbaikan dokumen atau instruksi perbaikan yang membutuhkan aksi
+    if (item.jenis == JenisNotifikasi.dokumenDiunggahUlang) {
+      return true;
+    }
+
+    // Catatan evaluasi yang meminta tindak lanjut aktif
+    if (item.jenis == JenisNotifikasi.deadlineVerifikasi) {
+      return titleLower.contains('tindak lanjut') ||
+          titleLower.contains('perlu') ||
+          descLower.contains('tindak lanjut') ||
+          descLower.contains('siap untuk survey');
+    }
+
+    return false;
+  }
+
   Widget _buildPerwaskimHeader(
     BuildContext context,
     PerwaskimIdentity identity,
@@ -169,26 +199,25 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.enterprisePrimary,
-            AppColors.enterprisePrimaryDark,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+        gradient: AppColors.heroGradient,
+        borderRadius: AppRadii.hero,
       ),
       child: SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            AppSpacing.md,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // Top Row: Back button (left) and Avatar (right)
+              // Top Bar: Back button, Title & Avatar
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Semantics(
                     button: true,
@@ -203,10 +232,10 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                             context.go('/monitoring/lapangan');
                           }
                         },
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(22),
                         child: Container(
-                          width: 38,
-                          height: 38,
+                          width: 44,
+                          height: 44,
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.16),
                             shape: BoxShape.circle,
@@ -220,64 +249,59 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                       ),
                     ),
                   ),
-                  // User Avatar with status dot
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: Text(
-                            identity.initials,
-                            style: const TextStyle(
-                              color: AppColors.enterprisePrimaryDark,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                  const SizedBox(width: AppSpacing.md),
+                  const Expanded(
+                    child: Text(
+                      'Notifikasi',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  // User Avatar
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        identity.initials,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          color: AppColors.enterprisePrimaryDark,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
                         ),
                       ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          width: 10,
-                          height: 10,
-                          decoration: BoxDecoration(
-                            color: AppColors.enterpriseSuccess,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 1.5),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              // Header Title & Subtitle
-              const Text(
-                'Notifikasi',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.3,
+              const SizedBox(height: AppSpacing.xs),
+              // Subtitle positioned below the title row
+              const Padding(
+                padding: EdgeInsets.only(
+                  left: 44.0 + AppSpacing.md,
+                  right: AppSpacing.xs,
                 ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                'Pembaruan penugasan, monitoring, dan evaluasi lapangan',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w400,
-                  height: 1.3,
+                child: Text(
+                  'Informasi tugas dan hasil pengawasan lapangan',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    height: 1.3,
+                  ),
                 ),
               ),
             ],
@@ -393,25 +417,64 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
   }
 
   Widget _buildPerwaskimEmptyState() {
+    final String title;
+    final String description;
+
+    switch (_selectedFilter) {
+      case 'Belum Dibaca':
+        title = 'Semua notifikasi sudah dibaca';
+        description = 'Belum ada pemberitahuan baru yang perlu dibaca.';
+        break;
+      case 'Perlu Tindak Lanjut':
+        title = 'Tidak ada tindak lanjut';
+        description = 'Belum ada tugas atau evaluasi yang memerlukan tindakan.';
+        break;
+      case 'Semua':
+      default:
+        title = 'Belum ada notifikasi';
+        description = 'Informasi penugasan dan pengawasan akan muncul di sini.';
+        break;
+    }
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.notifications_off_outlined,
-            size: 56,
-            color: AppColors.enterpriseTextMuted.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Tidak ada notifikasi.',
-            style: TextStyle(
-              color: AppColors.enterpriseTextMuted,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.xl,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SurveyNotFoundIllustration(width: 140, height: 110),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                color: AppColors.enterpriseTextMain,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.xs),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 280),
+              child: Text(
+                description,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  color: AppColors.enterpriseTextMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  height: 1.4,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -427,20 +490,20 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
       case JenisNotifikasi.dokumenDiunggahUlang:
         return (
           'TINDAKAN DIPERLUKAN',
-          AppColors.enterpriseWarningSurface,
-          AppColors.enterpriseWarning,
+          const Color(0xFFFEF3C7),
+          const Color(0xFF92400E),
         );
       case JenisNotifikasi.pengajuanBaru:
         return (
           'VERIFIKASI ADMINISTRASI',
-          AppColors.enterprisePrimarySurface,
-          AppColors.enterprisePrimary,
+          const Color(0xFFF1F5F9),
+          const Color(0xFF475569),
         );
       case JenisNotifikasi.deadlineVerifikasi:
         return (
           'EVALUASI LAPANGAN',
-          AppColors.enterpriseSuccessSurface,
-          AppColors.enterpriseSuccess,
+          const Color(0xFFECFDF5),
+          const Color(0xFF065F46),
         );
     }
   }
@@ -455,36 +518,33 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
     final dateStr = _formatWaktu(item.waktu);
     final isRead = item.isRead;
     final (badgeLabel, badgeBg, badgeTextColor) = _getCategoryBadgeInfo(jenis);
+    final validRoute = notificationTargetForRole(item, role);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isRead ? AppColors.enterpriseBorder : const Color(0xFFFECDD3),
-          width: isRead ? 1.0 : 1.3,
-        ),
+        borderRadius: AppRadii.card,
+        border: Border.all(color: AppColors.enterpriseBorder, width: 1.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isRead ? 0.02 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadii.card,
           onTap: () {
             notifier.markAsRead(item.id);
-            final route = notificationTargetForRole(item, role);
-            if (route == null) {
+            if (validRoute == null) {
               showUnavailableAction(context, 'Tujuan notifikasi ini');
             } else {
               try {
-                context.push(route);
+                context.push(validRoute);
               } catch (_) {
                 // Safe fallback for isolated widget tests without GoRouter
               }
@@ -495,27 +555,27 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Row: Category Badge Pill & Unread Dot
+                // Top Row: Category Label & Unread Dot
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Flexible(
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8.5,
-                          vertical: 3.5,
+                          horizontal: 7,
+                          vertical: 2.5,
                         ),
                         decoration: BoxDecoration(
                           color: badgeBg,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           badgeLabel,
                           style: TextStyle(
                             color: badgeTextColor,
                             fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.4,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.3,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -524,8 +584,8 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                     if (!isRead) ...[
                       const SizedBox(width: 8),
                       Container(
-                        width: 8.5,
-                        height: 8.5,
+                        width: 7,
+                        height: 7,
                         decoration: const BoxDecoration(
                           color: AppColors.enterprisePrimary,
                           shape: BoxShape.circle,
@@ -535,30 +595,25 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Body: Category Icon Box & Text Content
+                // Body: Category Icon Box & Text Content & Optional Chevron
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
-                        color: isRead
-                            ? const Color(0xFFF8FAFC)
-                            : AppColors.enterprisePrimarySurfaceSoft,
-                        borderRadius: BorderRadius.circular(12),
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: isRead
-                              ? AppColors.enterpriseBorder
-                              : const Color(0xFFFECDD3).withValues(alpha: 0.5),
+                          color: AppColors.enterpriseBorder,
+                          width: 1.0,
                         ),
                       ),
                       child: Icon(
                         jenis.icon,
-                        color: isRead
-                            ? AppColors.enterpriseTextMuted
-                            : AppColors.enterprisePrimary,
-                        size: 22,
+                        color: AppColors.enterpriseTextMuted,
+                        size: 20,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -568,6 +623,8 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                         children: [
                           Text(
                             item.judul,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
@@ -575,9 +632,11 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                               height: 1.25,
                             ),
                           ),
-                          const SizedBox(height: 5),
+                          const SizedBox(height: 4),
                           Text(
                             item.deskripsi,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 12.5,
                               color: AppColors.enterpriseTextMuted,
@@ -596,6 +655,17 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                         ],
                       ),
                     ),
+                    if (validRoute != null) ...[
+                      const SizedBox(width: 8),
+                      const Padding(
+                        padding: EdgeInsets.only(top: 2),
+                        child: Icon(
+                          Icons.chevron_right_rounded,
+                          size: 20,
+                          color: AppColors.enterpriseTextMuted,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ],
