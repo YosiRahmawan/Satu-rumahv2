@@ -25,7 +25,14 @@ class TambahMonitoringStepperScreen extends ConsumerStatefulWidget {
   final Widget Function(PhotoLocationMapController controller)?
   locationMapBuilder;
 
-  const TambahMonitoringStepperScreen({super.key, this.locationMapBuilder});
+  /// Resolver posisi GPS perangkat (mis. di tes).
+  final DeviceLocationResolver? deviceLocationResolver;
+
+  const TambahMonitoringStepperScreen({
+    super.key,
+    this.locationMapBuilder,
+    this.deviceLocationResolver,
+  });
 
   @override
   ConsumerState<TambahMonitoringStepperScreen> createState() =>
@@ -35,6 +42,8 @@ class TambahMonitoringStepperScreen extends ConsumerStatefulWidget {
 class _TambahMonitoringStepperScreenState
     extends ConsumerState<TambahMonitoringStepperScreen> {
   final ScrollController _scrollController = ScrollController();
+  bool _isPhotoSelectionMode = false;
+  final Set<int> _selectedPhotoIndices = {};
   late String _savedSignature;
   late TextEditingController _namaPerumahanController;
   late TextEditingController _lokasiController;
@@ -869,17 +878,17 @@ class _TambahMonitoringStepperScreenState
           horizontal: 14,
           vertical: 12,
         ),
-        border: OutlineInputBorder(
+        border: const OutlineInputBorder(
           borderRadius: AppRadii.small,
-          borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+          borderSide: BorderSide(color: AppColors.enterpriseBorder),
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: const OutlineInputBorder(
           borderRadius: AppRadii.small,
-          borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+          borderSide: BorderSide(color: AppColors.enterpriseBorder),
         ),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder: const OutlineInputBorder(
           borderRadius: AppRadii.small,
-          borderSide: const BorderSide(
+          borderSide: BorderSide(
             color: AppColors.enterprisePrimary,
             width: 1.5,
           ),
@@ -1170,7 +1179,7 @@ class _TambahMonitoringStepperScreenState
               minimumSize: const Size.fromHeight(48),
               foregroundColor: AppColors.enterprisePrimary,
               side: const BorderSide(color: AppColors.enterprisePrimary),
-              shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
+              shape: const RoundedRectangleBorder(borderRadius: AppRadii.small),
               textStyle: AppTextStyles.labelMedium.copyWith(
                 fontFamily: AppTextStyles.enterpriseFontFamily,
                 fontWeight: FontWeight.w700,
@@ -1288,17 +1297,17 @@ class _TambahMonitoringStepperScreenState
               horizontal: 12,
               vertical: 12,
             ),
-            border: OutlineInputBorder(
+            border: const OutlineInputBorder(
               borderRadius: AppRadii.small,
-              borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+              borderSide: BorderSide(color: AppColors.enterpriseBorder),
             ),
-            enabledBorder: OutlineInputBorder(
+            enabledBorder: const OutlineInputBorder(
               borderRadius: AppRadii.small,
-              borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+              borderSide: BorderSide(color: AppColors.enterpriseBorder),
             ),
-            focusedBorder: OutlineInputBorder(
+            focusedBorder: const OutlineInputBorder(
               borderRadius: AppRadii.small,
-              borderSide: const BorderSide(
+              borderSide: BorderSide(
                 color: AppColors.enterprisePrimary,
                 width: 1.5,
               ),
@@ -1344,20 +1353,283 @@ class _TambahMonitoringStepperScreenState
         const SizedBox(height: 16),
         _buildProjectReferenceBanner(reference),
         const SizedBox(height: 16),
+        if (photos.isNotEmpty) ...[
+          _buildPhotoBatchActionRow(photos, reference, notifier),
+          const SizedBox(height: 12),
+          if (_isPhotoSelectionMode) ...[
+            _buildSelectionToolbar(photos),
+            const SizedBox(height: 12),
+          ],
+        ],
         EvidencePhotoPicker(
           photoPaths: [for (final photo in photos) photo.localRef],
-          onPhotosChanged: notifier.updatePhotos,
+          onPhotosChanged: (updatedPaths) {
+            notifier.updatePhotos(updatedPaths);
+            setState(() {
+              _selectedPhotoIndices.removeWhere(
+                (i) => i >= updatedPaths.length,
+              );
+            });
+          },
           onPhotoPicked: (path, origin, exif) =>
               notifier.attachPhotoMeta(path, origin: origin, exif: exif),
           photoStatusBuilder: (index) =>
               _buildPhotoStatus(photos[index], reference),
           onPhotoTap: (index) =>
               _openPhotoLocation(photos[index], index + 1, reference, notifier),
+          isSelectionMode: _isPhotoSelectionMode,
+          selectedIndices: _selectedPhotoIndices,
+          onToggleSelect: (index) {
+            setState(() {
+              _isPhotoSelectionMode = true;
+              if (_selectedPhotoIndices.contains(index)) {
+                _selectedPhotoIndices.remove(index);
+              } else {
+                _selectedPhotoIndices.add(index);
+              }
+            });
+          },
         ),
         const SizedBox(height: 16),
         _buildStep3ValidationSummary(state),
       ],
     );
+  }
+
+  Widget _buildPhotoBatchActionRow(
+    List<EvidencePhotoItem> photos,
+    ProjectReference? reference,
+    MonitoringFormNotifier notifier,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final actionButton = OutlinedButton.icon(
+          key: const ValueKey('atur_lokasi_foto_button'),
+          onPressed: () => _handleAturLokasiBatch(photos, reference, notifier),
+          icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
+          label: Text(
+            _isPhotoSelectionMode && _selectedPhotoIndices.isNotEmpty
+                ? 'Atur Lokasi (${_selectedPhotoIndices.length})'
+                : 'Atur Lokasi Foto',
+          ),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.enterprisePrimary,
+            side: const BorderSide(color: AppColors.enterprisePrimaryBorder),
+            shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            minimumSize: Size.zero,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+        );
+
+        final labelText = Text(
+          _isPhotoSelectionMode
+              ? '${_selectedPhotoIndices.length} foto dipilih'
+              : 'Pilih beberapa foto untuk atur titik sama',
+          style: const TextStyle(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.enterpriseTextMain,
+          ),
+        );
+
+        if (constraints.maxWidth < 360) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              labelText,
+              const SizedBox(height: 6),
+              Align(alignment: Alignment.centerLeft, child: actionButton),
+            ],
+          );
+        }
+
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: labelText),
+            const SizedBox(width: 8),
+            actionButton,
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSelectionToolbar(List<EvidencePhotoItem> photos) {
+    final allSelected =
+        photos.isNotEmpty && _selectedPhotoIndices.length == photos.length;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.enterprisePrimarySurfaceSoft,
+        borderRadius: AppRadii.control,
+        border: Border.all(color: AppColors.enterprisePrimaryBorder),
+      ),
+      child: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8,
+        runSpacing: 6,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Checkbox(
+                value: allSelected,
+                tristate: _selectedPhotoIndices.isNotEmpty && !allSelected,
+                activeColor: AppColors.enterprisePrimary,
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                onChanged: (val) {
+                  setState(() {
+                    if (allSelected) {
+                      _selectedPhotoIndices.clear();
+                    } else {
+                      _selectedPhotoIndices.addAll(
+                        List.generate(photos.length, (i) => i),
+                      );
+                    }
+                  });
+                },
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '${_selectedPhotoIndices.length} terpilih',
+                style: const TextStyle(
+                  fontFamily: AppTextStyles.enterpriseFontFamily,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  color: AppColors.enterprisePrimaryDark,
+                ),
+              ),
+            ],
+          ),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () {
+                  setState(() {
+                    if (allSelected) {
+                      _selectedPhotoIndices.clear();
+                    } else {
+                      _selectedPhotoIndices.addAll(
+                        List.generate(photos.length, (i) => i),
+                      );
+                    }
+                  });
+                },
+                child: Text(
+                  allSelected ? 'Batal Pilih' : 'Pilih Semua',
+                  style: const TextStyle(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: AppColors.enterprisePrimary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _isPhotoSelectionMode = false;
+                    _selectedPhotoIndices.clear();
+                  });
+                },
+                child: const Text(
+                  'Selesai',
+                  style: TextStyle(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
+                    color: AppColors.enterpriseTextMain,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleAturLokasiBatch(
+    List<EvidencePhotoItem> photos,
+    ProjectReference? reference,
+    MonitoringFormNotifier notifier,
+  ) async {
+    if (_selectedPhotoIndices.isEmpty) {
+      final unlocated = <int>{};
+      for (var i = 0; i < photos.length; i++) {
+        if (!photos[i].hasLocation) unlocated.add(i);
+      }
+      setState(() {
+        _isPhotoSelectionMode = true;
+        _selectedPhotoIndices.addAll(
+          unlocated.isNotEmpty
+              ? unlocated
+              : List.generate(photos.length, (i) => i),
+        );
+      });
+    }
+
+    final selectedPhotos = [
+      for (final index in _selectedPhotoIndices)
+        if (index >= 0 && index < photos.length) photos[index],
+    ];
+
+    if (selectedPhotos.isEmpty) return;
+
+    final result = await showBatchPhotoLocationSheet(
+      context,
+      photos: selectedPhotos,
+      reference: reference,
+      mapBuilder: _locationMapBuilder,
+      deviceLocationResolver: widget.deviceLocationResolver,
+    );
+
+    if (!mounted || result == null) return;
+
+    if (result.location != null) {
+      notifier.setBatchPhotoLocations(
+        selectedPhotos.map((p) => p.id),
+        result.location!,
+      );
+      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+      messenger.showSnackBar(
+        _buildSnackBar(
+          icon: Icons.check_circle,
+          message:
+              'Lokasi berhasil diterapkan ke ${selectedPhotos.length} foto terpilih.',
+          color: const Color(0xFF166534),
+        ),
+      );
+      setState(() {
+        _selectedPhotoIndices.clear();
+        _isPhotoSelectionMode = false;
+      });
+    }
   }
 
   Widget _buildProjectReferenceBanner(ProjectReference? reference) {
@@ -1415,38 +1687,51 @@ class _TambahMonitoringStepperScreenState
     EvidencePhotoItem photo,
     ProjectReference? reference,
   ) {
-    final proximity = evaluatePhotoProximity(
-      location: photo.location,
-      reference: reference,
-    );
     late final IconData icon;
     late final Color color;
     late final String title;
     late final String detail;
-    switch (proximity.status) {
-      case ProximityStatus.noLocation:
+
+    if (!photo.hasLocation) {
+      if (photo.exif != null) {
+        icon = Icons.gps_fixed;
+        color = const Color(0xFF93C5FD);
+        title = 'GPS tersedia';
+        detail = 'Belum dikonfirmasi · Ketuk';
+      } else {
         icon = Icons.location_off_outlined;
         color = const Color(0xFFFCA5A5);
-        title = 'Belum ada lokasi';
-        detail = 'Ketuk untuk menentukan';
-      case ProximityStatus.noReference:
-        icon = Icons.location_on;
-        color = Colors.white70;
-        title = _shortMethodLabel(photo.location!.method);
-        detail = 'Jarak tidak dihitung';
-      case ProximityStatus.withinTolerance:
-        icon = Icons.location_on;
-        color = const Color(0xFF86EFAC);
-        title = _shortMethodLabel(photo.location!.method);
-        detail =
-            '${formatDistance(proximity.distanceMeters!)} dari proyek'
-            '${proximity.lowAccuracy ? ' · akurasi rendah' : ''}';
-      case ProximityStatus.outsideTolerance:
-        icon = Icons.warning_amber_rounded;
-        color = const Color(0xFFFCD34D);
-        title = _shortMethodLabel(photo.location!.method);
-        detail = '${formatDistance(proximity.distanceMeters!)} dari proyek';
+        title = 'Perlu lokasi';
+        detail = 'Belum ada koordinat';
+      }
+    } else {
+      final proximity = evaluatePhotoProximity(
+        location: photo.location,
+        reference: reference,
+      );
+      title = _shortMethodLabel(photo.location!.method);
+      switch (proximity.status) {
+        case ProximityStatus.noLocation:
+          icon = Icons.location_off_outlined;
+          color = const Color(0xFFFCA5A5);
+          detail = 'Perlu lokasi';
+        case ProximityStatus.noReference:
+          icon = Icons.location_on;
+          color = const Color(0xFF86EFAC);
+          detail = 'Validasi jarak belum tersedia';
+        case ProximityStatus.withinTolerance:
+          icon = Icons.location_on;
+          color = const Color(0xFF86EFAC);
+          detail =
+              '${formatDistance(proximity.distanceMeters!)} dari proyek'
+              '${proximity.lowAccuracy ? ' · akurasi rendah' : ''}';
+        case ProximityStatus.outsideTolerance:
+          icon = Icons.warning_amber_rounded;
+          color = const Color(0xFFFCD34D);
+          detail = '${formatDistance(proximity.distanceMeters!)} dari proyek';
+      }
     }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1483,9 +1768,9 @@ class _TambahMonitoringStepperScreenState
   }
 
   String _shortMethodLabel(LocationMethod method) => switch (method) {
-    LocationMethod.exifConfirmed => 'GPS dari foto',
-    LocationMethod.manualPin => 'Titik manual',
-    LocationMethod.deviceAtEntry => 'Posisi saat input',
+    LocationMethod.exifConfirmed => 'GPS tersedia',
+    LocationMethod.manualPin => 'Lokasi ditentukan manual',
+    LocationMethod.deviceAtEntry => 'GPS perangkat',
   };
 
   Future<void> _openPhotoLocation(
@@ -1500,6 +1785,7 @@ class _TambahMonitoringStepperScreenState
       photoNumber: number,
       reference: reference,
       mapBuilder: _locationMapBuilder,
+      deviceLocationResolver: widget.deviceLocationResolver,
     );
     if (!mounted || result == null) return;
     final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();

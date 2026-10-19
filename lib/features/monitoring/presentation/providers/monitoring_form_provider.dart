@@ -364,6 +364,22 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     );
   }
 
+  /// Menetapkan lokasi pilihan petugas untuk beberapa foto sekaligus.
+  void setBatchPhotoLocations(
+    Iterable<String> photoIds,
+    OfficerLocation location,
+  ) {
+    final targetIds = photoIds.toSet();
+    state = state.copyWith(
+      photos: [
+        for (final photo in state.photos)
+          targetIds.contains(photo.id)
+              ? photo.copyWith(location: location)
+              : photo,
+      ],
+    );
+  }
+
   void clearPhotoLocation(String photoId) {
     state = state.copyWith(
       photos: [

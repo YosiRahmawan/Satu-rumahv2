@@ -324,7 +324,7 @@ void main() {
     expect(find.text('2/10'), findsOneWidget);
     expect(find.text('Ringkasan validasi'), findsOneWidget);
     expect(find.text('Lokasi setiap foto (0 dari 2)'), findsOneWidget);
-    expect(find.text('Belum ada lokasi'), findsNWidgets(2));
+    expect(find.text('Perlu lokasi'), findsNWidgets(2));
     expect(find.text('Titik proyek dari Pengembang'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
@@ -389,8 +389,8 @@ void main() {
     notifier.setStep(2);
     await pumpStep1(tester);
 
-    await tester.ensureVisible(find.text('Belum ada lokasi').first);
-    await tester.tap(find.text('Belum ada lokasi').first);
+    await tester.ensureVisible(find.text('Perlu lokasi').first);
+    await tester.tap(find.text('Perlu lokasi').first);
     await tester.pumpAndSettle();
     expect(find.text('Lokasi Foto 1'), findsOneWidget);
 
@@ -408,8 +408,8 @@ void main() {
     expect(find.text('Lokasi Foto 1 disimpan.'), findsOneWidget);
     expect(find.text('2 foto · 1 sudah berlokasi'), findsOneWidget);
     expect(find.text('Lokasi setiap foto (1 dari 2)'), findsOneWidget);
-    expect(find.text('Titik manual'), findsOneWidget);
-    expect(find.text('Belum ada lokasi'), findsOneWidget);
+    expect(find.text('Lokasi ditentukan manual'), findsOneWidget);
+    expect(find.text('Perlu lokasi'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
