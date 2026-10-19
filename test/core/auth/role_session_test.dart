@@ -56,6 +56,18 @@ void main() {
       roleRouteRedirect(role: AppRole.perwaskim, path: '/monitoring/lapangan'),
       isNull,
     );
+    expect(
+      roleRouteRedirect(role: AppRole.admin, path: '/monitoring/draft'),
+      startsWith('/admin?notice='),
+    );
+    expect(
+      roleRouteRedirect(role: AppRole.developer, path: '/monitoring/draft'),
+      startsWith('/dashboard?notice='),
+    );
+    expect(
+      roleRouteRedirect(role: AppRole.perwaskim, path: '/monitoring/draft'),
+      isNull,
+    );
     expect(roleRouteRedirect(role: AppRole.developer, path: '/login'), isNull);
   });
 

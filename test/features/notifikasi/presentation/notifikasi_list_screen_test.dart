@@ -249,16 +249,19 @@ void main() {
     );
   }
 
-  for (final role in [AppRole.admin, AppRole.perwaskim]) {
-    testWidgets('${role.name} retains the existing notification view', (
-      tester,
-    ) async {
-      // Only verify role isolation here; legacy narrow layouts are unchanged.
-      await _pump(tester, role: role, width: 800);
-      expect(find.byType(DeveloperNotificationView), findsNothing);
-      expect(find.byType(DropdownButton<String>), findsOneWidget);
-    });
-  }
+  testWidgets('admin retains the existing notification view', (tester) async {
+    // Only verify role isolation here; legacy narrow layouts are unchanged.
+    await _pump(tester, role: AppRole.admin, width: 800);
+    expect(find.byType(DeveloperNotificationView), findsNothing);
+    expect(find.byType(DropdownButton<String>), findsOneWidget);
+  });
+
+  testWidgets('perwaskim uses its own view, not the developer one', (
+    tester,
+  ) async {
+    await _pump(tester, role: AppRole.perwaskim, width: 800);
+    expect(find.byType(DeveloperNotificationView), findsNothing);
+  });
 
   group('Perlu Revisi dan penerima Pengembang', () {
     NotifikasiModel revisi(

@@ -1,4 +1,36 @@
+import 'evidence_photo_item.dart';
 import 'status_hasil_evaluasi.dart';
+
+/// A repeatable person captured during a field monitoring session.
+///
+/// The current local/API contract still consumes the legacy singular person
+/// fields below. These typed entries are therefore local compatibility data
+/// until a server contract for multiple identities is available.
+class MonitoringPerson {
+  static int _nextId = 0;
+
+  final String id;
+  final String nama;
+  final String jabatan;
+
+  const MonitoringPerson({this.id = '', this.nama = '', this.jabatan = ''});
+
+  factory MonitoringPerson.create({String nama = '', String jabatan = ''}) {
+    return MonitoringPerson(
+      id: 'monitoring-person-${++_nextId}',
+      nama: nama,
+      jabatan: jabatan,
+    );
+  }
+
+  MonitoringPerson copyWith({String? id, String? nama, String? jabatan}) {
+    return MonitoringPerson(
+      id: id ?? this.id,
+      nama: nama ?? this.nama,
+      jabatan: jabatan ?? this.jabatan,
+    );
+  }
+}
 
 class MonitoringModel {
   static const String defaultMaksudTujuan =
@@ -7,8 +39,18 @@ class MonitoringModel {
       'terhadap proses pembangunan perumahan beserta penyediaan PSU-nya.';
 
   static const List<String> _bulanRomawi = [
-    'I', 'II', 'III', 'IV', 'V', 'VI',
-    'VII', 'VIII', 'IX', 'X', 'XI', 'XII'
+    'I',
+    'II',
+    'III',
+    'IV',
+    'V',
+    'VI',
+    'VII',
+    'VIII',
+    'IX',
+    'X',
+    'XI',
+    'XII',
   ];
 
   /// Generate nomor surat BA: 600.2.5/BA-MON/[bulanRomawi]/[tahun]
@@ -34,7 +76,16 @@ class MonitoringModel {
   final String pelaksanaJabatan;
   final String ditemuiNama;
   final String ditemuiJabatan;
-  final List<String> photoPaths;
+  final List<MonitoringPerson> pelaksana;
+  final List<MonitoringPerson> ditemui;
+
+  /// Sumber kebenaran foto beserta metadatanya.
+  final List<EvidencePhotoItem> photos;
+
+  /// Adaptor kompatibilitas: daftar referensi berkas seperti sebelumnya.
+  List<String> get photoPaths =>
+      photos.map((photo) => photo.localRef).toList(growable: false);
+
   final DateTime createdAt;
   final String nomorSuratBA;
   final bool isDraft;
@@ -56,12 +107,16 @@ class MonitoringModel {
     this.pelaksanaJabatan = '',
     this.ditemuiNama = '',
     this.ditemuiJabatan = '',
-    this.photoPaths = const [],
+    this.pelaksana = const [],
+    this.ditemui = const [],
+    List<String>? photoPaths,
+    List<EvidencePhotoItem>? photos,
     DateTime? createdAt,
     String? nomorSuratBA,
     this.isDraft = false,
-  })  : createdAt = createdAt ?? DateTime.now(),
-        nomorSuratBA = nomorSuratBA ?? generateNomorSuratBA(tanggalMonitoring);
+  }) : photos = photos ?? EvidencePhotoItem.fromPaths(photoPaths ?? const []),
+       createdAt = createdAt ?? DateTime.now(),
+       nomorSuratBA = nomorSuratBA ?? generateNomorSuratBA(tanggalMonitoring);
 
   MonitoringModel copyWith({
     String? id,
@@ -80,7 +135,10 @@ class MonitoringModel {
     String? pelaksanaJabatan,
     String? ditemuiNama,
     String? ditemuiJabatan,
+    List<MonitoringPerson>? pelaksana,
+    List<MonitoringPerson>? ditemui,
     List<String>? photoPaths,
+    List<EvidencePhotoItem>? photos,
     DateTime? createdAt,
     String? nomorSuratBA,
     bool? isDraft,
@@ -102,7 +160,13 @@ class MonitoringModel {
       pelaksanaJabatan: pelaksanaJabatan ?? this.pelaksanaJabatan,
       ditemuiNama: ditemuiNama ?? this.ditemuiNama,
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
-      photoPaths: photoPaths ?? this.photoPaths,
+      pelaksana: pelaksana ?? this.pelaksana,
+      ditemui: ditemui ?? this.ditemui,
+      photos:
+          photos ??
+          (photoPaths != null
+              ? EvidencePhotoItem.reconcile(this.photos, photoPaths)
+              : this.photos),
       createdAt: createdAt ?? this.createdAt,
       nomorSuratBA: nomorSuratBA ?? this.nomorSuratBA,
       isDraft: isDraft ?? this.isDraft,

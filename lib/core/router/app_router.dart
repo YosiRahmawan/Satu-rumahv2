@@ -10,8 +10,10 @@ import '../../features/monitoring/data/models/monitoring_model.dart';
 import '../../features/monitoring/presentation/screens/laporan_preview_screen.dart';
 import '../../features/monitoring/presentation/screens/laporan_success_screen.dart';
 import '../../features/monitoring/presentation/screens/monitoring_list_screen.dart';
+import '../../features/monitoring/presentation/screens/monitoring_draft_screen.dart';
 import '../../features/monitoring/presentation/screens/monitoring_main_screen.dart';
 import '../../features/monitoring/presentation/screens/tambah_monitoring_stepper_screen.dart';
+import '../../features/monitoring/presentation/providers/monitoring_form_provider.dart';
 import '../../features/notifikasi/presentation/screens/notifikasi_list_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_admin_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_detail_screen.dart';
@@ -127,6 +129,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/monitoring/lapangan/notifikasi',
         builder: (_, state) => _withNotice(state, const NotifikasiListScreen()),
+      ),
+      GoRoute(
+        path: '/monitoring/draft',
+        builder: (_, state) {
+          final extra = state.extra;
+          if (extra is MonitoringModel) {
+            return MonitoringDraftScreen(monitoring: extra);
+          }
+          if (extra is Map && extra['model'] is MonitoringModel) {
+            return MonitoringDraftScreen(
+              monitoring: extra['model'] as MonitoringModel,
+            );
+          }
+          final id =
+              state.uri.queryParameters['id'] ?? (extra is String ? extra : null);
+          if (id != null) {
+            final repo = ref.read(monitoringRepositoryProvider);
+            final item = repo.getMonitoringById(id);
+            if (item != null) {
+              return MonitoringDraftScreen(monitoring: item);
+            }
+          }
+          final role = ref.read(roleSessionProvider).role;
+          return RouteUnavailableScreen(
+            title: 'Draft monitoring tidak tersedia',
+            message:
+                'Data draft monitoring tidak ditemukan. Silakan buka kembali dari daftar monitoring.',
+            safeDestination: monitoringFailureDestination(role),
+            destinationLabel: monitoringFailureDestinationLabel(role),
+          );
+        },
       ),
       GoRoute(
         path: '/monitoring/tambah',

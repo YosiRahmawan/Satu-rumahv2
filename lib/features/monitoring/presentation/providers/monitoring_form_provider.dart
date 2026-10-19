@@ -7,6 +7,7 @@ import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_verifikasi_controller.dart';
+import '../../data/models/evidence_photo_item.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../../data/repositories/monitoring_repository.dart';
@@ -24,6 +25,16 @@ typedef MonitoringBaUpload =
     });
 
 enum MonitoringSubmitStatus { success, duplicate, failure }
+
+List<MonitoringPerson> _stablePeople(List<MonitoringPerson>? people) {
+  final source = people ?? [MonitoringPerson.create()];
+  return [
+    for (final person in source)
+      person.id.isEmpty
+          ? person.copyWith(id: MonitoringPerson.create().id)
+          : person,
+  ];
+}
 
 /// Result returned by the one canonical final-report operation.
 ///
@@ -69,6 +80,7 @@ class MonitoringSubmitResult {
 }
 
 class MonitoringFormState {
+  final String? draftId;
   final String? pengajuanId;
   final int currentStep;
   final DateTime tanggalMonitoring;
@@ -85,11 +97,19 @@ class MonitoringFormState {
   final String pelaksanaJabatan;
   final String ditemuiNama;
   final String ditemuiJabatan;
-  final List<String> photoPaths;
+  final List<MonitoringPerson> pelaksana;
+  final List<MonitoringPerson> ditemui;
+  final List<EvidencePhotoItem> photos;
+
+  /// Adaptor kompatibilitas: daftar referensi berkas seperti sebelumnya.
+  List<String> get photoPaths =>
+      photos.map((photo) => photo.localRef).toList(growable: false);
+
   final bool isSubmitting;
   final String? errorMessage;
 
   MonitoringFormState({
+    this.draftId,
     this.pengajuanId,
     this.currentStep = 0,
     DateTime? tanggalMonitoring,
@@ -106,12 +126,19 @@ class MonitoringFormState {
     this.pelaksanaJabatan = '',
     this.ditemuiNama = '',
     this.ditemuiJabatan = '',
-    this.photoPaths = const [],
+    List<MonitoringPerson>? pelaksana,
+    List<MonitoringPerson>? ditemui,
+    List<String>? photoPaths,
+    List<EvidencePhotoItem>? photos,
     this.isSubmitting = false,
     this.errorMessage,
-  }) : tanggalMonitoring = tanggalMonitoring ?? DateTime.now();
+  }) : photos = photos ?? EvidencePhotoItem.fromPaths(photoPaths ?? const []),
+       tanggalMonitoring = tanggalMonitoring ?? DateTime.now(),
+       pelaksana = _stablePeople(pelaksana),
+       ditemui = _stablePeople(ditemui);
 
   MonitoringFormState copyWith({
+    String? draftId,
     String? pengajuanId,
     int? currentStep,
     DateTime? tanggalMonitoring,
@@ -128,11 +155,15 @@ class MonitoringFormState {
     String? pelaksanaJabatan,
     String? ditemuiNama,
     String? ditemuiJabatan,
+    List<MonitoringPerson>? pelaksana,
+    List<MonitoringPerson>? ditemui,
     List<String>? photoPaths,
+    List<EvidencePhotoItem>? photos,
     bool? isSubmitting,
     String? errorMessage,
   }) {
     return MonitoringFormState(
+      draftId: draftId ?? this.draftId,
       pengajuanId: pengajuanId ?? this.pengajuanId,
       currentStep: currentStep ?? this.currentStep,
       tanggalMonitoring: tanggalMonitoring ?? this.tanggalMonitoring,
@@ -149,7 +180,13 @@ class MonitoringFormState {
       pelaksanaJabatan: pelaksanaJabatan ?? this.pelaksanaJabatan,
       ditemuiNama: ditemuiNama ?? this.ditemuiNama,
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
-      photoPaths: photoPaths ?? this.photoPaths,
+      pelaksana: pelaksana ?? this.pelaksana,
+      ditemui: ditemui ?? this.ditemui,
+      photos:
+          photos ??
+          (photoPaths != null
+              ? EvidencePhotoItem.reconcile(this.photos, photoPaths)
+              : this.photos),
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: errorMessage,
     );
@@ -173,6 +210,28 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     state = state.copyWith(currentStep: step);
   }
 
+  /// Sidik isian formulir (tanpa langkah aktif) untuk mendeteksi perubahan
+  /// yang belum disimpan.
+  static String signature(MonitoringFormState s) {
+    String people(List<MonitoringPerson> list) =>
+        list.map((p) => '${p.nama}|${p.jabatan}').join(';');
+    return [
+      s.tanggalMonitoring.toIso8601String(),
+      s.namaPerumahan,
+      s.namaDeveloper,
+      s.lokasiPerumahan,
+      s.maksudTujuan,
+      s.temuanLapangan.join(';'),
+      s.kesimpulan.join(';'),
+      s.kesepakatan.join(';'),
+      s.rencanaTindakLanjut.join(';'),
+      s.statusHasilEvaluasi.name,
+      people(s.pelaksana),
+      people(s.ditemui),
+      s.photos.map((photo) => photo.signature).join(';'),
+    ].join('\u0001');
+  }
+
   void updateTanggal(DateTime date) {
     state = state.copyWith(tanggalMonitoring: date);
   }
@@ -194,16 +253,142 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       state = state.copyWith(rencanaTindakLanjut: val);
   void updateStatusHasilEvaluasi(StatusHasilEvaluasi val) =>
       state = state.copyWith(statusHasilEvaluasi: val);
-  void updatePelaksanaNama(String val) =>
-      state = state.copyWith(pelaksanaNama: val);
-  void updatePelaksanaJabatan(String val) =>
-      state = state.copyWith(pelaksanaJabatan: val);
-  void updateDitemuiNama(String val) =>
-      state = state.copyWith(ditemuiNama: val);
-  void updateDitemuiJabatan(String val) =>
-      state = state.copyWith(ditemuiJabatan: val);
+  void updatePelaksanaNama(String val) {
+    final people = [...state.pelaksana];
+    if (people.isEmpty) people.add(const MonitoringPerson());
+    people[0] = people.first.copyWith(nama: val);
+    state = state.copyWith(pelaksanaNama: val, pelaksana: people);
+  }
+
+  void updatePelaksanaJabatan(String val) {
+    final people = [...state.pelaksana];
+    if (people.isEmpty) people.add(const MonitoringPerson());
+    people[0] = people.first.copyWith(jabatan: val);
+    state = state.copyWith(pelaksanaJabatan: val, pelaksana: people);
+  }
+
+  void updateDitemuiNama(String val) {
+    final people = [...state.ditemui];
+    if (people.isEmpty) people.add(const MonitoringPerson());
+    people[0] = people.first.copyWith(nama: val);
+    state = state.copyWith(ditemuiNama: val, ditemui: people);
+  }
+
+  void updateDitemuiJabatan(String val) {
+    final people = [...state.ditemui];
+    if (people.isEmpty) people.add(const MonitoringPerson());
+    people[0] = people.first.copyWith(jabatan: val);
+    state = state.copyWith(ditemuiJabatan: val, ditemui: people);
+  }
+
+  void updatePelaksanaPerson(int index, {String? nama, String? jabatan}) {
+    final people = [...state.pelaksana];
+    if (index < 0 || index >= people.length) return;
+    people[index] = people[index].copyWith(nama: nama, jabatan: jabatan);
+    state = state.copyWith(
+      pelaksana: people,
+      pelaksanaNama: people.first.nama,
+      pelaksanaJabatan: people.first.jabatan,
+    );
+  }
+
+  void addPelaksana() {
+    state = state.copyWith(
+      pelaksana: [...state.pelaksana, MonitoringPerson.create()],
+    );
+  }
+
+  void removePelaksana(int index) {
+    // Keep one empty compatibility row because the current contract has no
+    // separate empty-state representation for repeatable people fields.
+    if (state.pelaksana.length <= 1 ||
+        index < 0 ||
+        index >= state.pelaksana.length) {
+      return;
+    }
+    final people = [...state.pelaksana]..removeAt(index);
+    state = state.copyWith(
+      pelaksana: people,
+      pelaksanaNama: people.first.nama,
+      pelaksanaJabatan: people.first.jabatan,
+    );
+  }
+
+  void updateDitemuiPerson(int index, {String? nama, String? jabatan}) {
+    final people = [...state.ditemui];
+    if (index < 0 || index >= people.length) return;
+    people[index] = people[index].copyWith(nama: nama, jabatan: jabatan);
+    state = state.copyWith(
+      ditemui: people,
+      ditemuiNama: people.first.nama,
+      ditemuiJabatan: people.first.jabatan,
+    );
+  }
+
+  void addDitemui() {
+    state = state.copyWith(
+      ditemui: [...state.ditemui, MonitoringPerson.create()],
+    );
+  }
+
+  void removeDitemui(int index) {
+    // Keep one empty compatibility row because the current contract has no
+    // separate empty-state representation for repeatable people fields.
+    if (state.ditemui.length <= 1 ||
+        index < 0 ||
+        index >= state.ditemui.length) {
+      return;
+    }
+    final people = [...state.ditemui]..removeAt(index);
+    state = state.copyWith(
+      ditemui: people,
+      ditemuiNama: people.first.nama,
+      ditemuiJabatan: people.first.jabatan,
+    );
+  }
+
+  /// Adaptor kompatibilitas: metadata foto yang `localRef`-nya tetap ada
+  /// dipertahankan; path baru dibungkus tanpa koordinat.
   void updatePhotos(List<String> val) =>
       state = state.copyWith(photoPaths: val);
+
+  void updatePhotoItems(List<EvidencePhotoItem> val) =>
+      state = state.copyWith(photos: val);
+
+  /// Menetapkan lokasi pilihan petugas untuk satu foto.
+  void setPhotoLocation(String photoId, OfficerLocation location) {
+    state = state.copyWith(
+      photos: [
+        for (final photo in state.photos)
+          photo.id == photoId ? photo.copyWith(location: location) : photo,
+      ],
+    );
+  }
+
+  void clearPhotoLocation(String photoId) {
+    state = state.copyWith(
+      photos: [
+        for (final photo in state.photos)
+          photo.id == photoId ? photo.copyWith(clearLocation: true) : photo,
+      ],
+    );
+  }
+
+  /// Mengisi asal foto dan EXIF asli sekali saja; tidak menimpa nilai yang
+  /// sudah ada dan tidak pernah menyentuh lokasi pilihan petugas.
+  void attachPhotoMeta(String localRef, {PhotoOrigin? origin, ExifGeo? exif}) {
+    state = state.copyWith(
+      photos: [
+        for (final photo in state.photos)
+          photo.localRef == localRef
+              ? photo.copyWith(
+                  origin: photo.origin == PhotoOrigin.unknown ? origin : null,
+                  exif: photo.exif == null ? exif : null,
+                )
+              : photo,
+      ],
+    );
+  }
 
   /// Tombol "Isi Contoh" (Dummy Fill)
   void fillDummyData() {
@@ -229,7 +414,85 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       pelaksanaJabatan: 'Ketua Tim Monitoring & Evaluasi Disperwaskim',
       ditemuiNama: 'Budi Santoso, S.T.',
       ditemuiJabatan: 'Site Manager PT ABC Property',
+      pelaksana: const [
+        MonitoringPerson(
+          nama: 'Drs. Rian Hidayat, M.Si',
+          jabatan: 'Ketua Tim Monitoring & Evaluasi Disperwaskim',
+        ),
+      ],
+      ditemui: const [
+        MonitoringPerson(
+          nama: 'Budi Santoso, S.T.',
+          jabatan: 'Site Manager PT ABC Property',
+        ),
+      ],
       photoPaths: const [],
+    );
+  }
+
+  /// Muat data dari draft MonitoringModel ke form state
+  void loadDraft(MonitoringModel draft) {
+    final pelaksanaList = draft.pelaksana.isNotEmpty
+        ? draft.pelaksana
+        : (draft.pelaksanaNama.isNotEmpty
+              ? [
+                  MonitoringPerson.create(
+                    nama: draft.pelaksanaNama,
+                    jabatan: draft.pelaksanaJabatan,
+                  ),
+                ]
+              : [MonitoringPerson.create()]);
+
+    final ditemuiList = draft.ditemui.isNotEmpty
+        ? draft.ditemui
+        : (draft.ditemuiNama.isNotEmpty
+              ? [
+                  MonitoringPerson.create(
+                    nama: draft.ditemuiNama,
+                    jabatan: draft.ditemuiJabatan,
+                  ),
+                ]
+              : [MonitoringPerson.create()]);
+
+    state = MonitoringFormState(
+      draftId: draft.id,
+      pengajuanId: draft.pengajuanId,
+      currentStep: 0,
+      tanggalMonitoring: draft.tanggalMonitoring,
+      namaPerumahan: draft.namaPerumahan,
+      namaDeveloper: draft.namaDeveloper,
+      lokasiPerumahan: draft.lokasiPerumahan,
+      maksudTujuan: draft.maksudTujuan.isNotEmpty
+          ? draft.maksudTujuan
+          : MonitoringModel.defaultMaksudTujuan,
+      temuanLapangan: draft.temuanLapangan.isNotEmpty
+          ? draft.temuanLapangan
+          : const [''],
+      kesimpulan: draft.kesimpulan.isNotEmpty ? draft.kesimpulan : const [''],
+      kesepakatan: draft.kesepakatan.isNotEmpty
+          ? draft.kesepakatan
+          : const [''],
+      rencanaTindakLanjut: draft.rencanaTindakLanjut.isNotEmpty
+          ? draft.rencanaTindakLanjut
+          : const [''],
+      statusHasilEvaluasi: draft.statusHasilEvaluasi,
+      pelaksanaNama: draft.pelaksanaNama.isNotEmpty
+          ? draft.pelaksanaNama
+          : pelaksanaList.first.nama,
+      pelaksanaJabatan: draft.pelaksanaJabatan.isNotEmpty
+          ? draft.pelaksanaJabatan
+          : pelaksanaList.first.jabatan,
+      ditemuiNama: draft.ditemuiNama.isNotEmpty
+          ? draft.ditemuiNama
+          : ditemuiList.first.nama,
+      ditemuiJabatan: draft.ditemuiJabatan.isNotEmpty
+          ? draft.ditemuiJabatan
+          : ditemuiList.first.jabatan,
+      pelaksana: pelaksanaList,
+      ditemui: ditemuiList,
+      photos: draft.photos,
+      isSubmitting: false,
+      errorMessage: null,
     );
   }
 
@@ -252,8 +515,31 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       return null;
     }
 
+    return _modelFromState();
+  }
+
+  /// Menyimpan isian saat ini sebagai draf di repository lokal prototipe.
+  /// Hanya Nama Perumahan yang wajib; kelengkapan lain diperiksa saat submit.
+  MonitoringModel? saveDraft() {
+    if (state.namaPerumahan.trim().isEmpty) {
+      state = state.copyWith(errorMessage: 'Nama Perumahan wajib diisi.');
+      return null;
+    }
+    final draft = _modelFromState();
+    _repository.saveDraft(draft);
+    state = state.copyWith(draftId: draft.id);
+    _ref.read(monitoringListProvider.notifier).refresh();
+    return draft;
+  }
+
+  MonitoringModel _modelFromState() {
+    // Draf yang dilanjutkan harus mempertahankan nomor BA aslinya.
+    final existing = state.draftId == null
+        ? null
+        : _repository.getMonitoringById(state.draftId!);
     return MonitoringModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: state.draftId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      nomorSuratBA: existing?.nomorSuratBA,
       pengajuanId: state.pengajuanId,
       tanggalMonitoring: state.tanggalMonitoring,
       namaPerumahan: state.namaPerumahan,
@@ -265,13 +551,17 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
           .toList(),
       kesimpulan: state.kesimpulan.where((e) => e.trim().isNotEmpty).toList(),
       kesepakatan: state.kesepakatan.where((e) => e.trim().isNotEmpty).toList(),
-      rencanaTindakLanjut: filteredRTL,
+      rencanaTindakLanjut: state.rencanaTindakLanjut
+          .where((e) => e.trim().isNotEmpty)
+          .toList(),
       statusHasilEvaluasi: state.statusHasilEvaluasi,
       pelaksanaNama: state.pelaksanaNama,
       pelaksanaJabatan: state.pelaksanaJabatan,
       ditemuiNama: state.ditemuiNama,
       ditemuiJabatan: state.ditemuiJabatan,
-      photoPaths: state.photoPaths,
+      pelaksana: state.pelaksana,
+      ditemui: state.ditemui,
+      photos: state.photos,
       isDraft: true,
     );
   }
@@ -305,6 +595,13 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
 
     if (draft.namaPerumahan.trim().isEmpty) {
       return _failSubmit('Nama Perumahan wajib diisi.');
+    }
+
+    final unlocated = draft.photos.where((photo) => !photo.hasLocation).length;
+    if (unlocated > 0) {
+      return _failSubmit(
+        '$unlocated foto belum memiliki lokasi. Tentukan lokasi setiap foto sebelum submit final.',
+      );
     }
 
     if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&

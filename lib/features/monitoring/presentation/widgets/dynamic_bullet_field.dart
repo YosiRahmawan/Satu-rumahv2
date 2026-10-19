@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radii.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 
 class DynamicBulletField extends StatefulWidget {
@@ -7,6 +10,8 @@ class DynamicBulletField extends StatefulWidget {
   final List<String> items;
   final ValueChanged<List<String>> onItemsChanged;
   final String placeholderText;
+  final Color accentColor;
+  final bool outlinedAddButton;
 
   const DynamicBulletField({
     super.key,
@@ -14,6 +19,8 @@ class DynamicBulletField extends StatefulWidget {
     required this.items,
     required this.onItemsChanged,
     this.placeholderText = 'Masukkan poin...',
+    this.accentColor = AppColors.enterprisePrimary,
+    this.outlinedAddButton = false,
   });
 
   @override
@@ -31,7 +38,9 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
 
   void _initControllers() {
     final list = widget.items.isEmpty ? [''] : widget.items;
-    _controllers = list.map((item) => TextEditingController(text: item)).toList();
+    _controllers = list
+        .map((item) => TextEditingController(text: item))
+        .toList();
   }
 
   @override
@@ -39,29 +48,33 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
     super.didUpdateWidget(oldWidget);
     final list = widget.items.isEmpty ? [''] : widget.items;
     if (list.length != _controllers.length) {
-      for (var c in _controllers) {
-        c.dispose();
+      for (final controller in _controllers) {
+        controller.dispose();
       }
-      _controllers = list.map((item) => TextEditingController(text: item)).toList();
-    } else {
-      for (int i = 0; i < list.length; i++) {
-        if (_controllers[i].text != list[i]) {
-          _controllers[i].text = list[i];
-        }
+      _controllers = list
+          .map((item) => TextEditingController(text: item))
+          .toList();
+      return;
+    }
+    for (var i = 0; i < list.length; i++) {
+      if (_controllers[i].text != list[i]) {
+        _controllers[i].text = list[i];
       }
     }
   }
 
   @override
   void dispose() {
-    for (var c in _controllers) {
-      c.dispose();
+    for (final controller in _controllers) {
+      controller.dispose();
     }
     super.dispose();
   }
 
   void _notifyParent() {
-    widget.onItemsChanged(_controllers.map((c) => c.text).toList());
+    widget.onItemsChanged(
+      _controllers.map((controller) => controller.text).toList(),
+    );
   }
 
   @override
@@ -69,75 +82,155 @@ class _DynamicBulletFieldState extends State<DynamicBulletField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: AppTextStyles.labelMedium.copyWith(
-            color: AppColors.cocoaBeanRoast,
-            fontWeight: FontWeight.bold,
+        if (widget.label.isNotEmpty) ...[
+          Text(
+            widget.label,
+            style: AppTextStyles.labelMedium.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMain,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.sm),
+        ],
         ..._controllers.asMap().entries.map((entry) {
           final index = entry.key;
           final controller = entry.value;
+          final hasText = controller.text.trim().isNotEmpty;
 
           return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const Text('• ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                Expanded(
-                  child: TextFormField(
-                    controller: controller,
-                    onChanged: (_) => _notifyParent(),
-                    decoration: InputDecoration(
-                      hintText: widget.placeholderText,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.grey300),
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: Container(
+              constraints: const BoxConstraints(minHeight: 48),
+              padding: const EdgeInsets.only(left: 12, right: 4),
+              decoration: BoxDecoration(
+                color: AppColors.enterpriseCanvas,
+                border: Border.all(color: AppColors.enterpriseBorder),
+                borderRadius: AppRadii.small,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: hasText
+                          ? widget.accentColor
+                          : AppColors.enterpriseBorder,
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: TextFormField(
+                      controller: controller,
+                      minLines: 1,
+                      maxLines: null,
+                      onChanged: (_) {
+                        setState(() {});
+                        _notifyParent();
+                      },
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        fontFamily: AppTextStyles.enterpriseFontFamily,
+                        color: AppColors.enterpriseTextMain,
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: AppColors.grey300),
+                      decoration: InputDecoration(
+                        hintText: widget.placeholderText,
+                        hintStyle: AppTextStyles.bodyMedium.copyWith(
+                          fontFamily: AppTextStyles.enterpriseFontFamily,
+                          color: AppColors.enterpriseTextMuted,
+                        ),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 10,
+                        ),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
                       ),
                     ),
                   ),
-                ),
-                if (_controllers.length > 1) ...[
-                  const SizedBox(width: 4),
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline, color: AppColors.chilliDust, size: 20),
-                    onPressed: () {
-                      setState(() {
-                        _controllers[index].dispose();
-                        _controllers.removeAt(index);
-                      });
-                      _notifyParent();
-                    },
-                  ),
+                  if (_controllers.length > 1)
+                    IconButton(
+                      tooltip: 'Hapus poin',
+                      constraints: const BoxConstraints(
+                        minWidth: 44,
+                        minHeight: 44,
+                      ),
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: AppColors.enterpriseTextMuted,
+                        size: 20,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          if (_controllers.length == 1) {
+                            _controllers[index].clear();
+                          } else {
+                            _controllers[index].dispose();
+                            _controllers.removeAt(index);
+                          }
+                        });
+                        _notifyParent();
+                      },
+                    ),
                 ],
-              ],
+              ),
             ),
           );
         }),
         Align(
           alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: () {
-              setState(() {
-                _controllers.add(TextEditingController());
-              });
-              _notifyParent();
-            },
-            icon: const Icon(Icons.add, size: 18, color: AppColors.chilliDust),
-            label: const Text(
-              '+ Tambah Poin',
-              style: TextStyle(color: AppColors.chilliDust, fontWeight: FontWeight.w600),
-            ),
-          ),
+          child: widget.outlinedAddButton
+              ? OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _controllers.add(TextEditingController());
+                    });
+                    _notifyParent();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    side: const BorderSide(
+                      color: AppColors.enterprisePrimaryBorder,
+                    ),
+                    foregroundColor: AppColors.enterprisePrimary,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadii.small,
+                    ),
+                  ),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: Text(
+                    '+ Tambah Poin',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      fontFamily: AppTextStyles.enterpriseFontFamily,
+                      color: AppColors.enterprisePrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              : TextButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      _controllers.add(TextEditingController());
+                    });
+                    _notifyParent();
+                  },
+                  icon: const Icon(
+                    Icons.add_circle_outline,
+                    size: 18,
+                    color: AppColors.enterprisePrimary,
+                  ),
+                  label: Text(
+                    '+ Tambah Poin',
+                    style: AppTextStyles.labelMedium.copyWith(
+                      fontFamily: AppTextStyles.enterpriseFontFamily,
+                      color: AppColors.enterprisePrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
         ),
       ],
     );

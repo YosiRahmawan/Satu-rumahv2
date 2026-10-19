@@ -19,12 +19,14 @@ class DeveloperHeader extends StatelessWidget {
   const DeveloperHeader({
     super.key,
     this.brandTitle,
+    this.brandSubtitle = 'PORTAL PENGEMBANG',
     this.pageTitle,
     this.pageSubtitle,
     this.badge,
     this.isVerified = false,
     this.showNotification = false,
     this.notificationCount,
+    this.showNotificationCount = false,
     this.onNotificationTap,
     this.notificationTooltip,
     this.onAvatarTap,
@@ -44,6 +46,9 @@ class DeveloperHeader extends StatelessWidget {
   /// Optional brand title shown in the brand bar. Defaults to 'SATU RUMAH'.
   final String? brandTitle;
 
+  /// Uppercase role label under the brand title.
+  final String brandSubtitle;
+
   /// Optional page title shown below the brand bar (e.g. 'Pengajuan', 'Notifikasi', 'Profil Pengembang').
   final String? pageTitle;
 
@@ -61,6 +66,9 @@ class DeveloperHeader extends StatelessWidget {
 
   /// Number of unread notifications to display on the badge.
   final int? notificationCount;
+
+  /// Show the unread number on the badge instead of a plain dot.
+  final bool showNotificationCount;
 
   /// Callback when the notification icon button is tapped.
   final VoidCallback? onNotificationTap;
@@ -134,6 +142,10 @@ class DeveloperHeader extends StatelessWidget {
       icon: Badge(
         isLabelVisible: hasUnread,
         backgroundColor: AppColors.statusWarningSurface,
+        textColor: AppColors.primaryRed,
+        label: showNotificationCount && hasUnread
+            ? Text(notificationCount! > 9 ? '9+' : '$notificationCount')
+            : null,
         child: const Icon(
           Icons.notifications_none_rounded,
           color: AppColors.textOnRed,
@@ -225,7 +237,7 @@ class DeveloperHeader extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.xs / 2),
               Text(
-                'PORTAL PENGEMBANG',
+                brandSubtitle,
                 style: AppTextStyles.labelSmall.copyWith(
                   color: AppColors.textOnRedSubtle,
                   fontWeight: FontWeight.w700,

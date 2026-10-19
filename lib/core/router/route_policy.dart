@@ -41,7 +41,9 @@ AppRole? _requiredRole(String path) {
   if (path == '/admin' || path.startsWith('/admin/')) return AppRole.admin;
   if (path == '/monitoring') return AppRole.admin;
   if (path.startsWith('/monitoring/lapangan')) return AppRole.perwaskim;
-  if (path == '/monitoring/tambah' || path == '/monitoring/success') {
+  if (path == '/monitoring/tambah' ||
+      path == '/monitoring/success' ||
+      path.startsWith('/monitoring/draft')) {
     return AppRole.perwaskim;
   }
   // Admin may inspect a final-report preview; only Perwaskim can create or

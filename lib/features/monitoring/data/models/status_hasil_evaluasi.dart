@@ -22,22 +22,22 @@ extension StatusHasilEvaluasiX on StatusHasilEvaluasi {
   Color get color {
     switch (this) {
       case StatusHasilEvaluasi.sesuaiSiteplan:
-        return AppColors.statusSuccess;
+        return AppColors.enterpriseSuccess;
       case StatusHasilEvaluasi.tidakSesuaiSiteplan:
-        return AppColors.chilliDust;
+        return AppColors.enterprisePrimary;
       case StatusHasilEvaluasi.perluEvaluasiLanjutan:
-        return AppColors.warning;
+        return AppColors.enterpriseWarning;
     }
   }
 
   Color get backgroundColor {
     switch (this) {
       case StatusHasilEvaluasi.sesuaiSiteplan:
-        return AppColors.statusSuccessSurface;
+        return AppColors.enterpriseSuccessSurface;
       case StatusHasilEvaluasi.tidakSesuaiSiteplan:
-        return AppColors.chilliDust.withValues(alpha: 0.12);
+        return AppColors.enterprisePrimarySurface;
       case StatusHasilEvaluasi.perluEvaluasiLanjutan:
-        return AppColors.warning.withValues(alpha: 0.12);
+        return AppColors.enterpriseWarningSurface;
     }
   }
 

@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,14 +6,26 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../data/models/evidence_photo_item.dart';
+import '../../data/models/monitoring_model.dart';
+import '../../data/models/project_reference.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
+import '../providers/project_reference_provider.dart';
+import '../../utils/geo_distance.dart';
 import '../widgets/dynamic_bullet_field.dart';
 import '../widgets/evidence_photo_picker.dart';
-import '../widgets/status_hasil_evaluasi_selector_widget.dart';
+import '../widgets/photo_location_map.dart';
+import '../widgets/photo_location_sheet.dart';
+
+enum _ExitChoice { save, discard }
 
 class TambahMonitoringStepperScreen extends ConsumerStatefulWidget {
-  const TambahMonitoringStepperScreen({super.key});
+  /// Mengganti peta pada lembar lokasi foto (mis. di tes tanpa jaringan).
+  final Widget Function(PhotoLocationMapController controller)?
+  locationMapBuilder;
+
+  const TambahMonitoringStepperScreen({super.key, this.locationMapBuilder});
 
   @override
   ConsumerState<TambahMonitoringStepperScreen> createState() =>
@@ -24,6 +35,7 @@ class TambahMonitoringStepperScreen extends ConsumerStatefulWidget {
 class _TambahMonitoringStepperScreenState
     extends ConsumerState<TambahMonitoringStepperScreen> {
   final ScrollController _scrollController = ScrollController();
+  late String _savedSignature;
   late TextEditingController _namaPerumahanController;
   late TextEditingController _lokasiController;
   late TextEditingController _pelaksanaNamaController;
@@ -45,6 +57,7 @@ class _TambahMonitoringStepperScreenState
     _ditemuiJabatanController = TextEditingController(
       text: state.ditemuiJabatan,
     );
+    _savedSignature = MonitoringFormNotifier.signature(state);
   }
 
   @override
@@ -94,125 +107,473 @@ class _TambahMonitoringStepperScreenState
       }
     });
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.chilliDust,
-        elevation: 0,
-        centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: InkWell(
-            onTap: () {
-              if (formState.currentStep > 0) {
-                notifier.setStep(formState.currentStep - 1);
-              } else if (context.canPop()) {
-                context.pop();
+    final hasUnsavedChanges =
+        MonitoringFormNotifier.signature(formState) != _savedSignature;
+
+    return PopScope(
+      canPop: !hasUnsavedChanges,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _requestExit();
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.enterpriseCanvas,
+        body: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                child: Column(
+                  children: [
+                    _buildHero(context, formState, notifier),
+                    Transform.translate(
+                      offset: const Offset(0, -16),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _buildStepperHeader(formState.currentStep),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                      child: _buildCurrentStep(context, formState, notifier),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            _buildBottomBar(context, formState, notifier),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHero(
+    BuildContext context,
+    MonitoringFormState state,
+    MonitoringFormNotifier notifier,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.only(
+        top: MediaQuery.paddingOf(context).top + 12,
+        left: 16,
+        right: 16,
+        bottom: 32,
+      ),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.enterprisePrimary,
+            AppColors.enterprisePrimaryDark,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: AppRadii.hero,
+      ),
+      child: Builder(
+        builder: (context) {
+          final scale = MediaQuery.textScalerOf(context).scale(14) / 14;
+          final stacked = scale > 1.35;
+          final back = IconButton(
+            tooltip: 'Kembali',
+            onPressed: () {
+              if (state.currentStep > 0) {
+                notifier.setStep(state.currentStep - 1);
               } else {
-                context.go('/monitoring/lapangan');
+                _requestExit();
               }
             },
-            borderRadius: AppRadii.pill,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white38),
-                color: Colors.white12,
-              ),
-              child: const Icon(
-                Icons.arrow_back,
-                color: Colors.white,
-                size: 18,
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+          );
+          final title = Text(
+            'Formulir Pengawasan',
+            style: AppTextStyles.headlineMedium.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          );
+          final subtitle = Text(
+            'Langkah ${state.currentStep + 1} dari 3: ${_stepTitle(state.currentStep)}',
+            style: AppTextStyles.bodySmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterprisePrimaryBorder,
+            ),
+          );
+          final saveDraft = TextButton.icon(
+            onPressed: () => _saveDraft(notifier),
+            icon: const Icon(Icons.bookmark_border_rounded, size: 18),
+            label: const Text('Simpan Draft'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              minimumSize: const Size(0, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              textStyle: AppTextStyles.labelLarge.copyWith(
+                fontFamily: AppTextStyles.enterpriseFontFamily,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
-        ),
-        title: const Text(
-          'Form Monitoring Lapangan',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        actions: [
-          if (kDebugMode)
-            IconButton(
-              tooltip: 'Isi Contoh',
-              onPressed: () {
-                notifier.fillDummyData();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Data contoh berhasil diisikan!'),
-                  ),
-                );
-              },
-              icon: const Icon(
-                Icons.flash_on,
-                color: Colors.white70,
-                size: 20,
+          );
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  back,
+                  Expanded(child: title),
+                ],
               ),
-            ),
-        ],
+              Padding(
+                padding: const EdgeInsets.only(left: 48),
+                child: stacked
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [subtitle, saveDraft],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(child: subtitle),
+                          saveDraft,
+                        ],
+                      ),
+              ),
+            ],
+          );
+        },
       ),
-      body: Column(
-        children: [
-          // Stepper Header Bar with Linear Progress Line
-          _buildStepperHeader(formState.currentStep),
+    );
+  }
 
+  /// Menyimpan draf dan memberi tahu hasilnya. Mengembalikan true bila berhasil.
+  bool _saveDraft(MonitoringFormNotifier notifier) {
+    final saved = notifier.saveDraft();
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    if (saved == null) {
+      messenger.showSnackBar(
+        _buildSnackBar(
+          icon: Icons.error_outline,
+          message:
+              ref.read(monitoringFormProvider).errorMessage ??
+              'Draf belum dapat disimpan.',
+          color: AppColors.enterprisePrimary,
+        ),
+      );
+      return false;
+    }
+    _savedSignature = MonitoringFormNotifier.signature(
+      ref.read(monitoringFormProvider),
+    );
+    messenger.showSnackBar(
+      _buildSnackBar(
+        icon: Icons.check_circle,
+        message: 'Draf berhasil disimpan.',
+        color: const Color(0xFF166534),
+      ),
+    );
+    return true;
+  }
+
+  SnackBar _buildSnackBar({
+    required IconData icon,
+    required String message,
+    required Color color,
+  }) {
+    return SnackBar(
+      behavior: SnackBarBehavior.floating,
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 88),
+      backgroundColor: color,
+      shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
+      content: Row(
+        children: [
+          Icon(icon, color: Colors.white, size: 20),
+          const SizedBox(width: 10),
           Expanded(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(20),
-              child: _buildCurrentStep(context, formState, notifier),
+            child: Text(
+              message,
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontFamily: AppTextStyles.enterpriseFontFamily,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-
-          // Pinned Bottom Button Bar
-          _buildBottomBar(context, formState, notifier),
         ],
       ),
     );
   }
 
-  Widget _buildStepperHeader(int currentStep) {
-    double progressPercent = (currentStep + 1) / 3.0;
+  /// Keluar dari formulir. Bila ada isian yang belum disimpan, tanyakan dulu.
+  Future<void> _requestExit() async {
+    final hasUnsavedChanges =
+        MonitoringFormNotifier.signature(ref.read(monitoringFormProvider)) !=
+        _savedSignature;
+    if (!hasUnsavedChanges) {
+      _leave();
+      return;
+    }
 
-    return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-      child: Column(
-        children: [
-          // Red linear progress bar line
-          ClipRRect(
-            borderRadius: AppRadii.tight,
-            child: LinearProgressIndicator(
-              value: progressPercent,
-              minHeight: 4,
-              backgroundColor: AppColors.grey200,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                AppColors.actionPrimary,
+    final choice = await showDialog<_ExitChoice>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        scrollable: true,
+        shape: const RoundedRectangleBorder(borderRadius: AppRadii.card),
+        title: Text(
+          'Simpan draf sebelum keluar?',
+          style: AppTextStyles.headlineSmall.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMain,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Isian formulir ini belum disimpan. Jika dibuang, perubahan akan hilang.',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontFamily: AppTextStyles.enterpriseFontFamily,
+                color: AppColors.enterpriseTextMuted,
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-
-          // Stepper Circles & Labels Row
-          Row(
-            children: [
-              Expanded(child: _buildStepItem(1, 'Informasi Umum', currentStep)),
-              const SizedBox(width: 4),
-              Expanded(
-                child: _buildStepItem(2, 'Informasi Lanjutan', currentStep),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_ExitChoice.save),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.enterprisePrimary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                minimumSize: const Size.fromHeight(48),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadii.control,
+                ),
               ),
-              const SizedBox(width: 4),
-              Expanded(
-                child: _buildStepItem(3, 'Upload Dokumentasi', currentStep),
+              child: const Text('Simpan draf'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () =>
+                  Navigator.of(dialogContext).pop(_ExitChoice.discard),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.enterprisePrimary,
+                side: const BorderSide(
+                  color: AppColors.enterprisePrimaryBorder,
+                ),
+                minimumSize: const Size.fromHeight(48),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadii.control,
+                ),
+              ),
+              child: const Text('Buang'),
+            ),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.enterpriseTextMain,
+                minimumSize: const Size.fromHeight(44),
+              ),
+              child: const Text('Lanjut mengisi'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+
+    switch (choice) {
+      case _ExitChoice.save:
+        if (_saveDraft(ref.read(monitoringFormProvider.notifier))) _leave();
+      case _ExitChoice.discard:
+        _leave();
+      case null:
+        break;
+    }
+  }
+
+  void _leave() {
+    // Navigator.pop tidak melewati PopScope, jadi tidak memicu dialog lagi.
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/monitoring/lapangan');
+    }
+  }
+
+  String _stepTitle(int step) => switch (step) {
+    0 => 'Info Umum',
+    1 => 'Info Lanjutan',
+    _ => 'Dokumentasi Lapangan',
+  };
+
+  Widget _buildStepperHeader(int currentStep) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+          final useAccessibleLayout =
+              constraints.maxWidth < 300 || textScale > 1.35;
+          final steps = [
+            (1, '1. Info Umum'),
+            (2, '2. Info Lanjutan'),
+            (3, '3. Dokumentasi Lapangan'),
+          ];
+
+          if (useAccessibleLayout) {
+            return Column(
+              children: [
+                for (var index = 0; index < steps.length; index++) ...[
+                  _buildAccessibleStepItem(
+                    steps[index].$1,
+                    steps[index].$2,
+                    currentStep,
+                  ),
+                  if (index < steps.length - 1)
+                    Divider(
+                      height: 16,
+                      indent: 18,
+                      endIndent: 18,
+                      color: currentStep > index
+                          ? AppColors.enterpriseSuccess
+                          : AppColors.enterpriseBorder,
+                    ),
+                ],
+              ],
+            );
+          }
+
+          return Stack(
+            alignment: Alignment.topCenter,
+            children: [
+              Positioned(
+                top: 17,
+                left: 0,
+                right: 0,
+                child: Row(
+                  children: [
+                    const Spacer(flex: 1),
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        height: 2.5,
+                        color: currentStep >= 1
+                            ? AppColors.enterpriseSuccess
+                            : AppColors.enterpriseBorder,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        height: 2.5,
+                        color: currentStep >= 2
+                            ? AppColors.enterpriseSuccess
+                            : AppColors.enterpriseBorder,
+                      ),
+                    ),
+                    const Spacer(flex: 1),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  for (var index = 0; index < steps.length; index++) ...[
+                    Expanded(
+                      child: _buildStepItem(
+                        steps[index].$1,
+                        steps[index].$2,
+                        currentStep,
+                      ),
+                    ),
+                    if (index < steps.length - 1) const SizedBox(width: 4),
+                  ],
+                ],
               ),
             ],
-          ),
-        ],
+          );
+        },
       ),
+    );
+  }
+
+  Widget _buildAccessibleStepItem(
+    int stepNumber,
+    String label,
+    int currentStep,
+  ) {
+    final isDone = (currentStep + 1) > stepNumber;
+    final isActive = (currentStep + 1) == stepNumber;
+
+    final Color circleBgColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+        ? AppColors.enterprisePrimary
+        : AppColors.enterpriseSurface;
+
+    final Color circleBorderColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+        ? AppColors.enterprisePrimary
+        : AppColors.enterpriseBorder;
+
+    final Color labelColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+        ? AppColors.enterprisePrimary
+        : AppColors.enterpriseTextMuted;
+
+    final FontWeight labelWeight = isActive
+        ? FontWeight.bold
+        : isDone
+        ? FontWeight.w600
+        : FontWeight.normal;
+
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: circleBgColor,
+            border: Border.all(color: circleBorderColor, width: 1.5),
+          ),
+          child: Center(
+            child: isDone
+                ? const Icon(Icons.check, size: 18, color: Colors.white)
+                : Text(
+                    '$stepNumber',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: isActive
+                          ? Colors.white
+                          : AppColors.enterpriseTextMuted,
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: AppTextStyles.labelSmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: labelWeight,
+              color: labelColor,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -220,47 +581,68 @@ class _TambahMonitoringStepperScreenState
     final isDone = (currentStep + 1) > stepNumber;
     final isActive = (currentStep + 1) == stepNumber;
 
-    return Row(
+    final Color circleBgColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+        ? AppColors.enterprisePrimary
+        : AppColors.enterpriseSurface;
+
+    final Color circleBorderColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+        ? AppColors.enterprisePrimary
+        : AppColors.enterpriseBorder;
+
+    final Color labelColor = isDone
+        ? AppColors.enterpriseSuccess
+        : isActive
+        ? AppColors.enterprisePrimary
+        : AppColors.enterpriseTextMuted;
+
+    final FontWeight labelWeight = isActive
+        ? FontWeight.bold
+        : isDone
+        ? FontWeight.w600
+        : FontWeight.normal;
+
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 20,
-          height: 20,
+          width: 36,
+          height: 36,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: (isActive || isDone)
-                ? AppColors.actionPrimary
-                : Colors.white,
-            border: Border.all(
-              color: (isActive || isDone)
-                  ? AppColors.actionPrimary
-                  : AppColors.grey400,
-              width: 1.5,
-            ),
+            color: circleBgColor,
+            border: Border.all(color: circleBorderColor, width: 1.5),
           ),
           child: Center(
             child: isDone
-                ? const Icon(Icons.check, size: 12, color: Colors.white)
+                ? const Icon(Icons.check, size: 18, color: Colors.white)
                 : Text(
                     '$stepNumber',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
-                      color: isActive ? Colors.white : AppColors.grey600,
+                      color: isActive
+                          ? Colors.white
+                          : AppColors.enterpriseTextMuted,
                     ),
                   ),
           ),
         ),
-        const SizedBox(width: 4),
-        Expanded(
+        const SizedBox(height: 8),
+        ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 30),
           child: Text(
             label,
-            maxLines: 1,
+            maxLines: 2,
+            textAlign: TextAlign.center,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-              color: isActive ? AppColors.actionPrimary : AppColors.textMuted,
+            style: AppTextStyles.labelSmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: labelWeight,
+              color: labelColor,
             ),
           ),
         ),
@@ -293,101 +675,337 @@ class _TambahMonitoringStepperScreenState
   ) {
     final dateStr = DateFormat(
       'EEEE, d MMMM yyyy',
+      'id',
     ).format(state.tanggalMonitoring);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Sub-header Uppercase Red Text
-        const Text(
-          'LANGKAH 01',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: AppColors.actionPrimary,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Informasi umum',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.cocoaBeanRoast,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Lengkapi data dasar monitoring lapangan.',
-          style: TextStyle(fontSize: 13, color: AppColors.grey600),
-        ),
-        const SizedBox(height: 24),
-
-        // Hari / Tanggal Monitoring
-        Text(
-          'Hari / Tanggal Monitoring',
-          style: AppTextStyles.labelMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: context,
-              initialDate: state.tanggalMonitoring,
-              firstDate: DateTime(2020),
-              lastDate: DateTime(2030),
-            );
-            if (picked != null) notifier.updateTanggal(picked);
-          },
-          borderRadius: AppRadii.card,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: AppColors.grey300),
-              borderRadius: AppRadii.card,
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  dateStr,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppColors.cocoaBeanRoast,
+        if (state.pengajuanId != null) ...[
+          _buildMetaRow(state),
+          const SizedBox(height: 12),
+        ],
+        _buildFieldCard(
+          label: 'Hari/Tanggal Monitoring',
+          badge: 'Wajib',
+          child: InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: state.tanggalMonitoring,
+                firstDate: DateTime(2020),
+                lastDate: DateTime(2030),
+              );
+              if (picked != null) notifier.updateTanggal(picked);
+            },
+            borderRadius: AppRadii.small,
+            child: _buildInputSurface(
+              child: Row(
+                children: [
+                  Expanded(child: Text(dateStr, style: _inputTextStyle)),
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    color: AppColors.enterpriseTextMuted,
                   ),
-                ),
-                const Icon(
-                  Icons.calendar_today,
-                  size: 18,
-                  color: AppColors.grey600,
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 20),
-
-        // Nama Perumahan
-        _buildTextField(
-          'Nama Perumahan',
-          _namaPerumahanController,
-          notifier.updateNamaPerumahan,
-          'Masukkan Nama Perumahan',
+        const SizedBox(height: 16),
+        _buildFieldCard(
+          label: 'Nama Perumahan',
+          badge: 'Wajib',
+          child: _buildTextFieldBody(
+            _namaPerumahanController,
+            notifier.updateNamaPerumahan,
+            'Masukkan nama perumahan',
+          ),
         ),
-        const SizedBox(height: 20),
-
-        // Lokasi Perumahan
-        _buildTextField(
-          'Lokasi Perumahan',
-          _lokasiController,
-          notifier.updateLokasi,
-          'Masukkan lokasi perumahan',
+        const SizedBox(height: 16),
+        _buildFieldCard(
+          label: 'Lokasi Perumahan',
+          badge: 'Opsional',
+          child: _buildTextFieldBody(
+            _lokasiController,
+            notifier.updateLokasi,
+            'Masukkan lokasi perumahan',
+            prefixIcon: Icons.location_on_outlined,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildPurposeCard(state.maksudTujuan),
+        const SizedBox(height: 16),
+        _buildBulletCard(
+          label: 'Temuan di Lapangan',
+          badge: 'Opsional',
+          icon: Icons.warning_amber_outlined,
+          color: AppColors.enterpriseWarning,
+          items: state.temuanLapangan,
+          onChanged: notifier.updateTemuan,
+          placeholder: 'Tuliskan temuan baru...',
+        ),
+        const SizedBox(height: 16),
+        _buildBulletCard(
+          label: 'Kesimpulan',
+          badge: 'Opsional',
+          icon: Icons.fact_check_outlined,
+          color: AppColors.statusInfo,
+          items: state.kesimpulan,
+          onChanged: notifier.updateKesimpulan,
+          placeholder: 'Tuliskan kesimpulan...',
         ),
       ],
+    );
+  }
+
+  TextStyle get _inputTextStyle => AppTextStyles.bodyMedium.copyWith(
+    fontFamily: AppTextStyles.enterpriseFontFamily,
+    color: AppColors.enterpriseTextMain,
+  );
+
+  Widget _buildMetaRow(MonitoringFormState state) {
+    final pengajuanId = state.pengajuanId;
+    if (pengajuanId == null) return const SizedBox.shrink();
+    return Text(
+      'ID: $pengajuanId',
+      overflow: TextOverflow.ellipsis,
+      style: AppTextStyles.labelSmall.copyWith(
+        fontFamily: AppTextStyles.enterpriseFontFamily,
+        color: AppColors.enterpriseTextMuted,
+      ),
+    );
+  }
+
+  Widget _buildFieldCard({
+    required String label,
+    required String badge,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(
+            label: label,
+            badge: badge,
+            labelStyle: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBadge(String text) {
+    final required = text == 'Wajib';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: required
+            ? AppColors.enterprisePrimarySurfaceSoft
+            : AppColors.enterpriseCanvas,
+        borderRadius: AppRadii.small,
+        border: required
+            ? Border.all(color: AppColors.enterprisePrimaryBorder)
+            : null,
+      ),
+      child: Text(
+        text,
+        style: AppTextStyles.labelSmall.copyWith(
+          fontFamily: AppTextStyles.enterpriseFontFamily,
+          color: required
+              ? AppColors.enterprisePrimary
+              : AppColors.enterpriseTextMuted,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputSurface({required Widget child}) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 48),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.small,
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildTextFieldBody(
+    TextEditingController controller,
+    ValueChanged<String> onChanged,
+    String hint, {
+    IconData? prefixIcon,
+  }) {
+    return TextFormField(
+      controller: controller,
+      onChanged: onChanged,
+      style: _inputTextStyle,
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: _inputTextStyle.copyWith(
+          color: AppColors.enterpriseTextMuted,
+        ),
+        prefixIcon: prefixIcon == null
+            ? null
+            : Icon(prefixIcon, color: AppColors.enterpriseTextMuted),
+        filled: true,
+        fillColor: AppColors.enterpriseSurface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: AppRadii.small,
+          borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: AppRadii.small,
+          borderSide: const BorderSide(color: AppColors.enterpriseBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadii.small,
+          borderSide: const BorderSide(
+            color: AppColors.enterprisePrimary,
+            width: 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPurposeCard(String narrative) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseCanvas,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(
+            label: 'Maksud dan Tujuan',
+            badge: 'Terkunci narasi Dinas',
+            leading: const Icon(
+              Icons.lock_outline,
+              size: 18,
+              color: AppColors.enterpriseTextMuted,
+            ),
+            labelStyle: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          _buildInputSurface(
+            child: Text(
+              narrative,
+              style: _inputTextStyle.copyWith(fontSize: 13, height: 1.5),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '* Bagian ini otomatis dan tidak perlu diisi',
+            style: AppTextStyles.labelSmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMuted,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBulletCard({
+    required String label,
+    required String badge,
+    required IconData icon,
+    required Color color,
+    required List<String> items,
+    required ValueChanged<List<String>> onChanged,
+    required String placeholder,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader(
+            label: label,
+            badge: badge,
+            leading: Icon(icon, size: 18, color: color),
+            labelStyle: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          DynamicBulletField(
+            label: '',
+            items: items,
+            onItemsChanged: onChanged,
+            placeholderText: placeholder,
+            accentColor: color,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required String label,
+    required String badge,
+    required TextStyle labelStyle,
+    Widget? leading,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+        final stacked = textScale > 1.35 || constraints.maxWidth < 340;
+        final labelRow = Row(
+          children: [
+            if (leading != null) ...[leading, const SizedBox(width: 6)],
+            Expanded(child: Text(label, style: labelStyle)),
+          ],
+        );
+
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [labelRow, const SizedBox(height: 8), _buildBadge(badge)],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: labelRow),
+            const SizedBox(width: 8),
+            _buildBadge(badge),
+          ],
+        );
+      },
     );
   }
 
@@ -400,293 +1018,290 @@ class _TambahMonitoringStepperScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'LANGKAH 02',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: AppColors.actionPrimary,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Informasi lanjutan',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.cocoaBeanRoast,
-          ),
-        ),
-        const SizedBox(height: 4),
-        const Text(
-          'Isi temuan, kesimpulan, dan status evaluasi lapangan.',
-          style: TextStyle(fontSize: 13, color: AppColors.grey600),
-        ),
-        const SizedBox(height: 20),
-
-        // Maksud & Tujuan
-        Text(
-          'Maksud dan Tujuan',
-          style: AppTextStyles.labelMedium.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceSubtle,
-            borderRadius: AppRadii.control,
-            border: Border.all(color: AppColors.grey300),
-          ),
-          child: Text(
-            state.maksudTujuan,
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.5,
-              color: AppColors.grey800,
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        DynamicBulletField(
-          label: 'Temuan di Lapangan',
-          items: state.temuanLapangan,
-          onItemsChanged: notifier.updateTemuan,
-          placeholderText: 'Masukkan temuan di lapangan',
-        ),
-        const SizedBox(height: 20),
-
-        DynamicBulletField(
-          label: 'Kesimpulan',
-          items: state.kesimpulan,
-          onItemsChanged: notifier.updateKesimpulan,
-          placeholderText: 'Masukkan kesimpulan',
-        ),
-        const SizedBox(height: 20),
-
-        DynamicBulletField(
-          label: 'Kesepakatan',
+        _buildOptionalInfoBanner(),
+        const SizedBox(height: 16),
+        _buildPointSection(
+          title: 'Kesepakatan',
           items: state.kesepakatan,
-          onItemsChanged: notifier.updateKesepakatan,
-          placeholderText: 'Masukkan kesepakatan',
+          onChanged: notifier.updateKesepakatan,
+          placeholder: 'Tuliskan kesepakatan...',
         ),
-        const SizedBox(height: 20),
-
-        DynamicBulletField(
-          label: 'Rencana Tindak Lanjut',
+        const SizedBox(height: 16),
+        _buildPointSection(
+          title: 'Rencana Tindak Lanjut',
           items: state.rencanaTindakLanjut,
-          onItemsChanged: notifier.updateRTL,
-          placeholderText: 'Masukkan rencana tindak lanjut',
+          onChanged: notifier.updateRTL,
+          placeholder: 'Tuliskan rencana tindak lanjut...',
         ),
-        const SizedBox(height: 20),
-
-        StatusHasilEvaluasiSelectorWidget(
-          selectedStatus: state.statusHasilEvaluasi,
-          onChanged: notifier.updateStatusHasilEvaluasi,
+        const SizedBox(height: 16),
+        _buildPeopleSection(
+          title: 'Tim Pelaksana Disperwaskim',
+          subtitle: 'Yang Melaksanakan Monitoring',
+          personLabel: 'Anggota',
+          icon: Icons.badge_outlined,
+          people: state.pelaksana,
+          addLabel: 'Tambah Anggota Tim',
+          onAdd: notifier.addPelaksana,
+          onRemove: notifier.removePelaksana,
+          onChanged: notifier.updatePelaksanaPerson,
+        ),
+        const SizedBox(height: 16),
+        _buildPeopleSection(
+          title: 'Pihak Ditemui',
+          subtitle: 'Yang Ditemui di Lapangan',
+          personLabel: 'Perwakilan Pengembang',
+          icon: Icons.groups_outlined,
+          people: state.ditemui,
+          addLabel: 'Tambah Pihak Ditemui',
+          onAdd: notifier.addDitemui,
+          onRemove: notifier.removeDitemui,
+          onChanged: notifier.updateDitemuiPerson,
         ),
       ],
     );
   }
 
-  // STEP 3: Evidence & Tanda Tangan (Mockup 5)
-  Widget _buildStep3(
-    BuildContext context,
-    MonitoringFormState state,
-    MonitoringFormNotifier notifier,
-  ) {
+  Widget _buildOptionalInfoBanner() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.enterprisePrimarySurfaceSoft,
+        border: Border.all(color: AppColors.enterprisePrimaryBorder),
+        borderRadius: AppRadii.control,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline,
+            size: 20,
+            color: AppColors.enterprisePrimary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Jika tidak diisi, bagian opsional akan dicetak dengan tanda '-' pada Berita Acara.",
+              style: AppTextStyles.bodySmall.copyWith(
+                fontFamily: AppTextStyles.enterpriseFontFamily,
+                color: AppColors.enterpriseTextMain,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPointSection({
+    required String title,
+    required List<String> items,
+    required ValueChanged<List<String>> onChanged,
+    required String placeholder,
+  }) {
+    return _buildFieldCard(
+      label: title,
+      badge: 'Opsional',
+      child: DynamicBulletField(
+        label: '',
+        items: items,
+        onItemsChanged: onChanged,
+        placeholderText: placeholder,
+        accentColor: AppColors.enterprisePrimary,
+        outlinedAddButton: true,
+      ),
+    );
+  }
+
+  Widget _buildPeopleSection({
+    required String title,
+    required String subtitle,
+    required String personLabel,
+    required IconData icon,
+    required List<MonitoringPerson> people,
+    required String addLabel,
+    required VoidCallback onAdd,
+    required ValueChanged<int> onRemove,
+    required void Function(int index, {String? nama, String? jabatan})
+    onChanged,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'LANGKAH 03',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            color: AppColors.actionPrimary,
-            letterSpacing: 1.2,
+        _buildSectionHeader(
+          label: title,
+          badge: 'Opsional',
+          leading: Icon(icon, size: 18, color: AppColors.enterprisePrimary),
+          labelStyle: AppTextStyles.labelLarge.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            fontWeight: FontWeight.w700,
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Evidence & tanda tangan',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: AppColors.cocoaBeanRoast,
+        Text(
+          subtitle,
+          style: AppTextStyles.labelSmall.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMuted,
           ),
         ),
-        const SizedBox(height: 4),
-        const Text(
-          'Upload foto evidence dan isi data penandatangan.',
-          style: TextStyle(fontSize: 13, color: AppColors.grey600),
+        const SizedBox(height: 10),
+        ...people.asMap().entries.map(
+          (entry) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildPersonCard(
+              index: entry.key,
+              person: entry.value,
+              personLabel: personLabel,
+              canRemove: people.length > 1,
+              onRemove: () => onRemove(entry.key),
+              onChanged: onChanged,
+            ),
+          ),
         ),
-        const SizedBox(height: 24),
-
-        // Photo Picker Widget
-        EvidencePhotoPicker(
-          photoPaths: state.photoPaths,
-          onPhotosChanged: notifier.updatePhotos,
-        ),
-        const SizedBox(height: 28),
-
-        // Wet Signature Section Header
-        const Row(
-          children: [
-            Text(
-              'Tanda Tangan Basah ',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.cocoaBeanRoast,
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onAdd,
+            icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+            label: Text(addLabel),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(48),
+              foregroundColor: AppColors.enterprisePrimary,
+              side: const BorderSide(color: AppColors.enterprisePrimary),
+              shape: RoundedRectangleBorder(borderRadius: AppRadii.small),
+              textStyle: AppTextStyles.labelMedium.copyWith(
+                fontFamily: AppTextStyles.enterpriseFontFamily,
+                fontWeight: FontWeight.w700,
               ),
             ),
-            Text(
-              '(Wet Signature)',
-              style: TextStyle(fontSize: 12, color: AppColors.grey600),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        // 2 Side-by-side Cards
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Card 1: Petugas Monitoring
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: AppRadii.control,
-                  border: Border.all(color: AppColors.grey300),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Petugas Monitoring',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.cocoaBeanRoast,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildUnderlineField(
-                      'Nama lengkap',
-                      _pelaksanaNamaController,
-                      notifier.updatePelaksanaNama,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildUnderlineField(
-                      'Jabatan',
-                      _pelaksanaJabatanController,
-                      notifier.updatePelaksanaJabatan,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-
-            // Card 2: Pihak Perumahan / Developer
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: AppRadii.control,
-                  border: Border.all(color: AppColors.grey300),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Pihak Perumahan / Developer',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.cocoaBeanRoast,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _buildUnderlineField(
-                      'Nama lengkap',
-                      _ditemuiNamaController,
-                      notifier.updateDitemuiNama,
-                    ),
-                    const SizedBox(height: 8),
-                    _buildUnderlineField(
-                      'Jabatan',
-                      _ditemuiJabatanController,
-                      notifier.updateDitemuiJabatan,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-
-        const Text(
-          '*Dokumen hasil generate akan diprint untuk Tanda Tangan Basah di lokasi.',
-          style: TextStyle(
-            fontSize: 11,
-            fontStyle: FontStyle.italic,
-            color: AppColors.grey600,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildTextField(
-    String label,
-    TextEditingController controller,
-    ValueChanged<String> onChanged,
-    String hint,
-  ) {
+  Widget _buildPersonCard({
+    required int index,
+    required MonitoringPerson person,
+    required String personLabel,
+    required bool canRemove,
+    required VoidCallback onRemove,
+    required void Function(int index, {String? nama, String? jabatan})
+    onChanged,
+  }) {
+    return Container(
+      key: ValueKey(person.id),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '$personLabel ${index + 1}',
+                  style: AppTextStyles.labelMedium.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.enterpriseTextMain,
+                  ),
+                ),
+              ),
+              if (canRemove)
+                IconButton(
+                  tooltip: 'Hapus $personLabel ${index + 1}',
+                  onPressed: onRemove,
+                  icon: const Icon(
+                    Icons.delete_outline,
+                    size: 20,
+                    color: AppColors.enterpriseTextMuted,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 44,
+                    minHeight: 44,
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+            ],
+          ),
+          const Divider(height: 1, color: AppColors.enterpriseBorder),
+          const SizedBox(height: 12),
+          _buildPersonTextField(
+            key: ValueKey('${person.id}-nama'),
+            label: 'Nama Lengkap',
+            value: person.nama,
+            onChanged: (value) => onChanged(index, nama: value),
+          ),
+          const SizedBox(height: 12),
+          _buildPersonTextField(
+            key: ValueKey('${person.id}-jabatan'),
+            label: 'Jabatan',
+            value: person.jabatan,
+            onChanged: (value) => onChanged(index, jabatan: value),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonTextField({
+    required Key key,
+    required String label,
+    required String value,
+    required ValueChanged<String> onChanged,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: AppTextStyles.labelMedium.copyWith(
-            fontWeight: FontWeight.bold,
+          style: AppTextStyles.labelSmall.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMain,
+            fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         TextFormField(
-          controller: controller,
+          key: key,
+          initialValue: value,
           onChanged: onChanged,
-          style: const TextStyle(fontSize: 14),
+          style: AppTextStyles.bodySmall.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMain,
+          ),
           decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textMuted,
-            ),
             isDense: true,
+            hintText: 'Masukkan ${label.toLowerCase()}',
+            hintStyle: AppTextStyles.bodySmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMuted,
+            ),
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+              horizontal: 12,
+              vertical: 12,
             ),
-            border: const OutlineInputBorder(
-              borderRadius: AppRadii.card,
-              borderSide: BorderSide(color: AppColors.grey300),
+            border: OutlineInputBorder(
+              borderRadius: AppRadii.small,
+              borderSide: const BorderSide(color: AppColors.enterpriseBorder),
             ),
-            enabledBorder: const OutlineInputBorder(
-              borderRadius: AppRadii.card,
-              borderSide: BorderSide(color: AppColors.grey300),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppRadii.small,
+              borderSide: const BorderSide(color: AppColors.enterpriseBorder),
             ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: AppRadii.card,
-              borderSide: BorderSide(color: AppColors.actionPrimary),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppRadii.small,
+              borderSide: const BorderSide(
+                color: AppColors.enterprisePrimary,
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -694,26 +1309,297 @@ class _TambahMonitoringStepperScreenState
     );
   }
 
-  Widget _buildUnderlineField(
-    String hintText,
-    TextEditingController controller,
-    ValueChanged<String> onChanged,
+  // STEP 3: Dokumentasi Lapangan
+  Widget _buildStep3(
+    BuildContext context,
+    MonitoringFormState state,
+    MonitoringFormNotifier notifier,
   ) {
-    return TextField(
-      controller: controller,
-      onChanged: onChanged,
-      style: const TextStyle(fontSize: 12),
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-        isDense: true,
-        contentPadding: const EdgeInsets.symmetric(vertical: 6),
-        enabledBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.grey300),
+    final photos = state.photos
+        .where((photo) => photo.localRef.trim().isNotEmpty)
+        .toList();
+    final located = photos.where((photo) => photo.hasLocation).length;
+    final reference = ref.watch(projectReferenceProvider(state.pengajuanId));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Dokumentasi Lapangan',
+          style: AppTextStyles.h2.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMain,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        focusedBorder: const UnderlineInputBorder(
-          borderSide: BorderSide(color: AppColors.actionPrimary),
+        const SizedBox(height: 6),
+        Text(
+          photos.isEmpty
+              ? 'Belum ada foto'
+              : '${photos.length} foto · $located sudah berlokasi',
+          style: AppTextStyles.bodySmall.copyWith(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: AppColors.enterpriseTextMuted,
+          ),
         ),
+        const SizedBox(height: 16),
+        _buildProjectReferenceBanner(reference),
+        const SizedBox(height: 16),
+        EvidencePhotoPicker(
+          photoPaths: [for (final photo in photos) photo.localRef],
+          onPhotosChanged: notifier.updatePhotos,
+          onPhotoPicked: (path, origin, exif) =>
+              notifier.attachPhotoMeta(path, origin: origin, exif: exif),
+          photoStatusBuilder: (index) =>
+              _buildPhotoStatus(photos[index], reference),
+          onPhotoTap: (index) =>
+              _openPhotoLocation(photos[index], index + 1, reference, notifier),
+        ),
+        const SizedBox(height: 16),
+        _buildStep3ValidationSummary(state),
+      ],
+    );
+  }
+
+  Widget _buildProjectReferenceBanner(ProjectReference? reference) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.control,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.lock_outline,
+            color: AppColors.enterpriseTextMuted,
+            size: 18,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Titik proyek dari Pengembang',
+                  style: AppTextStyles.labelLarge.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    color: AppColors.enterpriseTextMain,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  reference == null
+                      ? 'Belum tersedia. Jarak ke proyek tidak dapat dihitung, tetapi setiap foto tetap perlu ditentukan lokasinya.'
+                      : '${formatCoordinate(reference.latitude)}, '
+                            '${formatCoordinate(reference.longitude)} · tidak dapat diubah',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    color: AppColors.enterpriseTextMuted,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Baris status lokasi pada kartu foto; hanya menampilkan data nyata.
+  Widget _buildPhotoStatus(
+    EvidencePhotoItem photo,
+    ProjectReference? reference,
+  ) {
+    final proximity = evaluatePhotoProximity(
+      location: photo.location,
+      reference: reference,
+    );
+    late final IconData icon;
+    late final Color color;
+    late final String title;
+    late final String detail;
+    switch (proximity.status) {
+      case ProximityStatus.noLocation:
+        icon = Icons.location_off_outlined;
+        color = const Color(0xFFFCA5A5);
+        title = 'Belum ada lokasi';
+        detail = 'Ketuk untuk menentukan';
+      case ProximityStatus.noReference:
+        icon = Icons.location_on;
+        color = Colors.white70;
+        title = _shortMethodLabel(photo.location!.method);
+        detail = 'Jarak tidak dihitung';
+      case ProximityStatus.withinTolerance:
+        icon = Icons.location_on;
+        color = const Color(0xFF86EFAC);
+        title = _shortMethodLabel(photo.location!.method);
+        detail =
+            '${formatDistance(proximity.distanceMeters!)} dari proyek'
+            '${proximity.lowAccuracy ? ' · akurasi rendah' : ''}';
+      case ProximityStatus.outsideTolerance:
+        icon = Icons.warning_amber_rounded;
+        color = const Color(0xFFFCD34D);
+        title = _shortMethodLabel(photo.location!.method);
+        detail = '${formatDistance(proximity.distanceMeters!)} dari proyek';
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 3),
+            Expanded(
+              child: Text(
+                title,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontFamily: AppTextStyles.enterpriseFontFamily,
+                  color: color,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Text(
+          detail,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontFamily: AppTextStyles.enterpriseFontFamily,
+            color: Colors.grey[300],
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _shortMethodLabel(LocationMethod method) => switch (method) {
+    LocationMethod.exifConfirmed => 'GPS dari foto',
+    LocationMethod.manualPin => 'Titik manual',
+    LocationMethod.deviceAtEntry => 'Posisi saat input',
+  };
+
+  Future<void> _openPhotoLocation(
+    EvidencePhotoItem photo,
+    int number,
+    ProjectReference? reference,
+    MonitoringFormNotifier notifier,
+  ) async {
+    final result = await showPhotoLocationSheet(
+      context,
+      photo: photo,
+      photoNumber: number,
+      reference: reference,
+      mapBuilder: _locationMapBuilder,
+    );
+    if (!mounted || result == null) return;
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    if (result.cleared) {
+      notifier.clearPhotoLocation(photo.id);
+      messenger.showSnackBar(
+        _buildSnackBar(
+          icon: Icons.check_circle,
+          message: 'Lokasi Foto $number dihapus.',
+          color: const Color(0xFF166534),
+        ),
+      );
+    } else {
+      notifier.setPhotoLocation(photo.id, result.location!);
+      messenger.showSnackBar(
+        _buildSnackBar(
+          icon: Icons.check_circle,
+          message: 'Lokasi Foto $number disimpan.',
+          color: const Color(0xFF166534),
+        ),
+      );
+    }
+  }
+
+  /// Peta untuk lembar lokasi; tes dapat menggantinya lewat [locationMapBuilder].
+  Widget Function(PhotoLocationMapController controller)?
+  get _locationMapBuilder =>
+      widget.locationMapBuilder ??
+      (controller) => PhotoLocationMap(controller: controller);
+
+  Widget _buildStep3ValidationSummary(MonitoringFormState state) {
+    final hasHousing = state.namaPerumahan.trim().isNotEmpty;
+    final hasRequiredRtl =
+        !state.statusHasilEvaluasi.wajibRencanaTindakLanjut ||
+        state.rencanaTindakLanjut.any((item) => item.trim().isNotEmpty);
+    final tracked = state.photos
+        .where((photo) => photo.localRef.trim().isNotEmpty)
+        .toList();
+    final photoCount = tracked.length;
+    final locatedCount = tracked.where((photo) => photo.hasLocation).length;
+    final checks = [
+      (hasHousing, 'Nama perumahan dari Langkah 1'),
+      (hasRequiredRtl, 'Rencana tindak lanjut dari Langkah 2'),
+      (
+        state.photoPaths.any((path) => path.trim().isNotEmpty),
+        'Foto dokumentasi (opsional)',
+      ),
+      if (photoCount > 0)
+        (
+          photoCount == locatedCount,
+          'Lokasi setiap foto ($locatedCount dari $photoCount)',
+        ),
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: Border.all(color: AppColors.enterpriseBorder),
+        borderRadius: AppRadii.card,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Ringkasan validasi',
+            style: AppTextStyles.titleMedium.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMain,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 10),
+          for (final check in checks)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    check.$1 ? Icons.check_circle_outline : Icons.error_outline,
+                    size: 18,
+                    color: check.$1
+                        ? AppColors.enterpriseSuccess
+                        : AppColors.enterprisePrimary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      check.$2,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        fontFamily: AppTextStyles.enterpriseFontFamily,
+                        color: AppColors.enterpriseTextMain,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -724,98 +1610,253 @@ class _TambahMonitoringStepperScreenState
     MonitoringFormState formState,
     MonitoringFormNotifier notifier,
   ) {
-    final isLastStep = formState.currentStep == 2;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+        final useStackedActions =
+            constraints.maxWidth < 350 || textScale > 1.35;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, -4),
+        // Step 0 Secondary Text Action: Batal
+        final batalButton = TextButton(
+          onPressed: _requestExit,
+          style: TextButton.styleFrom(
+            minimumSize: const Size(0, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+            foregroundColor: AppColors.enterpriseTextMuted,
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-        ],
-      ),
-      child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.actionPrimary,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: const RoundedRectangleBorder(borderRadius: AppRadii.pill),
+          child: Text(
+            'Batal',
+            style: AppTextStyles.labelMedium.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w600,
+              color: AppColors.enterpriseTextMuted,
             ),
-            onPressed: () {
-              if (formState.currentStep == 0) {
-                if (_namaPerumahanController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Nama Perumahan wajib diisi.'),
-                    ),
-                  );
-                  return;
-                }
-                notifier.setStep(1);
-              } else if (formState.currentStep == 1) {
-                final rtl = formState.rencanaTindakLanjut
-                    .where((e) => e.trim().isNotEmpty)
-                    .toList();
-                if (formState.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
-                    rtl.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'Untuk status "${formState.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.',
-                      ),
-                      backgroundColor: AppColors.actionPrimary,
-                    ),
-                  );
-                  return;
-                }
-                notifier.setStep(2);
-              } else {
-                // Last step -> Navigate to Preview Screen
-                final previewModel = notifier.buildPreviewModel();
-                if (previewModel != null) {
-                  context.push(
-                    '/monitoring/preview',
-                    extra: {'model': previewModel, 'isDraft': true},
-                  );
-                } else {
-                  final err = ref.read(monitoringFormProvider).errorMessage;
-                  if (err != null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(err),
-                        backgroundColor: AppColors.actionPrimary,
-                      ),
-                    );
-                  }
-                }
-              }
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  isLastStep ? 'PREVIEW & SUBMIT' : 'LANJUTKAN',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    letterSpacing: 0.5,
+          ),
+        );
+
+        // Steps 1 & 2 Secondary Outlined Action: Kembali
+        final kembaliButton = OutlinedButton(
+          onPressed: () {
+            if (formState.currentStep > 0) {
+              notifier.setStep(formState.currentStep - 1);
+            }
+          },
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(0, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            side: const BorderSide(color: AppColors.enterpriseBorder),
+            shape: const RoundedRectangleBorder(borderRadius: AppRadii.small),
+          ),
+          child: Text(
+            'Kembali',
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTextStyles.labelMedium.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontWeight: FontWeight.w600,
+              color: AppColors.enterpriseTextMain,
+            ),
+          ),
+        );
+
+        void handleNextStep() {
+          if (formState.currentStep == 0) {
+            if (_namaPerumahanController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Nama Perumahan wajib diisi.')),
+              );
+              return;
+            }
+            notifier.setStep(1);
+          } else if (formState.currentStep == 1) {
+            final rtl = formState.rencanaTindakLanjut
+                .where((e) => e.trim().isNotEmpty)
+                .toList();
+            if (formState.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
+                rtl.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Untuk status "${formState.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.',
                   ),
+                  backgroundColor: AppColors.enterprisePrimary,
                 ),
-                const SizedBox(width: 8),
-                const Icon(Icons.arrow_forward, size: 18),
-              ],
+              );
+              return;
+            }
+            notifier.setStep(2);
+          } else {
+            // Last step -> Navigate to Preview Screen
+            final unlocated = formState.photos
+                .where(
+                  (photo) =>
+                      photo.localRef.trim().isNotEmpty && !photo.hasLocation,
+                )
+                .length;
+            if (unlocated > 0) {
+              ScaffoldMessenger.of(context)
+                ..hideCurrentSnackBar()
+                ..showSnackBar(
+                  _buildSnackBar(
+                    icon: Icons.error_outline,
+                    message:
+                        '$unlocated foto belum memiliki lokasi. Tentukan lokasi setiap foto sebelum submit.',
+                    color: AppColors.enterprisePrimary,
+                  ),
+                );
+              return;
+            }
+            final previewModel = notifier.buildPreviewModel();
+            if (previewModel != null) {
+              context.push(
+                '/monitoring/preview',
+                extra: {'model': previewModel, 'isDraft': true},
+              );
+            } else {
+              final err = ref.read(monitoringFormProvider).errorMessage;
+              if (err != null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(err),
+                    backgroundColor: AppColors.enterprisePrimary,
+                  ),
+                );
+              }
+            }
+          }
+        }
+
+        final primaryButtonStyle = ElevatedButton.styleFrom(
+          backgroundColor: AppColors.enterprisePrimary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          shape: const RoundedRectangleBorder(borderRadius: AppRadii.small),
+        );
+
+        final nextButtonStep0 = ElevatedButton(
+          style: primaryButtonStyle,
+          onPressed: handleNextStep,
+          child: Text(
+            'Lanjut ke Langkah 2',
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-      ),
+        );
+
+        final nextButtonStep1 = ElevatedButton(
+          style: primaryButtonStyle,
+          onPressed: handleNextStep,
+          child: Text(
+            'Lanjut ke Langkah 3',
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+
+        final submitButtonStep2 = ElevatedButton(
+          style: primaryButtonStyle,
+          onPressed: handleNextStep,
+          child: Text(
+            'Submit & Buat Berita Acara',
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            style: AppTextStyles.labelLarge.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          decoration: BoxDecoration(
+            color: AppColors.enterpriseSurface,
+            border: const Border(
+              top: BorderSide(color: AppColors.enterpriseBorder),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 10,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: formState.currentStep == 0
+                ? useStackedActions
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            nextButtonStep0,
+                            const SizedBox(height: 4),
+                            batalButton,
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            batalButton,
+                            const SizedBox(width: 8),
+                            Expanded(child: nextButtonStep0),
+                          ],
+                        )
+                : formState.currentStep == 1
+                ? useStackedActions
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(children: [Expanded(child: kembaliButton)]),
+                            const SizedBox(height: 8),
+                            nextButtonStep1,
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(flex: 3, child: kembaliButton),
+                            const SizedBox(width: 10),
+                            Expanded(flex: 7, child: nextButtonStep1),
+                          ],
+                        )
+                : useStackedActions
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(children: [Expanded(child: kembaliButton)]),
+                      const SizedBox(height: 8),
+                      submitButtonStep2,
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(flex: 3, child: kembaliButton),
+                      const SizedBox(width: 10),
+                      Expanded(flex: 7, child: submitButtonStep2),
+                    ],
+                  ),
+          ),
+        );
+      },
     );
   }
 }

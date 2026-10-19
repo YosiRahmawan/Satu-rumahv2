@@ -43,9 +43,7 @@ class MonitoringRepository {
       kesimpulan: [
         'Kawasan dapat dilanjutkan setelah perbaikan desain drainase dan penyampaian revisi gambar teknis.',
       ],
-      kesepakatan: [
-        'Pengembang akan mengunggah revisi dalam 7 hari kerja.',
-      ],
+      kesepakatan: ['Pengembang akan mengunggah revisi dalam 7 hari kerja.'],
       rencanaTindakLanjut: [
         'RENCANA TINDAK LANJUT WAJIB: Perbarui gambar drainase dan lengkapi simulasi manuver kendaraan pemadam sebelum persetujuan dilanjutkan.',
       ],
@@ -111,6 +109,20 @@ class MonitoringRepository {
       return;
     }
     _items.insert(0, item);
+  }
+
+  /// Menyimpan draf: menimpa draf dengan ID yang sama, atau menambahkannya di
+  /// paling atas. Laporan final tidak pernah ditimpa oleh draf.
+  void saveDraft(MonitoringModel item) {
+    if (!item.isDraft) return;
+    final existingIndex = _items.indexWhere(
+      (existing) => existing.id == item.id,
+    );
+    if (existingIndex == -1) {
+      _items.insert(0, item);
+    } else if (_items[existingIndex].isDraft) {
+      _items[existingIndex] = item;
+    }
   }
 
   List<MonitoringModel> searchMonitoring({

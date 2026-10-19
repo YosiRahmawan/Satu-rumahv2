@@ -20,7 +20,7 @@ class MonitoringCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.grey300),
+        side: const BorderSide(color: AppColors.enterpriseBorder),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
@@ -46,13 +46,13 @@ class MonitoringCard extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               if (item.namaDeveloper.isNotEmpty)
-                Text('Developer: ${item.namaDeveloper}', style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey700)),
+                Text('Developer: ${item.namaDeveloper}', style: AppTextStyles.bodySmall.copyWith(color: AppColors.enterpriseTextMuted)),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 14, color: AppColors.grey600),
+                  const Icon(Icons.calendar_today, size: 14, color: AppColors.enterpriseTextMuted),
                   const SizedBox(width: 4),
-                  Text(dateStr, style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600)),
+                  Text(dateStr, style: AppTextStyles.bodySmall.copyWith(color: AppColors.enterpriseTextMuted)),
                 ],
               ),
             ],
