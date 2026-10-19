@@ -30,6 +30,15 @@ class EvidencePhotoPicker extends StatefulWidget {
   /// Dipanggil saat kartu foto diketuk (mis. membuka lembar lokasi).
   final ValueChanged<int>? onPhotoTap;
 
+  /// Apakah mode pemilihan foto aktif.
+  final bool isSelectionMode;
+
+  /// Set indeks foto yang dipilih.
+  final Set<int> selectedIndices;
+
+  /// Callback ketika pilihan foto di-toggle.
+  final ValueChanged<int>? onToggleSelect;
+
   const EvidencePhotoPicker({
     super.key,
     required this.photoPaths,
@@ -40,6 +49,9 @@ class EvidencePhotoPicker extends StatefulWidget {
     this.photoStatusBuilder,
     this.onPhotoTap,
     this.onPhotoPicked,
+    this.isSelectionMode = false,
+    this.selectedIndices = const {},
+    this.onToggleSelect,
   });
 
   static final Map<String, Uint8List> _bytesCache = {};
@@ -568,6 +580,7 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
   }
 
   Widget _buildPhotoCard(String path, int index) {
+    final isSelected = widget.selectedIndices.contains(index);
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
@@ -580,18 +593,29 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
       },
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: widget.onPhotoTap == null
-            ? null
-            : () => widget.onPhotoTap!(index),
+        onTap: () {
+          if (widget.isSelectionMode) {
+            widget.onToggleSelect?.call(index);
+          } else {
+            widget.onPhotoTap?.call(index);
+          }
+        },
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFE2E8F0)),
+            border: Border.all(
+              color: isSelected
+                  ? AppColors.enterprisePrimary
+                  : const Color(0xFFE2E8F0),
+              width: isSelected ? 2.5 : 1.0,
+            ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 6,
+                color: isSelected
+                    ? AppColors.enterprisePrimary.withValues(alpha: 0.15)
+                    : Colors.black.withValues(alpha: 0.05),
+                blurRadius: isSelected ? 8 : 6,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -615,24 +639,63 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
                     ),
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      IconButton(
-                        tooltip: 'Hapus foto ${index + 1}',
-                        onPressed: () => _confirmDelete(index),
-                        icon: const Icon(
-                          Icons.close,
-                          size: 16,
-                          color: Colors.white,
-                        ),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.enterprisePrimary,
-                          minimumSize: const Size(28, 28),
-                          padding: EdgeInsets.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          widget.onToggleSelect?.call(index);
+                        },
+                        child: Semantics(
+                          label: 'Pilih foto ${index + 1}',
+                          checked: isSelected,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            width: 28,
+                            height: 28,
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.enterprisePrimary
+                                  : (widget.isSelectionMode
+                                        ? Colors.black.withValues(alpha: 0.5)
+                                        : Colors.black.withValues(alpha: 0.3)),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isSelected
+                                    ? Colors.white
+                                    : (widget.isSelectionMode
+                                          ? Colors.white
+                                          : Colors.white70),
+                                width: isSelected ? 2 : 1.5,
+                              ),
+                            ),
+                            child: isSelected
+                                ? const Icon(
+                                    Icons.check,
+                                    size: 16,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
                         ),
                       ),
+                      if (!widget.isSelectionMode)
+                        IconButton(
+                          tooltip: 'Hapus foto ${index + 1}',
+                          onPressed: () => _confirmDelete(index),
+                          icon: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                          style: IconButton.styleFrom(
+                            backgroundColor: AppColors.enterprisePrimary,
+                            minimumSize: const Size(28, 28),
+                            padding: EdgeInsets.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
                     ],
                   ),
                 ),
