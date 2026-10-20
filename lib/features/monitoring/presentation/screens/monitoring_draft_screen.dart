@@ -79,10 +79,6 @@ class MonitoringDraftScreen extends ConsumerWidget {
                     _buildEvaluationCard(item),
                     const SizedBox(height: 16),
                     _buildPeopleCard(item),
-                    if (item.photoPaths.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      _buildPhotosCard(item),
-                    ],
                   ],
                 ),
               ),
@@ -404,48 +400,6 @@ class MonitoringDraftScreen extends ConsumerWidget {
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPhotosCard(MonitoringModel item) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.enterpriseSurface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: AppColors.enterpriseBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCardHeader(
-            icon: Icons.camera_alt_outlined,
-            title: 'Foto Dokumentasi Lapangan (${item.photoPaths.length})',
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: item.photoPaths.map((path) {
-              return Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: AppColors.enterpriseCanvas,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.enterpriseBorder),
-                ),
-                child: const Icon(
-                  Icons.image_outlined,
-                  size: 28,
-                  color: AppColors.enterpriseTextMuted,
-                ),
-              );
-            }).toList(),
-          ),
         ],
       ),
     );

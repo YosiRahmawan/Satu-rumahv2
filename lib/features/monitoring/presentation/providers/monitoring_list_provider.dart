@@ -15,15 +15,15 @@ final monitoringListProvider =
 /// Dipegang di provider agar layar lain bisa mengembalikan pengguna ke Beranda.
 final monitoringTabProvider = StateProvider<int>((ref) => 0);
 
-/// Async facade keeps loading and retry states explicit while the prototype
-/// still reads from its local in-memory repository.
-final monitoringListAsyncProvider = FutureProvider<List<MonitoringModel>>((
-  ref,
-) async {
-  final monitoring = ref.watch(monitoringListProvider);
-  await Future<void>.delayed(Duration.zero);
-  return monitoring;
-});
+/// Daftar laporan sebagai `AsyncValue` agar layar tetap memakai `.when`.
+///
+/// Datanya sudah ada di memori (repository lokal), jadi nilainya langsung
+/// tersedia. Tidak ada status loading sehingga Beranda dan Riwayat tidak
+/// berkedip menampilkan kartu "Memuat data" sesaat setelah login. Bila sumber
+/// data berubah menjadi jaringan, ganti kembali dengan `FutureProvider`.
+final monitoringListAsyncProvider = Provider<AsyncValue<List<MonitoringModel>>>(
+  (ref) => AsyncValue.data(ref.watch(monitoringListProvider)),
+);
 
 /// Provider penugasan survey aktif yang dikirim dari Admin ke Tim Perwaskim
 final surveyAktifProvider = Provider<List<Pengajuan>>((ref) {

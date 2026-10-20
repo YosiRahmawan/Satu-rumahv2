@@ -1,0 +1,145 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../theme/app_colors.dart';
+import '../theme/app_radii.dart';
+import '../theme/app_spacing.dart';
+import '../theme/app_text_styles.dart';
+import 'panduan_pengajuan_dialog.dart';
+
+/// Canonical hero header component for the multi-step Pengembang submission flow.
+///
+/// Features:
+/// - Brand red gradient ([AppColors.heroGradient])
+/// - Bottom corner radius ([AppRadii.hero])
+/// - Semi-transparent circular back and help action buttons
+/// - Centered title, and step indicator subtitle
+/// - Accessible and responsive scaling up to 200% text scale without overflow
+class PengajuanStepHeader extends StatelessWidget {
+  const PengajuanStepHeader({
+    super.key,
+    this.title = 'Pengajuan Baru',
+    this.subtitle = 'Langkah 1 dari 5',
+    this.onBackPressed,
+    this.onHelpPressed,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback? onBackPressed;
+  final VoidCallback? onHelpPressed;
+
+  void _defaultBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/dashboard');
+    }
+  }
+
+  void _showHelpDialog(BuildContext context) {
+    PanduanPengajuanDialog.show(context);
+  }
+
+  Widget _buildCircularButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Semantics(
+      button: true,
+      label: tooltip,
+      child: Tooltip(
+        message: tooltip,
+        child: Material(
+          color: Colors.white.withValues(alpha: 0.16),
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onTap,
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Center(
+                child: Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final topPadding = MediaQuery.paddingOf(context).top;
+    final isTextScaled = MediaQuery.textScalerOf(context).scale(14) > 20;
+
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: AppColors.heroGradient,
+        borderRadius: AppRadii.hero,
+      ),
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        topPadding + AppSpacing.md,
+        AppSpacing.lg,
+        AppSpacing.xl,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Row with back button, center title/subtitle, and help button
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildCircularButton(
+                icon: Icons.arrow_back,
+                tooltip: 'Kembali',
+                onTap: onBackPressed ?? () => _defaultBack(context),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.headlineSmall.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textOnRedSubtle,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              _buildCircularButton(
+                icon: Icons.help_outline,
+                tooltip: 'Bantuan',
+                onTap: onHelpPressed ?? () => _showHelpDialog(context),
+              ),
+            ],
+          ),
+          if (isTextScaled) const SizedBox(height: AppSpacing.xs),
+        ],
+      ),
+    );
+  }
+}

@@ -308,51 +308,25 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('renders Step 3 with active step and dynamic photo progress', (
+  testWidgets('renders Step 3 with active step and no photo feature', (
     tester,
   ) async {
     final notifier = container.read(monitoringFormProvider.notifier);
     notifier.updateNamaPerumahan('Perumahan Dokumentasi');
-    notifier.updatePhotos(['first.jpg', '', 'second.jpg']);
     notifier.setStep(2);
 
     await pumpStep1(tester);
 
     expect(find.text('Dokumentasi Lapangan'), findsOneWidget);
     expect(find.text('Langkah 3 dari 3: Dokumentasi Lapangan'), findsOneWidget);
-    expect(find.text('2 foto · 0 sudah berlokasi'), findsOneWidget);
-    expect(find.text('2/10'), findsOneWidget);
+    expect(
+      find.textContaining('Dokumentasi foto belum tersedia'),
+      findsOneWidget,
+    );
     expect(find.text('Ringkasan validasi'), findsOneWidget);
-    expect(find.text('Lokasi setiap foto (0 dari 2)'), findsOneWidget);
-    expect(find.text('Perlu lokasi'), findsNWidgets(2));
-    expect(find.text('Titik proyek dari Pengembang'), findsOneWidget);
+    expect(find.text('Tambah foto'), findsNothing);
     expect(tester.takeException(), isNull);
   });
-
-  testWidgets(
-    'Step 3 deletion requires confirmation and retains remaining state',
-    (tester) async {
-      final notifier = container.read(monitoringFormProvider.notifier);
-      notifier.updateNamaPerumahan('Perumahan Dokumentasi');
-      notifier.updatePhotos(['first.jpg', 'second.jpg']);
-      notifier.setStep(2);
-
-      await pumpStep1(tester);
-      await tester.tap(find.byTooltip('Hapus foto 1'));
-      await tester.pumpAndSettle();
-      expect(find.text('Hapus foto?'), findsOneWidget);
-      expect(container.read(monitoringFormProvider).photoPaths, [
-        'first.jpg',
-        'second.jpg',
-      ]);
-
-      await tester.tap(find.widgetWithText(FilledButton, 'Hapus'));
-      await tester.pumpAndSettle();
-      expect(container.read(monitoringFormProvider).photoPaths, ['second.jpg']);
-      expect(find.text('1 foto · 0 sudah berlokasi'), findsOneWidget);
-      expect(tester.takeException(), isNull);
-    },
-  );
 
   testWidgets('Step 3 opens BA preview without implying final submission', (
     tester,
@@ -378,84 +352,6 @@ void main() {
     expect(container.read(monitoringFormProvider).errorMessage, isNull);
     expect(find.text('Preview Berita Acara'), findsOneWidget);
     expect(container.read(monitoringFormProvider).isSubmitting, isFalse);
-  });
-
-  testWidgets('Step 3 menentukan lokasi foto lewat lembar lokasi', (
-    tester,
-  ) async {
-    final notifier = container.read(monitoringFormProvider.notifier);
-    notifier.updateNamaPerumahan('Perumahan Lokasi');
-    notifier.updatePhotos(['first.jpg', 'second.jpg']);
-    notifier.setStep(2);
-    await pumpStep1(tester);
-
-    await tester.ensureVisible(find.text('Perlu lokasi').first);
-    await tester.tap(find.text('Perlu lokasi').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Lokasi Foto 1'), findsOneWidget);
-
-    final fields = find.byType(TextField);
-    await tester.enterText(fields.at(0), '-7.3274');
-    await tester.enterText(fields.at(1), '108.2207');
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Simpan lokasi'));
-    await tester.tap(find.text('Simpan lokasi'));
-    await tester.pumpAndSettle();
-
-    final photos = container.read(monitoringFormProvider).photos;
-    expect(photos[0].location!.latitude, closeTo(-7.3274, 1e-9));
-    expect(photos[1].location, isNull);
-    expect(find.text('Lokasi Foto 1 disimpan.'), findsOneWidget);
-    expect(find.text('2 foto · 1 sudah berlokasi'), findsOneWidget);
-    expect(find.text('Lokasi setiap foto (1 dari 2)'), findsOneWidget);
-    expect(find.text('Lokasi ditentukan manual'), findsOneWidget);
-    expect(find.text('Perlu lokasi'), findsOneWidget);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('Step 3 menahan lanjut ke preview bila ada foto tanpa lokasi', (
-    tester,
-  ) async {
-    final router = _router();
-    final notifier = container.read(monitoringFormProvider.notifier);
-    notifier.updateNamaPerumahan('Perumahan Blokir');
-    notifier.updatePhotos(['first.jpg']);
-    notifier.setStep(2);
-    await pumpStep1(tester, router: router);
-
-    final previewButton = find.ancestor(
-      of: find.text('Submit & Buat Berita Acara'),
-      matching: find.byType(ElevatedButton),
-    );
-    await tester.ensureVisible(previewButton);
-    await tester.tap(previewButton);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Preview Berita Acara'), findsNothing);
-    expect(find.textContaining('1 foto belum memiliki lokasi'), findsOneWidget);
-  });
-
-  testWidgets('Simpan Draft tetap boleh walau foto belum berlokasi', (
-    tester,
-  ) async {
-    final notifier = container.read(monitoringFormProvider.notifier);
-    notifier.updateNamaPerumahan('Perumahan Draf Foto');
-    notifier.updatePhotos(['first.jpg']);
-    notifier.setStep(2);
-    await pumpStep1(tester);
-
-    await tester.ensureVisible(find.text('Simpan Draft'));
-    await tester.tap(find.text('Simpan Draft'));
-    await tester.pumpAndSettle();
-
-    expect(container.read(monitoringFormProvider).errorMessage, isNull);
-    expect(
-      container
-          .read(monitoringRepositoryProvider)
-          .getAllMonitoring()
-          .where((m) => m.isDraft && m.namaPerumahan == 'Perumahan Draf Foto'),
-      hasLength(1),
-    );
   });
 
   testWidgets('Step 3 remains usable at 360dp and 412dp with 200% text', (
@@ -795,8 +691,8 @@ void main() {
   test('draf yang dikirim final tidak tersisa sebagai draf', () {
     final repo = container.read(monitoringRepositoryProvider);
     final notifier = container.read(monitoringFormProvider.notifier);
-    notifier.updatePengajuanId('SR-20260720-612');
-    notifier.updateNamaPerumahan('Green Tasik');
+    notifier.updatePengajuanId('SR-2025-0148');
+    notifier.updateNamaPerumahan('Griya Mangkubumi Asri');
     notifier.updateStatusHasilEvaluasi(StatusHasilEvaluasi.sesuaiSiteplan);
     final draft = notifier.saveDraft()!;
     expect(repo.getMonitoringById(draft.id)!.isDraft, isTrue);
@@ -827,9 +723,7 @@ GoRouter _router() {
     routes: [
       GoRoute(
         path: '/monitoring/tambah',
-        builder: (_, __) => TambahMonitoringStepperScreen(
-          locationMapBuilder: (_) => const SizedBox.shrink(),
-        ),
+        builder: (_, __) => const TambahMonitoringStepperScreen(),
       ),
       GoRoute(
         path: '/monitoring/lapangan',

@@ -1,3 +1,4 @@
+import '../../../../core/auth/role_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
@@ -430,13 +431,15 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
         .addNotification(
           NotifikasiModel(
             id: 'n-${DateTime.now().millisecondsSinceEpoch}',
-            jenis: JenisNotifikasi.dokumenDiunggahUlang,
+            jenis: JenisNotifikasi.perluRevisi,
             judul: 'Perbaikan Dokumen Diumumkan',
             deskripsi:
                 'Catatan perbaikan untuk ${current.namaPerumahan}: $note',
             waktu: DateTime.now(),
             isRead: false,
             targetRoute: '/pengajuan/detail/${current.id}',
+            pengajuanId: current.id,
+            penerima: AppRole.developer,
           ),
         );
     return PengajuanOperationResult.changed(
@@ -514,10 +517,11 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
       uploadedDocs: updatedUploaded,
       verifiedDocs: updatedVerified,
       technicalFiles: updatedTechnicalFiles,
-      status: 'Dalam Proses',
+      status: 'Menunggu Verifikasi Perbaikan',
       statusTahap: origin,
       dokumenPerluRevisi: const [],
       revisionSubmitted: true,
+      diperbarui: 'Diperbarui 2 hari lalu',
     );
     _ref.read(pengajuanListProvider.notifier).updatePengajuan(updated);
     _ref
@@ -532,11 +536,13 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
             waktu: DateTime.now(),
             isRead: false,
             targetRoute: '/admin/pengajuan/detail/${current.id}',
+            pengajuanId: current.id,
+            penerima: AppRole.admin,
           ),
         );
 
     return PengajuanOperationResult.changed(
-      message: 'Revisi dokumen berhasil diunggah dan menunggu review Admin.',
+      message: 'Revisi dokumen berhasil disimpan dan menunggu review Admin.',
       previousStage: current.statusTahap,
       nextStage: origin,
     );
@@ -620,6 +626,8 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
             waktu: DateTime.now(),
             isRead: false,
             targetRoute: '/pengajuan/detail/${current.id}',
+            pengajuanId: current.id,
+            penerima: AppRole.perwaskim,
           ),
         );
     return PengajuanOperationResult.changed(

@@ -77,6 +77,8 @@ class RoleProfileView extends StatelessWidget {
   final String logoutLabel;
   final String footerText;
   final Widget banner;
+  final Color? customPrimaryColor;
+  final Color? customAccentColor;
 
   const RoleProfileView({
     super.key,
@@ -99,6 +101,8 @@ class RoleProfileView extends StatelessWidget {
     this.onNotifications,
     this.logoutLabel = 'Keluar Akun',
     this.banner = const PrototypeDataBanner(),
+    this.customPrimaryColor,
+    this.customAccentColor,
   });
 
   bool get _isAuthority => heroVariant != ProfileHeroVariant.light;
@@ -254,13 +258,21 @@ class RoleProfileView extends StatelessWidget {
       return _buildEnterpriseHero(context);
     }
 
-    final foreground = _isAuthority ? Colors.white : _textColor;
-    final secondary = _isAuthority
+    final heroColor =
+        customPrimaryColor ??
+        (_isAuthority ? AppColors.brandPrimary : AppColors.surface);
+    final isCustomSolid = customPrimaryColor != null;
+    final isDark = _isAuthority || isCustomSolid;
+
+    final foreground = isDark ? Colors.white : AppColors.textPrimary;
+    final secondary = isDark
         ? Colors.white.withValues(alpha: 0.76)
-        : _mutedTextColor;
-    final rolePillColor = _isAuthority
-        ? Colors.white.withValues(alpha: 0.18)
-        : _primaryColor.withValues(alpha: 0.1);
+        : AppColors.textMuted;
+    final rolePillColor =
+        customAccentColor ??
+        (isDark
+            ? Colors.white.withValues(alpha: 0.18)
+            : AppColors.brandPrimary.withValues(alpha: 0.1));
 
     return Container(
       width: double.infinity,
@@ -271,23 +283,9 @@ class RoleProfileView extends StatelessWidget {
         AppSpacing.xl,
       ),
       decoration: BoxDecoration(
-        gradient: _isEnterpriseAuthority
-            ? const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.enterprisePrimary,
-                  AppColors.enterprisePrimaryDark,
-                ],
-              )
-            : null,
-        color: _isEnterpriseAuthority
-            ? null
-            : (_isAuthority ? AppColors.brandPrimary : _surfaceColor),
+        color: heroColor,
         borderRadius: AppRadii.hero,
-        border: _isAuthority
-            ? null
-            : Border(bottom: BorderSide(color: _borderColor)),
+        border: isDark ? null : Border(bottom: BorderSide(color: _borderColor)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,7 +314,7 @@ class RoleProfileView extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: _isAuthority
+                      color: isDark
                           ? Colors.white.withValues(alpha: 0.15)
                           : AppColors.surfaceWarm,
                       shape: BoxShape.circle,
@@ -351,7 +349,7 @@ class RoleProfileView extends StatelessWidget {
                   border: Border.all(color: foreground, width: 2),
                   color: _isEnterpriseAuthority
                       ? AppColors.enterpriseSurface
-                      : AppColors.champagneToast,
+                      : AppColors.primarySurface,
                 ),
                 alignment: Alignment.center,
                 child: Text(

@@ -29,7 +29,13 @@ bool _isPublicPath(String path) =>
 bool _isPreviewMonitoringPath(String path) => path == '/monitoring/preview';
 
 AppRole? _requiredRole(String path) {
-  if (path == '/dashboard' || path.startsWith('/pengajuan/')) {
+  if (path == '/dashboard' ||
+      path.startsWith('/pengajuan/') ||
+      path == '/jadwal-survey' ||
+      path == '/unduh-sk-ba' ||
+      path == '/template-berkas' ||
+      path == '/bantuan' ||
+      path == '/tentang') {
     return AppRole.developer;
   }
   if (path == '/admin' || path.startsWith('/admin/')) return AppRole.admin;

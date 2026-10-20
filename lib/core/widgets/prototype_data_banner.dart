@@ -18,9 +18,9 @@ class PrototypeDataBanner extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: AppColors.champagneToast.withValues(alpha: 0.42),
+          color: AppColors.primarySurfaceSoft,
           borderRadius: AppRadii.control,
-          border: Border.all(color: AppColors.champagneToast),
+          border: Border.all(color: AppColors.primarySurfaceBorder),
         ),
         child: const Row(
           crossAxisAlignment: CrossAxisAlignment.start,

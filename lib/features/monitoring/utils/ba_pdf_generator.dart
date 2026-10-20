@@ -38,6 +38,12 @@ class BaPdfGenerator {
 
   /// Generate PDF dokumen BA dan tampilkan native print preview.
   static Future<void> printAndShare(MonitoringModel monitoring) async {
+    final doc = buildDocument(monitoring);
+    await Printing.layoutPdf(onLayout: (format) async => doc.save());
+  }
+
+  /// Menyusun dokumen BA tanpa membuka pratinjau cetak.
+  static pw.Document buildDocument(MonitoringModel monitoring) {
     final doc = pw.Document();
 
     doc.addPage(
@@ -141,7 +147,7 @@ class BaPdfGenerator {
       ),
     );
 
-    await Printing.layoutPdf(onLayout: (format) async => doc.save());
+    return doc;
   }
 
   static pw.Widget _buildPdfSection(String title, List<String> items) {

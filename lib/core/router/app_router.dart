@@ -9,11 +9,12 @@ import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/monitoring/data/models/monitoring_model.dart';
 import '../../features/monitoring/presentation/screens/laporan_preview_screen.dart';
 import '../../features/monitoring/presentation/screens/laporan_success_screen.dart';
+import '../../features/monitoring/presentation/screens/monitoring_list_screen.dart';
 import '../../features/monitoring/presentation/screens/monitoring_draft_screen.dart';
 import '../../features/monitoring/presentation/screens/monitoring_main_screen.dart';
 import '../../features/monitoring/presentation/screens/tambah_monitoring_stepper_screen.dart';
 import '../../features/monitoring/presentation/providers/monitoring_form_provider.dart';
-import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
+import '../../features/notifikasi/presentation/screens/notifikasi_list_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_admin_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_step1_screen.dart';
@@ -22,6 +23,14 @@ import '../../features/pengajuan/presentation/screens/pengajuan_step3_screen.dar
 import '../../features/pengajuan/presentation/screens/pengajuan_step4_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_step5_review_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_success_screen.dart';
+import '../../features/pengajuan/presentation/screens/detail_perbarui_dokumen_screen.dart';
+import '../../features/pengajuan/presentation/screens/jadwal_survey_screen.dart';
+import '../../features/pengajuan/presentation/screens/perbarui_berkas_screen.dart';
+import '../../features/pengajuan/presentation/screens/status_perbaikan_berkas_screen.dart';
+import '../../features/pengajuan/presentation/screens/unduh_sk_ba_screen.dart';
+import '../../features/pengajuan/presentation/screens/template_berkas_screen.dart';
+import '../../features/bantuan/presentation/screens/pusat_bantuan_screen.dart';
+import '../../features/profil/presentation/screens/tentang_aplikasi_screen.dart';
 import '../auth/role_session.dart';
 import 'route_policy.dart';
 import '../widgets/route_feedback.dart';
@@ -34,7 +43,6 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(refresh.dispose);
 
   return GoRouter(
-    // Clean startup intentionally walks Splash -> Onboarding -> Login.
     initialLocation: '/splash',
     refreshListenable: refresh,
     redirect: (context, state) {
@@ -64,13 +72,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', redirect: (_, __) => '/splash'),
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(
-        path: '/onboarding',
-        builder: (_, __) => const OnboardingScreen(),
-      ),
+      GoRoute(path: '/onboarding', redirect: (_, __) => '/login'),
       GoRoute(
         path: '/dashboard',
-        builder: (_, state) => _withNotice(state, const DashboardScreen()),
+        pageBuilder: (context, state) => NoTransitionPage<void>(
+          key: state.pageKey,
+          child: _withNotice(state, const DashboardScreen()),
+        ),
       ),
       GoRoute(
         path: '/admin',
@@ -104,13 +112,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/monitoring/lapangan',
-        builder: (_, state) =>
-            _withNotice(state, const MonitoringMainScreen(initialIndex: 0)),
+        pageBuilder: (context, state) => CustomTransitionPage<void>(
+          key: state.pageKey,
+          transitionDuration: const Duration(milliseconds: 260),
+          reverseTransitionDuration: Duration.zero,
+          child: _withNotice(
+            state,
+            const MonitoringMainScreen(initialIndex: 0),
+          ),
+          // Memudar dari layar sebelumnya (mis. login) agar tidak terasa
+          // terpotong.
+          transitionsBuilder: (context, animation, secondary, child) =>
+              FadeTransition(
+                opacity: CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOut,
+                ),
+                child: child,
+              ),
+        ),
       ),
       GoRoute(
         path: '/monitoring/lapangan/riwayat',
-        builder: (_, state) =>
-            _withNotice(state, const MonitoringMainScreen(initialIndex: 1)),
+        builder: (context, __) => MonitoringListScreen(
+          showBottomNav: false,
+          onBack: () => context.canPop()
+              ? context.pop()
+              : context.go('/monitoring/lapangan'),
+        ),
       ),
       GoRoute(
         path: '/monitoring/lapangan/profil',
@@ -245,6 +274,70 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: '/pengajuan/detail/:id',
         builder: (_, state) =>
             PengajuanDetailScreen(id: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: '/pengajuan/perbarui-berkas/:id',
+        builder: (_, state) =>
+            PerbaruiBerkasScreen(id: state.pathParameters['id'] ?? ''),
+      ),
+      GoRoute(
+        path: '/pengajuan/perbarui-berkas/:id/dokumen/:docKey',
+        // Tanpa data dokumen layar ini hanya menampilkan contoh prototipe,
+        // jadi akses langsung dialihkan ke daftar dokumen pengajuan.
+        redirect: (_, state) => state.extra == null
+            ? '/pengajuan/perbarui-berkas/${state.pathParameters['id'] ?? ''}'
+            : null,
+        builder: (_, state) {
+          final id = state.pathParameters['id'] ?? 'REG-2026-0142';
+          final docKey = state.pathParameters['docKey'] ?? 'ktp';
+          final extra = state.extra as Map<String, dynamic>?;
+          return DetailPerbaruiDokumenScreen(
+            pengajuanId: id,
+            docKey: docKey,
+            docData: extra,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/pengajuan/perbarui-berkas',
+        builder: (_, state) {
+          final id = (state.extra as String?) ?? 'REG-2026-0142';
+          return PerbaruiBerkasScreen(id: id);
+        },
+      ),
+      GoRoute(
+        path: '/pengajuan/status-perbaikan/:id',
+        builder: (_, state) {
+          final id = state.pathParameters['id'] ?? 'REG-2026-0142';
+          return StatusPerbaikanBerkasScreen(pengajuanId: id);
+        },
+      ),
+      GoRoute(
+        path: '/jadwal-survey',
+        builder: (_, state) =>
+            _withNotice(state, const JadwalSurveyScreen()),
+      ),
+      GoRoute(
+        path: '/unduh-sk-ba',
+        builder: (_, state) => _withNotice(
+          state,
+          UnduhSkBaScreen(focusId: state.uri.queryParameters['id']),
+        ),
+      ),
+      GoRoute(
+        path: '/template-berkas',
+        builder: (_, state) =>
+            _withNotice(state, const TemplateBerkasScreen()),
+      ),
+      GoRoute(
+        path: '/bantuan',
+        builder: (_, state) =>
+            _withNotice(state, const PusatBantuanScreen()),
+      ),
+      GoRoute(
+        path: '/tentang',
+        builder: (_, state) =>
+            _withNotice(state, const TentangAplikasiScreen()),
       ),
     ],
   );

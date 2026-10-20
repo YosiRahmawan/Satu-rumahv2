@@ -1,32 +1,22 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
-import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_header.dart';
-import '../../../../core/widgets/data_state_view.dart';
-import '../../../../core/widgets/prototype_data_banner.dart';
-import '../../../../core/widgets/status_badge.dart';
-import '../../../notifikasi/data/models/notifikasi_model.dart';
-import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
-import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
+import '../../../../core/widgets/developer_header.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
-import '../../../../core/widgets/route_feedback.dart';
+import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
+import '../../../pengajuan/presentation/screens/jadwal_survey_screen.dart';
+import '../../../pengajuan/presentation/widgets/pengajuan_draft_ui.dart';
+import '../../../pengajuan/presentation/widgets/pengajuan_list_card.dart';
+import '../../../pengajuan/presentation/screens/unduh_sk_ba_screen.dart';
+import '../../../pengajuan/presentation/screens/template_berkas_screen.dart';
+import '../../../bantuan/presentation/screens/pusat_bantuan_screen.dart';
 import '../providers/dashboard_provider.dart';
 
 Pengajuan? latestPengajuan(List<Pengajuan> submissions) {
   return submissions.isEmpty ? null : submissions.first;
 }
-
-final dashboardPengajuanAsyncProvider = FutureProvider<List<Pengajuan>>((
-  ref,
-) async {
-  final submissions = ref.watch(pengajuanListProvider);
-  await Future<void>.delayed(Duration.zero);
-  return submissions;
-});
 
 int? dashboardShortcutTab(String title) {
   switch (title) {
@@ -46,377 +36,706 @@ int? dashboardShortcutTab(String title) {
 class TabBeranda extends ConsumerWidget {
   const TabBeranda({super.key});
 
-  void _quickDemo(BuildContext context, WidgetRef ref) {
-    // Isi semua data dummy sekaligus
-    ref.read(pengajuanFormProvider.notifier).fillDummyData();
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final list = ref.watch(pengajuanListProvider);
+    final lastSubmission = latestPengajuan(list);
 
-    final formState = ref.read(pengajuanFormProvider);
-    final randomNum = Random().nextInt(900) + 100;
-    final newId = 'SR-20260720-$randomNum';
+    final session = ref.watch(roleSessionProvider);
+    final String? avatarInitials = (session.username != null && session.username!.trim().isNotEmpty)
+        ? (session.username!.trim().length >= 2
+            ? session.username!.trim().substring(0, 2).toUpperCase()
+            : session.username!.trim().toUpperCase())
+        : null;
 
-    final newPengajuan = Pengajuan(
-      id: newId,
-      namaPerumahan: formState.namaPerumahan,
-      namaPt: 'PT. Tasik Indah Sentosa',
-      namaDirektur: 'H. Tatang Sutisna',
-      npwpPerusahaan: formState.npwpPerusahaan,
-      luasLahan: formState.luasLahan,
-      jumlahUnit: formState.jumlahUnit,
-      tipePerumahan: formState.tipePerumahan,
-      status: 'Dalam Proses',
-      tanggal: '20 Juli 2026',
-      uploadedDocs: formState.uploadedDocs,
+    return Scaffold(
+      backgroundColor: AppColors.backgroundCanvas,
+      body: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // 1. HEADER MERAH (Scrolls naturally with content)
+            DeveloperHeader(
+              brandTitle: 'Satu Rumah',
+              avatarLabel: avatarInitials ?? 'YR',
+              showOnlineIndicator: true,
+              avatarTooltip: 'Buka profil',
+              onAvatarTap: () =>
+                  ref.read(dashboardTabProvider.notifier).state = 3,
+              bottomPadding: 24.0,
+            ),
+
+            // 2. GAP 16dp antara header dan card identitas
+            const SizedBox(height: 16),
+
+            // 3. CARD IDENTITAS PENGEMBANG
+            const _DeveloperIdentityCard(),
+
+            const SizedBox(height: 8),
+
+            // 3b. Draf pengajuan yang belum dikirim (bila ada)
+            const PengajuanDraftCard(),
+
+            // 4. CARD "PENGAJUAN TERAKHIR"
+            _PengajuanTerakhirCard(submission: lastSubmission),
+
+            const SizedBox(height: 20),
+
+            // 5. SECTION "MENU LAYANAN PENGEMBANG"
+            const _MenuLayananPengembangSection(),
+
+            // Bottom padding for docked FAB & bar
+            const SizedBox(height: 96),
+          ],
+        ),
+      ),
     );
+  }
+}
 
-    ref.read(pengajuanListProvider.notifier).addPengajuan(newPengajuan);
+/// 2. CARD IDENTITAS PENGEMBANG
+class _DeveloperIdentityCard extends StatelessWidget {
+  const _DeveloperIdentityCard();
 
-    // Tambah notifikasi otomatis
-    ref
-        .read(notifikasiProvider.notifier)
-        .addNotification(
-          NotifikasiModel(
-            id: 'notif-$newId',
-            jenis: JenisNotifikasi.pengajuanBaru,
-            judul: 'Pengajuan Berhasil Dikirim',
-            deskripsi:
-                'Pengajuan "${formState.namaPerumahan}" ($newId) telah diterima dan sedang dalam proses verifikasi administrasi.',
-            waktu: DateTime.now(),
-            targetRoute: '/pengajuan/detail/$newId',
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderSubtle, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+          child: Row(
+            children: [
+              // Icon gedung pada box merah muda
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFFFEE2E2),
+                    width: 0.8,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.apartment_rounded,
+                  color: AppColors.primaryRed,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Nama & ID
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'PT. Tasik Indah Sentosa',
+                      style: TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textMain,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: 3),
+                    Text(
+                      'ID Pengembang: Dev-2026-082',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Badge Terverifikasi
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFECFDF5),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFFA7F3D0),
+                    width: 1,
+                  ),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.verified_outlined,
+                      color: Color(0xFF059669),
+                      size: 14,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      'Terverifikasi',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF059669),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        );
-
-    ref.read(pengajuanFormProvider.notifier).reset();
-
-    context.push('/pengajuan/success', extra: newId);
-  }
-
-  void _handleShortcut(BuildContext context, WidgetRef ref, String title) {
-    final tab = dashboardShortcutTab(title);
-    if (tab == null) {
-      showUnavailableAction(context, title);
-      return;
+        ),
+      );
     }
-    ref.read(dashboardTabProvider.notifier).state = tab;
+}
+
+/// 3. CARD "PENGAJUAN TERAKHIR"
+class _PengajuanTerakhirCard extends StatelessWidget {
+  final Pengajuan? submission;
+
+  const _PengajuanTerakhirCard({this.submission});
+
+  @override
+  Widget build(BuildContext context) {
+    final item = submission;
+    if (item == null) return const _BelumAdaPengajuanCard();
+
+    final step = PengajuanListCard.stepInfoOf(item.statusTahap);
+    return PengajuanTerakhirCard(
+      projectName: item.namaPerumahan.isNotEmpty ? item.namaPerumahan : item.id,
+      regNumber: item.id.startsWith('REG') ? item.id : 'REG - ${item.id}',
+      statusLabel: PengajuanListCard.statusLabelOf(item),
+      tahapLabel: step.$3,
+      step: step.$1,
+      totalSteps: step.$2,
+      progress: step.$4,
+      onTap: () => context.push('/pengajuan/detail/${item.id}'),
+    );
   }
+}
+
+/// Tampil saat akun belum punya pengajuan, bukan data contoh.
+class _BelumAdaPengajuanCard extends ConsumerWidget {
+  const _BelumAdaPengajuanCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final submissionsState = ref.watch(dashboardPengajuanAsyncProvider);
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppHeader(
-        title: 'SATU RUMAH',
-        actions: [
-          TextButton.icon(
-            onPressed: () => _quickDemo(context, ref),
-            icon: const Icon(
-              Icons.bolt,
-              color: AppColors.actionPrimary,
-              size: 18,
-            ),
-            label: Text(
-              'Demo Cepat',
-              style: AppTextStyles.labelSmall.copyWith(
-                color: AppColors.actionPrimary,
-                fontWeight: FontWeight.bold,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderSubtle, width: 1),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'PENGAJUAN TERAKHIR',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.6,
               ),
             ),
-          ),
-        ],
-      ),
-      body: submissionsState.when(
-        loading: () => const DataStateView.loading(),
-        error: (error, stack) => DataStateView.error(
-          onAction: () => ref.invalidate(dashboardPengajuanAsyncProvider),
+            const SizedBox(height: 8),
+            const Text(
+              'Belum ada pengajuan',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMain,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'Pengajuan yang Anda kirim akan tampil di sini.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 14),
+            Material(
+              color: AppColors.primarySurfaceSoft,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: () => mulaiPengajuanBaru(context, ref),
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: Text(
+                      'Buat pengajuan',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryRed,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        data: (list) {
-          final lastSubmission = latestPengajuan(list);
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Greeting
-                Row(
-                  children: [
-                    const CircleAvatar(
-                      backgroundColor: AppColors.champagneToast,
-                      child: Icon(
-                        Icons.business,
-                        color: AppColors.cocoaBeanRoast,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Halo, Pengembang!',
-                            style: AppTextStyles.bodySmall.copyWith(
-                              color: AppColors.textMuted,
-                            ),
-                          ),
-                          const Text(
-                            'PT. Tasik Indah Sentosa',
-                            style: AppTextStyles.headlineMedium,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const PrototypeDataBanner(),
-                const SizedBox(height: 20),
+      ),
+    );
+  }
+}
 
-                // Last Submission Card
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: lastSubmission == null
-                        ? _buildEmptySubmissionContent(context, ref)
-                        : _buildLatestSubmissionContent(
-                            context,
-                            lastSubmission,
-                          ),
+/// Kartu "Pengajuan Terakhir" bersama (Beranda dan preview login).
+class PengajuanTerakhirCard extends StatelessWidget {
+  final String projectName;
+  final String regNumber;
+  final String statusLabel;
+  final String tahapLabel;
+  final int step;
+  final int totalSteps;
+  final double progress;
+  final VoidCallback? onTap;
+
+  const PengajuanTerakhirCard({
+    super.key,
+    required this.projectName,
+    required this.regNumber,
+    this.statusLabel = 'Dalam Proses',
+    this.tahapLabel = 'Verifikasi Administrasi',
+    this.step = 2,
+    this.totalSteps = 4,
+    this.progress = 0.5,
+    this.onTap,
+  });
+
+  /// Warna chip status: kuning proses, merah perlu perbaikan, hijau selesai.
+  (Color, Color, Color) get _statusColors {
+    switch (statusLabel) {
+      case 'Perlu Perbaikan':
+        return (
+          AppColors.statusUrgentSurface,
+          AppColors.statusUrgentText,
+          const Color(0xFFFECACA),
+        );
+      case 'Disetujui':
+        return (
+          AppColors.statusSuccessSurface,
+          AppColors.statusSuccessText,
+          const Color(0xFFBBF7D0),
+        );
+      default:
+        return (
+          AppColors.statusWarningSurface,
+          AppColors.statusWarningText,
+          const Color(0xFFFDE68A),
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderSubtle, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: _statusColors.$1,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: _statusColors.$3),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.circle, size: 6, color: _statusColors.$2),
+                  const SizedBox(width: 6),
+                  Text(
+                    statusLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: _statusColors.$2,
+                    ),
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'PENGAJUAN TERAKHIR',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              projectName,
+              style: const TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMain,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              regNumber,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 11.5,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Tahap: $tahapLabel (Langkah $step dari $totalSteps)',
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Progres kelengkapan (${(progress * 100).round()}%)',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMain,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                backgroundColor: const Color(0xFFF1F5F9),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                  AppColors.primaryRed,
                 ),
-                const SizedBox(height: 20),
-
-                // Add Submission Button
-                InkWell(
-                  onTap: () {
-                    ref.read(pengajuanFormProvider.notifier).reset();
-                    context.push('/pengajuan/step1');
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 24,
-                      horizontal: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.actionPrimary,
-                      borderRadius: AppRadii.card,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.add_circle_outline,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Buat Pengajuan Baru',
-                          style: AppTextStyles.titleMedium.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Grid Shortcut
-                const Text('Menu Pintasan', style: AppTextStyles.headlineSmall),
-                const SizedBox(height: 12),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.5,
-                  children: [
-                    _buildShortcutCard(
-                      Icons.list_alt,
-                      'Pengajuan Saya',
-                      () => _handleShortcut(context, ref, 'Pengajuan Saya'),
-                    ),
-                    _buildShortcutCard(
-                      Icons.notifications_active,
-                      'Notifikasi',
-                      () => _handleShortcut(context, ref, 'Notifikasi'),
-                    ),
-                    _buildShortcutCard(
-                      Icons.download,
-                      'Format Dokumen',
-                      null,
-                      disabled: true,
-                    ),
-                    _buildShortcutCard(
-                      Icons.person_pin,
-                      'Profil Saya',
-                      () => _handleShortcut(context, ref, 'Profil Saya'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // System Banner Info
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.champagneToast.withValues(alpha: 0.4),
-                    borderRadius: AppRadii.control,
-                    border: Border.all(color: AppColors.champagneToast),
-                  ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Material(
+              color: AppColors.primarySurfaceSoft,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(12),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
                   child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.info, color: AppColors.cocoaBeanRoast),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'PEMBERITAHUAN:\nSistem akan mengalami pemeliharaan rutin pada 25 Juli 2026 pukul 23:00 WIB.',
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.cocoaBeanRoast,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      Icon(
+                        Icons.description_outlined,
+                        size: 16,
+                        color: AppColors.primaryRed,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Cek Detail',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryRed,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
-          );
-        },
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildEmptySubmissionContent(BuildContext context, WidgetRef ref) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Belum ada pengajuan', style: AppTextStyles.titleMedium),
-        const SizedBox(height: 8),
-        Text(
-          'Mulai pengajuan site plan Anda untuk melihat statusnya di sini.',
-          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
-        ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: () {
-              ref.read(pengajuanFormProvider.notifier).reset();
-              context.push('/pengajuan/step1');
-            },
-            icon: const Icon(Icons.add, color: AppColors.actionPrimary),
-            label: const Text('Buat Pengajuan'),
-          ),
-        ),
-      ],
-    );
-  }
+/// 4. SECTION "MENU LAYANAN PENGEMBANG"
+class _MenuLayananPengembangSection extends ConsumerWidget {
+  const _MenuLayananPengembangSection();
 
-  Widget _buildLatestSubmissionContent(
-    BuildContext context,
-    Pengajuan submission,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Pengajuan Terakhir', style: AppTextStyles.titleMedium),
-            StatusBadge(status: submission.status),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Text(submission.namaPerumahan, style: AppTextStyles.headlineSmall),
-        const SizedBox(height: 4),
-        Text(
-          'Tahap: Verifikasi Administrasi',
-          style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: LinearProgressIndicator(
-                value: submission.status == 'Selesai' ? 1.0 : 0.4,
-                backgroundColor: AppColors.grey200,
-                color: AppColors.chilliDust,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              submission.status == 'Selesai' ? '100%' : '40%',
-              style: AppTextStyles.labelSmall,
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        InkWell(
-          onTap: () => context.push('/pengajuan/detail/${submission.id}'),
-          child: Text(
-            'Lihat Detail',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: AppColors.actionPrimary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildShortcutCard(
-    IconData icon,
-    String title,
-    VoidCallback? onTap, {
-    bool disabled = false,
-  }) {
-    return Semantics(
-      button: true,
-      enabled: !disabled,
-      label: disabled ? '$title, segera hadir' : title,
-      child: Card(
-        color: disabled ? AppColors.surfaceSubtle : Colors.white,
-        child: InkWell(
-          onTap: disabled ? null : onTap,
-          borderRadius: AppRadii.card,
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  icon,
-                  color: disabled
-                      ? AppColors.textMuted
-                      : AppColors.actionPrimary,
-                  size: 28,
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Menu Layanan Pengembang',
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0F172A),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: AppTextStyles.titleSmall.copyWith(
-                    color: disabled
-                        ? AppColors.textMuted
-                        : AppColors.textPrimary,
-                    fontWeight: FontWeight.bold,
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  '4 Layanan',
+                  style: TextStyle(
+                    fontFamily: 'Plus Jakarta Sans',
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF64748B),
                   ),
                 ),
-                if (disabled) ...[
-                  const SizedBox(height: 4),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Grid 2 Kolom (Row 1)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _MenuLayananCard(
+                    icon: Icons.description_outlined,
+                    title: 'Template Berkas',
+                    subtitle: 'Download 16 slot berkas resmi',
+                    onTap: () {
+                      try {
+                        context.push('/template-berkas');
+                      } catch (_) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const TemplateBerkasScreen(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MenuLayananCard(
+                    icon: Icons.calendar_today_outlined,
+                    title: 'Jadwal Survey',
+                    subtitle: 'Jadwal aktif & petugas Perwaskim',
+                    onTap: () {
+                      try {
+                        context.push('/jadwal-survey');
+                      } catch (_) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const JadwalSurveyScreen(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Grid 2 Kolom (Row 2)
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _MenuLayananCard(
+                    icon: Icons.file_download_outlined,
+                    title: 'Unduh SK & BA',
+                    subtitle: 'File persetujuan PDF resmi',
+                    onTap: () {
+                      try {
+                        context.push('/unduh-sk-ba');
+                      } catch (_) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const UnduhSkBaScreen(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _MenuLayananCard(
+                    icon: Icons.help_outline_rounded,
+                    title: 'Pusat Bantuan',
+                    subtitle: 'Panduan dan kontak layanan',
+                    onTap: () {
+                      try {
+                        context.push('/bantuan');
+                      } catch (_) {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const PusatBantuanScreen(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuLayananCard extends StatefulWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _MenuLayananCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  State<_MenuLayananCard> createState() => _MenuLayananCardState();
+}
+
+class _MenuLayananCardState extends State<_MenuLayananCard> {
+  bool _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _isPressed ? 0.98 : 1.0,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeInOut,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 162),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: const Color(0xFFE2E8F0),
+            width: 1,
+          ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color.fromRGBO(15, 23, 42, 0.04),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            onHighlightChanged: (highlighted) {
+              setState(() {
+                _isPressed = highlighted;
+              });
+            },
+            borderRadius: BorderRadius.circular(16),
+            splashColor: const Color(0xFFB91C1C).withValues(alpha: 0.08),
+            highlightColor: const Color(0xFFF1F5F9).withValues(alpha: 0.6),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  // Icon container 52x52
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFEF2F2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      widget.icon,
+                      color: const Color(0xFFB91C1C),
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Title
                   Text(
-                    'Segera hadir',
-                    style: AppTextStyles.labelSmall.copyWith(
-                      color: AppColors.textMuted,
+                    widget.title,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF0F172A),
+                      height: 1.25,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  // Subtitle / Description
+                  Text(
+                    widget.subtitle,
+                    style: const TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: Color(0xFF64748B),
+                      height: 1.35,
                     ),
                   ),
                 ],
-              ],
+              ),
             ),
           ),
         ),

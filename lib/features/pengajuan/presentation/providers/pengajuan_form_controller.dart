@@ -1,33 +1,257 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../core/auth/role_session.dart';
 import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
+import '../../data/repositories/pengajuan_draft_store.dart';
+
+/// One source of truth for the current Fase 3 document form.
+class PengajuanStep3DocumentConfig {
+  const PengajuanStep3DocumentConfig({
+    required this.number,
+    required this.key,
+    required this.label,
+    required this.actionLabel,
+    this.description,
+    this.isOptional = false,
+    this.allowsMultiple = false,
+    this.maxBytes = 10 * 1024 * 1024,
+  });
+
+  final String number;
+  final String key;
+  final String label;
+  final String actionLabel;
+  final String? description;
+  final bool isOptional;
+  final bool allowsMultiple;
+  final int maxBytes;
+}
+
+/// Canonical document contract shared by Step 3 rendering/validation and Review.
+class PengajuanStep2DocumentContract {
+  static const slots = <({String key, String label})>[
+    (key: 'ktp', label: 'KTP Pemohon'),
+    (key: 'nib', label: 'NIB Perusahaan'),
+    (key: 'npwp_doc', label: 'NPWP Perusahaan'),
+    (key: 'asosiasi', label: 'Keanggotaan Asosiasi'),
+    (key: 'legalitas', label: 'Legalitas Akta'),
+  ];
+}
+
+class PengajuanStep3DocumentContract {
+  static const slots = <PengajuanStep3DocumentConfig>[
+    PengajuanStep3DocumentConfig(
+      number: '1',
+      key: 'surat_permohonan',
+      label: 'Surat Permohonan Persetujuan Site Plan',
+      actionLabel: 'Unggah Dokumen Permohonan',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '2',
+      key: 'info_intensitas_ruang',
+      label: 'Informasi Intensitas Pemanfaatan Ruang (IPR / KRK)',
+      actionLabel: 'Unggah Dokumen IPR / KRK',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '3',
+      key: 'bukti_kepemilikan_lahan',
+      label: 'Bukti Kepemilikan Lahan / Sertifikat Induk a.n. PT',
+      actionLabel: 'Unggah Bukti Kepemilikan Lahan',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '4',
+      key: 'bukti_tpu',
+      label: 'Bukti Penyediaan Lahan TPU Perumahan',
+      actionLabel: 'Unggah Dokumen TPU (PDF)',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '5',
+      key: 'rekomendasi_lingkungan',
+      label: 'Rekomendasi Teknis dari Dinas Terkait',
+      actionLabel: 'Tambah File Rekomendasi',
+      description:
+          'Meliputi dokumen AMDAL/UKL-UPL, rekomendasi drainase dan teknis tapak.',
+      allowsMultiple: true,
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '6',
+      key: 'andalalin',
+      label: 'Persetujuan ANDALALIN / Dishub',
+      actionLabel: 'Unggah Dokumen ANDALALIN',
+      description:
+          'Surat pertimbangan dampak lalu lintas ruas jalan perkotaan.',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '7',
+      key: 'rekomendasi_air_bersih',
+      label: 'Rekomendasi Air Bersih (PDAM / Surat Izin)',
+      actionLabel: 'Unggah Berkas PDAM',
+      description:
+          'Kapasitas sambungan atau izin pengelolaan air tanah mandiri.',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '8',
+      key: 'rekomendasi_listrik',
+      label: 'Rekomendasi Listrik PLN',
+      actionLabel: 'Unggah Surat Rekomendasi PLN',
+      description: 'Surat ketersediaan daya dan jaringan gardu perumahan.',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '9',
+      key: 'pernyataan_psu',
+      label: 'Surat Pernyataan Kesanggupan Penyerahan PSU',
+      actionLabel: 'Unggah Akta Notaris PSU',
+      description:
+          'Akta notariil kesanggupan penyerahan prasarana dan utilitas umum.',
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '10',
+      key: 'penanggung_jawab_teknis',
+      label: 'Data Penanggung Jawab Dokumen Teknis',
+      actionLabel: 'Unggah Data Tenaga Ahli',
+      description: 'SKA/SKK Tenaga Ahli Arsitektur/Perencana Wilayah.',
+      isOptional: true,
+    ),
+    PengajuanStep3DocumentConfig(
+      number: '11',
+      key: 'proposal_pembangunan',
+      label: 'Proposal Rencana Pembangunan Ditandatangani Direktur',
+      actionLabel: 'Unggah Proposal Direktur (PDF)',
+      description:
+          'Rencana tahapan pembangunan, spesifikasi tipe, dan jadwal kerja.',
+    ),
+  ];
+
+  static List<String> get allKeys =>
+      slots.map((slot) => slot.key).toList(growable: false);
+
+  static List<String> get requiredKeys => slots
+      .where((slot) => !slot.isOptional)
+      .map((slot) => slot.key)
+      .toList(growable: false);
+}
 
 class PengajuanFormState {
+  static const String technicalOtherDocumentsKey = 'kajian_teknis';
+
+  final String tipePengajuan;
   final String namaPerumahan;
+  final String alamatProyek;
   final String npwpPerusahaan;
+  final bool npwpVerified;
   final double luasLahan;
   final int jumlahUnit;
   final String tipePerumahan;
+
+  /// Opsional: paket daya PLN per unit, kosong bila tidak dipilih.
+  final String dayaListrik;
   final Map<String, String> uploadedDocs;
+
+  /// File references for slots that support more than one local attachment.
+  /// The legacy [uploadedDocs] map remains the first-file reference used by
+  /// existing phases and downstream review screens.
+  final Map<String, List<String>> multiUploadedDocs;
   final List<String> technicalFiles;
   final Set<String> selectedCakupanGambar;
   final bool isAgreed;
 
+  List<String> get technicalOtherFiles => List.unmodifiable(
+    multiUploadedDocs[technicalOtherDocumentsKey] ?? const <String>[],
+  );
+
   PengajuanFormState({
+    this.tipePengajuan = 'Pengajuan Site Plan Baru',
     this.namaPerumahan = '',
+    this.alamatProyek = '',
     this.npwpPerusahaan = '',
+    this.npwpVerified = false,
     this.luasLahan = 0.0,
     this.jumlahUnit = 0,
     this.tipePerumahan = 'Subsidi',
+    this.dayaListrik = '',
     this.uploadedDocs = const {},
+    this.multiUploadedDocs = const {},
     this.technicalFiles = const [],
     this.selectedCakupanGambar = const {},
     this.isAgreed = false,
   });
 
+  /// Draf dipulihkan dari JSON. Pernyataan persetujuan sengaja tidak
+  /// dipulihkan: pengembang harus mengonfirmasinya lagi sebelum kirim.
+  factory PengajuanFormState.fromJson(Map<String, dynamic> json) {
+    Map<String, String> strings(Object? v) => (v as Map? ?? const {}).map(
+      (key, value) => MapEntry(key as String, value as String),
+    );
+    List<String> list(Object? v) =>
+        (v as List? ?? const []).map((e) => e as String).toList();
+
+    return PengajuanFormState(
+      tipePengajuan:
+          json['tipePengajuan'] as String? ?? 'Pengajuan Site Plan Baru',
+      namaPerumahan: json['namaPerumahan'] as String? ?? '',
+      alamatProyek: json['alamatProyek'] as String? ?? '',
+      npwpPerusahaan: json['npwpPerusahaan'] as String? ?? '',
+      npwpVerified: json['npwpVerified'] as bool? ?? false,
+      luasLahan: (json['luasLahan'] as num? ?? 0).toDouble(),
+      jumlahUnit: (json['jumlahUnit'] as num? ?? 0).toInt(),
+      tipePerumahan: json['tipePerumahan'] as String? ?? 'Subsidi',
+      dayaListrik: json['dayaListrik'] as String? ?? '',
+      uploadedDocs: strings(json['uploadedDocs']),
+      multiUploadedDocs: (json['multiUploadedDocs'] as Map? ?? const {}).map(
+        (key, value) => MapEntry(key as String, list(value)),
+      ),
+      technicalFiles: list(json['technicalFiles']),
+      selectedCakupanGambar: list(json['selectedCakupanGambar']).toSet(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'tipePengajuan': tipePengajuan,
+    'namaPerumahan': namaPerumahan,
+    'alamatProyek': alamatProyek,
+    'npwpPerusahaan': npwpPerusahaan,
+    'npwpVerified': npwpVerified,
+    'luasLahan': luasLahan,
+    'jumlahUnit': jumlahUnit,
+    'tipePerumahan': tipePerumahan,
+    'dayaListrik': dayaListrik,
+    'uploadedDocs': uploadedDocs,
+    'multiUploadedDocs': multiUploadedDocs,
+    'technicalFiles': technicalFiles,
+    'selectedCakupanGambar': selectedCakupanGambar.toList(),
+  };
+
+  /// True bila ada isian yang layak disimpan sebagai draf.
+  bool get hasContent =>
+      namaPerumahan.trim().isNotEmpty ||
+      alamatProyek.trim().isNotEmpty ||
+      npwpPerusahaan.trim().isNotEmpty ||
+      luasLahan > 0 ||
+      jumlahUnit > 0 ||
+      dayaListrik.isNotEmpty ||
+      uploadedDocs.isNotEmpty ||
+      multiUploadedDocs.isNotEmpty ||
+      technicalFiles.isNotEmpty ||
+      selectedCakupanGambar.isNotEmpty;
+
+  /// Langkah pertama yang belum lengkap, tujuan saat melanjutkan draf.
+  String get resumeRoute {
+    if (!isStep1Valid || !npwpVerified) return '/pengajuan/step1';
+    if (!isStep2Valid) return '/pengajuan/step2';
+    if (!isStep3Valid) return '/pengajuan/step3';
+    if (!isStep4Valid) return '/pengajuan/step4';
+    return '/pengajuan/step5';
+  }
+
   bool get isStep1Valid =>
+      tipePengajuan.trim().isNotEmpty &&
       namaPerumahan.trim().isNotEmpty &&
+      alamatProyek.trim().isNotEmpty &&
       npwpPerusahaan.trim().isNotEmpty &&
       luasLahan.isFinite &&
       luasLahan > 0 &&
@@ -41,16 +265,7 @@ class PengajuanFormState {
       _hasDocument('legalitas');
 
   bool get isStep3Valid =>
-      _hasDocument('surat_permohonan') &&
-      _hasDocument('info_intensitas_ruang') &&
-      _hasDocument('bukti_kepemilikan_lahan') &&
-      _hasDocument('bukti_tpu') &&
-      _hasDocument('kkpr_doc') &&
-      _hasDocument('pbg_induk') &&
-      _hasDocument('rekomendasi_lingkungan') &&
-      _hasDocument('pernyataan_pelepasan') &&
-      _hasDocument('pernyataan_keabsahan') &&
-      _hasDocument('pernyataan_psu');
+      PengajuanStep3DocumentContract.requiredKeys.every(_hasDocument);
 
   bool get isStep4Valid =>
       _hasDocument('site_plan_dwg') ||
@@ -62,23 +277,37 @@ class PengajuanFormState {
   bool _hasDocument(String key) => uploadedDocs[key]?.trim().isNotEmpty == true;
 
   PengajuanFormState copyWith({
+    String? tipePengajuan,
     String? namaPerumahan,
+    String? alamatProyek,
     String? npwpPerusahaan,
+    bool? npwpVerified,
     double? luasLahan,
     int? jumlahUnit,
     String? tipePerumahan,
+    String? dayaListrik,
     Map<String, String>? uploadedDocs,
+    Map<String, List<String>>? multiUploadedDocs,
     List<String>? technicalFiles,
     Set<String>? selectedCakupanGambar,
     bool? isAgreed,
   }) {
     return PengajuanFormState(
+      tipePengajuan: tipePengajuan ?? this.tipePengajuan,
       namaPerumahan: namaPerumahan ?? this.namaPerumahan,
+      alamatProyek: alamatProyek ?? this.alamatProyek,
       npwpPerusahaan: npwpPerusahaan ?? this.npwpPerusahaan,
+      npwpVerified: npwpVerified ?? this.npwpVerified,
       luasLahan: luasLahan ?? this.luasLahan,
       jumlahUnit: jumlahUnit ?? this.jumlahUnit,
       tipePerumahan: tipePerumahan ?? this.tipePerumahan,
+      dayaListrik: dayaListrik ?? this.dayaListrik,
       uploadedDocs: uploadedDocs ?? Map.from(this.uploadedDocs),
+      multiUploadedDocs:
+          multiUploadedDocs ??
+          this.multiUploadedDocs.map(
+            (key, value) => MapEntry(key, List<String>.from(value)),
+          ),
       technicalFiles: technicalFiles ?? List.from(this.technicalFiles),
       selectedCakupanGambar:
           selectedCakupanGambar ?? Set.from(this.selectedCakupanGambar),
@@ -87,30 +316,222 @@ class PengajuanFormState {
   }
 }
 
-class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
-  PengajuanFormNotifier() : super(PengajuanFormState());
+enum DraftSaveResult { saved, empty, failed }
 
-  void updateNamaPerumahan(String value) =>
-      state = state.copyWith(namaPerumahan: value);
-  void updateNpwp(String value) =>
-      state = state.copyWith(npwpPerusahaan: value);
-  void updateLuasLahan(double value) =>
-      state = state.copyWith(luasLahan: value);
-  void updateJumlahUnit(int value) => state = state.copyWith(jumlahUnit: value);
-  void updateTipe(String value) => state = state.copyWith(tipePerumahan: value);
+/// Ringkasan draf tersimpan untuk ditampilkan di kartu draf.
+class PengajuanDraftInfo {
+  const PengajuanDraftInfo({required this.nama, required this.savedAt});
+
+  /// Nama kawasan pada draf; kosong bila belum diisi.
+  final String nama;
+  final DateTime savedAt;
+}
+
+class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
+  /// Tanpa [store], form hanya hidup di memori (dipakai test dan prototipe).
+  PengajuanFormNotifier({this.store, this.owner = 'tamu'})
+    : super(PengajuanFormState()) {
+    unawaited(_loadDraftInfo());
+  }
+
+  final PengajuanDraftStore? store;
+  final String owner;
+  bool _saving = false;
+  bool _dirty = false;
+
+  /// Ada tidaknya draf tersimpan, untuk kartu draf. Null bila tidak ada.
+  final ValueNotifier<PengajuanDraftInfo?> draftInfo =
+      ValueNotifier<PengajuanDraftInfo?>(null);
+
+  /// Waktu draf terakhir tersimpan di perangkat, null bila belum pernah.
+  final ValueNotifier<DateTime?> lastSavedAt = ValueNotifier<DateTime?>(null);
+
+  /// Setiap perubahan form otomatis disimpan sebagai draf.
+  @override
+  set state(PengajuanFormState value) {
+    super.state = value;
+    unawaited(_autosave());
+  }
+
+  Future<void> _autosave() async {
+    if (store == null) return;
+    if (_saving) {
+      _dirty = true;
+      return;
+    }
+    _saving = true;
+    try {
+      do {
+        _dirty = false;
+        if (!mounted) return;
+        await saveDraft();
+      } while (_dirty);
+    } finally {
+      _saving = false;
+    }
+  }
+
+  /// Membaca draf yang sudah ada di perangkat (misalnya dari sesi sebelumnya).
+  Future<void> _loadDraftInfo() async {
+    final draftStore = store;
+    if (draftStore == null) return;
+    try {
+      final json = await draftStore.load(owner);
+      if (json == null || !mounted || draftInfo.value != null) return;
+      draftInfo.value = PengajuanDraftInfo(
+        nama: (json['namaPerumahan'] as String? ?? '').trim(),
+        savedAt:
+            DateTime.tryParse(json['savedAt'] as String? ?? '') ??
+            DateTime.now(),
+      );
+    } catch (_) {
+      // Tanpa info draf, kartu draf tidak tampil; tidak ada yang rusak.
+    }
+  }
+
+  /// Menyimpan draf sekarang dan melaporkan hasilnya.
+  Future<DraftSaveResult> saveDraft() async {
+    final draftStore = store;
+    if (draftStore == null || !state.hasContent) {
+      return DraftSaveResult.empty;
+    }
+    try {
+      final savedAt = DateTime.now();
+      await draftStore.save(owner, {
+        ...state.toJson(),
+        'savedAt': savedAt.toIso8601String(),
+      });
+      if (mounted) {
+        lastSavedAt.value = savedAt;
+        draftInfo.value = PengajuanDraftInfo(
+          nama: state.namaPerumahan.trim(),
+          savedAt: savedAt,
+        );
+      }
+      return DraftSaveResult.saved;
+    } catch (_) {
+      return DraftSaveResult.failed;
+    }
+  }
+
+  Future<bool> hasDraft() async {
+    final draftStore = store;
+    if (draftStore == null) return false;
+    try {
+      return await draftStore.exists(owner);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Memulihkan draf tersimpan ke form. False bila tidak ada atau rusak.
+  Future<bool> restoreDraft() async {
+    final draftStore = store;
+    if (draftStore == null) return false;
+    try {
+      final json = await draftStore.load(owner);
+      if (json == null || !mounted) return false;
+      state = PengajuanFormState.fromJson(json);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  // Setiap updateX mengabaikan nilai yang sama, supaya kursor yang bergerak di
+  // kolom teks tidak dihitung sebagai perubahan form (dan tidak memicu simpan).
+  void updateTipePengajuan(String value) {
+    if (value == state.tipePengajuan) return;
+    state = state.copyWith(tipePengajuan: value);
+  }
+
+  void updateNamaPerumahan(String value) {
+    if (value == state.namaPerumahan) return;
+    state = state.copyWith(namaPerumahan: value);
+  }
+
+  void updateAlamatProyek(String value) {
+    if (value == state.alamatProyek) return;
+    state = state.copyWith(alamatProyek: value);
+  }
+
+  void updateNpwp(String value) {
+    if (value == state.npwpPerusahaan) return;
+    state = state.copyWith(npwpPerusahaan: value, npwpVerified: false);
+  }
+
+  void setNpwpVerified(bool value) {
+    if (value == state.npwpVerified) return;
+    state = state.copyWith(npwpVerified: value);
+  }
+
+  void updateDayaListrik(String value) {
+    if (value == state.dayaListrik) return;
+    state = state.copyWith(dayaListrik: value);
+  }
+
+  void updateLuasLahan(double value) {
+    if (value == state.luasLahan) return;
+    state = state.copyWith(luasLahan: value);
+  }
+
+  void updateJumlahUnit(int value) {
+    if (value == state.jumlahUnit) return;
+    state = state.copyWith(jumlahUnit: value);
+  }
+
+  void updateTipe(String value) {
+    if (value == state.tipePerumahan) return;
+    state = state.copyWith(tipePerumahan: value);
+  }
+
   void toggleAgreement(bool value) => state = state.copyWith(isAgreed: value);
 
   void uploadDocument(String key, String fileName) {
     if (key.trim().isEmpty || fileName.trim().isEmpty) return;
     final updated = Map<String, String>.from(state.uploadedDocs);
     updated[key] = fileName;
-    state = state.copyWith(uploadedDocs: updated);
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    multi[key] = [fileName];
+    state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
+  }
+
+  void uploadDocuments(String key, List<String> fileNames) {
+    if (key.trim().isEmpty) return;
+    final clean = fileNames.where((file) => file.trim().isNotEmpty).toList();
+    if (clean.isEmpty) return;
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    final existing = List<String>.from(multi[key] ?? const <String>[]);
+    for (final file in clean) {
+      if (!existing.contains(file)) existing.add(file);
+    }
+    final updated = Map<String, String>.from(state.uploadedDocs);
+    updated[key] = existing.first;
+    multi[key] = existing;
+    state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
   }
 
   void deleteDocument(String key) {
     final updated = Map<String, String>.from(state.uploadedDocs);
     updated.remove(key);
-    state = state.copyWith(uploadedDocs: updated);
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    multi.remove(key);
+    state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
+  }
+
+  void deleteMultiDocumentFile(String key, String file) {
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    final files = List<String>.from(multi[key] ?? const <String>[]);
+    files.remove(file);
+    final updated = Map<String, String>.from(state.uploadedDocs);
+    if (files.isEmpty) {
+      multi.remove(key);
+      updated.remove(key);
+    } else {
+      multi[key] = files;
+      updated[key] = files.first;
+    }
+    state = state.copyWith(uploadedDocs: updated, multiUploadedDocs: multi);
   }
 
   void addTechnicalFiles(List<String> filePaths) {
@@ -142,6 +563,57 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     state = state.copyWith(technicalFiles: current, uploadedDocs: updatedDocs);
   }
 
+  void replaceTechnicalFile(int index, String newFile) {
+    final current = List<String>.from(state.technicalFiles);
+    if (index >= 0 && index < current.length) {
+      current[index] = newFile;
+    }
+    final updatedDocs = Map<String, String>.from(state.uploadedDocs);
+    if (current.isNotEmpty) {
+      updatedDocs['site_plan_dwg'] = current.first;
+    }
+    state = state.copyWith(technicalFiles: current, uploadedDocs: updatedDocs);
+  }
+
+  void removeTechnicalOtherFile(int index) {
+    const key = PengajuanFormState.technicalOtherDocumentsKey;
+    final current = List<String>.from(
+      state.multiUploadedDocs[key] ?? const <String>[],
+    );
+    if (index < 0 || index >= current.length) return;
+    current.removeAt(index);
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    final uploaded = Map<String, String>.from(state.uploadedDocs);
+    if (current.isEmpty) {
+      multi.remove(key);
+      uploaded.remove(key);
+    } else {
+      multi[key] = current;
+      uploaded[key] = current.first;
+    }
+    state = state.copyWith(
+      uploadedDocs: uploaded,
+      multiUploadedDocs: multi,
+    );
+  }
+
+  void replaceTechnicalOtherFile(int index, String newFile) {
+    const key = PengajuanFormState.technicalOtherDocumentsKey;
+    final current = List<String>.from(
+      state.multiUploadedDocs[key] ?? const <String>[],
+    );
+    if (index < 0 || index >= current.length) return;
+    current[index] = newFile;
+    final multi = Map<String, List<String>>.from(state.multiUploadedDocs);
+    final uploaded = Map<String, String>.from(state.uploadedDocs);
+    multi[key] = current;
+    uploaded[key] = current.first;
+    state = state.copyWith(
+      uploadedDocs: uploaded,
+      multiUploadedDocs: multi,
+    );
+  }
+
   void toggleCakupanGambar(String item) {
     final current = Set<String>.from(state.selectedCakupanGambar);
     if (current.contains(item)) {
@@ -160,13 +632,21 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     state = state.copyWith(selectedCakupanGambar: {});
   }
 
+  /// Mengosongkan form beserta draf tersimpan (setelah kirim atau mulai baru).
   void reset() {
     state = PengajuanFormState();
+    draftInfo.value = null;
+    final store = this.store;
+    if (store != null) {
+      unawaited(store.clear(owner).catchError((Object _) {}));
+    }
   }
 
   void fillDummyData() {
     state = PengajuanFormState(
+      tipePengajuan: 'Pengajuan Site Plan Baru',
       namaPerumahan: 'Green Tasik Residence',
+      alamatProyek: 'Jl. Tamansari KM 4, Kota Tasikmalaya',
       npwpPerusahaan: '12.345.678.9-423.000',
       luasLahan: 15000,
       jumlahUnit: 85,
@@ -184,10 +664,14 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
         'kkpr_doc': 'kesesuaian_tata_ruang_2026.pdf',
         'pbg_induk': 'persetujuan_imb_induk.pdf',
         'rekomendasi_lingkungan': 'rekomendasi_amdal_sppl.pdf',
+        'andalalin': 'andalalin_dishub.pdf',
+        'rekomendasi_air_bersih': 'rekomendasi_pdam.pdf',
+        'rekomendasi_listrik': 'rekomendasi_pln.pdf',
         'pelepasan_lahan': 'rekomendasi_pelepasan_lahan.pdf',
         'pernyataan_pelepasan': 'pernyataan_pelepasan_hak.pdf',
         'pernyataan_keabsahan': 'pernyataan_keabsahan_dokumen.pdf',
         'pernyataan_psu': 'pernyataan_kesanggupan_psu.pdf',
+        'proposal_pembangunan': 'proposal_pembangunan_direktur.pdf',
         'site_plan_dwg': 'design_siteplan_layout.dwg',
       },
       technicalFiles: [
@@ -214,13 +698,139 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
 
 final pengajuanFormProvider =
     StateNotifierProvider<PengajuanFormNotifier, PengajuanFormState>((ref) {
-      return PengajuanFormNotifier();
+      // Draf per akun: berganti akun membuat form baru dengan draf akun itu.
+      final owner =
+          ref.watch(roleSessionProvider.select((session) => session.username)) ??
+          'tamu';
+      return PengajuanFormNotifier(
+        store: const PengajuanDraftStore(),
+        owner: owner,
+      );
     });
 
-// Repository data pengajuan disinkronkan dengan database satu_rumah.sql (Admin Disperwaskim)
+// Repository data pengajuan lokal (data contoh prototipe, bukan database server)
 class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
   PengajuanListNotifier()
     : super([
+        Pengajuan(
+          id: 'REG-2026-0142',
+          namaPerumahan: 'Perumahan Green Tasik',
+          namaPt: 'PT. Tasik Indah Sentosa',
+          namaDirektur: 'H. Rahmat Hidayat, S.T.',
+          nib: '9120003418291',
+          npwpPerusahaan: '01.345.678.9-425.000',
+          luasLahan: 18500.0,
+          jumlahUnit: 120,
+          tipePengajuan: 'Pengajuan Site Plan Baru',
+          tipePerumahan: 'Subsidi & Komersil',
+          status: 'Perlu Perbaikan',
+          statusTahap: StatusTahapPengajuan.perluPerbaikan,
+          tahapAsalPerbaikan: StatusTahapPengajuan.verifikasiTeknis,
+          tanggal: '12 Sep 2026',
+          diperbarui: 'Diperbarui 2 hari lalu',
+          catatanPerbaikan:
+              'Format site plan teknis belum mencantumkan koordinat UTM dan luasan RTH minimum 30%. Bukti kepemilikan tanah belum dilegalisir basah.',
+          dokumenPerluRevisi: const [
+            'site_plan_dwg',
+            'bukti_kepemilikan_lahan',
+          ],
+          uploadedDocs: const {
+            'ktp': 'ktp_direktur_rahmat.pdf',
+            'nib': 'nib_tasik_indah_sentosa.pdf',
+            'npwp_doc': 'npwp_perusahaan_tasik_indah.pdf',
+            'legalitas': 'akta_pendirian_pt_tasik_indah.pdf',
+            'asosiasi': 'kta_asosiasi_pengembang_rei.pdf',
+            'surat_permohonan': 'surat_permohonan_pengesahan_siteplan.pdf',
+            'info_intensitas_ruang': 'krk_greentasik_2024.pdf',
+            'bukti_kepemilikan_lahan': 'sertifikat_shm_tanah_greentasik.pdf',
+            'bukti_tpu': 'perjanjian_penyediaan_lahan_tpu.pdf',
+            'kkpr_doc': 'kesesuaian_pemanfaatan_ruang_kkpr.pdf',
+            'pbg_induk': 'pbg_induk_persetujuan_gedung.pdf',
+            'rekomendasi_lingkungan': 'dokumen_ukl_upl_dlh_greentasik.pdf',
+            'pernyataan_pelepasan': 'surat_pelepasan_hak_tanah.pdf',
+            'pernyataan_keabsahan': 'surat_keabsahan_dokumen_notaris.pdf',
+            'pernyataan_psu': 'surat_kesanggupan_penyerahan_psu.pdf',
+            'site_plan_dwg': 'siteplan_topografi_v1.dwg',
+            'pelepasan_lahan': 'surat_pelepasan_kas_desa.pdf',
+            'andalalin': 'andalalin_dishub_final.pdf',
+            'peta_kontur': 'peta_kontur_elevasi.pdf',
+            'penyelidikan_tanah': 'laporan_soil_test_geoteknik.pdf',
+          },
+          verifiedDocs: const {
+            'ktp': true,
+            'nib': true,
+            'npwp_doc': true,
+            'legalitas': true,
+            'asosiasi': true,
+            'surat_permohonan': true,
+            'info_intensitas_ruang': true,
+            'bukti_tpu': true,
+            'kkpr_doc': true,
+            'pbg_induk': true,
+            'rekomendasi_lingkungan': true,
+            'pernyataan_pelepasan': true,
+            'pernyataan_keabsahan': true,
+            'bukti_kepemilikan_lahan': false,
+            'site_plan_dwg': false,
+          },
+          technicalFiles: const [
+            'siteplan_topografi_v1.dwg',
+            'peta_kontur_elevasi.pdf',
+            'andalalin_dishub_final.pdf',
+            'dokumen_ukl_upl_dlh_greentasik.pdf',
+          ],
+          selectedCakupanGambar: const [
+            '10 Gambar Rencana Tapak (Site Plan)',
+            '8 Gambar Batas Tanah yang Dikuasai',
+            '9 Gambar & Hasil Penyelidikan Tanah',
+            '11 Gambar RTH',
+          ],
+        ),
+        Pengajuan(
+          id: 'REG-2026-0084',
+          namaPerumahan: 'Mutiara Regency Tasik',
+          namaPt: 'PT. Tasik Indah Sentosa',
+          namaDirektur: 'H. Tatang Sutisna',
+          npwpPerusahaan: '09.123.456.7-423.000',
+          luasLahan: 24000.0,
+          jumlahUnit: 165,
+          tipePengajuan: 'Pengembangan Siteplan',
+          tipePerumahan: 'Komersil',
+          status: 'Dalam Proses',
+          statusTahap: StatusTahapPengajuan.verifikasiAdministrasi,
+          tanggal: '04 Sep 2026',
+          catatanSurvey:
+              'Tahap verifikasi administrasi sedang diproses oleh Tim Perwaskim.',
+          uploadedDocs: {
+            'ktp': 'ktp_direktur_tatang.pdf',
+            'nib': 'nib_tasik_indah.pdf',
+            'npwp_doc': 'npwp_tasik_indah.pdf',
+          },
+        ),
+        Pengajuan(
+          id: 'REG-2026-0038',
+          namaPerumahan: 'Grand Tasik Harmoni',
+          namaPt: 'PT. Tasik Indah Sentosa',
+          namaDirektur: 'H. Rahmat Hidayat, S.T.',
+          npwpPerusahaan: '01.345.678.9-425.000',
+          luasLahan: 12000.0,
+          jumlahUnit: 85,
+          tipePengajuan: 'Pengajuan Site Plan Baru',
+          tipePerumahan: 'Komersil',
+          status: 'Disetujui',
+          statusTahap: StatusTahapPengajuan.selesai,
+          tanggal: '28 Agu 2026',
+          nomorSk: '648/SK-SP/DPKP/2026',
+          tanggalSk: '28 Agu 2026',
+          skPersetujuanPath: 'SK_Persetujuan_648_SK_SP_DPKP_2026.pdf',
+          catatanPerbaikan:
+              'Pengesahan Site Plan telah disetujui dan SK resmi telah diterbitkan.',
+          uploadedDocs: {
+            'ktp': 'ktp_rahmat.pdf',
+            'nib': 'nib_tasik_indah.pdf',
+            'npwp_doc': 'npwp_tasik_indah.pdf',
+          },
+        ),
         Pengajuan(
           id: 'SR-2025-0148',
           namaPerumahan: 'Griya Mangkubumi Asri',
@@ -230,13 +840,12 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
           luasLahan: 34800.0,
           jumlahUnit: 148,
           tipePerumahan: 'Subsidi',
-          status: 'Perlu perbaikan',
-          statusTahap: StatusTahapPengajuan.verifikasiTeknis,
-          tahapAsalPerbaikan: StatusTahapPengajuan.verifikasiTeknis,
+          status: 'Terjadwal',
+          statusTahap: StatusTahapPengajuan.surveyLapangan,
           tanggal: '08 Mei 2025 · 09.21 WIB',
-          catatanPerbaikan:
-              'Terdapat 3 dokumen yang memerlukan perbaikan sebelum proses dapat dilanjutkan ke penjadwalan survey. Scan KTP buram & izin TPS terpadu pada persetujuan lingkungan.',
-          dokumenPerluRevisi: ['ktp', 'rekomendasi_lingkungan'],
+          catatanSurvey:
+              'Seluruh dokumen administrasi & teknis telah diverifikasi sesuai. Survey lokasi dijadwalkan tanggal 22 Mei 2025 pukul 09.00 WIB.',
+          dokumenPerluRevisi: const [],
           uploadedDocs: {
             'nib': 'nib_dan_izin_usaha.pdf',
             'npwp_doc': 'npwp_perusahaan.pdf',
@@ -262,8 +871,6 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
             '15 Gambar Perancangan Jaringan Air Bersih',
           ],
           tanggalSurvey: DateTime(2025, 5, 22, 9, 0),
-          catatanSurvey:
-              'Tinjau kesesuaian site plan, drainase, akses jalan, dan fasilitas umum di lokasi perumahan (Kec. Mangkubumi).',
           riwayatSurvey: [
             HasilSurveyItem(
               id: 'survey-0148',
@@ -332,56 +939,6 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
             'nib': 'nib_priangan.pdf',
             'npwp_doc': 'npwp_priangan.pdf',
             'site_plan_dwg': 'siteplan_pesona.pdf',
-          },
-        ),
-        Pengajuan(
-          id: 'SR-2025-0145',
-          namaPerumahan: 'Bungursari Harmoni Indah',
-          namaPt: 'PT Galunggung Asri Propertindo',
-          namaDirektur: 'Yudi Permana, S.T.',
-          npwpPerusahaan: '06.456.789.0-423.000',
-          luasLahan: 21200.0,
-          jumlahUnit: 96,
-          tipePerumahan: 'Komersil',
-          status: 'Final',
-          statusTahap: StatusTahapPengajuan.selesai,
-          tanggal: '11 Mei 2025',
-          catatanSurvey:
-              'Hasil monitoring lapangan telah berstatus Final dan Berita Acara telah diterbitkan.',
-          uploadedDocs: {'ktp': 'ktp_yudi.pdf', 'nib': 'nib_galunggung.pdf'},
-        ),
-        Pengajuan(
-          id: 'SR-2025-0144',
-          namaPerumahan: 'Tamansari Asri Residence',
-          namaPt: 'PT Mitra Sejahtera Tasik',
-          namaDirektur: 'Ahmad Fauzi, S.T.',
-          npwpPerusahaan: '05.567.890.1-423.000',
-          luasLahan: 38000.0,
-          jumlahUnit: 160,
-          tipePerumahan: 'Komersil',
-          status: 'Siap disetujui',
-          statusTahap: StatusTahapPengajuan.persetujuan,
-          tanggal: '10 Mei 2025',
-          catatanPerbaikan:
-              'Seluruh tahapan verifikasi teknis dan monitoring telah terpenuhi.',
-          uploadedDocs: {'ktp': 'ktp_ahmad.pdf', 'nib': 'nib_mitra.pdf'},
-        ),
-        Pengajuan(
-          id: 'SR-20260720-612',
-          namaPerumahan: 'Green Tasik',
-          namaPt: 'PT. Tasik Indah Sentosa',
-          namaDirektur: 'H. Tatang Sutisna',
-          npwpPerusahaan: '09.123.456.7-423.000',
-          luasLahan: 15000.0,
-          jumlahUnit: 85,
-          tipePerumahan: 'Subsidi',
-          status: 'Dalam Proses',
-          statusTahap: StatusTahapPengajuan.surveyLapangan,
-          tanggal: '20 Juli 2026',
-          tanggalSurvey: DateTime(2026, 6, 20, 9, 0),
-          uploadedDocs: {
-            'ktp': 'ktp_direktur_tatang.pdf',
-            'nib': 'nib_perusahaan.pdf',
           },
         ),
       ]);

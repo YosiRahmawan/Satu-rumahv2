@@ -1,252 +1,262 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/prototype_data_banner.dart';
-import '../../../../core/widgets/status_badge.dart';
-import '../providers/pengajuan_form_controller.dart';
 
-class PengajuanSayaListScreen extends ConsumerStatefulWidget {
+import '../../../../core/auth/role_session.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/developer_header.dart';
+import '../../../dashboard/presentation/providers/dashboard_provider.dart';
+import '../../data/models/status_tahap_pengajuan.dart';
+import '../providers/pengajuan_form_controller.dart';
+import '../providers/pengajuan_list_view_provider.dart';
+import '../widgets/pengajuan_draft_ui.dart';
+import '../widgets/pengajuan_empty_state.dart';
+import '../widgets/pengajuan_list_card.dart';
+import '../widgets/pengajuan_list_filters.dart';
+import '../widgets/pengajuan_list_summary.dart';
+
+/// The dashboard owns bottom navigation and the single central AJUKAN action.
+class PengajuanSayaListScreen extends ConsumerWidget {
   const PengajuanSayaListScreen({super.key});
 
   @override
-  ConsumerState<PengajuanSayaListScreen> createState() =>
-      _PengajuanSayaListScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(pengajuanListProvider);
+    final query = ref.watch(pengajuanListQueryProvider);
+    final filtered = ref.watch(filteredPengajuanProvider);
+    final visible = filtered.take(query.limit).toList();
 
-class _PengajuanSayaListScreenState
-    extends ConsumerState<PengajuanSayaListScreen> {
-  String _filterStatus = 'Semua';
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final list = ref.watch(pengajuanListProvider);
-
-    // Filtering and Searching
-    final filteredList = list.where((item) {
-      final matchesSearch =
-          item.namaPerumahan.toLowerCase().contains(
-            _searchQuery.toLowerCase(),
-          ) ||
-          item.id.toLowerCase().contains(_searchQuery.toLowerCase());
-
-      if (_filterStatus == 'Semua') return matchesSearch;
-      if (_filterStatus == 'Proses')
-        return matchesSearch && item.status == 'Dalam Proses';
-      if (_filterStatus == 'Selesai')
-        return matchesSearch && item.status == 'Selesai';
-      if (_filterStatus == 'Revisi')
-        return matchesSearch && item.status == 'Perlu Perbaikan';
-      return matchesSearch;
-    }).toList();
+    final session = ref.watch(roleSessionProvider);
+    final String? avatarInitials =
+        (session.username != null && session.username!.trim().isNotEmpty)
+        ? (session.username!.trim().length >= 2
+              ? session.username!.trim().substring(0, 2).toUpperCase()
+              : session.username!.trim().toUpperCase())
+        : null;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text('Pengajuan Saya', style: AppTextStyles.headlineLarge),
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: PrototypeDataBanner(),
+      backgroundColor: AppColors.backgroundCanvas,
+      body: CustomScrollView(
+        key: const PageStorageKey('developer-submissions'),
+        slivers: [
+          // 1. HEADER MERAH (Scrolls naturally with content)
+          SliverToBoxAdapter(
+            child: DeveloperHeader(
+              showBrandBar: false,
+              showNotification: false,
+              pageTitle: 'Pengajuan',
+              pageSubtitle: 'Daftar pengajuan site plan & verifikasi dokumen',
+              avatarLabel: avatarInitials,
+              showOnlineIndicator: session.isAuthenticated,
+              avatarTooltip: 'Buka profil',
+              onAvatarTap: () =>
+                  ref.read(dashboardTabProvider.notifier).state = 3,
+              bottomPadding: 24.0,
+            ),
           ),
-          // Search Bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) => setState(() => _searchQuery = val),
-              decoration: InputDecoration(
-                hintText: 'Cari nomor pengajuan atau perumahan...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
+          // 2. GAP 16dp antara header dan search bar / filter
+          const SliverToBoxAdapter(child: SizedBox(height: 16.0)),
+          // Draf pengajuan yang belum dikirim (bila ada)
+          const SliverToBoxAdapter(child: PengajuanDraftCard()),
+          if (items.isEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg + AppSpacing.xs,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: PengajuanListSummary(items: items),
               ),
             ),
-          ),
-
-          // Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: ['Semua', 'Proses', 'Selesai', 'Revisi'].map((status) {
-                final isSelected = _filterStatus == status;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: FilterChip(
-                    label: Text(status),
-                    selected: isSelected,
-                    selectedColor: AppColors.champagneToast,
-                    checkmarkColor: AppColors.cocoaBeanRoast,
-                    onSelected: (val) {
-                      setState(() {
-                        _filterStatus = status;
-                      });
-                    },
-                  ),
-                );
-              }).toList(),
+          const SliverPadding(
+            padding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg + AppSpacing.xs,
             ),
+            sliver: SliverToBoxAdapter(child: PengajuanListFilters()),
           ),
-          const SizedBox(height: 12),
-
-          // Submission List
-          Expanded(
-            child: filteredList.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.home_work_outlined,
-                          size: 64,
-                          color: AppColors.grey400,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Tidak ada pengajuan ditemukan',
-                          style: AppTextStyles.bodyLarge.copyWith(
-                            color: AppColors.grey600,
+          if (filtered.isEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg + AppSpacing.xs,
+                vertical: AppSpacing.md,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: PengajuanEmptyState(
+                  isFilteredEmpty: items.isNotEmpty,
+                  totalRegistered: items.length,
+                  onReset: items.isEmpty
+                      ? null
+                      : ref.read(pengajuanListQueryProvider.notifier).reset,
+                  onCreateNew: () => mulaiPengajuanBaru(context, ref),
+                ),
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg + AppSpacing.xs,
+              ),
+              sliver: SliverList.builder(
+                itemCount: visible.length,
+                itemBuilder: (context, index) {
+                  final item = visible[index];
+                  final monthYear = pengajuanMonthYear(item);
+                  final firstInGroup =
+                      index == 0 ||
+                      pengajuanMonthYear(visible[index - 1]) != monthYear;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (firstInGroup)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
                           ),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView.builder(
-                    itemCount: filteredList.length,
-                    padding: const EdgeInsets.all(16.0),
-                    itemBuilder: (context, index) {
-                      final item = filteredList[index];
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: InkWell(
-                          onTap: () =>
-                              context.push('/pengajuan/detail/${item.id}'),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      item.id,
-                                      style: AppTextStyles.labelSmall.copyWith(
-                                        color: AppColors.textMuted,
-                                      ),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              final groupItems = filtered
+                                  .where(
+                                    (e) => pengajuanMonthYear(e) == monthYear,
+                                  )
+                                  .toList();
+                              final isAllCompleted =
+                                  groupItems.isNotEmpty &&
+                                  groupItems.every(
+                                    (e) =>
+                                        e.statusTahap ==
+                                        StatusTahapPengajuan.selesai,
+                                  );
+                              final dotColor = isAllCompleted
+                                  ? const Color(0xFF16A34A)
+                                  : AppColors.primaryRed;
+                              final countSuffix = isAllCompleted
+                                  ? ' Permohonan Selesai'
+                                  : ' Permohonan';
+
+                              return Wrap(
+                                alignment: WrapAlignment.spaceBetween,
+                                crossAxisAlignment: WrapCrossAlignment.center,
+                                spacing: AppSpacing.sm,
+                                runSpacing: AppSpacing.xs,
+                                children: [
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: constraints.maxWidth,
                                     ),
-                                    StatusBadge(status: item.status),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  item.namaPerumahan,
-                                  style: AppTextStyles.titleLarge.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Lahan: ${item.luasLahan} m² | ${item.jumlahUnit} Unit',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.grey600,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      item.tanggal,
-                                      style: AppTextStyles.labelSmall,
-                                    ),
-                                    Row(
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                          item.status == 'Perlu Perbaikan'
-                                              ? 'Perbaiki Sekarang'
-                                              : 'Lihat Detail',
-                                          style: AppTextStyles.labelMedium
-                                              .copyWith(
-                                                color: AppColors.chilliDust,
-                                                fontWeight: FontWeight.bold,
-                                              ),
+                                        Container(
+                                          width: 7,
+                                          height: 7,
+                                          decoration: BoxDecoration(
+                                            color: dotColor,
+                                            shape: BoxShape.circle,
+                                          ),
                                         ),
-                                        const Icon(
-                                          Icons.chevron_right,
-                                          size: 16,
-                                          color: AppColors.chilliDust,
+                                        const SizedBox(width: 8),
+                                        Flexible(
+                                          child: Text(
+                                            monthYear,
+                                            style: AppTextStyles.labelMedium
+                                                .copyWith(
+                                                  color: AppColors.slate700,
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 12,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                          ),
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ),
-                                if (item.status == 'Perlu Perbaikan' &&
-                                    item.catatanPerbaikan != null) ...[
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.error.withValues(
-                                        alpha: 0.05,
-                                      ),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(
-                                        color: AppColors.error.withValues(
-                                          alpha: 0.2,
-                                        ),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Catatan: ${item.catatanPerbaikan}',
-                                      style: AppTextStyles.bodySmall.copyWith(
-                                        color: AppColors.error,
-                                      ),
+                                  ),
+                                  Text(
+                                    '${groupItems.length}$countSuffix',
+                                    style: AppTextStyles.labelSmall.copyWith(
+                                      color: AppColors.slate500,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 11,
                                     ),
                                   ),
                                 ],
-                              ],
+                              );
+                            },
+                          ),
+                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                        child: PengajuanListCard(
+                          key: ValueKey(item.id),
+                          item: item,
+                          onOpen: () => context.push(
+                            '/pengajuan/detail/${Uri.encodeComponent(item.id)}',
+                          ),
+                          onOpenSk: () => context.push(
+                            '/unduh-sk-ba?id=${Uri.encodeComponent(item.id)}',
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          if (filtered.isNotEmpty)
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg + AppSpacing.xs,
+                AppSpacing.sm,
+                AppSpacing.lg + AppSpacing.xs,
+                110.0,
+              ),
+              sliver: SliverToBoxAdapter(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (visible.length < filtered.length) ...[
+                      SizedBox(
+                        height: 44,
+                        child: OutlinedButton.icon(
+                          onPressed: ref
+                              .read(pengajuanListQueryProvider.notifier)
+                              .loadMore,
+                          icon: const Icon(
+                            Icons.expand_more,
+                            size: 18,
+                            color: AppColors.slate700,
+                          ),
+                          label: Text(
+                            'Muat Lebih Banyak',
+                            style: AppTextStyles.labelMedium.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.slate700,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
-          ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    Text(
+                      'Menampilkan ${visible.length} dari ${filtered.length} pengajuan terdaftar',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        color: AppColors.slate500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            const SliverToBoxAdapter(child: SizedBox(height: 96.0)),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: AppColors.chilliDust,
-        foregroundColor: Colors.white,
-        onPressed: () {
-          ref.read(pengajuanFormProvider.notifier).reset();
-          context.push('/pengajuan/step1');
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }

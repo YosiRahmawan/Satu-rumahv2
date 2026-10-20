@@ -10,7 +10,9 @@ import '../theme/app_text_styles.dart';
 import '../../features/dashboard/presentation/providers/dashboard_provider.dart';
 import '../../features/notifikasi/presentation/providers/notifikasi_provider.dart';
 
-enum AppHeaderVariant { light, authority }
+import '../theme/app_role_theme.dart';
+
+enum AppHeaderVariant { light, authority, roleBased }
 
 class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   final AppHeaderVariant variant;
@@ -20,30 +22,20 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   final VoidCallback? onBackPressed;
   final bool showNotifications;
   final List<Widget> actions;
-  final bool showAuthorityIcon;
-  final bool authorityGradient;
-  final bool uppercaseAuthoritySubtitle;
-  final double height;
-  final BorderRadius? bottomRadius;
 
   const AppHeader({
     super.key,
-    this.variant = AppHeaderVariant.light,
+    this.variant = AppHeaderVariant.roleBased,
     required this.title,
     this.subtitle,
     this.showBackButton = false,
     this.onBackPressed,
     this.showNotifications = true,
     this.actions = const [],
-    this.showAuthorityIcon = true,
-    this.authorityGradient = false,
-    this.uppercaseAuthoritySubtitle = true,
-    this.height = 70,
-    this.bottomRadius,
   });
 
   @override
-  Size get preferredSize => Size.fromHeight(height);
+  Size get preferredSize => const Size.fromHeight(70);
 
   void _goToNotifications(BuildContext context, WidgetRef ref) {
     switch (ref.read(roleSessionProvider).role) {
@@ -84,6 +76,8 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
     BuildContext context,
     WidgetRef ref,
     int unreadCount,
+    Color iconColor,
+    Color badgeBorderColor,
   ) {
     return Semantics(
       button: true,
@@ -95,12 +89,8 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
           clipBehavior: Clip.none,
           children: [
             Icon(
-              variant == AppHeaderVariant.authority
-                  ? Icons.notifications_none_rounded
-                  : Icons.notifications_none,
-              color: variant == AppHeaderVariant.authority
-                  ? Colors.white
-                  : AppColors.textPrimary,
+              Icons.notifications_none_rounded,
+              color: iconColor,
               size: 22,
             ),
             if (unreadCount > 0)
@@ -114,9 +104,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
                     color: AppColors.notificationUnread,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: variant == AppHeaderVariant.authority
-                          ? AppColors.brandPrimary
-                          : AppColors.surface,
+                      color: badgeBorderColor,
                       width: 1.5,
                     ),
                   ),
@@ -131,109 +119,112 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final unreadCount = ref.watch(unreadNotifikasiCountProvider);
-    final authority = variant == AppHeaderVariant.authority;
+    final currentRole = ref.watch(roleSessionProvider).role;
 
-    final radius = bottomRadius ?? BorderRadius.zero;
-    final authorityDecoration = authorityGradient
-        ? BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.enterprisePrimary,
-                AppColors.enterprisePrimaryDark,
-              ],
-            ),
-            borderRadius: radius,
-          )
-        : BoxDecoration(
-            color: authority ? AppColors.brandPrimary : AppColors.surface,
-            borderRadius: radius,
-          );
+    // Tentukan apakah style header authority (solid dark background)
+    final bool isAuthority = switch (variant) {
+      AppHeaderVariant.authority => true,
+      AppHeaderVariant.light => false,
+      AppHeaderVariant.roleBased => AppRoleTheme.isAuthorityHeader(currentRole),
+    };
+
+    // Tentukan background dan foreground color
+    final Color bgColor = isAuthority
+        ? AppRoleTheme.getHeaderBackground(currentRole)
+        : AppColors.surface;
+
+    final Color titleColor = isAuthority
+        ? Colors.white
+        : (currentRole == AppRole.developer
+            ? AppRoleTheme.developerHeaderTitle
+            : AppColors.textPrimary);
+
+    final Color subtitleColor = isAuthority
+        ? (currentRole == AppRole.perwaskim
+            ? AppRoleTheme.fieldHeaderSubtitle
+            : AppRoleTheme.adminHeaderSubtitle)
+        : AppColors.textMuted;
+
+    final Color iconColor = isAuthority ? Colors.white : AppRoleTheme.developerPrimary;
 
     return Material(
-      color: Colors.transparent,
-      elevation: authority ? 0 : 0.5,
-      borderRadius: radius,
-      clipBehavior: Clip.antiAlias,
+      color: bgColor,
+      elevation: isAuthority ? 0 : 0.5,
       child: SafeArea(
         bottom: false,
-        child: DecoratedBox(
-          decoration: authorityDecoration,
-          child: SizedBox(
-            height: height,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Row(
-                children: [
-                  if (showBackButton)
-                    IconButton(
-                      onPressed: () => _goBack(context, ref),
-                      tooltip: 'Kembali',
-                      icon: Icon(
-                        Icons.arrow_back,
-                        color: authority ? Colors.white : AppColors.textPrimary,
-                      ),
-                    )
-                  else if (authority && showAuthorityIcon)
-                    Container(
-                      padding: const EdgeInsets.all(AppSpacing.sm),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.16),
-                        borderRadius: AppRadii.pill,
-                      ),
-                      child: const Icon(
-                        Icons.shield_outlined,
-                        color: Colors.white,
-                        size: 22,
-                      ),
+        child: SizedBox(
+          height: 70,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Row(
+              children: [
+                if (showBackButton)
+                  IconButton(
+                    onPressed: () => _goBack(context, ref),
+                    tooltip: 'Kembali',
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: iconColor,
                     ),
-                  if ((authority && showAuthorityIcon) || showBackButton)
-                    const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (subtitle != null && subtitle!.isNotEmpty)
-                          Text(
-                            authority && uppercaseAuthoritySubtitle
-                                ? subtitle!.toUpperCase()
-                                : subtitle!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: authority
-                                ? AppTextStyles.labelSmall.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.88),
-                                    letterSpacing: 0.2,
-                                    fontFamily:
-                                        AppTextStyles.enterpriseFontFamily,
-                                  )
-                                : AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.textMuted,
-                                  ),
-                          ),
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: authority
-                              ? AppTextStyles.headlineSmall.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily:
-                                      AppTextStyles.enterpriseFontFamily,
-                                )
-                              : AppTextStyles.headlineLarge,
-                        ),
-                      ],
+                  )
+                else if (isAuthority)
+                  Container(
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      borderRadius: AppRadii.pill,
+                    ),
+                    child: const Icon(
+                      Icons.shield_outlined,
+                      color: Colors.white,
+                      size: 22,
                     ),
                   ),
-                  ...actions,
-                  if (showNotifications)
-                    _notificationAction(context, ref, unreadCount),
-                ],
-              ),
+                if (isAuthority || showBackButton)
+                  const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (subtitle != null && subtitle!.isNotEmpty)
+                        Text(
+                          isAuthority ? subtitle!.toUpperCase() : subtitle!,
+                          style: isAuthority
+                              ? AppTextStyles.labelSmall.copyWith(
+                                  color: subtitleColor.withValues(alpha: 0.9),
+                                  letterSpacing: 0.8,
+                                )
+                              : AppTextStyles.bodySmall.copyWith(
+                                  color: subtitleColor,
+                                ),
+                        ),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: isAuthority
+                            ? AppTextStyles.headlineSmall.copyWith(
+                                color: titleColor,
+                                fontWeight: FontWeight.bold,
+                              )
+                            : AppTextStyles.headlineLarge.copyWith(
+                                color: titleColor,
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+                ...actions,
+                if (showNotifications)
+                  _notificationAction(
+                    context,
+                    ref,
+                    unreadCount,
+                    iconColor,
+                    bgColor,
+                  ),
+              ],
             ),
           ),
         ),

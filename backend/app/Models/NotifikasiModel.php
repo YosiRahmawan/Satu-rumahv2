@@ -13,6 +13,8 @@ class NotifikasiModel extends Model
     protected $fillable = [
         'id',
         'user_id',
+        'pengajuan_id',
+        'penerima_role',
         'jenis',
         'judul',
         'deskripsi',
@@ -41,6 +43,8 @@ class NotifikasiModel extends Model
             'waktu' => $this->waktu ? $this->waktu->toIso8601String() : null,
             'isRead' => (bool) $this->is_read,
             'targetRoute' => $this->target_route,
+            'pengajuanId' => $this->pengajuan_id,
+            'penerima' => $this->penerima_role,
         ];
     }
 }

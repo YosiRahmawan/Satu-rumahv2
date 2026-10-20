@@ -37,6 +37,7 @@ class DeveloperHeader extends StatelessWidget {
     this.showBrandBar = true,
     this.actions = const [],
     this.bottomPadding,
+    this.onBack,
     this.child,
   });
 
@@ -97,8 +98,53 @@ class DeveloperHeader extends StatelessWidget {
   /// Custom bottom padding for the header container. Defaults to [AppSpacing.xxl] (32dp).
   final double? bottomPadding;
 
+  /// Bila diisi, tombol kembali ditampilkan di atas judul halaman.
+  final VoidCallback? onBack;
+
   /// Optional extra widget placed at the bottom of the header.
   final Widget? child;
+
+  Widget _pageTitleColumn() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          pageTitle ?? 'Pengajuan',
+          style: AppTextStyles.headlineMedium.copyWith(
+            color: AppColors.textOnRed,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        if (pageSubtitle != null) ...[
+          const SizedBox(height: AppSpacing.xs / 2),
+          Text(
+            pageSubtitle!,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textOnRedSubtle,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _circleBackButton() {
+    return IconButton(
+      tooltip: 'Kembali',
+      onPressed: onBack,
+      icon: const Icon(
+        Icons.arrow_back_rounded,
+        color: AppColors.textOnRed,
+        size: 22,
+      ),
+      style: IconButton.styleFrom(
+        backgroundColor: AppColors.textOnRed.withValues(alpha: 0.16),
+        minimumSize: const Size(44, 44),
+        fixedSize: const Size(44, 44),
+        padding: EdgeInsets.zero,
+      ),
+    );
+  }
 
   Widget _buildVerificationBadge() {
     return Container(
@@ -280,6 +326,9 @@ class DeveloperHeader extends StatelessWidget {
         : null;
 
     final isTextScaled = MediaQuery.textScalerOf(context).scale(14) > 20;
+    // Tombol kembali sebaris dengan judul bila header tanpa bilah merek dan
+    // tanpa kontrol kanan; selain itu tampil di baris sendiri di atas judul.
+    final inlineBack = onBack != null && !showBrandBar && controls == null;
     final effectiveBadge =
         badge ?? (isVerified ? _buildVerificationBadge() : null);
 
@@ -297,29 +346,34 @@ class DeveloperHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (onBack != null && !inlineBack) ...[
+            Transform.translate(
+              offset: const Offset(-12, 0),
+              child: IconButton(
+                tooltip: 'Kembali',
+                onPressed: onBack,
+                icon: const Icon(
+                  Icons.arrow_back,
+                  color: AppColors.textOnRed,
+                  size: 22,
+                ),
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+          ],
           if (!showBrandBar) ...[
             if (controls == null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    pageTitle ?? 'Pengajuan',
-                    style: AppTextStyles.headlineMedium.copyWith(
-                      color: AppColors.textOnRed,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  if (pageSubtitle != null) ...[
-                    const SizedBox(height: AppSpacing.xs / 2),
-                    Text(
-                      pageSubtitle!,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.textOnRedSubtle,
-                      ),
-                    ),
-                  ],
-                ],
-              )
+              inlineBack
+                  ? Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        _circleBackButton(),
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(child: _pageTitleColumn()),
+                      ],
+                    )
+                  : _pageTitleColumn()
             else if (isTextScaled) ...[
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

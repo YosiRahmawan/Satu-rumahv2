@@ -1,4 +1,3 @@
-import 'evidence_photo_item.dart';
 import 'status_hasil_evaluasi.dart';
 
 /// A repeatable person captured during a field monitoring session.
@@ -30,6 +29,17 @@ class MonitoringPerson {
       jabatan: jabatan ?? this.jabatan,
     );
   }
+
+  Map<String, dynamic> toJson() => {'id': id, 'nama': nama, 'jabatan': jabatan};
+
+  static MonitoringPerson fromJson(Object? json) {
+    final map = json is Map ? json : const {};
+    return MonitoringPerson(
+      id: map['id'] as String? ?? '',
+      nama: map['nama'] as String? ?? '',
+      jabatan: map['jabatan'] as String? ?? '',
+    );
+  }
 }
 
 class MonitoringModel {
@@ -53,11 +63,16 @@ class MonitoringModel {
     'XII',
   ];
 
-  /// Generate nomor surat BA: 600.2.5/BA-MON/[bulanRomawi]/[tahun]
-  static String generateNomorSuratBA(DateTime tanggal) {
+  /// Nomor surat BA: 600.2.5/BA-MON/[bulanRomawi]/[tahun], dengan urutan
+  /// tiga digit di belakangnya bila [urutan] > 0 (mis. .../X/2026/002).
+  ///
+  /// Tanpa [urutan] hasilnya sama dengan format lama, sehingga laporan lama
+  /// tidak berubah.
+  static String generateNomorSuratBA(DateTime tanggal, {int urutan = 0}) {
     final bulan = _bulanRomawi[tanggal.month - 1];
     final tahun = tanggal.year;
-    return '600.2.5/BA-MON/$bulan/$tahun';
+    final base = '600.2.5/BA-MON/$bulan/$tahun';
+    return urutan > 0 ? '$base/${urutan.toString().padLeft(3, '0')}' : base;
   }
 
   final String id;
@@ -78,13 +93,6 @@ class MonitoringModel {
   final String ditemuiJabatan;
   final List<MonitoringPerson> pelaksana;
   final List<MonitoringPerson> ditemui;
-
-  /// Sumber kebenaran foto beserta metadatanya.
-  final List<EvidencePhotoItem> photos;
-
-  /// Adaptor kompatibilitas: daftar referensi berkas seperti sebelumnya.
-  List<String> get photoPaths =>
-      photos.map((photo) => photo.localRef).toList(growable: false);
 
   final DateTime createdAt;
   final String nomorSuratBA;
@@ -109,14 +117,83 @@ class MonitoringModel {
     this.ditemuiJabatan = '',
     this.pelaksana = const [],
     this.ditemui = const [],
-    List<String>? photoPaths,
-    List<EvidencePhotoItem>? photos,
     DateTime? createdAt,
     String? nomorSuratBA,
     this.isDraft = false,
-  }) : photos = photos ?? EvidencePhotoItem.fromPaths(photoPaths ?? const []),
-       createdAt = createdAt ?? DateTime.now(),
+  }) : createdAt = createdAt ?? DateTime.now(),
        nomorSuratBA = nomorSuratBA ?? generateNomorSuratBA(tanggalMonitoring);
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    if (pengajuanId != null) 'pengajuanId': pengajuanId,
+    'tanggalMonitoring': tanggalMonitoring.toIso8601String(),
+    'namaPerumahan': namaPerumahan,
+    'namaDeveloper': namaDeveloper,
+    'lokasiPerumahan': lokasiPerumahan,
+    'maksudTujuan': maksudTujuan,
+    'temuanLapangan': temuanLapangan,
+    'kesimpulan': kesimpulan,
+    'kesepakatan': kesepakatan,
+    'rencanaTindakLanjut': rencanaTindakLanjut,
+    'statusHasilEvaluasi': statusHasilEvaluasi.name,
+    'pelaksanaNama': pelaksanaNama,
+    'pelaksanaJabatan': pelaksanaJabatan,
+    'ditemuiNama': ditemuiNama,
+    'ditemuiJabatan': ditemuiJabatan,
+    'pelaksana': [for (final p in pelaksana) p.toJson()],
+    'ditemui': [for (final p in ditemui) p.toJson()],
+    'createdAt': createdAt.toIso8601String(),
+    'nomorSuratBA': nomorSuratBA,
+    'isDraft': isDraft,
+  };
+
+  /// Membaca laporan dari JSON; null bila data inti rusak.
+  static MonitoringModel? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final id = json['id'];
+    final date = DateTime.tryParse('${json['tanggalMonitoring']}');
+    final name = json['namaPerumahan'];
+    if (id is! String || id.isEmpty || date == null || name is! String) {
+      return null;
+    }
+    List<String> strings(Object? value) => [
+      if (value is List)
+        for (final item in value)
+          if (item is String) item,
+    ];
+    List<MonitoringPerson> people(Object? value) => [
+      if (value is List)
+        for (final item in value) MonitoringPerson.fromJson(item),
+    ];
+    final status = StatusHasilEvaluasi.values.where(
+      (v) => v.name == json['statusHasilEvaluasi'],
+    );
+    return MonitoringModel(
+      id: id,
+      pengajuanId: json['pengajuanId'] as String?,
+      tanggalMonitoring: date,
+      namaPerumahan: name,
+      namaDeveloper: json['namaDeveloper'] as String? ?? '',
+      lokasiPerumahan: json['lokasiPerumahan'] as String? ?? '',
+      maksudTujuan: json['maksudTujuan'] as String? ?? defaultMaksudTujuan,
+      temuanLapangan: strings(json['temuanLapangan']),
+      kesimpulan: strings(json['kesimpulan']),
+      kesepakatan: strings(json['kesepakatan']),
+      rencanaTindakLanjut: strings(json['rencanaTindakLanjut']),
+      statusHasilEvaluasi: status.isEmpty
+          ? StatusHasilEvaluasi.sesuaiSiteplan
+          : status.first,
+      pelaksanaNama: json['pelaksanaNama'] as String? ?? '',
+      pelaksanaJabatan: json['pelaksanaJabatan'] as String? ?? '',
+      ditemuiNama: json['ditemuiNama'] as String? ?? '',
+      ditemuiJabatan: json['ditemuiJabatan'] as String? ?? '',
+      pelaksana: people(json['pelaksana']),
+      ditemui: people(json['ditemui']),
+      createdAt: DateTime.tryParse('${json['createdAt']}'),
+      nomorSuratBA: json['nomorSuratBA'] as String?,
+      isDraft: json['isDraft'] == true,
+    );
+  }
 
   MonitoringModel copyWith({
     String? id,
@@ -137,8 +214,6 @@ class MonitoringModel {
     String? ditemuiJabatan,
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
-    List<String>? photoPaths,
-    List<EvidencePhotoItem>? photos,
     DateTime? createdAt,
     String? nomorSuratBA,
     bool? isDraft,
@@ -162,11 +237,6 @@ class MonitoringModel {
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
       pelaksana: pelaksana ?? this.pelaksana,
       ditemui: ditemui ?? this.ditemui,
-      photos:
-          photos ??
-          (photoPaths != null
-              ? EvidencePhotoItem.reconcile(this.photos, photoPaths)
-              : this.photos),
       createdAt: createdAt ?? this.createdAt,
       nomorSuratBA: nomorSuratBA ?? this.nomorSuratBA,
       isDraft: isDraft ?? this.isDraft,

@@ -16,7 +16,15 @@ import '../providers/monitoring_list_provider.dart';
 class MonitoringListScreen extends ConsumerStatefulWidget {
   final bool showBottomNav;
 
-  const MonitoringListScreen({super.key, this.showBottomNav = true});
+  /// Bila diisi, header menampilkan tombol kembali (halaman dibuka sebagai
+  /// rute sendiri, bukan sebagai tab).
+  final VoidCallback? onBack;
+
+  const MonitoringListScreen({
+    super.key,
+    this.showBottomNav = true,
+    this.onBack,
+  });
 
   @override
   ConsumerState<MonitoringListScreen> createState() =>
@@ -60,6 +68,7 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
               pageTitle: 'Riwayat Survey & BA',
               pageSubtitle: '${allMonitoring.length} laporan',
               bottomPadding: AppSpacing.xl,
+              onBack: widget.onBack,
             ),
           ),
           ...monitoringAsync.when(
@@ -255,6 +264,7 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
             selected: selected,
             showCheckmark: false,
             visualDensity: VisualDensity.compact,
+            labelPadding: const EdgeInsets.symmetric(horizontal: 2),
             label: Text(
               _filterLabels[filter]!,
               style: AppTextStyles.labelLarge.copyWith(

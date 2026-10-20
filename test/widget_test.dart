@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satu_rumah/app.dart';
 
 void main() {
-  testWidgets('App renders dashboard screen', (WidgetTester tester) async {
+  testWidgets('App renders login screen on start', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: SatuRumahApp(),
@@ -11,6 +11,6 @@ void main() {
     );
 
     await tester.pumpAndSettle();
-    expect(find.textContaining('SATU RUMAH'), findsWidgets);
+    expect(find.text('PILIH PERAN AKUN PENGGUNA'), findsOneWidget);
   });
 }

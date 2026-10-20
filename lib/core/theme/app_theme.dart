@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'app_role_theme.dart';
 import 'app_text_styles.dart';
+import '../auth/role_session.dart';
 
 class AppTheme {
   static ThemeData get lightTheme {
@@ -8,16 +10,16 @@ class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       fontFamily: AppTextStyles.fontFamily,
-      primaryColor: AppColors.chilliDust,
+      primaryColor: AppColors.primaryRed,
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: const ColorScheme.light(
-        primary: AppColors.chilliDust,
-        secondary: AppColors.champagneToast,
+        primary: AppColors.primaryRed,
+        secondary: AppColors.primarySurface,
         surface: AppColors.surface,
         error: AppColors.error,
         onPrimary: Colors.white,
-        onSecondary: AppColors.cocoaBeanRoast,
-        onSurface: AppColors.cocoaBeanRoast,
+        onSecondary: AppColors.textMain,
+        onSurface: AppColors.textMain,
         onError: Colors.white,
       ),
 
@@ -53,7 +55,7 @@ class AppTheme {
       // Elevated Button Theme (PrimaryButton)
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.chilliDust,
+          backgroundColor: AppColors.primaryRed,
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -70,14 +72,14 @@ class AppTheme {
       // Outlined Button Theme (SecondaryButton)
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.chilliDust,
-          side: const BorderSide(color: AppColors.chilliDust, width: 1.5),
+          foregroundColor: AppColors.primaryRed,
+          side: const BorderSide(color: AppColors.primaryRed, width: 1.5),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),
           textStyle: AppTextStyles.labelLarge.copyWith(
-            color: AppColors.chilliDust,
+            color: AppColors.primaryRed,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -101,7 +103,7 @@ class AppTheme {
         ),
         focusedBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
-          borderSide: BorderSide(color: AppColors.chilliDust, width: 2),
+          borderSide: BorderSide(color: AppColors.primaryRed, width: 2),
         ),
         errorBorder: const OutlineInputBorder(
           borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -117,6 +119,63 @@ class AppTheme {
         hintStyle: AppTextStyles.bodyMedium.copyWith(
           color: AppColors.textMuted,
         ),
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  /// Mengembalikan [ThemeData] yang sudah disesuaikan dengan warna peran aktif.
+  ///
+  /// Fungsi ini mengambil [lightTheme] sebagai basis, kemudian menimpa
+  /// [AppBarTheme] dan [BottomNavigationBarThemeData] dengan warna primer
+  /// dari peran yang diberikan — sehingga seluruh app otomatis berubah warna
+  /// cukup dengan mengganti [role] tanpa menyentuh widget individual.
+  ///
+  /// Contoh penggunaan di [MaterialApp]:
+  /// ```dart
+  /// theme: AppTheme.getThemeByRole(ref.watch(roleSessionProvider).role),
+  /// ```
+  static ThemeData getThemeByRole(AppRole role) {
+    final primary = AppRoleTheme.getPrimaryColor(role);
+    final headerBg = AppRoleTheme.getHeaderBackground(role);
+    final headerTitle = AppRoleTheme.getHeaderTitleColor(role);
+    final headerSubtitle = AppRoleTheme.getHeaderSubtitleColor(role);
+    final isAuthority = AppRoleTheme.isAuthorityHeader(role);
+
+    return lightTheme.copyWith(
+      // Warna skema primer mengikuti role
+      colorScheme: lightTheme.colorScheme.copyWith(primary: primary),
+
+      // AppBar: background & foreground sesuai role
+      appBarTheme: AppBarTheme(
+        backgroundColor: headerBg,
+        foregroundColor: headerTitle,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shadowColor: Colors.transparent,
+        iconTheme: IconThemeData(color: headerTitle),
+        actionsIconTheme: IconThemeData(color: headerTitle),
+        titleTextStyle: AppTextStyles.titleLarge.copyWith(
+          color: headerTitle,
+          fontWeight: FontWeight.bold,
+        ),
+        toolbarTextStyle: AppTextStyles.labelMedium.copyWith(
+          color: isAuthority ? headerSubtitle : AppColors.textMuted,
+        ),
+      ),
+
+      // BottomNavigationBar: selected item mengikuti primary role
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: AppRoleTheme.navBackgroundColor,
+        selectedItemColor: primary,
+        unselectedItemColor: AppRoleTheme.unselectedNavColor,
+        showUnselectedLabels: true,
+        type: BottomNavigationBarType.fixed,
+        elevation: 0,
+        selectedLabelStyle: AppTextStyles.labelSmall.copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+        unselectedLabelStyle: AppTextStyles.labelSmall,
       ),
     );
   }

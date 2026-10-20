@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../auth/role_session.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_radii.dart';
+import '../theme/app_role_theme.dart';
 import '../theme/app_text_styles.dart';
 
 class AppBottomNavigationItem {
@@ -19,59 +21,36 @@ class AppBottomNavigationItem {
 }
 
 /// Shared navigation chrome. Destination lists remain role-specific.
-class AppBottomNavigation extends StatelessWidget {
+class AppBottomNavigation extends ConsumerWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final List<AppBottomNavigationItem> items;
-  final Color? selectedItemColor;
-  final Color? unselectedItemColor;
-  final Color? backgroundColor;
-  final TextStyle? selectedLabelStyle;
-  final TextStyle? unselectedLabelStyle;
-  final double iconSize;
-  final bool showTopBorder;
+  final bool _enterprise;
 
   const AppBottomNavigation({
     super.key,
     required this.currentIndex,
     required this.onTap,
     required this.items,
-    this.selectedItemColor,
-    this.unselectedItemColor,
-    this.backgroundColor,
-    this.selectedLabelStyle,
-    this.unselectedLabelStyle,
-    this.iconSize = 24.0,
-    this.showTopBorder = false,
-  });
+  }) : _enterprise = false;
 
-  /// Factory constructor configured for Enterprise Figma styling
+  /// Gaya Pengembang kanonik: ikon 22dp dalam pil lembut saat aktif, satu
+  /// warna merah untuk semua peran.
   const AppBottomNavigation.enterprise({
     super.key,
     required this.currentIndex,
     required this.onTap,
     required this.items,
-    this.selectedItemColor = AppColors.enterprisePrimary,
-    this.unselectedItemColor = AppColors.enterpriseTextMuted,
-    this.backgroundColor = AppColors.enterpriseSurface,
-    this.selectedLabelStyle = const TextStyle(
-      fontSize: 11.5,
-      fontWeight: FontWeight.w600,
-      letterSpacing: 0.1,
-    ),
-    this.unselectedLabelStyle = const TextStyle(
-      fontSize: 11.5,
-      fontWeight: FontWeight.w500,
-      letterSpacing: 0.1,
-    ),
-    this.iconSize = 24.0,
-    this.showTopBorder = true,
-  });
+  }) : _enterprise = true;
 
-  Widget _icon(AppBottomNavigationItem item, {required bool active}) {
+  Widget _icon(
+    AppBottomNavigationItem item, {
+    required bool active,
+    required Color badgeColor,
+  }) {
     final icon = Icon(
       active ? (item.activeIcon ?? item.icon) : item.icon,
-      size: iconSize,
+      size: 24,
     );
     if (item.badgeCount <= 0) return icon;
 
@@ -85,8 +64,8 @@ class AppBottomNavigation extends StatelessWidget {
           child: Container(
             constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: const BoxDecoration(
-              color: AppColors.notificationUnread,
+            decoration: BoxDecoration(
+              color: badgeColor,
               shape: BoxShape.circle,
             ),
             child: Text(
@@ -125,7 +104,11 @@ class AppBottomNavigation extends StatelessWidget {
               ),
               child: IconTheme(
                 data: IconThemeData(color: color, size: 22),
-                child: _icon(item, active: active),
+                child: _icon(
+                  item,
+                  active: active,
+                  badgeColor: AppColors.notificationUnread,
+                ),
               ),
             ),
             const SizedBox(height: 2),
@@ -149,65 +132,74 @@ class AppBottomNavigation extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final effectiveBg = backgroundColor ?? AppColors.surface;
-    final effectiveSelectedColor = selectedItemColor ?? AppColors.actionPrimary;
-    final effectiveUnselectedColor = unselectedItemColor ?? AppColors.textMuted;
-
-    final navBar = BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: onTap,
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: effectiveSelectedColor,
-      unselectedItemColor: effectiveUnselectedColor,
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      iconSize: iconSize,
-      selectedFontSize: selectedLabelStyle?.fontSize ?? 12,
-      unselectedFontSize: unselectedLabelStyle?.fontSize ?? 12,
-      selectedLabelStyle: selectedLabelStyle,
-      unselectedLabelStyle: unselectedLabelStyle,
-      items: [
-        for (final item in items)
-          BottomNavigationBarItem(
-            icon: _icon(item, active: false),
-            activeIcon: _icon(item, active: true),
-            label: item.label,
-          ),
-      ],
-    );
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (_enterprise) return _buildEnterprise(context);
+    final currentRole = ref.watch(roleSessionProvider).role;
+    final selectedColor = AppRoleTheme.getPrimaryColor(currentRole);
 
     return Container(
-      decoration: BoxDecoration(
-        color: effectiveBg,
-        border: showTopBorder
-            ? const Border(
-                top: BorderSide(color: AppColors.enterpriseBorder, width: 1.0),
-              )
-            : null,
-        boxShadow: showTopBorder
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  offset: const Offset(0, -2),
-                  blurRadius: 6,
-                ),
-              ]
-            : null,
+      decoration: const BoxDecoration(
+        color: AppRoleTheme.navBackgroundColor,
+        border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
       ),
       child: SafeArea(
         top: false,
-        child: showTopBorder
-            ? SizedBox(
-                height: 64,
-                child: Row(
-                  children: [
-                    for (var i = 0; i < items.length; i++)
-                      _enterpriseItem(context, i),
-                  ],
+        child: BottomNavigationBar(
+          currentIndex: currentIndex,
+          onTap: onTap,
+          type: BottomNavigationBarType.fixed,
+          selectedItemColor: selectedColor,
+          unselectedItemColor: AppRoleTheme.unselectedNavColor,
+          backgroundColor: AppRoleTheme.navBackgroundColor,
+          elevation: 0,
+          iconSize: 24,
+          selectedFontSize: 12,
+          unselectedFontSize: 12,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.normal),
+          items: [
+            for (final item in items)
+              BottomNavigationBarItem(
+                icon: _icon(item, active: false, badgeColor: selectedColor),
+                activeIcon: _icon(
+                  item,
+                  active: true,
+                  badgeColor: selectedColor,
                 ),
-              )
-            : navBar,
+                label: item.label,
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnterprise(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.enterpriseSurface,
+        border: const Border(
+          top: BorderSide(color: AppColors.enterpriseBorder, width: 1.0),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            offset: const Offset(0, -2),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 64,
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++)
+                _enterpriseItem(context, i),
+            ],
+          ),
+        ),
       ),
     );
   }

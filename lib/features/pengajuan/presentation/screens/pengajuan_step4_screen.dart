@@ -1,613 +1,643 @@
+import '../../../../core/widgets/app_loading_spinner.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/theme/app_radii.dart';
+import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/stepper_header.dart';
 import '../../../../core/utils/file_picker_util.dart';
+import '../../../../core/widgets/app_button.dart';
+import '../../../../core/widgets/pengajuan_step_header.dart';
+import '../../../../core/widgets/stepper_header.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/pengajuan_draft_ui.dart';
+import '../widgets/smart_validation_bottom_sheet.dart';
 
-class PengajuanStep4Screen extends ConsumerWidget {
-  const PengajuanStep4Screen({super.key});
+typedef Step4FilePickerSeam =
+    Future<List<PlatformFile>> Function({
+      required bool allowMultiple,
+      List<String>? allowedExtensions,
+    });
 
-  static const List<String> daftarCakupanGambar = [
-    '1 Cover',
-    '2 Lembar Pengesahan Rencana Tapak',
-    '3 Daftar Rincian Prasarana, Sarana dan Utilitas',
-    '4 Spesimen Paraf dan Tanda Tangan',
-    '5 Indeks Gambar',
-    '6 Gambaran Umum',
-    '7 Peta Lokasi',
-    '8 Gambar Batas Tanah yang Dikuasai',
-    '9 Gambar & Hasil Penyelidikan Tanah',
-    '10 Gambar Rencana Tapak (Site Plan)',
-    '11 Gambar RTH',
-    '12 Gambar Perancangan Jaringan Jalan',
-    '13 Gambar Perancangan Drainase',
-    '14 Gambar Perancangan Jaringan Air Limbah',
-    '15 Gambar Perancangan Jaringan Air Bersih',
-    '16 Gambar Perencanaan Utilitas PJU',
-    '17 Gambar Perencanaan Unit Rumah (Arsitektural)',
-    '18 Gambar Perancangan Sarana Peribadatan',
-    '19 Gambar Perancangan Sarana Perdagangan',
-    '20 Gambar Perancangan Keamanan (Pos Satpam/Gapura/Pagar)',
-    '21 TPS',
-  ];
+class PengajuanStep4Screen extends ConsumerStatefulWidget {
+  const PengajuanStep4Screen({super.key, this.pickerSeam});
 
-  void _showCakupanModal(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _CakupanChecklistModal(),
+  final Step4FilePickerSeam? pickerSeam;
+
+  @override
+  ConsumerState<PengajuanStep4Screen> createState() =>
+      _PengajuanStep4ScreenState();
+}
+
+class _FileFailure {
+  const _FileFailure(this.fileName, this.message);
+
+  final String fileName;
+  final String message;
+}
+
+class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
+  static const _maxTechnicalFileBytes = 50 * 1024 * 1024;
+  static const _sitePlanKey = 'site_plan';
+  static const _otherKey = PengajuanFormState.technicalOtherDocumentsKey;
+  static const _sitePlanExtensions = ['dwg', 'pdf'];
+  static const _otherExtensions = ['pdf'];
+
+  final _loadingGroups = <String>{};
+  final _cancelRequested = <String>{};
+  final _failures = <String, _FileFailure>{};
+  final _fileSizes = <String, int>{};
+  final _selectionGenerations = <String, int>{};
+
+  Future<List<PlatformFile>> _pick({
+    required List<String> allowedExtensions,
+  }) async {
+    if (widget.pickerSeam != null) {
+      return widget.pickerSeam!(
+        allowMultiple: true,
+        allowedExtensions: allowedExtensions,
+      );
+    }
+    return FilePickerUtil.pickMultipleFiles(
+      allowedExtensions: allowedExtensions,
     );
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final formState = ref.watch(pengajuanFormProvider);
-    final notifier = ref.read(pengajuanFormProvider.notifier);
+  String _extension(String name) {
+    final dot = name.lastIndexOf('.');
+    return dot == -1 ? '' : name.substring(dot + 1).toLowerCase();
+  }
 
-    Future<void> pickMultiple() async {
-      final files = await FilePickerUtil.pickMultipleFiles(
-        allowedExtensions: ['dwg', 'pdf', 'zip', 'rar', 'dxf'],
-      );
-      if (!context.mounted) return;
-      if (files.isNotEmpty) {
-        notifier.addTechnicalFiles(files.map((f) => f.path ?? f.name).toList());
-      } else if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Tidak ada berkas dipilih. Data tetap tidak berubah.',
-            ),
-          ),
+  String _displayName(String reference) =>
+      reference.split(RegExp(r'[/\\]')).last;
+
+  Future<void> _selectGroup({required String group}) async {
+    final isSitePlan = group == _sitePlanKey;
+    final allowed = isSitePlan ? _sitePlanExtensions : _otherExtensions;
+    final generation = (_selectionGenerations[group] ?? 0) + 1;
+    _selectionGenerations[group] = generation;
+    setState(() {
+      _loadingGroups.add(group);
+      _cancelRequested.remove(group);
+      _failures.remove(group);
+    });
+
+    List<PlatformFile> files;
+    try {
+      files = await _pick(allowedExtensions: allowed);
+    } catch (_) {
+      if (!mounted || generation != _selectionGenerations[group]) return;
+      if (_cancelRequested.remove(group)) return;
+      setState(() {
+        _loadingGroups.remove(group);
+        _failures[group] = const _FileFailure(
+          'Kendala perangkat',
+          'Pemilih berkas tidak dapat dibuka. Silakan coba lagi.',
         );
-      }
+      });
+      return;
     }
 
+    if (!mounted || generation != _selectionGenerations[group]) return;
+    final cancelled = _cancelRequested.remove(group);
+    setState(() => _loadingGroups.remove(group));
+    if (cancelled) return;
+    if (files.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Tidak ada berkas dipilih. Data tetap tidak berubah.'),
+        ),
+      );
+      return;
+    }
+
+    final valid = <String>[];
+    final failures = <String>[];
+    for (final file in files) {
+      final reference = FilePickerUtil.referenceOf(file);
+      final extension = _extension(file.name);
+      if (!allowed.contains(extension)) {
+        failures.add(
+          '${isSitePlan ? 'Format tidak didukung. Gunakan DWG atau PDF.' : 'Format tidak didukung. Gunakan PDF.'} (${file.name})',
+        );
+        continue;
+      }
+      if (file.size > _maxTechnicalFileBytes) {
+        failures.add('Ukuran melebihi batas 50 MB per file (${file.name})');
+        continue;
+      }
+      if (valid.contains(reference)) continue;
+      valid.add(reference);
+      _fileSizes[reference] = file.size;
+    }
+
+    if (valid.isNotEmpty) {
+      final notifier = ref.read(pengajuanFormProvider.notifier);
+      if (isSitePlan) {
+        notifier.addTechnicalFiles(valid);
+      } else {
+        notifier.uploadDocuments(_otherKey, valid);
+      }
+    }
+    if (failures.isNotEmpty) {
+      setState(
+        () => _failures[group] = _FileFailure(
+          failures.length == 1
+              ? failures.first.split(': ').first
+              : 'Berkas teknis',
+          failures.join('\n'),
+        ),
+      );
+    }
+  }
+
+  void _cancelSelection(String group) {
+    if (_loadingGroups.contains(group)) {
+      _selectionGenerations[group] = (_selectionGenerations[group] ?? 0) + 1;
+      setState(() {
+        _cancelRequested.add(group);
+        _loadingGroups.remove(group);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = ref.watch(pengajuanFormProvider);
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Dokumen Teknis (Step 4)'),
-        elevation: 0,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(184),
+        child: PengajuanStepHeader(
+          subtitle: 'Langkah 4 dari 5',
+          onBackPressed: _backToStep3,
+        ),
       ),
       body: Column(
         children: [
           const StepperHeader(currentStep: 4),
           Expanded(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.lg,
+                AppSpacing.xxl,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Upload Berkas Perancangan & Site Plan',
-                    style: AppTextStyles.headlineMedium,
+                  _buildTechnicalNotice(),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildGroup(
+                    group: _sitePlanKey,
+                    title:
+                        'Dokumen Perencanaan & Perancangan Site Plan Perumahan',
+                    subtitle:
+                        'Wajib melampirkan berkas utama perencanaan teknis',
+                    extensions: 'DWG / PDF',
+                    files: state.technicalFiles,
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Unggah minimal satu berkas CAD (.dwg), PDF, atau ZIP gabungan untuk melanjutkan.',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.grey600,
-                    ),
+                  const SizedBox(height: AppSpacing.lg),
+                  _buildGroup(
+                    group: _otherKey,
+                    title: 'Dokumen Kajian Teknis Lainnya',
+                    subtitle:
+                        'Laporan penyelidikan tanah (soil test), perhitungan hidrologi & kontur tanah.',
+                    extensions: 'PDF',
+                    files: state.technicalOtherFiles,
                   ),
-                  const SizedBox(height: 20),
-
-                  // 1. Single Window Multi-File Upload Box
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.grey300, width: 1.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppColors.champagneToast.withValues(
-                              alpha: 0.4,
-                            ),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.cloud_upload_outlined,
-                            size: 36,
-                            color: AppColors.chilliDust,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Pilih atau Tarik Berkas Gambar Teknis',
-                          style: AppTextStyles.titleMedium.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.cocoaBeanRoast,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Format yang didukung: DWG, PDF, ZIP, RAR, DXF (bisa pilih banyak file sekaligus)',
-                          textAlign: TextAlign.center,
-                          style: AppTextStyles.bodySmall.copyWith(
-                            color: AppColors.grey600,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: pickMultiple,
-                          icon: const Icon(Icons.add_circle_outline, size: 20),
-                          label: const Text('Pilih Berkas Dokumen Teknis'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.chilliDust,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // 2. List of Uploaded Technical Files
-                  if (formState.technicalFiles.isNotEmpty) ...[
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Daftar Berkas Terunggah (${formState.technicalFiles.length})',
-                          style: AppTextStyles.titleMedium.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.cocoaBeanRoast,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: pickMultiple,
-                          child: const Text(
-                            '+ Tambah Berkas',
-                            style: TextStyle(color: AppColors.chilliDust),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: formState.technicalFiles.length,
-                      itemBuilder: (context, index) {
-                        final fileName = formState.technicalFiles[index];
-                        final isDwg = fileName.toLowerCase().endsWith('.dwg');
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppColors.grey200),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: isDwg
-                                      ? AppColors.chilliDust.withValues(
-                                          alpha: 0.1,
-                                        )
-                                      : AppColors.champagneToast.withValues(
-                                          alpha: 0.5,
-                                        ),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Icon(
-                                  isDwg
-                                      ? Icons.architecture
-                                      : Icons.picture_as_pdf,
-                                  size: 20,
-                                  color: isDwg
-                                      ? AppColors.chilliDust
-                                      : AppColors.cocoaBeanRoast,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  fileName.split(RegExp(r'[/\\]')).last,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.cocoaBeanRoast,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: AppColors.error,
-                                  size: 20,
-                                ),
-                                onPressed: () =>
-                                    notifier.removeTechnicalFile(index),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-
-                  const SizedBox(height: 24),
-
-                  // 3. Section CAKUPAN GAMBAR (Pills / Chips Selector)
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.grey200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'CAKUPAN GAMBAR TEKNIS',
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1.2,
-                                      color: AppColors.grey700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Tandai gambar apa saja yang ada dalam berkas di atas:',
-                                    style: AppTextStyles.bodySmall.copyWith(
-                                      color: AppColors.grey600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: () => _showCakupanModal(context, ref),
-                              icon: const Icon(
-                                Icons.checklist,
-                                size: 18,
-                                color: AppColors.chilliDust,
-                              ),
-                              label: const Text(
-                                'Pilih List',
-                                style: TextStyle(
-                                  color: AppColors.chilliDust,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: AppColors.chilliDust,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Green Chips Grid / Wrap (Style matching AppColors.pistachioCream)
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: daftarCakupanGambar.map((item) {
-                            final isSelected = formState.selectedCakupanGambar
-                                .contains(item);
-                            final maxChipWidth =
-                                MediaQuery.of(context).size.width - 72;
-                            return InkWell(
-                              onTap: () => notifier.toggleCakupanGambar(item),
-                              borderRadius: BorderRadius.circular(20),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                constraints: BoxConstraints(
-                                  maxWidth: maxChipWidth,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.pistachioCream.withValues(
-                                          alpha: 0.35,
-                                        )
-                                      : AppColors.surface,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? AppColors.pistachioCream
-                                        : AppColors.grey300,
-                                    width: isSelected ? 1.5 : 1,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (isSelected) ...[
-                                      const Icon(
-                                        Icons.check,
-                                        size: 16,
-                                        color: AppColors.cocoaBeanRoast,
-                                      ),
-                                      const SizedBox(width: 4),
-                                    ],
-                                    Flexible(
-                                      child: Text(
-                                        item,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: isSelected
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                          color: isSelected
-                                              ? AppColors.cocoaBeanRoast
-                                              : AppColors.grey700,
-                                        ),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: () => notifier.selectAllCakupanGambar(
-                                daftarCakupanGambar,
-                              ),
-                              child: const Text(
-                                'Centang Semua',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.chilliDust,
-                                ),
-                              ),
-                            ),
-                            const Text(
-                              '·',
-                              style: TextStyle(color: AppColors.grey400),
-                            ),
-                            TextButton(
-                              onPressed: () => notifier.clearCakupanGambar(),
-                              child: const Text(
-                                'Hapus Semua',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.grey600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
                 ],
               ),
             ),
           ),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.all(16.0),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: const Border(top: BorderSide(color: AppColors.grey200)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -4),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (!formState.isStep4Valid) ...[
+      bottomNavigationBar: _buildBottomBar(state.isStep4Valid),
+    );
+  }
+
+  Widget _buildTechnicalNotice() {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.primarySurfaceSoft,
+        borderRadius: AppRadii.control,
+        border: Border.all(color: AppColors.primarySurfaceBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info, color: AppColors.primaryRed, size: 22),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  'Minimal satu berkas teknis wajib diunggah',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: AppColors.chilliDust,
-                    fontWeight: FontWeight.bold,
+                  'Ketentuan Format Teknis',
+                  style: AppTextStyles.titleSmall.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 4),
+                Text(
+                  'Prototype lokal: Rencana Tapak (Site Plan) menampilkan kebutuhan file digital CAD (.DWG) skala koordinat ril UTM dan PDF legalisir berskala tinggi (maks. 50 MB per file). Status di layar ini belum berarti upload ke server.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGroup({
+    required String group,
+    required String title,
+    required String subtitle,
+    required String extensions,
+    required List<String> files,
+  }) {
+    final isLoading = _loadingGroups.contains(group);
+    final failure = _failures[group];
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: AppRadii.card,
+        border: Border.all(color: AppColors.borderSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: AppTextStyles.titleMedium.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Align(
+                alignment: Alignment.centerRight,
+                child: _formatPills(extensions),
+              ),
+            ],
+          ),
+          if (files.isNotEmpty || failure != null || isLoading) ...[
+            const SizedBox(height: AppSpacing.md),
+            const Divider(height: 1),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          ...files.asMap().entries.map(
+            (entry) => _buildFileRow(
+              group: group,
+              index: entry.key,
+              reference: entry.value,
+            ),
+          ),
+          if (isLoading) _buildLoadingRow(group),
+          if (failure != null) _buildFailureRow(group, failure),
+          const SizedBox(height: AppSpacing.sm),
+          _buildAddButton(
+            group: group,
+            isLoading: isLoading,
+            hasFiles: files.isNotEmpty,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _formatPills(String extensions) {
+    return Wrap(
+      spacing: AppSpacing.xs,
+      children: extensions
+          .split(' / ')
+          .map(
+            (extension) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: const BoxDecoration(
+                color: AppColors.slate100,
+                borderRadius: AppRadii.pill,
+              ),
+              child: Text(
+                extension,
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.slate600,
+                ),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Future<void> _replaceFile(String group, int index) async {
+    final isSitePlan = group == _sitePlanKey;
+    final allowed = isSitePlan ? _sitePlanExtensions : _otherExtensions;
+
+    List<PlatformFile> files;
+    try {
+      if (widget.pickerSeam != null) {
+        files = await widget.pickerSeam!(
+          allowMultiple: false,
+          allowedExtensions: allowed,
+        );
+      } else {
+        final single = await FilePickerUtil.pickSingleFile(
+          allowedExtensions: allowed,
+        );
+        files = single == null ? const [] : [single];
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Kendala perangkat saat memilih berkas pengganti.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted || files.isEmpty) return;
+
+    final file = files.first;
+    final extension = _extension(file.name);
+    if (!allowed.contains(extension)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isSitePlan
+                ? 'Format tidak didukung. Gunakan DWG atau PDF.'
+                : 'Format tidak didukung. Gunakan PDF.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (file.size > _maxTechnicalFileBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ukuran melebihi batas 50 MB per file.')),
+      );
+      return;
+    }
+
+    final reference = FilePickerUtil.referenceOf(file);
+    setState(() {
+      _fileSizes[reference] = file.size;
+      _fileSizes[file.name] = file.size;
+    });
+
+    final notifier = ref.read(pengajuanFormProvider.notifier);
+    if (isSitePlan) {
+      notifier.replaceTechnicalFile(index, reference);
+    } else {
+      notifier.replaceTechnicalOtherFile(index, reference);
+    }
+  }
+
+  Widget _buildFileRow({
+    required String group,
+    required int index,
+    required String reference,
+  }) {
+    final name = _displayName(reference);
+    final size = _fileSizes[reference] ?? _fileSizes[name];
+    final notifier = ref.read(pengajuanFormProvider.notifier);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: UploadedFileTile(
+        fileName: name,
+        sizeBytes: size,
+        onPreview: () => FilePickerUtil.showAppDocumentPreview(
+          context,
+          fileName: name,
+          title: group == _sitePlanKey
+              ? 'Site Plan & Gambar Kawasan'
+              : 'Kajian Teknis & Lingkungan',
+          fileSize: size,
+        ),
+        onReplace: () => _replaceFile(group, index),
+        onDelete: () => group == _sitePlanKey
+            ? notifier.removeTechnicalFile(index)
+            : notifier.removeTechnicalOtherFile(index),
+      ),
+    );
+  }
+
+  Widget _buildLoadingRow(String group) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.primarySurfaceSoft,
+        borderRadius: AppRadii.control,
+        border: Border.all(color: AppColors.primarySurfaceBorder),
+      ),
+      child: Row(
+        children: [
+          const AppLoadingSpinner.medium(
+            customDimension: 22,
+            color: AppColors.primaryRed,
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Text(
+              'Memeriksa berkas secara lokal...',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.primaryRed,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => _cancelSelection(group),
+            child: const Text('Batal'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFailureRow(String group, _FileFailure failure) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.statusUrgentSurface,
+        borderRadius: AppRadii.control,
+        border: Border.all(color: AppColors.error),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.error),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              '${failure.fileName}\n${failure.message}',
+              style: AppTextStyles.bodySmall.copyWith(
+                color: AppColors.statusUrgentText,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => setState(() => _failures.remove(group)),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddButton({
+    required String group,
+    required bool isLoading,
+    required bool hasFiles,
+  }) {
+    final isSitePlan = group == _sitePlanKey;
+    return OutlinedButton.icon(
+      onPressed: isLoading
+          ? () => _cancelSelection(group)
+          : () => _selectGroup(group: group),
+      icon: Icon(isLoading ? Icons.close : FilePickerUtil.uploadIcon, size: 18),
+      label: Text(
+        isLoading
+            ? 'Batal memilih berkas'
+            : '${hasFiles ? 'Tambah' : 'Unggah'} File ${isSitePlan ? 'Site Plan (DWG/PDF)' : 'Kajian (PDF)'}',
+      ),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: isLoading ? AppColors.error : AppColors.primaryRed,
+        side: BorderSide(
+          color: isLoading ? AppColors.error : AppColors.primarySurfaceBorder,
+        ),
+        minimumSize: const Size.fromHeight(44),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadii.small),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(bool isValid) {
+    final useStackedActions =
+        MediaQuery.textScalerOf(context).scale(14) > 20 ||
+        MediaQuery.sizeOf(context).width < 370;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.lg,
+        AppSpacing.sm,
+        AppSpacing.lg,
+        AppSpacing.lg,
+      ),
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.borderSubtle)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 12,
+            offset: Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const DraftStatusRow(),
+            const SizedBox(height: 10),
+            if (useStackedActions) ...[
+              AppButton.secondary(text: 'Kembali', onPressed: _backToStep3),
+              const SizedBox(height: AppSpacing.sm),
+              AppButton.primary(text: 'Lanjut ke Review', onPressed: _onNext),
+            ] else
               Row(
                 children: [
                   Expanded(
                     child: AppButton.secondary(
                       text: 'Kembali',
-                      onPressed: () => context.pop(),
+                      onPressed: _backToStep3,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: AppSpacing.md),
                   Expanded(
                     child: AppButton.primary(
-                      text: 'Selanjutnya',
-                      onPressed: formState.isStep4Valid
-                          ? () => context.push('/pengajuan/step5')
-                          : null,
+                      text: 'Lanjut ke Review',
+                      onPressed: _onNext,
                     ),
                   ),
                 ],
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
-}
 
-class _CakupanChecklistModal extends ConsumerWidget {
-  const _CakupanChecklistModal();
+  void _backToStep3() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/pengajuan/step3');
+    }
+  }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final formState = ref.watch(pengajuanFormProvider);
-    final notifier = ref.read(pengajuanFormProvider.notifier);
-    final selectedCount = formState.selectedCakupanGambar.length;
+  void _continueToStep5() => context.push('/pengajuan/step5');
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  bool _isModalShowing = false;
+
+  void _onNext() async {
+    final isValid = ref.read(pengajuanFormProvider).isStep4Valid;
+    if (isValid) {
+      _continueToStep5();
+      return;
+    }
+
+    if (_isModalShowing) return;
+
+    final missing = [
+      const MissingValidationItem(
+        key: 'site_plan',
+        title: '1. Dokumen Perencanaan & Perancangan Site Plan *',
+        subtitle: 'Format DWG atau PDF maksimal 50 MB',
+        statusText: 'Belum diunggah',
+        icon: Icons.architecture_outlined,
       ),
-      child: Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.only(top: 10, bottom: 6),
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: AppColors.grey300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Pilih Cakupan Gambar Teknis',
-                      style: AppTextStyles.titleMedium,
-                    ),
-                    Text(
-                      '$selectedCount dari ${PengajuanStep4Screen.daftarCakupanGambar.length} tercentang',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        color: AppColors.grey600,
-                      ),
-                    ),
-                  ],
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text(
-                    'Selesai',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.chilliDust,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: PengajuanStep4Screen.daftarCakupanGambar.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final item = PengajuanStep4Screen.daftarCakupanGambar[index];
-                final isChecked = formState.selectedCakupanGambar.contains(
-                  item,
-                );
-                return CheckboxListTile(
-                  value: isChecked,
-                  activeColor: AppColors.chilliDust,
-                  checkColor: Colors.white,
-                  title: Text(
-                    item,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isChecked
-                          ? FontWeight.w600
-                          : FontWeight.normal,
-                      color: isChecked
-                          ? AppColors.cocoaBeanRoast
-                          : AppColors.grey800,
-                    ),
-                  ),
-                  onChanged: (_) => notifier.toggleCakupanGambar(item),
-                );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => notifier.selectAllCakupanGambar(
-                      PengajuanStep4Screen.daftarCakupanGambar,
-                    ),
-                    child: const Text('Pilih Semua'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.chilliDust,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Terapkan'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    ];
+
+    _isModalShowing = true;
+    await showSmartValidationBottomSheet(
+      context: context,
+      title: 'Berkas Teknis Belum Diunggah',
+      subtitle: 'Unggah berkas site plan teknis sebelum ke Review.',
+      completedCount: 0,
+      totalCount: 1,
+      statusBadgeText: '0 dari 1 berkas lengkap',
+      warningText: '1 berkas site plan wajib belum diunggah',
+      sectionTitle: 'DAFTAR DOKUMEN YANG PERLU DIUNGGAH',
+      missingItems: missing,
+      actionButtonText: 'Lengkapi Berkas Sekarang',
+      cancelButtonText: 'Kembali ke Formulir',
     );
+    if (mounted) {
+      _isModalShowing = false;
+    }
   }
 }

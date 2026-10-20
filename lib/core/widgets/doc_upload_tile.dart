@@ -12,6 +12,9 @@ class DocUploadTile extends StatelessWidget {
   final VoidCallback? onDelete;
   final bool isRequired;
 
+  /// Pesan penolakan berkas terakhir; bila ada, kartu tampil merah.
+  final String? errorText;
+
   const DocUploadTile({
     super.key,
     required this.title,
@@ -20,6 +23,7 @@ class DocUploadTile extends StatelessWidget {
     required this.onUpload,
     this.onDelete,
     this.isRequired = true,
+    this.errorText,
   });
 
   String _getFileMeta(String path) {
@@ -32,15 +36,16 @@ class DocUploadTile extends StatelessWidget {
             ? '${(sizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB'
             : '${(sizeBytes / 1024).toStringAsFixed(0)} KB';
         final dateStr = DateFormat('d MMM yyyy, HH:mm').format(stat.modified);
-        return '$sizeStr · Diunggah $dateStr';
+        return '$sizeStr · Dipilih $dateStr';
       }
     } catch (_) {}
-    return 'Diunggah ${DateFormat('d MMM yyyy').format(DateTime.now())}';
+    return 'Dipilih ${DateFormat('d MMM yyyy').format(DateTime.now())}';
   }
 
   @override
   Widget build(BuildContext context) {
     final isUploaded = fileName != null && fileName!.isNotEmpty;
+    final hasError = errorText != null && !isUploaded;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -49,8 +54,12 @@ class DocUploadTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isUploaded ? AppColors.pistachioCream : AppColors.grey300,
-          width: isUploaded ? 1.5 : 1,
+          color: isUploaded
+              ? AppColors.statusSuccessText
+              : hasError
+              ? AppColors.error
+              : AppColors.grey300,
+          width: isUploaded || hasError ? 1.5 : 1,
         ),
       ),
       child: Row(
@@ -75,6 +84,22 @@ class DocUploadTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(subtitle, style: AppTextStyles.bodySmall.copyWith(color: AppColors.grey600)),
+                if (hasError) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline, size: 16, color: AppColors.error),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          errorText!,
+                          style: AppTextStyles.bodySmall.copyWith(color: AppColors.error),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (isUploaded) ...[
                   const SizedBox(height: 8),
                   Container(
@@ -89,12 +114,12 @@ class DocUploadTile extends StatelessWidget {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.description, size: 16, color: AppColors.cocoaBeanRoast),
+                            const Icon(Icons.description, size: 16, color: AppColors.textMain),
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
                                 fileName!.split(RegExp(r'[/\\]')).last,
-                                style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.cocoaBeanRoast),
+                                style: AppTextStyles.bodySmall.copyWith(fontWeight: FontWeight.bold, color: AppColors.textMain),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -129,15 +154,16 @@ class DocUploadTile extends StatelessWidget {
             ElevatedButton(
               onPressed: onUpload,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.champagneToast,
-                foregroundColor: AppColors.cocoaBeanRoast,
+                backgroundColor: AppColors.primarySurface,
+                foregroundColor: AppColors.primaryRed,
+                elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('Unggah'),
+              child: Text(hasError ? 'Coba Lagi' : 'Unggah'),
             )
           else
-            const Icon(Icons.check_circle, color: AppColors.pistachioCream, size: 28),
+            const Icon(Icons.check_circle, color: AppColors.statusSuccessText, size: 28),
         ],
       ),
     );

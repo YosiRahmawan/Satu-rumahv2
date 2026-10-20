@@ -4,15 +4,21 @@ import '../theme/app_text_styles.dart';
 
 class StepperHeader extends StatelessWidget {
   final int currentStep; // 1 to 5
-  final List<String> stepTitles = const [
+  final List<String> stepTitles;
+
+  static const List<String> defaultTitles = [
     'Data PT',
-    'Dok. Admin',
-    'Dok. Legal',
-    'Dok. Teknis',
-    'Review'
+    'Berkas PT',
+    'Perumahan',
+    'Teknis',
+    'Review',
   ];
 
-  const StepperHeader({super.key, required this.currentStep});
+  const StepperHeader({
+    super.key,
+    required this.currentStep,
+    this.stepTitles = defaultTitles,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -20,15 +26,20 @@ class StepperHeader extends StatelessWidget {
       color: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: List.generate(stepTitles.length * 2 - 1, (index) {
           if (index.isOdd) {
-            // Line separator
+            // Line separator aligned with circle centers
             final lineIndex = index ~/ 2;
             final isPassed = lineIndex + 1 < currentStep;
             return Expanded(
               child: Container(
-                height: 3,
-                color: isPassed ? AppColors.chilliDust : AppColors.grey300,
+                height: 32,
+                alignment: Alignment.center,
+                child: Container(
+                  height: 2.5,
+                  color: isPassed ? AppColors.statusSuccess : AppColors.grey300,
+                ),
               ),
             );
           } else {
@@ -46,13 +57,18 @@ class StepperHeader extends StatelessWidget {
                   height: 32,
                   decoration: BoxDecoration(
                     color: isPassed
-                        ? AppColors.chilliDust
+                        ? AppColors.statusSuccess
                         : isActive
-                            ? AppColors.chilliDust
-                            : AppColors.grey200,
+                        ? AppColors.primaryRed
+                        : AppColors.grey200,
                     shape: BoxShape.circle,
-                    border: isActive
-                        ? Border.all(color: AppColors.champagneToast, width: 2)
+                    boxShadow: isActive
+                        ? const [
+                            BoxShadow(
+                              color: Color(0xFFFEE2E2),
+                              spreadRadius: 4,
+                            ),
+                          ]
                         : null,
                   ),
                   alignment: Alignment.center,
@@ -61,17 +77,34 @@ class StepperHeader extends StatelessWidget {
                       : Text(
                           '$stepNum',
                           style: AppTextStyles.labelMedium.copyWith(
-                            color: isActive || isPassed ? Colors.white : AppColors.grey600,
+                            color: isActive || isPassed
+                                ? Colors.white
+                                : AppColors.grey600,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  stepTitles[stepIndex],
-                  style: AppTextStyles.labelSmall.copyWith(
-                    color: isActive ? AppColors.chilliDust : AppColors.grey600,
-                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                const SizedBox(height: 5),
+                SizedBox(
+                  width: 52,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      stepTitles[stepIndex],
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      style: AppTextStyles.labelSmall.copyWith(
+                        fontSize: 10.5,
+                        color: isPassed
+                            ? AppColors.statusSuccess
+                            : isActive
+                            ? AppColors.primaryRed
+                            : AppColors.grey600,
+                        fontWeight: (isActive || isPassed)
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                    ),
                   ),
                 ),
               ],

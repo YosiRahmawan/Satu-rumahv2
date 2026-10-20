@@ -30,6 +30,12 @@ class Pengajuan {
   final String? beritaAcaraPath;
   final String? skPersetujuanPath;
   final List<HasilSurveyItem> riwayatSurvey;
+  final String? nomorSk;
+  final String? tanggalSk;
+  final String? tipePengajuan;
+  final String? diperbarui;
+  final String? nib;
+  final String? alamatProyek;
 
   Pengajuan({
     required this.id,
@@ -56,6 +62,12 @@ class Pengajuan {
     this.beritaAcaraPath,
     this.skPersetujuanPath,
     this.riwayatSurvey = const [],
+    this.nomorSk,
+    this.tanggalSk,
+    this.tipePengajuan,
+    this.diperbarui,
+    this.nib,
+    this.alamatProyek,
   });
 
   Pengajuan copyWith({
@@ -84,6 +96,12 @@ class Pengajuan {
     Object? beritaAcaraPath = _sentinel,
     Object? skPersetujuanPath = _sentinel,
     List<HasilSurveyItem>? riwayatSurvey,
+    Object? nomorSk = _sentinel,
+    Object? tanggalSk = _sentinel,
+    Object? tipePengajuan = _sentinel,
+    Object? diperbarui = _sentinel,
+    Object? nib = _sentinel,
+    Object? alamatProyek = _sentinel,
   }) {
     return Pengajuan(
       id: id ?? this.id,
@@ -119,6 +137,18 @@ class Pengajuan {
           ? this.skPersetujuanPath
           : skPersetujuanPath as String?,
       riwayatSurvey: riwayatSurvey ?? this.riwayatSurvey,
+      nomorSk: nomorSk == _sentinel ? this.nomorSk : nomorSk as String?,
+      tanggalSk: tanggalSk == _sentinel ? this.tanggalSk : tanggalSk as String?,
+      tipePengajuan: tipePengajuan == _sentinel
+          ? this.tipePengajuan
+          : tipePengajuan as String?,
+      diperbarui: diperbarui == _sentinel
+          ? this.diperbarui
+          : diperbarui as String?,
+      nib: nib == _sentinel ? this.nib : nib as String?,
+      alamatProyek: alamatProyek == _sentinel
+          ? this.alamatProyek
+          : alamatProyek as String?,
     );
   }
 }

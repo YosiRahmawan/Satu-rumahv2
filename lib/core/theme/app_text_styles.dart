@@ -10,7 +10,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 32,
     fontWeight: FontWeight.bold,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.25,
   );
 
@@ -18,7 +18,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 28,
     fontWeight: FontWeight.bold,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.25,
   );
 
@@ -26,7 +26,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 24,
     fontWeight: FontWeight.bold,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.25,
   );
 
@@ -41,7 +41,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 20,
     fontWeight: FontWeight.w600,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.3,
   );
 
@@ -49,7 +49,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 18,
     fontWeight: FontWeight.w600,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.3,
   );
 
@@ -57,7 +57,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w600,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.3,
   );
 
@@ -66,7 +66,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.w500,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.35,
   );
 
@@ -74,7 +74,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w500,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.35,
   );
 
@@ -82,7 +82,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.35,
   );
 
@@ -91,7 +91,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 16,
     fontWeight: FontWeight.normal,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.5,
   );
 
@@ -99,7 +99,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.normal,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.5,
   );
 
@@ -107,7 +107,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.normal,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.5,
   );
 
@@ -116,7 +116,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 14,
     fontWeight: FontWeight.w500,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.2,
   );
 
@@ -124,7 +124,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 12,
     fontWeight: FontWeight.w500,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.2,
   );
 
@@ -132,7 +132,7 @@ class AppTextStyles {
     fontFamily: fontFamily,
     fontSize: 10,
     fontWeight: FontWeight.w500,
-    color: AppColors.cocoaBeanRoast,
+    color: AppColors.textMain,
     height: 1.2,
   );
 }

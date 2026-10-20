@@ -6,33 +6,15 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
-import '../../data/models/evidence_photo_item.dart';
 import '../../data/models/monitoring_model.dart';
-import '../../data/models/project_reference.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
-import '../providers/project_reference_provider.dart';
-import '../../utils/geo_distance.dart';
 import '../widgets/dynamic_bullet_field.dart';
-import '../widgets/evidence_photo_picker.dart';
-import '../widgets/photo_location_map.dart';
-import '../widgets/photo_location_sheet.dart';
 
 enum _ExitChoice { save, discard }
 
 class TambahMonitoringStepperScreen extends ConsumerStatefulWidget {
-  /// Mengganti peta pada lembar lokasi foto (mis. di tes tanpa jaringan).
-  final Widget Function(PhotoLocationMapController controller)?
-  locationMapBuilder;
-
-  /// Resolver posisi GPS perangkat (mis. di tes).
-  final DeviceLocationResolver? deviceLocationResolver;
-
-  const TambahMonitoringStepperScreen({
-    super.key,
-    this.locationMapBuilder,
-    this.deviceLocationResolver,
-  });
+  const TambahMonitoringStepperScreen({super.key});
 
   @override
   ConsumerState<TambahMonitoringStepperScreen> createState() =>
@@ -42,8 +24,6 @@ class TambahMonitoringStepperScreen extends ConsumerStatefulWidget {
 class _TambahMonitoringStepperScreenState
     extends ConsumerState<TambahMonitoringStepperScreen> {
   final ScrollController _scrollController = ScrollController();
-  bool _isPhotoSelectionMode = false;
-  final Set<int> _selectedPhotoIndices = {};
   late String _savedSignature;
   late TextEditingController _namaPerumahanController;
   late TextEditingController _lokasiController;
@@ -1324,11 +1304,6 @@ class _TambahMonitoringStepperScreenState
     MonitoringFormState state,
     MonitoringFormNotifier notifier,
   ) {
-    final photos = state.photos
-        .where((photo) => photo.localRef.trim().isNotEmpty)
-        .toList();
-    final located = photos.where((photo) => photo.hasLocation).length;
-    final reference = ref.watch(projectReferenceProvider(state.pengajuanId));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1340,55 +1315,37 @@ class _TambahMonitoringStepperScreenState
             fontWeight: FontWeight.w800,
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          photos.isEmpty
-              ? 'Belum ada foto'
-              : '${photos.length} foto · $located sudah berlokasi',
-          style: AppTextStyles.bodySmall.copyWith(
-            fontFamily: AppTextStyles.enterpriseFontFamily,
-            color: AppColors.enterpriseTextMuted,
+        const SizedBox(height: 16),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            border: Border.all(color: AppColors.enterpriseBorder),
+            borderRadius: AppRadii.control,
           ),
-        ),
-        const SizedBox(height: 16),
-        _buildProjectReferenceBanner(reference),
-        const SizedBox(height: 16),
-        if (photos.isNotEmpty) ...[
-          _buildPhotoBatchActionRow(photos, reference, notifier),
-          const SizedBox(height: 12),
-          if (_isPhotoSelectionMode) ...[
-            _buildSelectionToolbar(photos),
-            const SizedBox(height: 12),
-          ],
-        ],
-        EvidencePhotoPicker(
-          photoPaths: [for (final photo in photos) photo.localRef],
-          onPhotosChanged: (updatedPaths) {
-            notifier.updatePhotos(updatedPaths);
-            setState(() {
-              _selectedPhotoIndices.removeWhere(
-                (i) => i >= updatedPaths.length,
-              );
-            });
-          },
-          onPhotoPicked: (path, origin, exif) =>
-              notifier.attachPhotoMeta(path, origin: origin, exif: exif),
-          photoStatusBuilder: (index) =>
-              _buildPhotoStatus(photos[index], reference),
-          onPhotoTap: (index) =>
-              _openPhotoLocation(photos[index], index + 1, reference, notifier),
-          isSelectionMode: _isPhotoSelectionMode,
-          selectedIndices: _selectedPhotoIndices,
-          onToggleSelect: (index) {
-            setState(() {
-              _isPhotoSelectionMode = true;
-              if (_selectedPhotoIndices.contains(index)) {
-                _selectedPhotoIndices.remove(index);
-              } else {
-                _selectedPhotoIndices.add(index);
-              }
-            });
-          },
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.info_outline,
+                color: AppColors.enterpriseTextMuted,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Dokumentasi foto belum tersedia. Laporan tetap dapat '
+                  'dibuat tanpa foto.',
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontFamily: AppTextStyles.enterpriseFontFamily,
+                    color: AppColors.enterpriseTextMuted,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 16),
         _buildStep3ValidationSummary(state),
@@ -1396,448 +1353,14 @@ class _TambahMonitoringStepperScreenState
     );
   }
 
-  Widget _buildPhotoBatchActionRow(
-    List<EvidencePhotoItem> photos,
-    ProjectReference? reference,
-    MonitoringFormNotifier notifier,
-  ) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final actionButton = OutlinedButton.icon(
-          key: const ValueKey('atur_lokasi_foto_button'),
-          onPressed: () => _handleAturLokasiBatch(photos, reference, notifier),
-          icon: const Icon(Icons.edit_location_alt_outlined, size: 16),
-          label: Text(
-            _isPhotoSelectionMode && _selectedPhotoIndices.isNotEmpty
-                ? 'Atur Lokasi (${_selectedPhotoIndices.length})'
-                : 'Atur Lokasi Foto',
-          ),
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.enterprisePrimary,
-            side: const BorderSide(color: AppColors.enterprisePrimaryBorder),
-            shape: const RoundedRectangleBorder(borderRadius: AppRadii.control),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            minimumSize: Size.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        );
-
-        final labelText = Text(
-          _isPhotoSelectionMode
-              ? '${_selectedPhotoIndices.length} foto dipilih'
-              : 'Pilih beberapa foto untuk atur titik sama',
-          style: const TextStyle(
-            fontFamily: AppTextStyles.enterpriseFontFamily,
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.enterpriseTextMain,
-          ),
-        );
-
-        if (constraints.maxWidth < 360) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              labelText,
-              const SizedBox(height: 6),
-              Align(alignment: Alignment.centerLeft, child: actionButton),
-            ],
-          );
-        }
-
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(child: labelText),
-            const SizedBox(width: 8),
-            actionButton,
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildSelectionToolbar(List<EvidencePhotoItem> photos) {
-    final allSelected =
-        photos.isNotEmpty && _selectedPhotoIndices.length == photos.length;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.enterprisePrimarySurfaceSoft,
-        borderRadius: AppRadii.control,
-        border: Border.all(color: AppColors.enterprisePrimaryBorder),
-      ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 8,
-        runSpacing: 6,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Checkbox(
-                value: allSelected,
-                tristate: _selectedPhotoIndices.isNotEmpty && !allSelected,
-                activeColor: AppColors.enterprisePrimary,
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                onChanged: (val) {
-                  setState(() {
-                    if (allSelected) {
-                      _selectedPhotoIndices.clear();
-                    } else {
-                      _selectedPhotoIndices.addAll(
-                        List.generate(photos.length, (i) => i),
-                      );
-                    }
-                  });
-                },
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '${_selectedPhotoIndices.length} terpilih',
-                style: const TextStyle(
-                  fontFamily: AppTextStyles.enterpriseFontFamily,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 13,
-                  color: AppColors.enterprisePrimaryDark,
-                ),
-              ),
-            ],
-          ),
-          Wrap(
-            spacing: 4,
-            runSpacing: 4,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            children: [
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                onPressed: () {
-                  setState(() {
-                    if (allSelected) {
-                      _selectedPhotoIndices.clear();
-                    } else {
-                      _selectedPhotoIndices.addAll(
-                        List.generate(photos.length, (i) => i),
-                      );
-                    }
-                  });
-                },
-                child: Text(
-                  allSelected ? 'Batal Pilih' : 'Pilih Semua',
-                  style: const TextStyle(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: AppColors.enterprisePrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 4),
-              TextButton(
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isPhotoSelectionMode = false;
-                    _selectedPhotoIndices.clear();
-                  });
-                },
-                child: const Text(
-                  'Selesai',
-                  style: TextStyle(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                    color: AppColors.enterpriseTextMain,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _handleAturLokasiBatch(
-    List<EvidencePhotoItem> photos,
-    ProjectReference? reference,
-    MonitoringFormNotifier notifier,
-  ) async {
-    if (_selectedPhotoIndices.isEmpty) {
-      final unlocated = <int>{};
-      for (var i = 0; i < photos.length; i++) {
-        if (!photos[i].hasLocation) unlocated.add(i);
-      }
-      setState(() {
-        _isPhotoSelectionMode = true;
-        _selectedPhotoIndices.addAll(
-          unlocated.isNotEmpty
-              ? unlocated
-              : List.generate(photos.length, (i) => i),
-        );
-      });
-    }
-
-    final selectedPhotos = [
-      for (final index in _selectedPhotoIndices)
-        if (index >= 0 && index < photos.length) photos[index],
-    ];
-
-    if (selectedPhotos.isEmpty) return;
-
-    final result = await showBatchPhotoLocationSheet(
-      context,
-      photos: selectedPhotos,
-      reference: reference,
-      mapBuilder: _locationMapBuilder,
-      deviceLocationResolver: widget.deviceLocationResolver,
-    );
-
-    if (!mounted || result == null) return;
-
-    if (result.location != null) {
-      notifier.setBatchPhotoLocations(
-        selectedPhotos.map((p) => p.id),
-        result.location!,
-      );
-      final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-      messenger.showSnackBar(
-        _buildSnackBar(
-          icon: Icons.check_circle,
-          message:
-              'Lokasi berhasil diterapkan ke ${selectedPhotos.length} foto terpilih.',
-          color: const Color(0xFF166534),
-        ),
-      );
-      setState(() {
-        _selectedPhotoIndices.clear();
-        _isPhotoSelectionMode = false;
-      });
-    }
-  }
-
-  Widget _buildProjectReferenceBanner(ProjectReference? reference) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        border: Border.all(color: AppColors.enterpriseBorder),
-        borderRadius: AppRadii.control,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(
-            Icons.lock_outline,
-            color: AppColors.enterpriseTextMuted,
-            size: 18,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Titik proyek dari Pengembang',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    color: AppColors.enterpriseTextMain,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  reference == null
-                      ? 'Belum tersedia. Jarak ke proyek tidak dapat dihitung, tetapi setiap foto tetap perlu ditentukan lokasinya.'
-                      : '${formatCoordinate(reference.latitude)}, '
-                            '${formatCoordinate(reference.longitude)} · tidak dapat diubah',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    color: AppColors.enterpriseTextMuted,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Baris status lokasi pada kartu foto; hanya menampilkan data nyata.
-  Widget _buildPhotoStatus(
-    EvidencePhotoItem photo,
-    ProjectReference? reference,
-  ) {
-    late final IconData icon;
-    late final Color color;
-    late final String title;
-    late final String detail;
-
-    if (!photo.hasLocation) {
-      if (photo.exif != null) {
-        icon = Icons.gps_fixed;
-        color = const Color(0xFF93C5FD);
-        title = 'GPS tersedia';
-        detail = 'Belum dikonfirmasi · Ketuk';
-      } else {
-        icon = Icons.location_off_outlined;
-        color = const Color(0xFFFCA5A5);
-        title = 'Perlu lokasi';
-        detail = 'Belum ada koordinat';
-      }
-    } else {
-      final proximity = evaluatePhotoProximity(
-        location: photo.location,
-        reference: reference,
-      );
-      title = _shortMethodLabel(photo.location!.method);
-      switch (proximity.status) {
-        case ProximityStatus.noLocation:
-          icon = Icons.location_off_outlined;
-          color = const Color(0xFFFCA5A5);
-          detail = 'Perlu lokasi';
-        case ProximityStatus.noReference:
-          icon = Icons.location_on;
-          color = const Color(0xFF86EFAC);
-          detail = 'Validasi jarak belum tersedia';
-        case ProximityStatus.withinTolerance:
-          icon = Icons.location_on;
-          color = const Color(0xFF86EFAC);
-          detail =
-              '${formatDistance(proximity.distanceMeters!)} dari proyek'
-              '${proximity.lowAccuracy ? ' · akurasi rendah' : ''}';
-        case ProximityStatus.outsideTolerance:
-          icon = Icons.warning_amber_rounded;
-          color = const Color(0xFFFCD34D);
-          detail = '${formatDistance(proximity.distanceMeters!)} dari proyek';
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 12, color: color),
-            const SizedBox(width: 3),
-            Expanded(
-              child: Text(
-                title,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: AppTextStyles.enterpriseFontFamily,
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-        Text(
-          detail,
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(
-            fontFamily: AppTextStyles.enterpriseFontFamily,
-            color: Colors.grey[300],
-            fontSize: 10,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-
-  String _shortMethodLabel(LocationMethod method) => switch (method) {
-    LocationMethod.exifConfirmed => 'GPS tersedia',
-    LocationMethod.manualPin => 'Lokasi ditentukan manual',
-    LocationMethod.deviceAtEntry => 'GPS perangkat',
-  };
-
-  Future<void> _openPhotoLocation(
-    EvidencePhotoItem photo,
-    int number,
-    ProjectReference? reference,
-    MonitoringFormNotifier notifier,
-  ) async {
-    final result = await showPhotoLocationSheet(
-      context,
-      photo: photo,
-      photoNumber: number,
-      reference: reference,
-      mapBuilder: _locationMapBuilder,
-      deviceLocationResolver: widget.deviceLocationResolver,
-    );
-    if (!mounted || result == null) return;
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-    if (result.cleared) {
-      notifier.clearPhotoLocation(photo.id);
-      messenger.showSnackBar(
-        _buildSnackBar(
-          icon: Icons.check_circle,
-          message: 'Lokasi Foto $number dihapus.',
-          color: const Color(0xFF166534),
-        ),
-      );
-    } else {
-      notifier.setPhotoLocation(photo.id, result.location!);
-      messenger.showSnackBar(
-        _buildSnackBar(
-          icon: Icons.check_circle,
-          message: 'Lokasi Foto $number disimpan.',
-          color: const Color(0xFF166534),
-        ),
-      );
-    }
-  }
-
-  /// Peta untuk lembar lokasi; tes dapat menggantinya lewat [locationMapBuilder].
-  Widget Function(PhotoLocationMapController controller)?
-  get _locationMapBuilder =>
-      widget.locationMapBuilder ??
-      (controller) => PhotoLocationMap(controller: controller);
-
   Widget _buildStep3ValidationSummary(MonitoringFormState state) {
     final hasHousing = state.namaPerumahan.trim().isNotEmpty;
     final hasRequiredRtl =
         !state.statusHasilEvaluasi.wajibRencanaTindakLanjut ||
         state.rencanaTindakLanjut.any((item) => item.trim().isNotEmpty);
-    final tracked = state.photos
-        .where((photo) => photo.localRef.trim().isNotEmpty)
-        .toList();
-    final photoCount = tracked.length;
-    final locatedCount = tracked.where((photo) => photo.hasLocation).length;
     final checks = [
       (hasHousing, 'Nama perumahan dari Langkah 1'),
       (hasRequiredRtl, 'Rencana tindak lanjut dari Langkah 2'),
-      (
-        state.photoPaths.any((path) => path.trim().isNotEmpty),
-        'Foto dokumentasi (opsional)',
-      ),
-      if (photoCount > 0)
-        (
-          photoCount == locatedCount,
-          'Lokasi setiap foto ($locatedCount dari $photoCount)',
-        ),
     ];
     return Container(
       width: double.infinity,
@@ -1974,25 +1497,6 @@ class _TambahMonitoringStepperScreenState
             notifier.setStep(2);
           } else {
             // Last step -> Navigate to Preview Screen
-            final unlocated = formState.photos
-                .where(
-                  (photo) =>
-                      photo.localRef.trim().isNotEmpty && !photo.hasLocation,
-                )
-                .length;
-            if (unlocated > 0) {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(
-                  _buildSnackBar(
-                    icon: Icons.error_outline,
-                    message:
-                        '$unlocated foto belum memiliki lokasi. Tentukan lokasi setiap foto sebelum submit.',
-                    color: AppColors.enterprisePrimary,
-                  ),
-                );
-              return;
-            }
             final previewModel = notifier.buildPreviewModel();
             if (previewModel != null) {
               context.push(

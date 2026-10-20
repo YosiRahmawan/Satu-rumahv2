@@ -342,4 +342,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('Riwayat sebagai rute sendiri punya tombol kembali', (
+    tester,
+  ) async {
+    var backCount = 0;
+    await tester.pumpWidget(
+      buildSubject(
+        const [],
+        home: MonitoringListScreen(onBack: () => backCount++),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final back = find.byTooltip('Kembali');
+    expect(back, findsOneWidget);
+    await tester.tap(back);
+    expect(backCount, 1);
+  });
+
+  testWidgets('Riwayat sebagai tab tidak menampilkan tombol kembali', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildSubject(const []));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Kembali'), findsNothing);
+  });
+
+  testWidgets('Riwayat langsung menampilkan data, tanpa kartu Memuat data', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildSubject([
+        MonitoringModel(
+          id: 'seketika',
+          tanggalMonitoring: DateTime(2026, 10, 19),
+          namaPerumahan: 'Perumahan Seketika',
+        ),
+      ]),
+    );
+    // Hanya satu frame: tidak ada tahap loading di antaranya.
+    await tester.pump();
+
+    expect(find.text('Memuat data'), findsNothing);
+    expect(find.text('Perumahan Seketika'), findsOneWidget);
+  });
 }

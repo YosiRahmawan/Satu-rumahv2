@@ -46,12 +46,12 @@ extension StatusTahapPengajuanX on StatusTahapPengajuan {
       case StatusTahapPengajuan.selesai:
         return AppColors.statusCompleted;
       case StatusTahapPengajuan.perluPerbaikan:
-        return AppColors.chilliDust;
+        return AppColors.primaryRed;
     }
   }
 
   Color get backgroundColor {
-    return color.withOpacity(0.12);
+    return color.withValues(alpha: 0.12);
   }
 
   IconData get icon {

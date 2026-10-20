@@ -1,0 +1,496 @@
+import 'dart:async';
+
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:satu_rumah/core/utils/file_picker_util.dart';
+import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
+import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_step3_screen.dart';
+
+Widget _host({
+  required ProviderContainer container,
+  required Step3FilePickerSeam picker,
+  Size size = const Size(390, 844),
+  double textScale = 1,
+}) {
+  return UncontrolledProviderScope(
+    container: container,
+    child: MediaQuery(
+      data: MediaQueryData(
+        size: size,
+        textScaler: TextScaler.linear(textScale),
+      ),
+      child: MaterialApp(home: PengajuanStep3Screen(pickerSeam: picker)),
+    ),
+  );
+}
+
+PlatformFile _pdf(String name, int size, {String? path}) {
+  return PlatformFile(name: name, size: size, path: path);
+}
+
+void main() {
+  group('PengajuanStep3Screen', () {
+    testWidgets('semua aksi unggah memakai ikon cloud-upload tanpa plus', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async =>
+              const [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.cloud_upload_outlined), findsWidgets);
+      expect(find.byIcon(Icons.add), findsNothing);
+      expect(find.byIcon(Icons.add_circle_outline), findsNothing);
+    });
+
+    testWidgets('renders all 11 slots and mandatory/optional presentation', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async =>
+              const [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Daftar berkas (11)'), findsOneWidget);
+      expect(find.textContaining('1. Surat Permohonan'), findsOneWidget);
+      await tester.scrollUntilVisible(
+        find.textContaining('11. Proposal Rencana Pembangunan'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(
+        find.textContaining('11. Proposal Rencana Pembangunan'),
+        findsOneWidget,
+      );
+      expect(find.text('Opsional'), findsOneWidget);
+      expect(find.text('Wajib'), findsAtLeastNWidgets(1));
+      expect(find.text('Belum Diunggah'), findsAtLeastNWidgets(1));
+    });
+
+    testWidgets(
+      'supports single and multi-file selection with web-safe references',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        var multi = false;
+
+        await tester.pumpWidget(
+          _host(
+            container: container,
+            picker: ({required bool allowMultiple, allowedExtensions}) async {
+              multi = allowMultiple;
+              if (allowMultiple) {
+                return [
+                  _pdf('rekomendasi_a.pdf', 1024),
+                  _pdf('rekomendasi_b.pdf', 2048),
+                ];
+              }
+              return [_pdf('surat_permohonan.pdf', 1024)];
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final uploadButton = find.widgetWithText(
+          OutlinedButton,
+          'Unggah Dokumen Permohonan',
+        );
+        tester.widget<OutlinedButton>(uploadButton).onPressed!();
+        await tester.pumpAndSettle();
+        expect(
+          container
+              .read(pengajuanFormProvider)
+              .uploadedDocs['surat_permohonan'],
+          'surat_permohonan.pdf',
+        );
+
+        await tester.scrollUntilVisible(
+          find.text('Tambah File Rekomendasi'),
+          400,
+          scrollable: find.byType(Scrollable).first,
+        );
+        final multiButton = find.widgetWithText(
+          OutlinedButton,
+          'Tambah File Rekomendasi',
+        );
+        tester.widget<OutlinedButton>(multiButton).onPressed!();
+        await tester.pumpAndSettle();
+        expect(multi, isTrue);
+        expect(
+          container
+              .read(pengajuanFormProvider)
+              .multiUploadedDocs['rekomendasi_lingkungan'],
+          hasLength(2),
+        );
+        expect(find.text('Multi-file: 2 Berkas Terlampir'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'cancellation leaves state unchanged and oversized file shows retryable error',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        var call = 0;
+
+        await tester.pumpWidget(
+          _host(
+            container: container,
+            picker: ({required bool allowMultiple, allowedExtensions}) async {
+              call++;
+              if (call == 1) return const [];
+              return [_pdf('too_large.pdf', 11 * 1024 * 1024)];
+            },
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final uploadButton = find.widgetWithText(
+          OutlinedButton,
+          'Unggah Dokumen Permohonan',
+        );
+        tester.widget<OutlinedButton>(uploadButton).onPressed!();
+        await tester.pumpAndSettle();
+        expect(container.read(pengajuanFormProvider).uploadedDocs, isEmpty);
+        expect(
+          find.text('Tidak ada berkas dipilih. Data tetap tidak berubah.'),
+          findsOneWidget,
+        );
+
+        final retryUploadButton = find.widgetWithText(
+          OutlinedButton,
+          'Unggah Dokumen Permohonan',
+        );
+        tester.widget<OutlinedButton>(retryUploadButton).onPressed!();
+        await tester.pumpAndSettle();
+        expect(find.text('Gagal'), findsOneWidget);
+        expect(find.text('Coba Lagi'), findsOneWidget);
+        expect(container.read(pengajuanFormProvider).uploadedDocs, isEmpty);
+      },
+    );
+
+    testWidgets('stops loading and shows device error when picker fails', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async {
+            throw StateError('device picker unavailable');
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.widgetWithText(
+        OutlinedButton,
+        'Unggah Dokumen Permohonan',
+      );
+      tester.widget<OutlinedButton>(button).onPressed!();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Gagal'), findsOneWidget);
+      expect(find.textContaining('Kendala perangkat'), findsOneWidget);
+      expect(find.text('Mengunggah...'), findsNothing);
+      expect(container.read(pengajuanFormProvider).uploadedDocs, isEmpty);
+    });
+
+    testWidgets('ignores repeated selection while the same slot is loading', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final completer = Completer<List<PlatformFile>>();
+      var calls = 0;
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) {
+            calls++;
+            return completer.future;
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.widgetWithText(
+        OutlinedButton,
+        'Unggah Dokumen Permohonan',
+      );
+      final action = tester.widget<OutlinedButton>(button).onPressed!;
+      action();
+      await tester.pump();
+      action();
+      await tester.pump();
+
+      expect(calls, 1);
+      expect(find.text('Mengunggah...'), findsOneWidget);
+
+      completer.complete(const []);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mengunggah...'), findsNothing);
+      expect(find.text('Belum Diunggah'), findsAtLeastNWidgets(1));
+      expect(container.read(pengajuanFormProvider).uploadedDocs, isEmpty);
+    });
+
+    testWidgets(
+      'rejects non-PDF returned by picker and keeps state unchanged',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _host(
+            container: container,
+            picker: ({required bool allowMultiple, allowedExtensions}) async =>
+                [_pdf('dokumen.docx', 1024)],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final button = find.widgetWithText(
+          OutlinedButton,
+          'Unggah Dokumen Permohonan',
+        );
+        tester.widget<OutlinedButton>(button).onPressed!();
+        await tester.pumpAndSettle();
+
+        expect(container.read(pengajuanFormProvider).uploadedDocs, isEmpty);
+        expect(find.textContaining('Format berkas harus PDF.'), findsOneWidget);
+        expect(find.text('Coba Lagi'), findsOneWidget);
+      },
+    );
+
+    testWidgets('retains previous valid file after invalid replacement', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(pengajuanFormProvider.notifier)
+          .uploadDocument('surat_permohonan', 'valid-sebelumnya.pdf');
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async => [
+            _pdf('pengganti.docx', 1024),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.byTooltip('Ganti Dokumen');
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      final state = container.read(pengajuanFormProvider);
+      expect(state.uploadedDocs['surat_permohonan'], 'valid-sebelumnya.pdf');
+      expect(find.textContaining('Format berkas harus PDF.'), findsOneWidget);
+    });
+
+    testWidgets('retains previous valid file after oversized replacement', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container
+          .read(pengajuanFormProvider.notifier)
+          .uploadDocument('surat_permohonan', 'valid-sebelumnya.pdf');
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async => [
+            _pdf('pengganti-terlalu-besar.pdf', 11 * 1024 * 1024),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = find.byTooltip('Ganti Dokumen');
+      await tester.tap(button);
+      await tester.pumpAndSettle();
+
+      final state = container.read(pengajuanFormProvider);
+      expect(state.uploadedDocs['surat_permohonan'], 'valid-sebelumnya.pdf');
+      expect(
+        find.textContaining('File melebihi batas maksimal 10 MB.'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Berkas lama tetap tersimpan.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('appends multi-file selections across repeated picks', (
+      tester,
+    ) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      var call = 0;
+
+      await tester.pumpWidget(
+        _host(
+          container: container,
+          picker: ({required bool allowMultiple, allowedExtensions}) async {
+            call++;
+            return call == 1
+                ? [_pdf('a.pdf', 1), _pdf('b.pdf', 1)]
+                : [_pdf('c.pdf', 1)];
+          },
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Tambah File Rekomendasi'),
+        400,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      Future<void> tapAdd() async {
+        final button = find.widgetWithText(
+          OutlinedButton,
+          'Tambah File Rekomendasi',
+        );
+        tester.widget<OutlinedButton>(button).onPressed!();
+        await tester.pumpAndSettle();
+      }
+
+      await tapAdd();
+      await tapAdd();
+      expect(
+        container
+            .read(pengajuanFormProvider)
+            .multiUploadedDocs['rekomendasi_lingkungan'],
+        ['a.pdf', 'b.pdf', 'c.pdf'],
+      );
+    });
+
+    testWidgets(
+      'preserves state and avoids overflow at target sizes and text scale',
+      (tester) async {
+        for (final size in [const Size(360, 800), const Size(412, 900)]) {
+          final container = ProviderContainer();
+          addTearDown(container.dispose);
+          final notifier = container.read(pengajuanFormProvider.notifier);
+          notifier.uploadDocument('surat_permohonan', 'surat.pdf');
+
+          await tester.pumpWidget(
+            _host(
+              container: container,
+              size: size,
+              textScale: 2,
+              picker:
+                  ({required bool allowMultiple, allowedExtensions}) async =>
+                      const [],
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(
+            container
+                .read(pengajuanFormProvider)
+                .uploadedDocs['surat_permohonan'],
+            'surat.pdf',
+          );
+        }
+      },
+    );
+
+    testWidgets(
+      'displays consistent Lihat -> Ganti -> Hapus, opens preview, and supports individual multi-file delete',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(pengajuanFormProvider.notifier);
+        notifier.uploadDocument('surat_permohonan', 'surat_pemohon.pdf');
+        notifier.uploadDocuments('rekomendasi_instansi', [
+          'rekom_a.pdf',
+          'rekom_b.pdf',
+        ]);
+
+        await tester.pumpWidget(
+          _host(
+            container: container,
+            picker: ({required bool allowMultiple, allowedExtensions}) async =>
+                const [],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Slot 1 is visible at top: has Lihat, Ganti, Hapus
+        expect(find.byTooltip('Lihat Dokumen'), findsOneWidget);
+        expect(find.byTooltip('Ganti Dokumen'), findsOneWidget);
+        expect(find.byTooltip('Hapus Dokumen'), findsOneWidget);
+
+        // Tap Lihat Dokumen on slot 1
+        final lihatSingle = find.byTooltip('Lihat Dokumen');
+        await tester.tap(lihatSingle);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Preview modal displays title and file name
+        expect(
+          find.text('Surat Permohonan Persetujuan Site Plan'),
+          findsWidgets,
+        );
+        expect(find.text('surat_pemohon.pdf'), findsWidgets);
+
+        // Close preview safely
+        final closeBtn = find.byTooltip('Tutup');
+        expect(closeBtn, findsOneWidget);
+        await tester.tap(closeBtn);
+        await tester.pumpAndSettle();
+
+        // State preserved
+        expect(
+          container
+              .read(pengajuanFormProvider)
+              .uploadedDocs['surat_permohonan'],
+          'surat_pemohon.pdf',
+        );
+
+        // Delete slot 1 file
+        final hapusBtn = find.byTooltip('Hapus Dokumen');
+        expect(hapusBtn, findsOneWidget);
+        await tester.tap(hapusBtn);
+        await tester.pumpAndSettle();
+        expect(
+          container
+              .read(pengajuanFormProvider)
+              .uploadedDocs['surat_permohonan'],
+          isNull,
+        );
+      },
+    );
+  });
+
+  test('FilePickerUtil exposes a stable reference for a web-shaped file', () {
+    final file = PlatformFile(name: 'dokumen.pdf', size: 1024);
+
+    expect(FilePickerUtil.referenceOf(file), 'dokumen.pdf');
+  });
+}
