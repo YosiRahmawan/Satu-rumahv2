@@ -93,3 +93,9 @@ PhotoProximity evaluatePhotoProximity({
     accuracyMeters: location.accuracyMeters,
   );
 }
+
+String formatCoordinate(double value) => value.toStringAsFixed(6);
+
+String formatDistance(double meters) => meters >= 1000
+    ? '${(meters / 1000).toStringAsFixed(1)} km'
+    : '${meters.round()} m';

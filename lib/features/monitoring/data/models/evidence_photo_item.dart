@@ -10,6 +10,18 @@ enum LocationMethod { exifConfirmed, manualPin, deviceAtEntry }
 
 enum UploadStatus { localOnly, queued, uploading, uploaded, failed }
 
+T _enumByName<T extends Enum>(List<T> values, Object? name, T fallback) {
+  for (final value in values) {
+    if (value.name == name) return value;
+  }
+  return fallback;
+}
+
+DateTime? _dateOrNull(Object? value) =>
+    value is String ? DateTime.tryParse(value) : null;
+
+double? _doubleOrNull(Object? value) => value is num ? value.toDouble() : null;
+
 /// Koordinat asli yang tertanam di berkas foto (EXIF). Tidak pernah ditimpa.
 class ExifGeo {
   final double latitude;
@@ -23,6 +35,26 @@ class ExifGeo {
     this.altitude,
     this.capturedAt,
   });
+
+  Map<String, dynamic> toJson() => {
+    'latitude': latitude,
+    'longitude': longitude,
+    if (altitude != null) 'altitude': altitude,
+    if (capturedAt != null) 'capturedAt': capturedAt!.toIso8601String(),
+  };
+
+  static ExifGeo? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final lat = _doubleOrNull(json['latitude']);
+    final lng = _doubleOrNull(json['longitude']);
+    if (lat == null || lng == null) return null;
+    return ExifGeo(
+      latitude: lat,
+      longitude: lng,
+      altitude: _doubleOrNull(json['altitude']),
+      capturedAt: _dateOrNull(json['capturedAt']),
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -51,6 +83,30 @@ class DeviceFix {
     required this.recordedAt,
     this.isMocked,
   });
+
+  Map<String, dynamic> toJson() => {
+    'latitude': latitude,
+    'longitude': longitude,
+    'accuracyMeters': accuracyMeters,
+    'recordedAt': recordedAt.toIso8601String(),
+    if (isMocked != null) 'isMocked': isMocked,
+  };
+
+  static DeviceFix? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final lat = _doubleOrNull(json['latitude']);
+    final lng = _doubleOrNull(json['longitude']);
+    final acc = _doubleOrNull(json['accuracyMeters']);
+    final at = _dateOrNull(json['recordedAt']);
+    if (lat == null || lng == null || acc == null || at == null) return null;
+    return DeviceFix(
+      latitude: lat,
+      longitude: lng,
+      accuracyMeters: acc,
+      recordedAt: at,
+      isMocked: json['isMocked'] is bool ? json['isMocked'] as bool : null,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -83,6 +139,35 @@ class OfficerLocation {
     this.accuracyMeters,
     this.clarificationNote,
   });
+
+  Map<String, dynamic> toJson() => {
+    'latitude': latitude,
+    'longitude': longitude,
+    'method': method.name,
+    'selectedAt': selectedAt.toIso8601String(),
+    if (accuracyMeters != null) 'accuracyMeters': accuracyMeters,
+    if (clarificationNote != null) 'clarificationNote': clarificationNote,
+  };
+
+  static OfficerLocation? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final lat = _doubleOrNull(json['latitude']);
+    final lng = _doubleOrNull(json['longitude']);
+    final at = _dateOrNull(json['selectedAt']);
+    if (lat == null || lng == null || at == null) return null;
+    return OfficerLocation(
+      latitude: lat,
+      longitude: lng,
+      method: _enumByName(
+        LocationMethod.values,
+        json['method'],
+        LocationMethod.manualPin,
+      ),
+      selectedAt: at,
+      accuracyMeters: _doubleOrNull(json['accuracyMeters']),
+      clarificationNote: json['clarificationNote'] as String?,
+    );
+  }
 
   @override
   bool operator ==(Object other) =>
@@ -127,6 +212,10 @@ class EvidencePhotoItem {
   final DeviceFix? deviceFix;
   final OfficerLocation? location;
 
+  /// Benar bila berkas foto tidak bisa dipulihkan dari draf tersimpan, jadi
+  /// petugas harus memilih ulang fotonya sebelum laporan dikirim.
+  final bool needsReselect;
+
   EvidencePhotoItem({
     required this.id,
     required this.localRef,
@@ -138,6 +227,7 @@ class EvidencePhotoItem {
     this.exif,
     this.deviceFix,
     this.location,
+    this.needsReselect = false,
   }) : addedAt = addedAt ?? DateTime.now();
 
   /// Membungkus path tanpa metadata (data lama atau foto baru dari picker).
@@ -191,6 +281,7 @@ class EvidencePhotoItem {
     DeviceFix? deviceFix,
     OfficerLocation? location,
     bool clearLocation = false,
+    bool? needsReselect,
   }) {
     return EvidencePhotoItem(
       id: id,
@@ -203,6 +294,50 @@ class EvidencePhotoItem {
       exif: exif ?? this.exif,
       deviceFix: deviceFix ?? this.deviceFix,
       location: clearLocation ? null : (location ?? this.location),
+      needsReselect: needsReselect ?? this.needsReselect,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'localRef': localRef,
+    if (storageKey != null) 'storageKey': storageKey,
+    'uploadStatus': uploadStatus.name,
+    'origin': origin.name,
+    'addedAt': addedAt.toIso8601String(),
+    if (caption != null) 'caption': caption,
+    if (exif != null) 'exif': exif!.toJson(),
+    if (deviceFix != null) 'deviceFix': deviceFix!.toJson(),
+    if (location != null) 'location': location!.toJson(),
+    if (needsReselect) 'needsReselect': true,
+  };
+
+  /// Membaca satu foto dari JSON; null bila datanya rusak.
+  static EvidencePhotoItem? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final id = json['id'];
+    final ref = json['localRef'];
+    if (id is! String || ref is! String || id.isEmpty) return null;
+    return EvidencePhotoItem(
+      id: id,
+      localRef: ref,
+      storageKey: json['storageKey'] as String?,
+      uploadStatus: _enumByName(
+        UploadStatus.values,
+        json['uploadStatus'],
+        UploadStatus.localOnly,
+      ),
+      origin: _enumByName(
+        PhotoOrigin.values,
+        json['origin'],
+        PhotoOrigin.unknown,
+      ),
+      addedAt: _dateOrNull(json['addedAt']),
+      caption: json['caption'] as String?,
+      exif: ExifGeo.fromJson(json['exif']),
+      deviceFix: DeviceFix.fromJson(json['deviceFix']),
+      location: OfficerLocation.fromJson(json['location']),
+      needsReselect: json['needsReselect'] == true,
     );
   }
 
@@ -219,6 +354,7 @@ class EvidencePhotoItem {
         ? ''
         : '${location!.latitude},${location!.longitude},'
               '${location!.method.name},${location!.clarificationNote ?? ''}',
+    needsReselect ? 'reselect' : '',
   ].join('|');
 
   @override
@@ -233,7 +369,8 @@ class EvidencePhotoItem {
       other.caption == caption &&
       other.exif == exif &&
       other.deviceFix == deviceFix &&
-      other.location == location;
+      other.location == location &&
+      other.needsReselect == needsReselect;
 
   @override
   int get hashCode => Object.hash(
@@ -247,6 +384,7 @@ class EvidencePhotoItem {
     exif,
     deviceFix,
     location,
+    needsReselect,
   );
 
   static final Random _random = Random.secure();

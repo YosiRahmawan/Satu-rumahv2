@@ -77,8 +77,13 @@ void main() {
 
     await fill(tester, '-7,3274', '108,2207');
     expect(saveButton(tester).onPressed, isNotNull);
-    expect(find.text('Tidak dapat dihitung'), findsOneWidget);
-    expect(find.text('Belum tersedia dari Pengembang'), findsOneWidget);
+    expect(
+      find.text('Tidak dihitung: titik proyek belum tersedia'),
+      findsOneWidget,
+    );
+    // Tanpa EXIF tidak ada pilihan sumber, dan GPS perangkat tidak ditawarkan.
+    expect(find.text('Dari foto'), findsNothing);
+    expect(find.textContaining('GPS perangkat'), findsNothing);
 
     await tapSave(tester);
     await tester.pumpAndSettle();
@@ -145,12 +150,17 @@ void main() {
       'a.jpg',
     ).copyWith(exif: const ExifGeo(latitude: -7.33, longitude: 108.22));
     await open(tester, photo);
+    // GPS foto hanya ditawarkan sebagai sumber; tidak mengisi kolom sendiri.
+    expect(find.text('Dari foto'), findsOneWidget);
+    expect(saveButton(tester).onPressed, isNull);
+
+    await tester.tap(find.text('Dari foto'));
+    await tester.pumpAndSettle();
     expect(
       find.text('GPS tertanam di foto (belum diverifikasi)'),
       findsOneWidget,
     );
     expect(saveButton(tester).onPressed, isNull);
-
     await tester.tap(find.text('Gunakan koordinat foto'));
     await tester.pumpAndSettle();
     expect(saveButton(tester).onPressed, isNotNull);
@@ -167,6 +177,8 @@ void main() {
       'a.jpg',
     ).copyWith(exif: const ExifGeo(latitude: -7.33, longitude: 108.22));
     await open(tester, photo);
+    await tester.tap(find.text('Dari foto'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Gunakan koordinat foto'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, '-7.331');

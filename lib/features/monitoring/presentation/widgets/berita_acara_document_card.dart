@@ -6,7 +6,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
-import 'evidence_photo_picker.dart';
+import 'monitoring_photo_gallery.dart';
 import 'status_hasil_evaluasi_badge_widget.dart';
 
 /// Reusable modern document preview card for Berita Acara Monitoring.
@@ -150,14 +150,20 @@ class BeritaAcaraDocumentCard extends StatelessWidget {
 
           // Ringkasan Field Dokumen (Real Data)
           _dataRow('Nomor BA', item.nomorSuratBA),
-          _dataRow('Perumahan', item.namaPerumahan.isNotEmpty ? item.namaPerumahan : 'Belum diisi'),
+          _dataRow(
+            'Perumahan',
+            item.namaPerumahan.isNotEmpty ? item.namaPerumahan : 'Belum diisi',
+          ),
           _dataRow(
             'Lokasi',
             item.lokasiPerumahan.trim().isNotEmpty
                 ? item.lokasiPerumahan
                 : 'Belum diisi',
           ),
-          _dataRow('Waktu Monev', _formatIndonesianDate(item.tanggalMonitoring)),
+          _dataRow(
+            'Waktu Monev',
+            _formatIndonesianDate(item.tanggalMonitoring),
+          ),
           _dataRow('Status Evaluasi', item.statusHasilEvaluasi.label),
           if (item.namaDeveloper.trim().isNotEmpty)
             _dataRow('Pengembang', item.namaDeveloper),
@@ -184,64 +190,12 @@ class BeritaAcaraDocumentCard extends StatelessWidget {
             _buildBulletList(item.rencanaTindakLanjut),
           ],
 
-          // Grid Foto Evidence (hanya jika data foto ada)
+          // Dokumentasi foto beserta lokasi tercatat (hanya jika ada foto)
           if (item.photoPaths.isNotEmpty) ...[
             const SizedBox(height: 14),
             _buildSectionTitle('Dokumentasi Foto Lapangan'),
-            const SizedBox(height: 6),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 6,
-                mainAxisSpacing: 6,
-              ),
-              itemCount: item.photoPaths.length,
-              itemBuilder: (context, index) {
-                final path = item.photoPaths[index];
-                final isUrl = path.startsWith('http');
-                final cachedBytes = EvidencePhotoPicker.getCachedBytes(path);
-                return ClipRRect(
-                  borderRadius: AppRadii.small,
-                  child: cachedBytes != null
-                      ? Image.memory(
-                          cachedBytes,
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => Container(
-                            color: AppColors.enterpriseBorder,
-                            child: const Icon(
-                              Icons.image,
-                              color: AppColors.enterpriseTextMuted,
-                            ),
-                          ),
-                        )
-                      : isUrl
-                          ? Image.network(
-                              path,
-                              fit: BoxFit.cover,
-                              errorBuilder: (ctx, err, stack) => Container(
-                                color: AppColors.enterpriseBorder,
-                                child: const Icon(
-                                  Icons.image,
-                                  color: AppColors.enterpriseTextMuted,
-                                ),
-                              ),
-                            )
-                          : Image.asset(
-                              path,
-                              fit: BoxFit.cover,
-                              errorBuilder: (ctx, err, stack) => Container(
-                                color: AppColors.enterpriseBorder,
-                                child: const Icon(
-                                  Icons.image,
-                                  color: AppColors.enterpriseTextMuted,
-                                ),
-                              ),
-                            ),
-                );
-              },
-            ),
+            const SizedBox(height: 8),
+            MonitoringPhotoGallery(monitoring: item),
           ],
 
           // Identitas pihak yang tercatat (Hanya jika ada data asli, tanpa tanda tangan / QR fiktif)
@@ -265,11 +219,7 @@ class BeritaAcaraDocumentCard extends StatelessWidget {
                 item.pelaksanaJabatan,
               ),
             if (item.ditemuiNama.trim().isNotEmpty)
-              _identityRow(
-                'Ditemui',
-                item.ditemuiNama,
-                item.ditemuiJabatan,
-              ),
+              _identityRow('Ditemui', item.ditemuiNama, item.ditemuiJabatan),
           ],
         ],
       ),

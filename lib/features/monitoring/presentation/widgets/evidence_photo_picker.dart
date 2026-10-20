@@ -5,7 +5,9 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/file_picker_util.dart';
 import '../../data/models/evidence_photo_item.dart';
+import '../../data/photo_bytes_cache.dart';
 import '../../utils/exif_geo_reader.dart';
+import '../../utils/photo_validation.dart';
 
 typedef PhotoPathPicker = Future<List<String>> Function();
 typedef CameraPhotoPicker = Future<String?> Function();
@@ -39,6 +41,9 @@ class EvidencePhotoPicker extends StatefulWidget {
   /// Callback ketika pilihan foto di-toggle.
   final ValueChanged<int>? onToggleSelect;
 
+  /// Indeks foto yang isinya tidak bisa dipulihkan dan harus dipilih ulang.
+  final Set<int> unavailableIndices;
+
   const EvidencePhotoPicker({
     super.key,
     required this.photoPaths,
@@ -52,14 +57,24 @@ class EvidencePhotoPicker extends StatefulWidget {
     this.isSelectionMode = false,
     this.selectedIndices = const {},
     this.onToggleSelect,
+    this.unavailableIndices = const {},
   });
 
-  static final Map<String, Uint8List> _bytesCache = {};
+  static final Map<String, String> _digests = {};
 
-  static Uint8List? getCachedBytes(String path) => _bytesCache[path];
+  static Uint8List? getCachedBytes(String path) => PhotoBytesCache.get(path);
 
   static void cacheBytes(String path, Uint8List bytes) {
-    _bytesCache[path] = bytes;
+    PhotoBytesCache.put(path, bytes);
+    _digests.remove(path);
+  }
+
+  static String? _digestOf(String path) {
+    final known = _digests[path];
+    if (known != null) return known;
+    final bytes = PhotoBytesCache.get(path);
+    if (bytes == null) return null;
+    return _digests[path] = photoDigest(bytes);
   }
 
   @override
@@ -84,40 +99,86 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
     super.dispose();
   }
 
+  /// Alasan foto yang ditolak pada pemilihan terakhir (ditampilkan sekali).
+  final List<String> _rejections = [];
+
+  /// Memeriksa format, ukuran, dan duplikat; mengembalikan [key] bila diterima.
+  String? _admit(String key, String name, Uint8List bytes, Set<String> seen) {
+    final problem = validatePhotoBytes(bytes);
+    if (problem != null) {
+      _rejections.add('$name: $problem');
+      return null;
+    }
+    final digest = photoDigest(bytes);
+    final duplicate =
+        seen.contains(digest) ||
+        widget.photoPaths.any(
+          (path) => EvidencePhotoPicker._digestOf(path) == digest,
+        );
+    if (duplicate) {
+      _rejections.add('$name: foto yang sama sudah ditambahkan');
+      return null;
+    }
+    seen.add(digest);
+    EvidencePhotoPicker.cacheBytes(key, bytes);
+    EvidencePhotoPicker._digests[key] = digest;
+    return key;
+  }
+
+  void _flushRejections() {
+    if (_rejections.isEmpty) return;
+    final shown = _rejections.take(2).join('\n');
+    final more = _rejections.length > 2
+        ? '\ndan ${_rejections.length - 2} foto lainnya'
+        : '';
+    final total = _rejections.length;
+    _rejections.clear();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('$total foto tidak ditambahkan\n$shown$more'),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+  }
+
   Future<List<String>> _pickFromDevice() async {
+    final seen = <String>{};
     try {
       final pickedFiles = await ImagePicker().pickMultiImage();
-      if (pickedFiles.isNotEmpty) {
-        final paths = <String>[];
-        for (final file in pickedFiles) {
-          final bytes = await file.readAsBytes();
-          final key = file.path.isNotEmpty ? file.path : file.name;
-          EvidencePhotoPicker.cacheBytes(key, bytes);
-          paths.add(key);
-        }
-        return paths;
+      final paths = <String>[];
+      for (final file in pickedFiles) {
+        final bytes = await file.readAsBytes();
+        final key = file.path.isNotEmpty ? file.path : file.name;
+        final admitted = _admit(key, file.name, bytes, seen);
+        if (admitted != null) paths.add(admitted);
       }
+      return paths;
     } catch (e) {
       debugPrint('ImagePicker.pickMultiImage: $e');
     }
 
     try {
       final pickedFiles = await FilePickerUtil.pickMultipleFiles(
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'heic', 'webp'],
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
       );
       final paths = <String>[];
       for (final file in pickedFiles) {
         final key = file.path ?? file.name;
-        if (file.bytes != null) {
-          EvidencePhotoPicker.cacheBytes(key, file.bytes!);
-        } else if (file.path != null) {
+        Uint8List? bytes = file.bytes;
+        if (bytes == null && file.path != null) {
           try {
-            final xFile = XFile(file.path!);
-            final bytes = await xFile.readAsBytes();
-            EvidencePhotoPicker.cacheBytes(key, bytes);
+            bytes = await XFile(file.path!).readAsBytes();
           } catch (_) {}
         }
-        paths.add(key);
+        if (bytes == null) {
+          _rejections.add('${file.name}: berkas tidak dapat dibaca');
+          continue;
+        }
+        final admitted = _admit(key, file.name, bytes, seen);
+        if (admitted != null) paths.add(admitted);
       }
       return paths;
     } catch (_) {
@@ -127,13 +188,10 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
 
   Future<String?> _pickFromCamera() async {
     final photo = await ImagePicker().pickImage(source: ImageSource.camera);
-    if (photo != null) {
-      final bytes = await photo.readAsBytes();
-      final key = photo.path.isNotEmpty ? photo.path : photo.name;
-      EvidencePhotoPicker.cacheBytes(key, bytes);
-      return key;
-    }
-    return null;
+    if (photo == null) return null;
+    final bytes = await photo.readAsBytes();
+    final key = photo.path.isNotEmpty ? photo.path : photo.name;
+    return _admit(key, photo.name, bytes, <String>{});
   }
 
   Future<void> _pickPhotos({required bool camera}) async {
@@ -148,23 +206,36 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
           : await (widget.pickPhotoPaths ?? _pickFromDevice)();
 
       if (!mounted || requestId != _pickRequestId || pickedPaths.isEmpty) {
+        _flushRejections();
         return;
       }
 
       final updated = List<String>.from(widget.photoPaths);
+      var overLimit = 0;
       for (final path in pickedPaths.where((path) => path.trim().isNotEmpty)) {
-        if (updated.length >= widget.maxPhotos) break;
+        if (updated.length >= widget.maxPhotos) {
+          overLimit++;
+          continue;
+        }
         if (!updated.contains(path)) updated.add(path);
+      }
+      if (overLimit > 0) {
+        _rejections.add(
+          '$overLimit foto: melebihi batas ${widget.maxPhotos} foto',
+        );
       }
       final added = updated
           .where((path) => !widget.photoPaths.contains(path))
           .toList();
       if (updated.length != widget.photoPaths.length) {
         widget.onPhotosChanged(updated);
+        _flushRejections();
         await _reportPicked(
           added,
           camera ? PhotoOrigin.camera : PhotoOrigin.gallery,
         );
+      } else {
+        _flushRejections();
       }
     } catch (error) {
       if (mounted && requestId == _pickRequestId) {
@@ -369,7 +440,8 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
     if (confirmed != true || !mounted) return;
     _pickRequestId++;
     final removed = widget.photoPaths[index];
-    EvidencePhotoPicker._bytesCache.remove(removed);
+    PhotoBytesCache.remove(removed);
+    EvidencePhotoPicker._digests.remove(removed);
     final updated = List<String>.from(widget.photoPaths)..removeAt(index);
     widget.onPhotosChanged(updated);
   }
@@ -394,7 +466,8 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
     }
   }
 
-  Widget _buildPhotoPreview(String path) {
+  Widget _buildPhotoPreview(String path, {bool unavailable = false}) {
+    if (unavailable) return _buildUnavailable();
     final cachedBytes = EvidencePhotoPicker.getCachedBytes(path);
     if (cachedBytes != null) {
       return Image.memory(
@@ -581,6 +654,7 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
 
   Widget _buildPhotoCard(String path, int index) {
     final isSelected = widget.selectedIndices.contains(index);
+    final unavailable = widget.unavailableIndices.contains(index);
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
@@ -600,6 +674,9 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
             widget.onPhotoTap?.call(index);
           }
         },
+        onLongPress: widget.isSelectionMode || unavailable
+            ? null
+            : () => widget.onToggleSelect?.call(index),
         child: Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF1F5F9),
@@ -624,7 +701,7 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              _buildPhotoPreview(path),
+              _buildPhotoPreview(path, unavailable: unavailable),
               Positioned(
                 top: 0,
                 left: 0,
@@ -642,12 +719,8 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () {
-                          widget.onToggleSelect?.call(index);
-                        },
-                        child: Semantics(
+                      if (widget.isSelectionMode)
+                        Semantics(
                           label: 'Pilih foto ${index + 1}',
                           checked: isSelected,
                           child: AnimatedContainer(
@@ -657,16 +730,10 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? AppColors.enterprisePrimary
-                                  : (widget.isSelectionMode
-                                        ? Colors.black.withValues(alpha: 0.5)
-                                        : Colors.black.withValues(alpha: 0.3)),
+                                  : Colors.black.withValues(alpha: 0.5),
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isSelected
-                                    ? Colors.white
-                                    : (widget.isSelectionMode
-                                          ? Colors.white
-                                          : Colors.white70),
+                                color: Colors.white,
                                 width: isSelected ? 2 : 1.5,
                               ),
                             ),
@@ -678,8 +745,9 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
                                   )
                                 : null,
                           ),
-                        ),
-                      ),
+                        )
+                      else
+                        const SizedBox.shrink(),
                       if (!widget.isSelectionMode)
                         IconButton(
                           tooltip: 'Hapus foto ${index + 1}',
@@ -819,20 +887,40 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
     );
   }
 
-  Widget _buildImageError() {
+  Widget _buildImageError() => _buildPlaceholder(
+    icon: Icons.broken_image_outlined,
+    label: 'Foto tidak dapat ditampilkan',
+  );
+
+  Widget _buildUnavailable() =>
+      _buildPlaceholder(icon: Icons.refresh, label: 'Foto perlu dipilih ulang');
+
+  Widget _buildPlaceholder({required IconData icon, required String label}) {
     return Container(
       color: AppColors.grey200,
-      child: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.photo, color: AppColors.grey600, size: 24),
-            SizedBox(height: 2),
-            Text(
-              'Foto Evidence',
-              style: TextStyle(fontSize: 9, color: AppColors.grey700),
-            ),
-          ],
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 44),
+      alignment: Alignment.center,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: SizedBox(
+          width: 96,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: AppColors.grey600, size: 26),
+              const SizedBox(height: 6),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: AppTextStyles.enterpriseFontFamily,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.grey700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

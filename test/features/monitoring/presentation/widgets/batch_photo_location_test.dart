@@ -13,7 +13,6 @@ void main() {
     WidgetTester tester, {
     required List<EvidencePhotoItem> photos,
     ProjectReference? reference,
-    DeviceLocationResolver? deviceLocationResolver,
   }) async {
     result = null;
     await tester.pumpWidget(
@@ -27,7 +26,6 @@ void main() {
                     context,
                     photos: photos,
                     reference: reference,
-                    deviceLocationResolver: deviceLocationResolver,
                   );
                 },
                 child: const Text('Buka Batch Sheet'),
@@ -41,142 +39,124 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets(
-    'Sumber 1: GPS perangkat saat ini diterapkan dengan dialog konfirmasi',
-    (tester) async {
-      final photos = [
+  Future<void> fill(WidgetTester tester, String lat, String lng) async {
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), lat);
+    await tester.enterText(fields.at(1), lng);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapApply(WidgetTester tester, int count) async {
+    final button = find.text('Terapkan ke $count foto');
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('menampilkan judul, tanpa pilihan GPS perangkat', (tester) async {
+    await openBatchSheet(
+      tester,
+      photos: [
         EvidencePhotoItem.fromPath('p1.jpg'),
         EvidencePhotoItem.fromPath('p2.jpg'),
         EvidencePhotoItem.fromPath('p3.jpg'),
-      ];
+      ],
+      reference: _projectRef,
+    );
 
-      await openBatchSheet(
-        tester,
-        photos: photos,
-        reference: _projectRef,
-        deviceLocationResolver: () async => DeviceFix(
-          latitude: -7.3275,
-          longitude: 108.2208,
-          accuracyMeters: 8.0,
-          recordedAt: DateTime(2026, 10, 20),
-        ),
-      );
-
-      expect(find.text('Atur Lokasi Sekaligus'), findsOneWidget);
-      expect(find.textContaining('3 foto terpilih'), findsWidgets);
-      expect(find.text('GPS Perangkat'), findsOneWidget);
-
-      // Tekan tombol terapkan
-      final applyButton = find.text('Terapkan ke 3 foto terpilih');
-      await tester.ensureVisible(applyButton);
-      await tester.tap(applyButton);
-      await tester.pumpAndSettle();
-
-      // Dialog konfirmasi harus muncul
-      expect(find.text('Konfirmasi Lokasi Sekaligus'), findsOneWidget);
-      expect(
-        find.textContaining('Lokasi ini akan diterapkan ke 3 foto terpilih.'),
-        findsOneWidget,
-      );
-
-      // Tekan Terapkan pada dialog
-      await tester.tap(find.widgetWithText(FilledButton, 'Terapkan'));
-      await tester.pumpAndSettle();
-
-      expect(result, isNotNull);
-      expect(result!.cleared, isFalse);
-      expect(result!.location!.latitude, closeTo(-7.3275, 1e-6));
-      expect(result!.location!.longitude, closeTo(108.2208, 1e-6));
-      expect(result!.location!.method, LocationMethod.deviceAtEntry);
-      expect(result!.location!.accuracyMeters, 8.0);
-    },
-  );
-
-  testWidgets('Batal pada dialog konfirmasi tidak menerapkan koordinat', (
-    tester,
-  ) async {
-    final photos = [
-      EvidencePhotoItem.fromPath('p1.jpg'),
-      EvidencePhotoItem.fromPath('p2.jpg'),
-    ];
-
-    await openBatchSheet(tester, photos: photos, reference: _projectRef);
-
-    final applyButton = find.text('Terapkan ke 2 foto terpilih');
-    await tester.ensureVisible(applyButton);
-    await tester.tap(applyButton);
-    await tester.pumpAndSettle();
-
-    expect(find.text('Konfirmasi Lokasi Sekaligus'), findsOneWidget);
-
-    // Tekan Batal
-    await tester.tap(find.widgetWithText(TextButton, 'Batal').last);
-    await tester.pumpAndSettle();
-
-    // Dialog tertutup tapi sheet tetap terbuka, result belum ada
-    expect(find.text('Konfirmasi Lokasi Sekaligus'), findsNothing);
-    expect(result, isNull);
+    expect(find.text('Atur lokasi 3 foto'), findsOneWidget);
+    expect(find.textContaining('GPS Perangkat'), findsNothing);
+    expect(find.textContaining('GPS perangkat'), findsNothing);
+    // Tidak ada koordinat yang terisi sendiri.
+    final button = tester.widget<ElevatedButton>(
+      find.widgetWithText(ElevatedButton, 'Terapkan ke 3 foto'),
+    );
+    expect(button.onPressed, isNull);
   });
 
-  testWidgets('Sumber 2: Titik manual diubah lewat kolom lintang/bujur', (
+  testWidgets('titik manual diterapkan tanpa dialog bila belum ada lokasi', (
     tester,
   ) async {
-    final photos = [
-      EvidencePhotoItem.fromPath('p1.jpg'),
-      EvidencePhotoItem.fromPath('p2.jpg'),
-    ];
+    await openBatchSheet(
+      tester,
+      photos: [
+        EvidencePhotoItem.fromPath('p1.jpg'),
+        EvidencePhotoItem.fromPath('p2.jpg'),
+      ],
+      reference: _projectRef,
+    );
 
-    await openBatchSheet(tester, photos: photos, reference: _projectRef);
-
-    // Pilih tab Peta / Manual
-    await tester.tap(find.text('Peta / Manual'));
-    await tester.pumpAndSettle();
-
-    final fields = find.byType(TextField);
-    await tester.enterText(fields.at(0), '-7,3274');
-    await tester.enterText(fields.at(1), '108,2207');
-    await tester.pumpAndSettle();
-
-    final applyButton = find.text('Terapkan ke 2 foto terpilih');
-    await tester.ensureVisible(applyButton);
-    await tester.tap(applyButton);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Terapkan'));
-    await tester.pumpAndSettle();
+    await fill(tester, '-7,3274', '108,2207');
+    await tapApply(tester, 2);
 
     expect(result, isNotNull);
+    expect(result!.cleared, isFalse);
     expect(result!.location!.latitude, closeTo(-7.3274, 1e-6));
     expect(result!.location!.longitude, closeTo(108.2207, 1e-6));
     expect(result!.location!.method, LocationMethod.manualPin);
     expect(result!.location!.accuracyMeters, isNull);
   });
 
-  testWidgets('Sumber 3: Metadata GPS foto dipilih jika tersedia', (
+  testWidgets('mengganti lokasi yang sudah ada meminta konfirmasi', (
     tester,
   ) async {
-    final photos = [
-      EvidencePhotoItem.fromPath(
-        'p1.jpg',
-      ).copyWith(exif: const ExifGeo(latitude: -7.3275, longitude: 108.2208)),
-      EvidencePhotoItem.fromPath('p2.jpg'),
-    ];
+    final located = EvidencePhotoItem.fromPath('p1.jpg').copyWith(
+      location: OfficerLocation(
+        latitude: -7.33,
+        longitude: 108.22,
+        method: LocationMethod.manualPin,
+        selectedAt: DateTime(2026, 10, 20),
+      ),
+    );
+    await openBatchSheet(
+      tester,
+      photos: [located, EvidencePhotoItem.fromPath('p2.jpg')],
+      reference: _projectRef,
+    );
 
-    await openBatchSheet(tester, photos: photos, reference: _projectRef);
+    await fill(tester, '-7.3274', '108.2207');
+    await tapApply(tester, 2);
 
-    // Pilih tab Metadata Foto
-    await tester.tap(find.text('Metadata Foto'));
+    expect(find.text('Ganti lokasi yang sudah ada?'), findsOneWidget);
+    expect(find.textContaining('1 dari 2 foto sudah punya lokasi'), findsOne);
+
+    // Batal: sheet tetap terbuka, belum ada hasil.
+    await tester.tap(find.widgetWithText(TextButton, 'Batal').last);
     await tester.pumpAndSettle();
+    expect(find.text('Ganti lokasi yang sudah ada?'), findsNothing);
+    expect(result, isNull);
 
-    expect(find.textContaining('Foto 1'), findsOneWidget);
-
-    final applyButton = find.text('Terapkan ke 2 foto terpilih');
-    await tester.ensureVisible(applyButton);
-    await tester.tap(applyButton);
+    await tapApply(tester, 2);
+    await tester.tap(find.widgetWithText(FilledButton, 'Ganti'));
     await tester.pumpAndSettle();
+    expect(result, isNotNull);
+    expect(result!.location!.latitude, closeTo(-7.3274, 1e-6));
+  });
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Terapkan'));
+  testWidgets('GPS foto dipilih lewat sumber "Dari foto" dan dikonfirmasi', (
+    tester,
+  ) async {
+    await openBatchSheet(
+      tester,
+      photos: [
+        EvidencePhotoItem.fromPath(
+          'p1.jpg',
+        ).copyWith(exif: const ExifGeo(latitude: -7.3275, longitude: 108.2208)),
+        EvidencePhotoItem.fromPath('p2.jpg'),
+      ],
+      reference: _projectRef,
+    );
+
+    await tester.tap(find.text('Dari foto'));
     await tester.pumpAndSettle();
+    expect(
+      find.text('GPS tertanam di foto (belum diverifikasi)'),
+      findsOneWidget,
+    );
+    await tester.ensureVisible(find.text('Gunakan koordinat foto'));
+    await tester.tap(find.text('Gunakan koordinat foto'));
+    await tester.pumpAndSettle();
+    await tapApply(tester, 2);
 
     expect(result, isNotNull);
     expect(result!.location!.latitude, closeTo(-7.3275, 1e-6));
@@ -184,86 +164,103 @@ void main() {
     expect(result!.location!.method, LocationMethod.exifConfirmed);
   });
 
-  testWidgets('Sumber 3 nonaktif bila foto terpilih tanpa metadata GPS', (
+  testWidgets('beberapa foto ber-GPS: petugas memilih foto sumber', (
     tester,
   ) async {
-    final photos = [
-      EvidencePhotoItem.fromPath('p1.jpg'),
-      EvidencePhotoItem.fromPath('p2.jpg'),
-    ];
+    await openBatchSheet(
+      tester,
+      photos: [
+        EvidencePhotoItem.fromPath(
+          'p1.jpg',
+        ).copyWith(exif: const ExifGeo(latitude: -7.30, longitude: 108.20)),
+        EvidencePhotoItem.fromPath(
+          'p2.jpg',
+        ).copyWith(exif: const ExifGeo(latitude: -7.31, longitude: 108.21)),
+      ],
+      reference: null,
+    );
 
-    await openBatchSheet(tester, photos: photos, reference: _projectRef);
+    await tester.tap(find.text('Dari foto'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Foto 2'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Gunakan koordinat foto'));
+    await tester.tap(find.text('Gunakan koordinat foto'));
+    await tester.pumpAndSettle();
+    await tapApply(tester, 2);
 
-    expect(find.text('Tidak ada EXIF'), findsOneWidget);
+    expect(result!.location!.latitude, closeTo(-7.31, 1e-6));
   });
 
-  testWidgets(
-    'Titik proyek belum tersedia: status validasi jarak belum tersedia',
-    (tester) async {
-      final photos = [
-        EvidencePhotoItem.fromPath('p1.jpg'),
-        EvidencePhotoItem.fromPath('p2.jpg'),
-      ];
-
-      await openBatchSheet(
-        tester,
-        photos: photos,
-        reference: null, // Proyek belum tersedia
-      );
-
-      expect(find.text('Validasi jarak belum tersedia'), findsOneWidget);
-      expect(find.text('Belum tersedia dari Pengembang'), findsOneWidget);
-    },
-  );
-
-  testWidgets('Di luar toleransi 50m wajib mengisi alasan petugas', (
+  testWidgets('tanpa metadata GPS pada foto terpilih: sumber foto tidak ada', (
     tester,
   ) async {
-    final photos = [
-      EvidencePhotoItem.fromPath('p1.jpg'),
-      EvidencePhotoItem.fromPath('p2.jpg'),
-    ];
+    await openBatchSheet(
+      tester,
+      photos: [
+        EvidencePhotoItem.fromPath('p1.jpg'),
+        EvidencePhotoItem.fromPath('p2.jpg'),
+      ],
+      reference: _projectRef,
+    );
 
-    await openBatchSheet(tester, photos: photos, reference: _projectRef);
+    expect(find.text('Dari foto'), findsNothing);
+  });
 
-    // Masukkan koordinat jauh (> 50m)
-    final fields = find.byType(TextField);
-    await tester.enterText(fields.at(0), '-7.3350');
-    await tester.enterText(fields.at(1), '108.2207');
-    await tester.pumpAndSettle();
+  testWidgets('titik proyek belum tersedia: jarak dinyatakan tidak dihitung', (
+    tester,
+  ) async {
+    await openBatchSheet(
+      tester,
+      photos: [
+        EvidencePhotoItem.fromPath('p1.jpg'),
+        EvidencePhotoItem.fromPath('p2.jpg'),
+      ],
+      reference: null,
+    );
 
+    expect(
+      find.text('Tidak dihitung: titik proyek belum tersedia'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('di luar toleransi 50 m wajib mengisi alasan petugas', (
+    tester,
+  ) async {
+    await openBatchSheet(
+      tester,
+      photos: [
+        EvidencePhotoItem.fromPath('p1.jpg'),
+        EvidencePhotoItem.fromPath('p2.jpg'),
+      ],
+      reference: _projectRef,
+    );
+
+    await fill(tester, '-7.3350', '108.2207');
     expect(find.text('Alasan petugas (wajib)'), findsOneWidget);
 
-    // Tombol terapkan harus nonaktif sebelum alasan diisi
-    final applyButtonFinder = find.widgetWithText(
+    final applyFinder = find.widgetWithText(
       ElevatedButton,
-      'Terapkan ke 2 foto terpilih',
+      'Terapkan ke 2 foto',
     );
-    final applyBtn = tester.widget<ElevatedButton>(applyButtonFinder);
-    expect(applyBtn.onPressed, isNull);
+    expect(tester.widget<ElevatedButton>(applyFinder).onPressed, isNull);
 
-    // Isi alasan
-    final noteField = find.byType(TextField).last;
-    await tester.enterText(noteField, 'Foto diambil dari gerbang utama.');
+    await tester.enterText(
+      find.byType(TextField).last,
+      'Foto diambil dari gerbang utama.',
+    );
     await tester.pumpAndSettle();
+    expect(tester.widget<ElevatedButton>(applyFinder).onPressed, isNotNull);
 
-    final applyBtnEnabled = tester.widget<ElevatedButton>(applyButtonFinder);
-    expect(applyBtnEnabled.onPressed, isNotNull);
-
-    await tester.ensureVisible(applyButtonFinder);
-    await tester.tap(applyButtonFinder);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.widgetWithText(FilledButton, 'Terapkan'));
-    await tester.pumpAndSettle();
-
+    await tapApply(tester, 2);
     expect(
       result!.location!.clarificationNote,
       'Foto diambil dari gerbang utama.',
     );
   });
 
-  testWidgets('Batch sheet tersusun tanpa overflow di 320dp dengan teks 200%', (
+  testWidgets('tersusun tanpa overflow di 320dp dengan teks 200%', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(320, 700));
@@ -308,7 +305,7 @@ void main() {
     await tester.tap(find.text('Buka'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Atur Lokasi Sekaligus'), findsOneWidget);
+    expect(find.text('Atur lokasi 2 foto'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

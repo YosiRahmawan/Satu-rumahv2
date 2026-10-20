@@ -581,4 +581,62 @@ void main() {
       },
     );
   });
+
+  group('photoSubmitBlocker', () {
+    OfficerLocation pin() => OfficerLocation(
+      latitude: -7.3274,
+      longitude: 108.2207,
+      method: LocationMethod.manualPin,
+      selectedAt: DateTime(2026, 10, 20),
+    );
+
+    test('tanpa foto atau semua foto siap: tidak ada penghalang', () {
+      expect(photoSubmitBlocker(const []), isNull);
+      expect(
+        photoSubmitBlocker([
+          EvidencePhotoItem.fromPath('a.jpg').copyWith(location: pin()),
+        ]),
+        isNull,
+      );
+    });
+
+    test('foto yang perlu dipilih ulang didahulukan dari lokasi', () {
+      final message = photoSubmitBlocker([
+        EvidencePhotoItem.fromPath('a.jpg').copyWith(needsReselect: true),
+        EvidencePhotoItem.fromPath('b.jpg'),
+      ]);
+      expect(message, contains('1 foto perlu dipilih ulang'));
+    });
+
+    test('foto tanpa lokasi menghalangi dengan jumlahnya', () {
+      final message = photoSubmitBlocker([
+        EvidencePhotoItem.fromPath('a.jpg'),
+        EvidencePhotoItem.fromPath('b.jpg'),
+      ]);
+      expect(message, contains('2 foto belum memiliki lokasi'));
+    });
+
+    test('submit final ditolak bila ada foto yang perlu dipilih ulang', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final result = container
+          .read(monitoringFormProvider.notifier)
+          .submitFinal(
+            _draft(id: 'monitoring-pilih-ulang').copyWith(
+              photos: [
+                EvidencePhotoItem.fromPath(
+                  'hilang.jpg',
+                ).copyWith(location: pin(), needsReselect: true),
+              ],
+            ),
+          );
+
+      expect(result.status, isNot(MonitoringSubmitStatus.success));
+      expect(result.errorMessage, contains('perlu dipilih ulang'));
+    });
+  });
 }

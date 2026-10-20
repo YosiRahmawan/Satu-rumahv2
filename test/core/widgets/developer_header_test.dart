@@ -18,21 +18,17 @@ void main() {
           padding: const EdgeInsets.only(top: 44, bottom: 34),
           textScaler: TextScaler.linear(textScale),
         ),
-        child: Scaffold(
-          body: SingleChildScrollView(
-            child: child,
-          ),
-        ),
+        child: Scaffold(body: SingleChildScrollView(child: child)),
       ),
     );
   }
 
   group('DeveloperHeader Canonical Branding & Structure Tests', () {
-    testWidgets('renders canonical brand identity and hero gradient', (tester) async {
+    testWidgets('renders canonical brand identity and hero gradient', (
+      tester,
+    ) async {
       await tester.pumpWidget(
-        buildTestableWidget(
-          child: const DeveloperHeader(),
-        ),
+        buildTestableWidget(child: const DeveloperHeader()),
       );
       await tester.pumpAndSettle();
 
@@ -50,63 +46,72 @@ void main() {
       expect(decoration.borderRadius, equals(AppRadii.hero));
     });
 
-    testWidgets('renders Beranda variant correctly (avatar only, no page title)', (tester) async {
-      var avatarTapped = false;
-      await tester.pumpWidget(
-        buildTestableWidget(
-          child: DeveloperHeader(
-            avatarLabel: 'YR',
-            showOnlineIndicator: true,
-            avatarTooltip: 'Profil Pengembang',
-            onAvatarTap: () => avatarTapped = true,
+    testWidgets(
+      'renders Beranda variant correctly (avatar only, no page title)',
+      (tester) async {
+        var avatarTapped = false;
+        await tester.pumpWidget(
+          buildTestableWidget(
+            child: DeveloperHeader(
+              avatarLabel: 'YR',
+              showOnlineIndicator: true,
+              avatarTooltip: 'Profil Pengembang',
+              onAvatarTap: () => avatarTapped = true,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('SATU RUMAH'), findsOneWidget);
-      expect(find.text('YR'), findsOneWidget);
+        expect(find.text('SATU RUMAH'), findsOneWidget);
+        expect(find.text('YR'), findsOneWidget);
 
-      await tester.tap(find.text('YR'));
-      await tester.pumpAndSettle();
-      expect(avatarTapped, isTrue);
-    });
+        await tester.tap(find.text('YR'));
+        await tester.pumpAndSettle();
+        expect(avatarTapped, isTrue);
+      },
+    );
 
-    testWidgets('renders Pengajuan variant correctly (notification bell with badge + avatar)', (tester) async {
-      var notifTapped = false;
-      var avatarTapped = false;
+    testWidgets(
+      'renders Pengajuan variant correctly (notification bell with badge + avatar)',
+      (tester) async {
+        var notifTapped = false;
+        var avatarTapped = false;
 
-      await tester.pumpWidget(
-        buildTestableWidget(
-          child: DeveloperHeader(
-            pageTitle: 'Pengajuan',
-            pageSubtitle: 'Daftar pengajuan site plan perumahan',
-            avatarLabel: 'YR',
-            showOnlineIndicator: true,
-            avatarTooltip: 'Buka profil',
-            onAvatarTap: () => avatarTapped = true,
-            notificationCount: 3,
-            onNotificationTap: () => notifTapped = true,
+        await tester.pumpWidget(
+          buildTestableWidget(
+            child: DeveloperHeader(
+              pageTitle: 'Pengajuan',
+              pageSubtitle: 'Daftar pengajuan site plan perumahan',
+              avatarLabel: 'YR',
+              showOnlineIndicator: true,
+              avatarTooltip: 'Buka profil',
+              onAvatarTap: () => avatarTapped = true,
+              notificationCount: 3,
+              onNotificationTap: () => notifTapped = true,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Pengajuan'), findsOneWidget);
-      expect(find.text('Daftar pengajuan site plan perumahan'), findsOneWidget);
-      expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
-      expect(find.text('YR'), findsOneWidget);
+        expect(find.text('Pengajuan'), findsOneWidget);
+        expect(
+          find.text('Daftar pengajuan site plan perumahan'),
+          findsOneWidget,
+        );
+        expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+        expect(find.text('YR'), findsOneWidget);
 
-      // Tap notification bell
-      await tester.tap(find.byIcon(Icons.notifications_none_rounded));
-      await tester.pumpAndSettle();
-      expect(notifTapped, isTrue);
+        // Tap notification bell
+        await tester.tap(find.byIcon(Icons.notifications_none_rounded));
+        await tester.pumpAndSettle();
+        expect(notifTapped, isTrue);
 
-      // Tap avatar
-      await tester.tap(find.text('YR'));
-      await tester.pumpAndSettle();
-      expect(avatarTapped, isTrue);
-    });
+        // Tap avatar
+        await tester.tap(find.text('YR'));
+        await tester.pumpAndSettle();
+        expect(avatarTapped, isTrue);
+      },
+    );
 
     testWidgets('renders Notifikasi variant with child widget', (tester) async {
       await tester.pumpWidget(
@@ -124,111 +129,201 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Notifikasi'), findsOneWidget);
-      expect(find.text('Pantau informasi dan perkembangan pengajuan Anda'), findsOneWidget);
+      expect(
+        find.text('Pantau informasi dan perkembangan pengajuan Anda'),
+        findsOneWidget,
+      );
       expect(find.text('2 notifikasi belum dibaca'), findsOneWidget);
     });
 
-    testWidgets('renders Profil variant with Terverifikasi badge and hidden avatar', (tester) async {
-      await tester.pumpWidget(
-        buildTestableWidget(
-          child: const DeveloperHeader(
-            pageTitle: 'Profil Pengembang',
-            pageSubtitle: 'Kelola informasi perusahaan dan pengaturan akun',
-            isVerified: true,
-            showAvatar: false,
-            bottomPadding: 40,
+    testWidgets(
+      'renders Profil variant with Terverifikasi badge and hidden avatar',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestableWidget(
+            child: const DeveloperHeader(
+              pageTitle: 'Profil Pengembang',
+              pageSubtitle: 'Kelola informasi perusahaan dan pengaturan akun',
+              isVerified: true,
+              showAvatar: false,
+              bottomPadding: 40,
+            ),
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
+        await tester.pumpAndSettle();
 
-      expect(find.text('Profil Pengembang'), findsOneWidget);
-      expect(find.text('Kelola informasi perusahaan dan pengaturan akun'), findsOneWidget);
-      expect(find.text('Terverifikasi'), findsOneWidget);
-      expect(find.text('YR'), findsNothing);
-    });
+        expect(find.text('Profil Pengembang'), findsOneWidget);
+        expect(
+          find.text('Kelola informasi perusahaan dan pengaturan akun'),
+          findsOneWidget,
+        );
+        expect(find.text('Terverifikasi'), findsOneWidget);
+        expect(find.text('YR'), findsNothing);
+      },
+    );
   });
 
   group('DeveloperHeader Responsive & Text Scaling Tests', () {
-    testWidgets('renders safely without overflow at 360dp width and 1.0x text scale', (tester) async {
+    testWidgets(
+      'renders safely without overflow at 360dp width and 1.0x text scale',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestableWidget(
+            width: 360,
+            height: 800,
+            textScale: 1.0,
+            child: DeveloperHeader(
+              pageTitle: 'Profil Pengembang',
+              pageSubtitle: 'Kelola informasi perusahaan dan pengaturan akun',
+              isVerified: true,
+              avatarLabel: 'YR',
+              showOnlineIndicator: true,
+              notificationCount: 2,
+              onNotificationTap: () {},
+              onAvatarTap: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'renders safely without overflow at 360dp width and 2.0x text scale',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestableWidget(
+            width: 360,
+            height: 800,
+            textScale: 2.0,
+            child: DeveloperHeader(
+              pageTitle: 'Profil Pengembang',
+              pageSubtitle: 'Kelola informasi perusahaan dan pengaturan akun',
+              isVerified: true,
+              avatarLabel: 'YR',
+              showOnlineIndicator: true,
+              notificationCount: 5,
+              onNotificationTap: () {},
+              onAvatarTap: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'renders safely without overflow at 412dp width and 1.0x text scale',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestableWidget(
+            width: 412,
+            height: 915,
+            textScale: 1.0,
+            child: DeveloperHeader(
+              pageTitle: 'Pengajuan',
+              pageSubtitle: 'Daftar pengajuan site plan perumahan',
+              avatarLabel: 'YR',
+              showOnlineIndicator: true,
+              notificationCount: 1,
+              onNotificationTap: () {},
+              onAvatarTap: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'renders safely without overflow at 412dp width and 2.0x text scale',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestableWidget(
+            width: 412,
+            height: 915,
+            textScale: 2.0,
+            child: DeveloperHeader(
+              pageTitle: 'Pengajuan',
+              pageSubtitle: 'Daftar pengajuan site plan perumahan',
+              avatarLabel: 'YR',
+              showOnlineIndicator: true,
+              notificationCount: 1,
+              onNotificationTap: () {},
+              onAvatarTap: () {},
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
+  group('DeveloperHeader dengan tombol kembali', () {
+    testWidgets('tombol kembali sebaris dengan judul dan memanggil onBack', (
+      tester,
+    ) async {
+      var backCount = 0;
       await tester.pumpWidget(
         buildTestableWidget(
-          width: 360,
-          height: 800,
-          textScale: 1.0,
           child: DeveloperHeader(
-            pageTitle: 'Profil Pengembang',
-            pageSubtitle: 'Kelola informasi perusahaan dan pengaturan akun',
-            isVerified: true,
-            avatarLabel: 'YR',
-            showOnlineIndicator: true,
-            notificationCount: 2,
-            onNotificationTap: () {},
-            onAvatarTap: () {},
+            showBrandBar: false,
+            pageTitle: 'Riwayat Survey & BA',
+            pageSubtitle: '5 laporan',
+            onBack: () => backCount++,
           ),
         ),
       );
       await tester.pumpAndSettle();
+
+      final back = find.byTooltip('Kembali');
+      expect(back, findsOneWidget);
+      final title = find.text('Riwayat Survey & BA');
+      final subtitle = find.text('5 laporan');
+
+      // Satu baris: tombol sejajar vertikal dengan blok judul + subjudul.
+      final backCenter = tester.getCenter(back).dy;
+      final blockCenter =
+          (tester.getTopLeft(title).dy + tester.getBottomLeft(subtitle).dy) / 2;
+      expect((backCenter - blockCenter).abs(), lessThan(4));
+      // Judul berada di kanan tombol, bukan di bawahnya.
+      expect(
+        tester.getTopLeft(title).dx,
+        greaterThan(tester.getTopRight(back).dx),
+      );
+
+      await tester.tap(back);
+      expect(backCount, 1);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('renders safely without overflow at 360dp width and 2.0x text scale', (tester) async {
+    testWidgets('tanpa onBack tidak ada tombol kembali', (tester) async {
       await tester.pumpWidget(
         buildTestableWidget(
-          width: 360,
-          height: 800,
+          child: const DeveloperHeader(
+            showBrandBar: false,
+            pageTitle: 'Riwayat Survey & BA',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Kembali'), findsNothing);
+    });
+
+    testWidgets('tetap rapi di 320dp dengan teks 200%', (tester) async {
+      await tester.pumpWidget(
+        buildTestableWidget(
+          width: 320,
           textScale: 2.0,
           child: DeveloperHeader(
-            pageTitle: 'Profil Pengembang',
-            pageSubtitle: 'Kelola informasi perusahaan dan pengaturan akun',
-            isVerified: true,
-            avatarLabel: 'YR',
-            showOnlineIndicator: true,
-            notificationCount: 5,
-            onNotificationTap: () {},
-            onAvatarTap: () {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('renders safely without overflow at 412dp width and 1.0x text scale', (tester) async {
-      await tester.pumpWidget(
-        buildTestableWidget(
-          width: 412,
-          height: 915,
-          textScale: 1.0,
-          child: DeveloperHeader(
-            pageTitle: 'Pengajuan',
-            pageSubtitle: 'Daftar pengajuan site plan perumahan',
-            avatarLabel: 'YR',
-            showOnlineIndicator: true,
-            notificationCount: 1,
-            onNotificationTap: () {},
-            onAvatarTap: () {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('renders safely without overflow at 412dp width and 2.0x text scale', (tester) async {
-      await tester.pumpWidget(
-        buildTestableWidget(
-          width: 412,
-          height: 915,
-          textScale: 2.0,
-          child: DeveloperHeader(
-            pageTitle: 'Pengajuan',
-            pageSubtitle: 'Daftar pengajuan site plan perumahan',
-            avatarLabel: 'YR',
-            showOnlineIndicator: true,
-            notificationCount: 1,
-            onNotificationTap: () {},
-            onAvatarTap: () {},
+            showBrandBar: false,
+            pageTitle: 'Riwayat Survey & BA',
+            pageSubtitle: '5 laporan',
+            onBack: () {},
           ),
         ),
       );

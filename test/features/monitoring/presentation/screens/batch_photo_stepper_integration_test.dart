@@ -9,6 +9,13 @@ import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring
 import 'package:satu_rumah/features/monitoring/presentation/screens/tambah_monitoring_stepper_screen.dart';
 import 'package:satu_rumah/features/monitoring/presentation/widgets/photo_location_sheet.dart';
 
+OfficerLocation _manual(double lat, double lng) => OfficerLocation(
+  latitude: lat,
+  longitude: lng,
+  method: LocationMethod.manualPin,
+  selectedAt: DateTime(2026, 1, 1),
+);
+
 void main() {
   late ProviderContainer container;
 
@@ -24,33 +31,23 @@ void main() {
     container.dispose();
   });
 
-  Widget harness({
-    GoRouter? router,
-    TextScaler? textScaler,
-    DeviceLocationResolver? deviceLocationResolver,
-  }) {
-    final routes = [
-      GoRoute(
-        path: '/',
-        builder: (context, state) => TambahMonitoringStepperScreen(
-          deviceLocationResolver:
-              deviceLocationResolver ??
-              () async => DeviceFix(
-                latitude: -7.3274,
-                longitude: 108.2207,
-                accuracyMeters: 5.0,
-                recordedAt: DateTime(2026, 1, 1),
-              ),
+  Widget harness({TextScaler? textScaler}) {
+    final appRouter = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => TambahMonitoringStepperScreen(
+            locationMapBuilder: (_) => const SizedBox.shrink(),
+          ),
         ),
-      ),
-      GoRoute(
-        path: '/monitoring/preview',
-        builder: (context, state) =>
-            const Scaffold(body: Text('Preview Berita Acara')),
-      ),
-    ];
-
-    final appRouter = router ?? GoRouter(initialLocation: '/', routes: routes);
+        GoRoute(
+          path: '/monitoring/preview',
+          builder: (context, state) =>
+              const Scaffold(body: Text('Preview Berita Acara')),
+        ),
+      ],
+    );
 
     return UncontrolledProviderScope(
       container: container,
@@ -71,23 +68,37 @@ void main() {
     WidgetTester tester, {
     Size size = const Size(412, 900),
     TextScaler? textScaler,
-    DeviceLocationResolver? deviceLocationResolver,
   }) async {
     await tester.binding.setSurfaceSize(size);
     addTearDown(() async {
       await tester.binding.setSurfaceSize(null);
     });
-    await tester.pumpWidget(
-      harness(
-        textScaler: textScaler,
-        deviceLocationResolver: deviceLocationResolver,
-      ),
-    );
+    await tester.pumpWidget(harness(textScaler: textScaler));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapChecklist(WidgetTester tester) async {
+    await tester.ensureVisible(find.byType(Checkbox));
+    await tester.tap(find.byType(Checkbox));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapBatchApply(WidgetTester tester) async {
+    final button = find.byKey(const ValueKey('terapkan_lokasi_batch_button'));
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> tapText(WidgetTester tester, String text) async {
+    final finder = find.text(text);
+    await tester.ensureVisible(finder.first);
+    await tester.tap(finder.first);
     await tester.pumpAndSettle();
   }
 
   testWidgets(
-    'Langkah 3 menampilkan aksi sekunder Atur Lokasi Foto dan mode pemilihan batch',
+    'Langkah 3: satu aksi "Atur sekaligus" yang berubah menjadi bilah pemilihan',
     (tester) async {
       final notifier = container.read(monitoringFormProvider.notifier);
       notifier.updateNamaPerumahan('Perumahan Griya Indah');
@@ -96,354 +107,260 @@ void main() {
 
       await pumpStepper(tester);
 
-      // Aksi sekunder Atur Lokasi Foto harus ada di header foto
-      final aturLokasiBtn = find.text('Atur Lokasi Foto');
-      expect(aturLokasiBtn, findsOneWidget);
-
-      // Pastikan tombol utama Submit tetap ada di bawah
+      // Mode biasa: tanpa lingkaran pilih, tanpa bilah pemilihan.
+      expect(find.text('Atur sekaligus'), findsOneWidget);
+      expect(find.text('Ketuk foto untuk mengatur lokasinya.'), findsOneWidget);
+      expect(find.byType(Checkbox), findsNothing);
       expect(find.text('Submit & Buat Berita Acara'), findsOneWidget);
 
-      // Ketuk Atur Lokasi Foto -> membuka mode seleksi dengan foto belum berlokasi terpilih otomatis
-      await tester.tap(aturLokasiBtn);
-      await tester.pumpAndSettle();
+      // Masuk mode pilih: foto yang belum berlokasi terpilih otomatis.
+      await tapText(tester, 'Atur sekaligus');
+      expect(find.text('3 dipilih'), findsOneWidget);
+      expect(find.text('Atur sekaligus'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('terapkan_lokasi_batch_button')),
+        findsOne,
+      );
 
-      // Terbuka bottom sheet batch lokasi
-      expect(find.text('Atur Lokasi Sekaligus'), findsOneWidget);
-      expect(find.textContaining('3 foto terpilih'), findsWidgets);
+      // Kosongkan lalu pilih semua lagi lewat kotak centang.
+      await tapChecklist(tester);
+      expect(find.text('Pilih foto'), findsOneWidget);
+      final apply = tester.widget<FilledButton>(
+        find.byKey(const ValueKey('terapkan_lokasi_batch_button')),
+      );
+      expect(apply.onPressed, isNull);
 
-      // Tutup sheet
-      Navigator.of(tester.element(find.byType(BatchPhotoLocationSheet))).pop();
-      await tester.pumpAndSettle();
+      await tapChecklist(tester);
+      expect(find.text('3 dipilih'), findsOneWidget);
 
-      // Toolbar pemilihan foto aktif
-      expect(find.text('3 terpilih'), findsOneWidget);
-      expect(find.text('Batal Pilih'), findsOneWidget);
-
-      // Batalkan pilihan semua
-      await tester.tap(find.text('Batal Pilih'));
-      await tester.pumpAndSettle();
-      expect(find.text('0 terpilih'), findsOneWidget);
-      expect(find.text('Pilih Semua'), findsOneWidget);
-
-      // Pilih Semua kembali
-      await tester.tap(find.text('Pilih Semua'));
-      await tester.pumpAndSettle();
-      expect(find.text('3 terpilih'), findsOneWidget);
-
-      // Selesai mode pemilihan
-      await tester.tap(find.text('Selesai'));
-      await tester.pumpAndSettle();
-      expect(find.text('3 terpilih'), findsNothing);
+      // Batal kembali ke mode biasa.
+      await tapText(tester, 'Batal');
+      expect(find.text('Atur sekaligus'), findsOneWidget);
+      expect(find.text('3 dipilih'), findsNothing);
     },
   );
 
-  testWidgets(
-    'Batch location menerapkan koordinat HANYA ke foto terpilih dan menyisakan foto lain',
-    (tester) async {
-      final notifier = container.read(monitoringFormProvider.notifier);
-      notifier.updateNamaPerumahan('Perumahan Tasik Asri');
-      notifier.updatePhotos(['f1.jpg', 'f2.jpg', 'f3.jpg']);
-      notifier.setStep(2);
+  testWidgets('Lokasi batch hanya diterapkan ke foto terpilih', (tester) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Tasik Asri');
+    notifier.updatePhotos(['f1.jpg', 'f2.jpg', 'f3.jpg']);
+    notifier.setStep(2);
 
-      await pumpStepper(
-        tester,
-        deviceLocationResolver: () async => DeviceFix(
-          latitude: -7.3274,
-          longitude: 108.2207,
-          accuracyMeters: 6.0,
-          recordedAt: DateTime(2026, 1, 1),
-        ),
-      );
+    await pumpStepper(tester);
 
-      // Masuk ke sheet lewat Atur Lokasi Foto
-      await tester.tap(find.text('Atur Lokasi Foto'));
-      await tester.pumpAndSettle();
+    await tapText(tester, 'Atur sekaligus');
+    // Kosongkan seleksi, lalu pilih foto 1 dan 2.
+    await tapChecklist(tester);
+    await tester.tap(find.text('Dokumentasi 1'));
+    await tester.tap(find.text('Dokumentasi 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('2 dipilih'), findsOneWidget);
 
-      // Tutup sheet dulu untuk memilih hanya foto 1 dan foto 2
-      Navigator.of(tester.element(find.byType(BatchPhotoLocationSheet))).pop();
-      await tester.pumpAndSettle();
+    await tapBatchApply(tester);
+    expect(find.text('Atur lokasi 2 foto'), findsOneWidget);
 
-      // Kosongkan seleksi lalu pilih foto 1 dan 2
-      await tester.tap(find.text('Batal Pilih'));
-      await tester.pumpAndSettle();
+    final fields = find.byType(TextField);
+    await tester.enterText(fields.at(0), '-7.3274');
+    await tester.enterText(fields.at(1), '108.2207');
+    await tester.pumpAndSettle();
+    final apply = find.text('Terapkan ke 2 foto');
+    await tester.ensureVisible(apply);
+    await tester.tap(apply);
+    await tester.pumpAndSettle();
 
-      // Pilih foto 1 dan foto 2 via semantiks checkbox foto
-      await tester.tap(find.bySemanticsLabel('Pilih foto 1'));
-      await tester.tap(find.bySemanticsLabel('Pilih foto 2'));
-      await tester.pumpAndSettle();
+    final photos = container.read(monitoringFormProvider).photos;
+    expect(photos[0].location!.latitude, closeTo(-7.3274, 1e-6));
+    expect(photos[0].location!.method, LocationMethod.manualPin);
+    expect(photos[1].location!.longitude, closeTo(108.2207, 1e-6));
+    expect(photos[2].location, isNull);
 
-      expect(find.text('2 terpilih'), findsOneWidget);
-
-      // Buka batch location untuk 2 foto terpilih
-      await tester.tap(find.byKey(const ValueKey('atur_lokasi_foto_button')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Atur Lokasi Sekaligus'), findsOneWidget);
-      expect(
-        find.text('Pilih sumber koordinat untuk 2 foto terpilih.'),
-        findsOneWidget,
-      );
-
-      // Terapkan GPS perangkat
-      final applyBtn = find.text('Terapkan ke 2 foto terpilih');
-      await tester.ensureVisible(applyBtn);
-      await tester.tap(applyBtn);
-      await tester.pumpAndSettle();
-
-      // Dialog konfirmasi harus muncul
-      expect(find.text('Konfirmasi Lokasi Sekaligus'), findsOneWidget);
-      expect(
-        find.textContaining('Lokasi ini akan diterapkan ke 2 foto terpilih.'),
-        findsOneWidget,
-      );
-
-      // Konfirmasi Terapkan
-      await tester.tap(find.widgetWithText(FilledButton, 'Terapkan'));
-      await tester.pumpAndSettle();
-
-      // Verifikasi state provider: foto 1 & 2 terisi koordinat, foto 3 tetap null
-      final photos = container.read(monitoringFormProvider).photos;
-      expect(photos[0].hasLocation, isTrue);
-      expect(photos[0].location!.latitude, closeTo(-7.3274, 1e-6));
-      expect(photos[0].location!.longitude, closeTo(108.2207, 1e-6));
-
-      expect(photos[1].hasLocation, isTrue);
-      expect(photos[1].location!.latitude, closeTo(-7.3274, 1e-6));
-      expect(photos[1].location!.longitude, closeTo(108.2207, 1e-6));
-
-      expect(photos[2].hasLocation, isFalse);
-      expect(photos[2].location, isNull);
-
-      // Verifikasi UI stepper: 2 foto sudah berlokasi, 1 perlu lokasi
-      expect(find.text('3 foto · 2 sudah berlokasi'), findsOneWidget);
-      expect(find.text('Perlu lokasi'), findsOneWidget);
-      expect(find.text('GPS perangkat'), findsNWidgets(2));
-    },
-  );
+    // Mode pilih ditutup dan ringkasan ikut diperbarui.
+    expect(find.text('Atur sekaligus'), findsOneWidget);
+    expect(find.text('3 foto · 2 sudah berlokasi'), findsOneWidget);
+    expect(find.text('Perlu lokasi'), findsOneWidget);
+    expect(find.text('Lokasi ditentukan manual'), findsNWidgets(2));
+  });
 
   testWidgets(
-    'Pengaturan lokasi individual setelah batch dapat menimpa koordinat foto tertentu',
+    'Mengatur ulang satu foto setelah batch tidak mengubah yang lain',
     (tester) async {
       final notifier = container.read(monitoringFormProvider.notifier);
       notifier.updateNamaPerumahan('Perumahan Tasik Asri');
       notifier.updatePhotos(['f1.jpg', 'f2.jpg']);
-      final photoIds = container
+      final ids = container
           .read(monitoringFormProvider)
           .photos
           .map((p) => p.id);
-      // Awalnya foto 1 dan 2 punya koordinat batch sama
-      notifier.setBatchPhotoLocations(
-        photoIds,
-        OfficerLocation(
-          latitude: -7.3274,
-          longitude: 108.2207,
-          method: LocationMethod.deviceAtEntry,
-          selectedAt: DateTime(2026, 1, 1),
-        ),
-      );
+      notifier.setBatchPhotoLocations(ids, _manual(-7.3274, 108.2207));
       notifier.setStep(2);
 
       await pumpStepper(tester);
-
       expect(find.text('2 foto · 2 sudah berlokasi'), findsOneWidget);
 
-      // Ketuk foto 2 untuk membuka sheet lokasi individual
-      final gpsPerangkatWidgets = find.text('GPS perangkat');
-      expect(gpsPerangkatWidgets, findsNWidgets(2));
-      await tester.ensureVisible(gpsPerangkatWidgets.at(1));
-      await tester.tap(gpsPerangkatWidgets.at(1));
+      final status = find.text('Lokasi ditentukan manual');
+      expect(status, findsNWidgets(2));
+      await tester.ensureVisible(status.at(1));
+      await tester.tap(status.at(1));
       await tester.pumpAndSettle();
-
       expect(find.text('Lokasi Foto 2'), findsOneWidget);
 
-      // Ubah lintang foto 2 menjadi titik manual baru
-      final fields = find.byType(TextField);
-      await tester.enterText(fields.at(0), '-7.3276');
+      await tester.enterText(find.byType(TextField).at(0), '-7.3276');
       await tester.pumpAndSettle();
+      await tapText(tester, 'Simpan lokasi');
 
-      await tester.ensureVisible(find.text('Simpan lokasi'));
-      await tester.tap(find.text('Simpan lokasi'));
-      await tester.pumpAndSettle();
-
-      // Foto 2 berubah jadi 'Lokasi ditentukan manual', Foto 1 tetap 'GPS perangkat'
       final photos = container.read(monitoringFormProvider).photos;
       expect(photos[0].location!.latitude, closeTo(-7.3274, 1e-6));
-      expect(photos[0].location!.method, LocationMethod.deviceAtEntry);
-
       expect(photos[1].location!.latitude, closeTo(-7.3276, 1e-6));
-      expect(photos[1].location!.method, LocationMethod.manualPin);
-
-      expect(find.text('GPS perangkat'), findsOneWidget);
-      expect(find.text('Lokasi ditentukan manual'), findsOneWidget);
     },
   );
 
-  testWidgets(
-    'Penyimpanan draft mempertahankan koordinat batch dan individual saat dibuka kembali',
-    (tester) async {
-      final notifier = container.read(monitoringFormProvider.notifier);
-      notifier.updateNamaPerumahan('Griya Sukaratu');
-      notifier.updatePhotos(['a.jpg', 'b.jpg']);
-      final photoIds = container
-          .read(monitoringFormProvider)
-          .photos
-          .map((p) => p.id);
-      notifier.setBatchPhotoLocations(
-        photoIds,
-        OfficerLocation(
-          latitude: -7.3274,
-          longitude: 108.2207,
-          method: LocationMethod.deviceAtEntry,
-          selectedAt: DateTime(2026, 1, 1),
-        ),
-      );
-      notifier.setStep(2);
+  testWidgets('Simpan draf mempertahankan lokasi saat dibuka kembali', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Griya Sukaratu');
+    notifier.updatePhotos(['a.jpg', 'b.jpg']);
+    final ids = container.read(monitoringFormProvider).photos.map((p) => p.id);
+    notifier.setBatchPhotoLocations(ids, _manual(-7.3274, 108.2207));
+    notifier.setStep(2);
 
-      await pumpStepper(tester);
+    await pumpStepper(tester);
+    await tapText(tester, 'Simpan Draft');
+    expect(find.text('Draf berhasil disimpan.'), findsOneWidget);
 
-      // Simpan Draft
-      final simpanDraftBtn = find.text('Simpan Draft');
-      await tester.tap(simpanDraftBtn);
-      await tester.pumpAndSettle();
+    final savedPhotos = container.read(monitoringFormProvider).photos;
+    notifier.resetForm();
+    expect(container.read(monitoringFormProvider).photos, isEmpty);
 
-      expect(find.text('Draf berhasil disimpan.'), findsOneWidget);
+    notifier.loadDraft(
+      MonitoringModel(
+        id: 'draft-test-1',
+        namaPerumahan: 'Griya Sukaratu',
+        tanggalMonitoring: DateTime(2026, 1, 1),
+        photos: savedPhotos,
+        isDraft: true,
+      ),
+    );
+    notifier.setStep(2);
+    await tester.pumpAndSettle();
 
-      // Reset state form seperti aplikasi baru dibuka / load draft
-      final savedPhotos = container.read(monitoringFormProvider).photos;
-      notifier.resetForm();
-      expect(container.read(monitoringFormProvider).photos, isEmpty);
+    final restored = container.read(monitoringFormProvider).photos;
+    expect(restored.length, 2);
+    expect(restored[0].location!.latitude, closeTo(-7.3274, 1e-6));
+    expect(restored[1].location!.latitude, closeTo(-7.3274, 1e-6));
+    expect(find.text('2 foto · 2 sudah berlokasi'), findsOneWidget);
+  });
 
-      // Pulihkan form dari snapshot draft
-      notifier.loadDraft(
-        MonitoringModel(
-          id: 'draft-test-1',
-          namaPerumahan: 'Griya Sukaratu',
-          tanggalMonitoring: DateTime(2026, 1, 1),
-          photos: savedPhotos,
-          isDraft: true,
-        ),
-      );
-      notifier.setStep(2);
-      await tester.pumpAndSettle();
+  testWidgets('Lanjut ke preview ditahan sampai semua foto berlokasi', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Validasi');
+    notifier.updatePhotos(['x.jpg', 'y.jpg']);
+    notifier.setStep(2);
 
-      // Verifikasi koordinat tetap ada setelah pemulihan draft
-      final restoredPhotos = container.read(monitoringFormProvider).photos;
-      expect(restoredPhotos.length, 2);
-      expect(restoredPhotos[0].location!.latitude, closeTo(-7.3274, 1e-6));
-      expect(restoredPhotos[1].location!.latitude, closeTo(-7.3274, 1e-6));
-      expect(find.text('2 foto · 2 sudah berlokasi'), findsOneWidget);
-    },
-  );
+    await pumpStepper(tester);
 
-  testWidgets(
-    'Validasi submit menahan submit jika ada foto tanpa lokasi dan lanjut ke preview saat lengkap',
-    (tester) async {
-      final notifier = container.read(monitoringFormProvider.notifier);
-      notifier.updateNamaPerumahan('Perumahan Validasi');
-      notifier.updatePhotos(['x.jpg', 'y.jpg']);
-      notifier.setStep(2);
+    await tapText(tester, 'Submit & Buat Berita Acara');
+    expect(find.textContaining('belum memiliki lokasi'), findsOneWidget);
 
-      await pumpStepper(tester);
+    final ids = container.read(monitoringFormProvider).photos.map((p) => p.id);
+    notifier.setBatchPhotoLocations(ids, _manual(-7.3274, 108.2207));
+    await tester.pumpAndSettle();
 
-      final submitBtn = find.text('Submit & Buat Berita Acara');
-      await tester.ensureVisible(submitBtn);
-      await tester.tap(submitBtn);
-      await tester.pumpAndSettle();
+    await tapText(tester, 'Submit & Buat Berita Acara');
+    expect(find.text('Preview Berita Acara'), findsOneWidget);
+  });
 
-      // Gagal submit karena foto belum berlokasi
-      expect(find.textContaining('belum memiliki lokasi'), findsOneWidget);
+  testWidgets('Foto yang perlu dipilih ulang tampil jelas dan menahan submit', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Pulih');
+    notifier.updatePhotoItems([
+      EvidencePhotoItem.fromPath(
+        'hilang.jpg',
+      ).copyWith(location: _manual(-7.3274, 108.2207), needsReselect: true),
+      EvidencePhotoItem.fromPath(
+        'ada.jpg',
+      ).copyWith(location: _manual(-7.3274, 108.2207)),
+    ]);
+    notifier.setStep(2);
 
-      // Atur lokasi untuk semua foto
-      final photoIds = container
-          .read(monitoringFormProvider)
-          .photos
-          .map((p) => p.id);
-      notifier.setBatchPhotoLocations(
-        photoIds,
-        OfficerLocation(
-          latitude: -7.3274,
-          longitude: 108.2207,
-          method: LocationMethod.deviceAtEntry,
-          selectedAt: DateTime(2026, 1, 1),
-        ),
-      );
-      await tester.pumpAndSettle();
+    await pumpStepper(tester);
 
-      // Submit lagi
-      await tester.ensureVisible(submitBtn);
-      await tester.tap(submitBtn);
-      await tester.pumpAndSettle();
+    expect(find.text('Foto perlu dipilih ulang'), findsOneWidget);
+    expect(find.text('Perlu dipilih ulang'), findsOneWidget);
+    expect(
+      find.textContaining(
+        '1 foto perlu dipilih ulang (berkas tidak tersimpan)',
+      ),
+      findsOneWidget,
+    );
 
-      // Sukses navigasi ke preview
-      expect(find.text('Preview Berita Acara'), findsOneWidget);
-    },
-  );
+    // Mengetuk foto yang hilang tidak membuka lembar lokasi.
+    await tester.ensureVisible(find.text('Perlu dipilih ulang'));
+    await tester.tap(find.text('Perlu dipilih ulang'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lokasi Foto 1'), findsNothing);
+    expect(
+      find.textContaining('Berkas foto ini tidak tersimpan'),
+      findsOneWidget,
+    );
 
-  testWidgets(
-    'Titik proyek tidak tersedia menampilkan status validasi jarak belum tersedia',
-    (tester) async {
-      final notifier = container.read(monitoringFormProvider.notifier);
-      notifier.updateNamaPerumahan('Proyek Tanpa Koordinat');
-      notifier.updatePhotos(['foto1.jpg']);
-      final photoIds = container
-          .read(monitoringFormProvider)
-          .photos
-          .map((p) => p.id);
-      notifier.setBatchPhotoLocations(
-        photoIds,
-        OfficerLocation(
-          latitude: -7.3274,
-          longitude: 108.2207,
-          method: LocationMethod.manualPin,
-          selectedAt: DateTime(2026, 1, 1),
-        ),
-      );
-      notifier.setStep(2);
+    // Submit ditahan dengan alasan yang jelas.
+    await tapText(tester, 'Submit & Buat Berita Acara');
+    expect(find.text('Preview Berita Acara'), findsNothing);
+    expect(
+      find.textContaining('1 foto perlu dipilih ulang. Hapus lalu tambahkan'),
+      findsOneWidget,
+    );
+  });
 
-      await pumpStepper(tester);
+  testWidgets('Titik proyek tidak tersedia: jarak dinyatakan belum tersedia', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Proyek Tanpa Koordinat');
+    notifier.updatePhotos(['foto1.jpg']);
+    final ids = container.read(monitoringFormProvider).photos.map((p) => p.id);
+    notifier.setBatchPhotoLocations(ids, _manual(-7.3274, 108.2207));
+    notifier.setStep(2);
 
-      // Status detail harus menyatakan validasi jarak belum tersedia
-      expect(find.text('Validasi jarak belum tersedia'), findsOneWidget);
-      expect(find.text('Lokasi ditentukan manual'), findsOneWidget);
-      expect(
-        find.textContaining(
-          'Belum tersedia. Jarak ke proyek tidak dapat dihitung',
-        ),
-        findsOneWidget,
-      );
-    },
-  );
+    await pumpStepper(tester);
 
-  testWidgets(
-    'Responsivitas layar sempit (360dp) dan text scale 200% pada Langkah 3 bebas overflow',
-    (tester) async {
-      final notifier = container.read(monitoringFormProvider.notifier);
-      notifier.updateNamaPerumahan('Perumahan Responsif');
-      notifier.updatePhotos(['r1.jpg', 'r2.jpg']);
-      notifier.setStep(2);
+    expect(find.text('Validasi jarak belum tersedia'), findsOneWidget);
+    expect(find.text('Lokasi ditentukan manual'), findsOneWidget);
+    expect(
+      find.textContaining(
+        'Belum tersedia. Jarak ke proyek tidak dapat dihitung',
+      ),
+      findsOneWidget,
+    );
+  });
 
-      await pumpStepper(
-        tester,
-        size: const Size(360, 800),
-        textScaler: const TextScaler.linear(2.0),
-      );
+  testWidgets('Layar 360dp dengan teks 200% bebas overflow di Langkah 3', (
+    tester,
+  ) async {
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Responsif');
+    notifier.updatePhotos(['r1.jpg', 'r2.jpg']);
+    notifier.setStep(2);
 
-      // Header dan aksi sekunder tampil rapi
-      final aturBtn = find.text('Atur Lokasi Foto');
-      await tester.ensureVisible(aturBtn);
-      expect(aturBtn, findsOneWidget);
-      expect(find.text('Dokumentasi Lapangan'), findsOneWidget);
+    await pumpStepper(
+      tester,
+      size: const Size(360, 800),
+      textScaler: const TextScaler.linear(2.0),
+    );
 
-      // Aktifkan mode pemilihan
-      await tester.tap(aturBtn);
-      await tester.pumpAndSettle();
+    expect(find.text('Dokumentasi Lapangan'), findsOneWidget);
+    await tapText(tester, 'Atur sekaligus');
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('terapkan_lokasi_batch_button')),
+    );
+    await tapBatchApply(tester);
+    expect(find.byType(BatchPhotoLocationSheet), findsOneWidget);
 
-      // Batal sheet
-      Navigator.of(tester.element(find.byType(BatchPhotoLocationSheet))).pop();
-      await tester.pumpAndSettle();
-
-      // Tidak boleh ada Flutter error / overflow exception
-      expect(tester.takeException(), isNull);
-    },
-  );
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -10,6 +10,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../providers/monitoring_form_provider.dart';
 import '../providers/monitoring_list_provider.dart';
+import '../widgets/monitoring_photo_gallery.dart';
 import '../widgets/status_hasil_evaluasi_badge_widget.dart';
 
 /// Screen displaying the inspection details for an in-progress draft monitoring report.
@@ -426,26 +427,7 @@ class MonitoringDraftScreen extends ConsumerWidget {
             title: 'Foto Dokumentasi Lapangan (${item.photoPaths.length})',
           ),
           const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: item.photoPaths.map((path) {
-              return Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: AppColors.enterpriseCanvas,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.enterpriseBorder),
-                ),
-                child: const Icon(
-                  Icons.image_outlined,
-                  size: 28,
-                  color: AppColors.enterpriseTextMuted,
-                ),
-              );
-            }).toList(),
-          ),
+          MonitoringPhotoGallery(monitoring: item),
         ],
       ),
     );

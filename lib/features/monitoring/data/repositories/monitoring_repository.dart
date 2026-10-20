@@ -1,7 +1,25 @@
+import 'dart:async';
+import 'dart:convert';
+
+import '../models/evidence_photo_item.dart';
 import '../models/monitoring_model.dart';
 import '../models/status_hasil_evaluasi.dart';
+import '../photo_bytes_cache.dart';
+import 'monitoring_store.dart';
 
 class MonitoringRepository {
+  /// [store] menyimpan draf dan laporan buatan pengguna di perangkat. Tanpa
+  /// store, data hanya hidup selama aplikasi berjalan (perilaku tes).
+  MonitoringRepository({MonitoringStore? store}) : _store = store {
+    _seedJson = {for (final item in _items) item.id: jsonEncode(item.toJson())};
+  }
+
+  final MonitoringStore? _store;
+
+  /// Isi data contoh bawaan; hanya laporan yang berbeda darinya yang disimpan.
+  late final Map<String, String> _seedJson;
+  Future<void> _persistQueue = Future.value();
+
   final List<MonitoringModel> _items = [
     MonitoringModel(
       id: 'm1',
@@ -82,6 +100,113 @@ class MonitoringRepository {
     ),
   ];
 
+  /// Memuat draf dan laporan tersimpan, lalu memulihkan isi fotonya ke
+  /// [PhotoBytesCache]. Foto yang isinya tidak lagi tersimpan ditandai
+  /// `needsReselect` agar petugas memilih ulang sebelum mengirim laporan.
+  Future<void> hydrate() async {
+    final store = _store;
+    if (store == null) return;
+    final saved = await store.loadReports();
+    final storedIds = await store.storedPhotoIds();
+    for (final json in saved) {
+      final model = MonitoringModel.fromJson(json);
+      if (model == null) continue;
+      final photos = <EvidencePhotoItem>[];
+      for (final photo in model.photos) {
+        final bytes = storedIds.contains(photo.id)
+            ? await store.loadPhoto(photo.id)
+            : null;
+        if (bytes != null) {
+          PhotoBytesCache.put(photo.localRef, bytes);
+          photos.add(photo.copyWith(needsReselect: false));
+        } else if (photo.localRef.startsWith('http')) {
+          photos.add(photo);
+        } else {
+          photos.add(photo.copyWith(needsReselect: true));
+        }
+      }
+      final restored = model.copyWith(photos: photos);
+      final index = _items.indexWhere((e) => e.id == restored.id);
+      if (index == -1) {
+        _items.insert(0, restored);
+      } else {
+        _items[index] = restored;
+      }
+    }
+  }
+
+  /// Menunggu penyimpanan yang sedang berjalan selesai (untuk tes).
+  Future<void> flush() => _persistQueue;
+
+  void _schedulePersist() {
+    final store = _store;
+    if (store == null) return;
+    _persistQueue = _persistQueue
+        .then((_) => _persistNow(store))
+        .catchError((Object _) {});
+  }
+
+  Future<void> _persistNow(MonitoringStore store) async {
+    final changed = [
+      for (final item in _items)
+        if (_seedJson[item.id] != jsonEncode(item.toJson())) item,
+    ];
+    final stored = await store.storedPhotoIds();
+    final needed = <String>{};
+    final reports = <Map<String, dynamic>>[];
+    for (final item in changed) {
+      final photos = <EvidencePhotoItem>[];
+      for (final photo in item.photos) {
+        needed.add(photo.id);
+        final bytes = PhotoBytesCache.get(photo.localRef);
+        var keep = !photo.needsReselect;
+        if (photo.localRef.startsWith('http')) {
+          keep = true;
+        } else if (bytes == null) {
+          keep = false;
+        } else if (!stored.contains(photo.id)) {
+          keep = await store.savePhoto(photo.id, bytes);
+        }
+        photos.add(
+          photo.needsReselect == !keep
+              ? photo
+              : photo.copyWith(needsReselect: !keep),
+        );
+      }
+      reports.add(item.copyWith(photos: photos).toJson());
+    }
+    await store.saveReports(reports);
+    for (final id in stored.difference(needed)) {
+      await store.deletePhoto(id);
+    }
+  }
+
+  /// Nomor BA berikutnya untuk bulan pada [tanggal].
+  ///
+  /// Urutan dihitung dari nomor yang sudah dipakai pada bulan dan tahun yang
+  /// sama. Nomor lama tanpa urutan dianggap urutan 1, jadi laporan lama tidak
+  /// perlu diubah. [exceptId] mengabaikan satu laporan (mis. laporan itu
+  /// sendiri saat nomornya dihitung ulang).
+  String nextNomorSuratBA(DateTime tanggal, {String? exceptId}) {
+    final base = MonitoringModel.generateNomorSuratBA(tanggal);
+    var highest = 0;
+    for (final item in _items) {
+      if (item.id == exceptId) continue;
+      final nomor = item.nomorSuratBA;
+      if (nomor == base) {
+        if (highest < 1) highest = 1;
+      } else if (nomor.startsWith('$base/')) {
+        final urutan = int.tryParse(nomor.substring(base.length + 1));
+        if (urutan != null && urutan > highest) highest = urutan;
+      }
+    }
+    return MonitoringModel.generateNomorSuratBA(tanggal, urutan: highest + 1);
+  }
+
+  /// Apakah [nomor] sudah dipakai laporan lain selain [exceptId].
+  bool isNomorSuratBATaken(String nomor, {String? exceptId}) =>
+      _items.any((item) => item.id != exceptId && item.nomorSuratBA == nomor);
+
   List<MonitoringModel> getAllMonitoring() {
     return List.unmodifiable(
       _items..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
@@ -105,10 +230,12 @@ class MonitoringRepository {
       // but must never append a second record for the same submission.
       if (_items[existingIndex].isDraft && !item.isDraft) {
         _items[existingIndex] = item;
+        _schedulePersist();
       }
       return;
     }
     _items.insert(0, item);
+    _schedulePersist();
   }
 
   /// Menyimpan draf: menimpa draf dengan ID yang sama, atau menambahkannya di
@@ -122,7 +249,10 @@ class MonitoringRepository {
       _items.insert(0, item);
     } else if (_items[existingIndex].isDraft) {
       _items[existingIndex] = item;
+    } else {
+      return;
     }
+    _schedulePersist();
   }
 
   List<MonitoringModel> searchMonitoring({

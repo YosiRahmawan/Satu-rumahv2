@@ -112,14 +112,34 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/monitoring/lapangan',
-        pageBuilder: (context, state) => NoTransitionPage<void>(
+        pageBuilder: (context, state) => CustomTransitionPage<void>(
           key: state.pageKey,
-          child: _withNotice(state, const MonitoringMainScreen(initialIndex: 0)),
+          transitionDuration: const Duration(milliseconds: 260),
+          reverseTransitionDuration: Duration.zero,
+          child: _withNotice(
+            state,
+            const MonitoringMainScreen(initialIndex: 0),
+          ),
+          // Memudar dari layar sebelumnya (mis. login) agar tidak terasa
+          // terpotong.
+          transitionsBuilder: (context, animation, secondary, child) =>
+              FadeTransition(
+                opacity: CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeOut,
+                ),
+                child: child,
+              ),
         ),
       ),
       GoRoute(
         path: '/monitoring/lapangan/riwayat',
-        builder: (_, __) => const MonitoringListScreen(showBottomNav: false),
+        builder: (context, __) => MonitoringListScreen(
+          showBottomNav: false,
+          onBack: () => context.canPop()
+              ? context.pop()
+              : context.go('/monitoring/lapangan'),
+        ),
       ),
       GoRoute(
         path: '/monitoring/lapangan/profil',

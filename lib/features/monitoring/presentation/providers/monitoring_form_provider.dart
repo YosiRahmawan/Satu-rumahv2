@@ -13,6 +13,20 @@ import '../../data/models/status_hasil_evaluasi.dart';
 import '../../data/repositories/monitoring_repository.dart';
 import 'monitoring_list_provider.dart';
 
+/// Alasan foto menghalangi pengiriman laporan, atau null bila semuanya siap.
+String? photoSubmitBlocker(List<EvidencePhotoItem> photos) {
+  final tracked = photos.where((p) => p.localRef.trim().isNotEmpty).toList();
+  final reselect = tracked.where((p) => p.needsReselect).length;
+  if (reselect > 0) {
+    return '$reselect foto perlu dipilih ulang. Hapus lalu tambahkan kembali fotonya.';
+  }
+  final unlocated = tracked.where((p) => !p.hasLocation).length;
+  if (unlocated > 0) {
+    return '$unlocated foto belum memiliki lokasi. Tentukan lokasi setiap foto sebelum submit.';
+  }
+  return null;
+}
+
 final monitoringRepositoryProvider = Provider<MonitoringRepository>((ref) {
   return MonitoringRepository();
 });
@@ -555,7 +569,9 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
         : _repository.getMonitoringById(state.draftId!);
     return MonitoringModel(
       id: state.draftId ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      nomorSuratBA: existing?.nomorSuratBA,
+      nomorSuratBA:
+          existing?.nomorSuratBA ??
+          _repository.nextNomorSuratBA(state.tanggalMonitoring),
       pengajuanId: state.pengajuanId,
       tanggalMonitoring: state.tanggalMonitoring,
       namaPerumahan: state.namaPerumahan,
@@ -613,12 +629,8 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       return _failSubmit('Nama Perumahan wajib diisi.');
     }
 
-    final unlocated = draft.photos.where((photo) => !photo.hasLocation).length;
-    if (unlocated > 0) {
-      return _failSubmit(
-        '$unlocated foto belum memiliki lokasi. Tentukan lokasi setiap foto sebelum submit final.',
-      );
-    }
+    final photoBlocker = photoSubmitBlocker(draft.photos);
+    if (photoBlocker != null) return _failSubmit(photoBlocker);
 
     if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
         draft.rencanaTindakLanjut.every((item) => item.trim().isEmpty)) {
@@ -637,7 +649,21 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
         );
       }
 
-      final finalModel = draft.copyWith(isDraft: false);
+      // Dua laporan tidak boleh memakai nomor BA yang sama: bila nomor draf
+      // ini sudah dipakai laporan lain, ambil urutan berikutnya.
+      final finalModel = draft.copyWith(
+        isDraft: false,
+        nomorSuratBA:
+            _repository.isNomorSuratBATaken(
+              draft.nomorSuratBA,
+              exceptId: draft.id,
+            )
+            ? _repository.nextNomorSuratBA(
+                draft.tanggalMonitoring,
+                exceptId: draft.id,
+              )
+            : draft.nomorSuratBA,
+      );
       final beritaAcaraPath =
           'BA_${finalModel.nomorSuratBA.replaceAll('/', '_')}.pdf';
       final baResult = (_baUploadOverride ?? _uploadBa)(
@@ -732,8 +758,10 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
         pengajuan.tanggalSurvey != null ||
         pengajuan.riwayatSurvey.isNotEmpty ||
         (pengajuan.statusTahap == StatusTahapPengajuan.perluPerbaikan &&
-            (pengajuan.tahapAsalPerbaikan == StatusTahapPengajuan.surveyLapangan ||
-             pengajuan.tahapAsalPerbaikan == StatusTahapPengajuan.verifikasiTeknis));
+            (pengajuan.tahapAsalPerbaikan ==
+                    StatusTahapPengajuan.surveyLapangan ||
+                pengajuan.tahapAsalPerbaikan ==
+                    StatusTahapPengajuan.verifikasiTeknis));
   }
 
   String _normalizeHousingName(String value) {
