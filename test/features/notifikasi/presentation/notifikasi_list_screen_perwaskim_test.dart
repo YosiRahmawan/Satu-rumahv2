@@ -72,7 +72,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // 1. Header elements matching minimalist prototype
-        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+        // Halaman ini tab, jadi tidak ada panah kembali yang mati.
+        expect(find.byIcon(Icons.arrow_back), findsNothing);
         expect(find.text('Notifikasi'), findsOneWidget);
         expect(
           find.text('Informasi tugas dan hasil pengawasan lapangan'),

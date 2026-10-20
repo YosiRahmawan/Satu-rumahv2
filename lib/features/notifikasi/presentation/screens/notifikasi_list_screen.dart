@@ -330,41 +330,10 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Top Bar: Back button, Title & Avatar
+              // Top Bar: Title & Avatar (halaman ini adalah tab, tanpa panah kembali)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Semantics(
-                    button: true,
-                    label: 'Kembali',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go('/monitoring/lapangan');
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.16),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
                   const Expanded(
                     child: Text(
                       'Notifikasi',
@@ -404,10 +373,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
               const SizedBox(height: AppSpacing.xs),
               // Subtitle positioned below the title row
               const Padding(
-                padding: EdgeInsets.only(
-                  left: 44.0 + AppSpacing.md,
-                  right: AppSpacing.xs,
-                ),
+                padding: EdgeInsets.only(right: AppSpacing.xs),
                 child: Text(
                   'Informasi tugas dan hasil pengawasan lapangan',
                   style: TextStyle(

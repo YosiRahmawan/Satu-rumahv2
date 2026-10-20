@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/features/monitoring/data/models/geo_stamp.dart';
 import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart';
+import 'package:satu_rumah/features/monitoring/data/models/report_photo.dart';
+import 'package:satu_rumah/features/monitoring/data/photo_bytes_cache.dart';
 import 'package:satu_rumah/features/monitoring/data/models/status_hasil_evaluasi.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/monitoring_repository.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/monitoring_store.dart';
@@ -112,6 +116,69 @@ void main() {
       repo.saveDraft(_draft());
       await repo.flush();
       expect(repo.getMonitoringById('draf-uji'), isNotNull);
+    });
+  });
+
+  group('Foto bergeotag pada draf', () {
+    ReportPhoto photo() => ReportPhoto.create(
+      source: PhotoSource.camera,
+      stamp: GeoStamp(
+        latitude: -7.3274,
+        longitude: 108.2207,
+        capturedAt: DateTime.utc(2026, 10, 20, 2, 30),
+        address: 'Jl. Contoh',
+        note: 'Drainase',
+      ),
+    );
+
+    test('foto dan geotag-nya dipulihkan bersama draf', () async {
+      final store = MemoryMonitoringStore();
+      final repo = MonitoringRepository(store: store);
+      final p = photo();
+      PhotoBytesCache.put(p.id, Uint8List.fromList([1, 2, 3]));
+      repo.saveDraft(_draft().copyWith(photos: [p]));
+      await repo.flush();
+
+      PhotoBytesCache.clear();
+      final reopened = MonitoringRepository(store: store);
+      await reopened.hydrate();
+
+      final restored = reopened.getMonitoringById('draf-uji')!;
+      expect(restored.photos.single.stamp, p.stamp);
+      expect(restored.photos.single.needsReselect, isFalse);
+      expect(PhotoBytesCache.get(p.id), [1, 2, 3]);
+    });
+
+    test('foto yang berkasnya hilang ditandai perlu dipilih ulang', () async {
+      final store = MemoryMonitoringStore();
+      final repo = MonitoringRepository(store: store);
+      final p = photo();
+      PhotoBytesCache.put(p.id, Uint8List.fromList([1, 2, 3]));
+      repo.saveDraft(_draft().copyWith(photos: [p]));
+      await repo.flush();
+      store.photos.clear();
+
+      PhotoBytesCache.clear();
+      final reopened = MonitoringRepository(store: store);
+      await reopened.hydrate();
+      expect(
+        reopened.getMonitoringById('draf-uji')!.photos.single.needsReselect,
+        isTrue,
+      );
+    });
+
+    test('foto yang dihapus dari draf juga dihapus dari penyimpanan', () async {
+      final store = MemoryMonitoringStore();
+      final repo = MonitoringRepository(store: store);
+      final p = photo();
+      PhotoBytesCache.put(p.id, Uint8List.fromList([1, 2, 3]));
+      repo.saveDraft(_draft().copyWith(photos: [p]));
+      await repo.flush();
+      expect(store.photos, isNotEmpty);
+
+      repo.saveDraft(_draft());
+      await repo.flush();
+      expect(store.photos, isEmpty);
     });
   });
 }
