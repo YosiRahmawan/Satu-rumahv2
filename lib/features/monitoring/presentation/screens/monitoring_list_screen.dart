@@ -345,6 +345,27 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
       onReset = null;
     }
 
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final mascotWidth = (140.0 + ((screenWidth - 360.0) / 60.0 * 20.0)).clamp(
+      140.0,
+      160.0,
+    );
+
+    final Widget illustrationWidget;
+    if (title == 'Laporan tidak ditemukan') {
+      illustrationWidget = Image.asset(
+        'assets/images/Maskot Rumah Mencari yang Tak Ditemukan.png',
+        width: mascotWidth,
+        fit: BoxFit.contain,
+        semanticLabel: 'Ilustrasi maskot SATU RUMAH laporan tidak ditemukan',
+      );
+    } else {
+      illustrationWidget = const SurveyNotFoundIllustration(
+        width: 150,
+        height: 118,
+      );
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -354,7 +375,7 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SurveyNotFoundIllustration(width: 150, height: 118),
+            illustrationWidget,
             const SizedBox(height: AppSpacing.md),
             Text(
               title,

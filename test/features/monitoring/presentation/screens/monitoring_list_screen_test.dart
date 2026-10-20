@@ -172,7 +172,14 @@ void main() {
       await tester.enterText(find.byType(TextField), 'tidak ada nama ini');
       await tester.pumpAndSettle();
 
-      expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+      expect(find.byType(SurveyNotFoundIllustration), findsNothing);
+      expect(find.byType(Image), findsOneWidget);
+      final image = tester.widget<Image>(find.byType(Image));
+      expect(
+        (image.image as AssetImage).assetName,
+        equals('assets/images/Maskot Rumah Mencari yang Tak Ditemukan.png'),
+      );
+      expect(image.fit, equals(BoxFit.contain));
       expect(find.text('Laporan tidak ditemukan'), findsOneWidget);
       expect(find.textContaining('tidak ada nama ini'), findsWidgets);
       final clearButton = find.text('Hapus Pencarian');
@@ -260,6 +267,24 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
     });
+
+    testWidgets(
+      'search empty state with mascot renders without overflow on ${width}dp viewport',
+      (tester) async {
+        await tester.binding.setSurfaceSize(Size(width, 640));
+        await tester.pumpWidget(buildSubject(items));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(TextField), 'tidak_ada');
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        expect(find.byType(Image), findsOneWidget);
+        final image = tester.widget<Image>(find.byType(Image));
+        expect(image.width, inInclusiveRange(140.0, 160.0));
+        expect(find.text('Laporan tidak ditemukan'), findsOneWidget);
+      },
+    );
   }
 
   testWidgets('tapping a card opens its document', (tester) async {
