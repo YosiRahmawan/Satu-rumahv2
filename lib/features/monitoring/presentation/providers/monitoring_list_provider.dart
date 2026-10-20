@@ -11,7 +11,7 @@ final monitoringListProvider =
       return MonitoringListNotifier(repo);
     });
 
-/// Tab aktif pada halaman utama Tim Monitoring (0 Beranda, 1 Riwayat, 2 Profil).
+/// Tab aktif pada halaman utama Tim Monitoring (0 Beranda, 1 Riwayat, 2 Notifikasi, 3 Profil).
 /// Dipegang di provider agar layar lain bisa mengembalikan pengguna ke Beranda.
 final monitoringTabProvider = StateProvider<int>((ref) => 0);
 

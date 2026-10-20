@@ -13,7 +13,6 @@ import '../../features/monitoring/presentation/screens/monitoring_draft_screen.d
 import '../../features/monitoring/presentation/screens/monitoring_main_screen.dart';
 import '../../features/monitoring/presentation/screens/tambah_monitoring_stepper_screen.dart';
 import '../../features/monitoring/presentation/providers/monitoring_form_provider.dart';
-import '../../features/notifikasi/presentation/screens/notifikasi_list_screen.dart';
 import '../../features/onboarding/presentation/screens/onboarding_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_admin_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_detail_screen.dart';
@@ -116,11 +115,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/monitoring/lapangan/profil',
         builder: (_, state) =>
-            _withNotice(state, const MonitoringMainScreen(initialIndex: 2)),
+            _withNotice(state, const MonitoringMainScreen(initialIndex: 3)),
       ),
       GoRoute(
         path: '/monitoring/lapangan/notifikasi',
-        builder: (_, state) => _withNotice(state, const NotifikasiListScreen()),
+        builder: (_, state) =>
+            _withNotice(state, const MonitoringMainScreen(initialIndex: 2)),
       ),
       GoRoute(
         path: '/monitoring/draft',
@@ -135,7 +135,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             );
           }
           final id =
-              state.uri.queryParameters['id'] ?? (extra is String ? extra : null);
+              state.uri.queryParameters['id'] ??
+              (extra is String ? extra : null);
           if (id != null) {
             final repo = ref.read(monitoringRepositoryProvider);
             final item = repo.getMonitoringById(id);

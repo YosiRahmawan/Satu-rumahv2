@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/data_state_view.dart';
-import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
@@ -131,7 +130,6 @@ class TabBerandaMonitoring extends ConsumerWidget {
     final listState = ref.watch(monitoringListAsyncProvider);
     final session = ref.watch(roleSessionProvider);
     final identity = PerwaskimIdentity.fromSession(session);
-    final unreadCount = ref.watch(unreadNotifikasiCountProvider);
 
     return Scaffold(
       backgroundColor: AppColors.enterpriseCanvas,
@@ -146,10 +144,9 @@ class TabBerandaMonitoring extends ConsumerWidget {
             children: [
               _PerwaskimHeader(
                 identity: identity,
-                unreadNotifications: unreadCount,
-                onNotificationsTap: () =>
-                    context.push('/monitoring/lapangan/notifikasi'),
-                onProfileTap: () => context.go('/monitoring/lapangan/profil'),
+                onProfileTap: () {
+                  ref.read(monitoringTabProvider.notifier).state = 3;
+                },
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
@@ -177,16 +174,9 @@ class TabBerandaMonitoring extends ConsumerWidget {
 
 class _PerwaskimHeader extends StatelessWidget {
   final PerwaskimIdentity identity;
-  final int unreadNotifications;
-  final VoidCallback onNotificationsTap;
   final VoidCallback onProfileTap;
 
-  const _PerwaskimHeader({
-    required this.identity,
-    required this.unreadNotifications,
-    required this.onNotificationsTap,
-    required this.onProfileTap,
-  });
+  const _PerwaskimHeader({required this.identity, required this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -246,76 +236,39 @@ class _PerwaskimHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Semantics(
-                    button: true,
-                    label: unreadNotifications > 0
-                        ? 'Buka notifikasi ($unreadNotifications belum dibaca)'
-                        : 'Buka notifikasi',
-                    child: IconButton(
-                      onPressed: onNotificationsTap,
-                      tooltip: unreadNotifications > 0
-                          ? 'Buka notifikasi ($unreadNotifications belum dibaca)'
-                          : 'Buka notifikasi',
-                      icon: Badge(
-                        isLabelVisible: unreadNotifications > 0,
-                        backgroundColor: const Color(0xFFF59E0B),
-                        textColor: Colors.white,
-                        textStyle: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
+              Semantics(
+                button: true,
+                label: 'Buka profil',
+                child: InkWell(
+                  onTap: onProfileTap,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x14000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
                         ),
-                        label: Text(
-                          unreadNotifications > 9
-                              ? '9+'
-                              : '$unreadNotifications',
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      identity.initials,
+                      style: const TextStyle(
+                        color: AppColors.enterprisePrimaryDark,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Semantics(
-                    button: true,
-                    label: 'Buka profil',
-                    child: InkWell(
-                      onTap: onProfileTap,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x14000000),
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          identity.initials,
-                          style: const TextStyle(
-                            color: AppColors.enterprisePrimaryDark,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),

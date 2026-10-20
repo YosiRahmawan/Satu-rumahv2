@@ -81,18 +81,14 @@ void main() {
       expect(find.text('NIP: 197805122006041008'), findsNothing);
       expect(find.text('Satu Rumah'), findsNothing);
       expect(find.text('PORTAL PERWASKIM'), findsNothing);
-      expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.notifications_none_rounded), findsNothing);
 
-      // Canonical header layout: identity on the left, controls on the right
+      // Canonical header layout: identity on the left, profile avatar on the right
       final avatarDx = tester.getTopLeft(find.text('RH')).dx;
       final profileDx = tester
           .getTopLeft(find.text('Drs. Rian Hidayat, M.Si'))
           .dx;
-      final notifDx = tester
-          .getTopLeft(find.byIcon(Icons.notifications_none_rounded))
-          .dx;
-      expect(notifDx, greaterThan(profileDx));
-      expect(avatarDx, greaterThan(notifDx));
+      expect(avatarDx, greaterThan(profileDx));
 
       // Verify Active Survey Task Card
       expect(find.text('Tugas Survey Aktif'), findsOneWidget);
@@ -106,7 +102,7 @@ void main() {
     });
 
     testWidgets(
-      'avoids horizontal overflow on small 360dp viewport and keeps notification on right',
+      'avoids horizontal overflow on small 360dp viewport and keeps avatar on right',
       (WidgetTester tester) async {
         await tester.binding.setSurfaceSize(const Size(360, 640));
 
@@ -133,34 +129,23 @@ void main() {
         final profileDx = tester
             .getTopLeft(find.text('Drs. Rian Hidayat, M.Si'))
             .dx;
-        final notifDx = tester
-            .getTopLeft(find.byIcon(Icons.notifications_none_rounded))
-            .dx;
-        expect(notifDx, greaterThan(profileDx));
-        expect(avatarDx, greaterThan(notifDx));
+        expect(avatarDx, greaterThan(profileDx));
+        expect(find.byIcon(Icons.notifications_none_rounded), findsNothing);
       },
     );
 
-    for (final unread in [0, 3, 12]) {
-      testWidgets('notification badge reflects $unread unread', (tester) async {
-        await tester.binding.setSurfaceSize(const Size(390, 844));
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              unreadNotifikasiCountProvider.overrideWithValue(unread),
-            ],
-            child: const MaterialApp(home: TabBerandaMonitoring()),
-          ),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('header does not display notification bell or badge', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      await tester.pumpWidget(
+        ProviderScope(child: const MaterialApp(home: TabBerandaMonitoring())),
+      );
+      await tester.pumpAndSettle();
 
-        final badge = tester.widget<Badge>(find.byType(Badge));
-        expect(badge.isLabelVisible, unread > 0);
-        if (unread > 0) {
-          expect(find.text(unread > 9 ? '9+' : '$unread'), findsOneWidget);
-        }
-      });
-    }
+      expect(find.byIcon(Icons.notifications_none_rounded), findsNothing);
+      expect(find.byType(Badge), findsNothing);
+    });
 
     testWidgets(
       'renders all monitoring card metadata fields and status badge',
