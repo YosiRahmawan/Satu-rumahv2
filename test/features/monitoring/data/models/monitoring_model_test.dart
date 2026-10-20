@@ -19,7 +19,6 @@ void main() {
       pelaksanaJabatan: 'Surveyor',
       ditemuiNama: 'Budi',
       ditemuiJabatan: 'Manager',
-      photoPaths: [],
       createdAt: now,
     );
 

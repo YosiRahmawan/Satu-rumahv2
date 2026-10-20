@@ -6,7 +6,6 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
-import 'monitoring_photo_gallery.dart';
 import 'status_hasil_evaluasi_badge_widget.dart';
 
 /// Reusable modern document preview card for Berita Acara Monitoring.
@@ -188,14 +187,6 @@ class BeritaAcaraDocumentCard extends StatelessWidget {
             const SizedBox(height: 10),
             _buildSectionTitle('IV. Rencana Tindak Lanjut'),
             _buildBulletList(item.rencanaTindakLanjut),
-          ],
-
-          // Dokumentasi foto beserta lokasi tercatat (hanya jika ada foto)
-          if (item.photoPaths.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            _buildSectionTitle('Dokumentasi Foto Lapangan'),
-            const SizedBox(height: 8),
-            MonitoringPhotoGallery(monitoring: item),
           ],
 
           // Identitas pihak yang tercatat (Hanya jika ada data asli, tanpa tanda tangan / QR fiktif)

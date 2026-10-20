@@ -7,25 +7,10 @@ import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_verifikasi_controller.dart';
-import '../../data/models/evidence_photo_item.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../../data/repositories/monitoring_repository.dart';
 import 'monitoring_list_provider.dart';
-
-/// Alasan foto menghalangi pengiriman laporan, atau null bila semuanya siap.
-String? photoSubmitBlocker(List<EvidencePhotoItem> photos) {
-  final tracked = photos.where((p) => p.localRef.trim().isNotEmpty).toList();
-  final reselect = tracked.where((p) => p.needsReselect).length;
-  if (reselect > 0) {
-    return '$reselect foto perlu dipilih ulang. Hapus lalu tambahkan kembali fotonya.';
-  }
-  final unlocated = tracked.where((p) => !p.hasLocation).length;
-  if (unlocated > 0) {
-    return '$unlocated foto belum memiliki lokasi. Tentukan lokasi setiap foto sebelum submit.';
-  }
-  return null;
-}
 
 final monitoringRepositoryProvider = Provider<MonitoringRepository>((ref) {
   return MonitoringRepository();
@@ -113,11 +98,6 @@ class MonitoringFormState {
   final String ditemuiJabatan;
   final List<MonitoringPerson> pelaksana;
   final List<MonitoringPerson> ditemui;
-  final List<EvidencePhotoItem> photos;
-
-  /// Adaptor kompatibilitas: daftar referensi berkas seperti sebelumnya.
-  List<String> get photoPaths =>
-      photos.map((photo) => photo.localRef).toList(growable: false);
 
   final bool isSubmitting;
   final String? errorMessage;
@@ -142,12 +122,9 @@ class MonitoringFormState {
     this.ditemuiJabatan = '',
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
-    List<String>? photoPaths,
-    List<EvidencePhotoItem>? photos,
     this.isSubmitting = false,
     this.errorMessage,
-  }) : photos = photos ?? EvidencePhotoItem.fromPaths(photoPaths ?? const []),
-       tanggalMonitoring = tanggalMonitoring ?? DateTime.now(),
+  }) : tanggalMonitoring = tanggalMonitoring ?? DateTime.now(),
        pelaksana = _stablePeople(pelaksana),
        ditemui = _stablePeople(ditemui);
 
@@ -171,8 +148,6 @@ class MonitoringFormState {
     String? ditemuiJabatan,
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
-    List<String>? photoPaths,
-    List<EvidencePhotoItem>? photos,
     bool? isSubmitting,
     String? errorMessage,
   }) {
@@ -196,11 +171,6 @@ class MonitoringFormState {
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
       pelaksana: pelaksana ?? this.pelaksana,
       ditemui: ditemui ?? this.ditemui,
-      photos:
-          photos ??
-          (photoPaths != null
-              ? EvidencePhotoItem.reconcile(this.photos, photoPaths)
-              : this.photos),
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: errorMessage,
     );
@@ -242,7 +212,6 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       s.statusHasilEvaluasi.name,
       people(s.pelaksana),
       people(s.ditemui),
-      s.photos.map((photo) => photo.signature).join(';'),
     ].join('\u0001');
   }
 
@@ -361,65 +330,6 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     );
   }
 
-  /// Adaptor kompatibilitas: metadata foto yang `localRef`-nya tetap ada
-  /// dipertahankan; path baru dibungkus tanpa koordinat.
-  void updatePhotos(List<String> val) =>
-      state = state.copyWith(photoPaths: val);
-
-  void updatePhotoItems(List<EvidencePhotoItem> val) =>
-      state = state.copyWith(photos: val);
-
-  /// Menetapkan lokasi pilihan petugas untuk satu foto.
-  void setPhotoLocation(String photoId, OfficerLocation location) {
-    state = state.copyWith(
-      photos: [
-        for (final photo in state.photos)
-          photo.id == photoId ? photo.copyWith(location: location) : photo,
-      ],
-    );
-  }
-
-  /// Menetapkan lokasi pilihan petugas untuk beberapa foto sekaligus.
-  void setBatchPhotoLocations(
-    Iterable<String> photoIds,
-    OfficerLocation location,
-  ) {
-    final targetIds = photoIds.toSet();
-    state = state.copyWith(
-      photos: [
-        for (final photo in state.photos)
-          targetIds.contains(photo.id)
-              ? photo.copyWith(location: location)
-              : photo,
-      ],
-    );
-  }
-
-  void clearPhotoLocation(String photoId) {
-    state = state.copyWith(
-      photos: [
-        for (final photo in state.photos)
-          photo.id == photoId ? photo.copyWith(clearLocation: true) : photo,
-      ],
-    );
-  }
-
-  /// Mengisi asal foto dan EXIF asli sekali saja; tidak menimpa nilai yang
-  /// sudah ada dan tidak pernah menyentuh lokasi pilihan petugas.
-  void attachPhotoMeta(String localRef, {PhotoOrigin? origin, ExifGeo? exif}) {
-    state = state.copyWith(
-      photos: [
-        for (final photo in state.photos)
-          photo.localRef == localRef
-              ? photo.copyWith(
-                  origin: photo.origin == PhotoOrigin.unknown ? origin : null,
-                  exif: photo.exif == null ? exif : null,
-                )
-              : photo,
-      ],
-    );
-  }
-
   /// Tombol "Isi Contoh" (Dummy Fill)
   void fillDummyData() {
     state = state.copyWith(
@@ -456,7 +366,6 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
           jabatan: 'Site Manager PT ABC Property',
         ),
       ],
-      photoPaths: const [],
     );
   }
 
@@ -520,7 +429,6 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
           : ditemuiList.first.jabatan,
       pelaksana: pelaksanaList,
       ditemui: ditemuiList,
-      photos: draft.photos,
       isSubmitting: false,
       errorMessage: null,
     );
@@ -593,7 +501,6 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       ditemuiJabatan: state.ditemuiJabatan,
       pelaksana: state.pelaksana,
       ditemui: state.ditemui,
-      photos: state.photos,
       isDraft: true,
     );
   }
@@ -628,9 +535,6 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     if (draft.namaPerumahan.trim().isEmpty) {
       return _failSubmit('Nama Perumahan wajib diisi.');
     }
-
-    final photoBlocker = photoSubmitBlocker(draft.photos);
-    if (photoBlocker != null) return _failSubmit(photoBlocker);
 
     if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
         draft.rencanaTindakLanjut.every((item) => item.trim().isEmpty)) {
@@ -796,7 +700,6 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       kesimpulan: report.kesimpulan,
       kesepakatan: report.kesepakatan,
       rencanaTindakLanjut: report.rencanaTindakLanjut,
-      photoPaths: report.photoPaths,
       nomorSuratBA: report.nomorSuratBA,
       beritaAcaraPath: beritaAcaraPath,
       isDraft: false,

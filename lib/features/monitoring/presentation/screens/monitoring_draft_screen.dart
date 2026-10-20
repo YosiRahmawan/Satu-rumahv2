@@ -10,7 +10,6 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../providers/monitoring_form_provider.dart';
 import '../providers/monitoring_list_provider.dart';
-import '../widgets/monitoring_photo_gallery.dart';
 import '../widgets/status_hasil_evaluasi_badge_widget.dart';
 
 /// Screen displaying the inspection details for an in-progress draft monitoring report.
@@ -80,10 +79,6 @@ class MonitoringDraftScreen extends ConsumerWidget {
                     _buildEvaluationCard(item),
                     const SizedBox(height: 16),
                     _buildPeopleCard(item),
-                    if (item.photoPaths.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      _buildPhotosCard(item),
-                    ],
                   ],
                 ),
               ),
@@ -405,29 +400,6 @@ class MonitoringDraftScreen extends ConsumerWidget {
                 ),
               ),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPhotosCard(MonitoringModel item) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        color: AppColors.enterpriseSurface,
-        borderRadius: AppRadii.card,
-        border: Border.all(color: AppColors.enterpriseBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildCardHeader(
-            icon: Icons.camera_alt_outlined,
-            title: 'Foto Dokumentasi Lapangan (${item.photoPaths.length})',
-          ),
-          const SizedBox(height: AppSpacing.md),
-          MonitoringPhotoGallery(monitoring: item),
         ],
       ),
     );

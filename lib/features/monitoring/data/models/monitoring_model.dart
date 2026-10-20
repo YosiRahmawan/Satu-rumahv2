@@ -1,4 +1,3 @@
-import 'evidence_photo_item.dart';
 import 'status_hasil_evaluasi.dart';
 
 /// A repeatable person captured during a field monitoring session.
@@ -95,13 +94,6 @@ class MonitoringModel {
   final List<MonitoringPerson> pelaksana;
   final List<MonitoringPerson> ditemui;
 
-  /// Sumber kebenaran foto beserta metadatanya.
-  final List<EvidencePhotoItem> photos;
-
-  /// Adaptor kompatibilitas: daftar referensi berkas seperti sebelumnya.
-  List<String> get photoPaths =>
-      photos.map((photo) => photo.localRef).toList(growable: false);
-
   final DateTime createdAt;
   final String nomorSuratBA;
   final bool isDraft;
@@ -125,13 +117,10 @@ class MonitoringModel {
     this.ditemuiJabatan = '',
     this.pelaksana = const [],
     this.ditemui = const [],
-    List<String>? photoPaths,
-    List<EvidencePhotoItem>? photos,
     DateTime? createdAt,
     String? nomorSuratBA,
     this.isDraft = false,
-  }) : photos = photos ?? EvidencePhotoItem.fromPaths(photoPaths ?? const []),
-       createdAt = createdAt ?? DateTime.now(),
+  }) : createdAt = createdAt ?? DateTime.now(),
        nomorSuratBA = nomorSuratBA ?? generateNomorSuratBA(tanggalMonitoring);
 
   Map<String, dynamic> toJson() => {
@@ -153,7 +142,6 @@ class MonitoringModel {
     'ditemuiJabatan': ditemuiJabatan,
     'pelaksana': [for (final p in pelaksana) p.toJson()],
     'ditemui': [for (final p in ditemui) p.toJson()],
-    'photos': [for (final p in photos) p.toJson()],
     'createdAt': createdAt.toIso8601String(),
     'nomorSuratBA': nomorSuratBA,
     'isDraft': isDraft,
@@ -201,11 +189,6 @@ class MonitoringModel {
       ditemuiJabatan: json['ditemuiJabatan'] as String? ?? '',
       pelaksana: people(json['pelaksana']),
       ditemui: people(json['ditemui']),
-      photos: [
-        if (json['photos'] is List)
-          for (final item in json['photos'] as List)
-            if (EvidencePhotoItem.fromJson(item) case final photo?) photo,
-      ],
       createdAt: DateTime.tryParse('${json['createdAt']}'),
       nomorSuratBA: json['nomorSuratBA'] as String?,
       isDraft: json['isDraft'] == true,
@@ -231,8 +214,6 @@ class MonitoringModel {
     String? ditemuiJabatan,
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
-    List<String>? photoPaths,
-    List<EvidencePhotoItem>? photos,
     DateTime? createdAt,
     String? nomorSuratBA,
     bool? isDraft,
@@ -256,11 +237,6 @@ class MonitoringModel {
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
       pelaksana: pelaksana ?? this.pelaksana,
       ditemui: ditemui ?? this.ditemui,
-      photos:
-          photos ??
-          (photoPaths != null
-              ? EvidencePhotoItem.reconcile(this.photos, photoPaths)
-              : this.photos),
       createdAt: createdAt ?? this.createdAt,
       nomorSuratBA: nomorSuratBA ?? this.nomorSuratBA,
       isDraft: isDraft ?? this.isDraft,
