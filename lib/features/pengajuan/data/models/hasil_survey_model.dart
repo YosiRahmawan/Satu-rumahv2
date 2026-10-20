@@ -35,7 +35,9 @@ class HasilSurveyItem {
     this.isDraft = false,
   });
 
-  bool get sudahTerlaksana => !isDraft && photoPaths.isNotEmpty;
+  /// Survey terlaksana bila laporannya sudah final (bukan draf). Foto
+  /// dokumentasi bukan syarat: fitur foto sedang dirancang ulang.
+  bool get sudahTerlaksana => !isDraft;
 
   bool get hasBa => beritaAcaraPath != null && beritaAcaraPath!.isNotEmpty;
 
@@ -60,23 +62,28 @@ class HasilSurveyItem {
       pelaksanaJabatan: json['pelaksanaJabatan'] as String? ?? '-',
       lokasiPerumahan: json['lokasiPerumahan'] as String? ?? '-',
       statusHasilEvaluasi: json['statusHasilEvaluasi'] as String? ?? 'sesuai',
-      temuanLapangan: (json['temuanLapangan'] as List<dynamic>?)
+      temuanLapangan:
+          (json['temuanLapangan'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      kesimpulan: (json['kesimpulan'] as List<dynamic>?)
+      kesimpulan:
+          (json['kesimpulan'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      kesepakatan: (json['kesepakatan'] as List<dynamic>?)
+      kesepakatan:
+          (json['kesepakatan'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      rencanaTindakLanjut: (json['rencanaTindakLanjut'] as List<dynamic>?)
+      rencanaTindakLanjut:
+          (json['rencanaTindakLanjut'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
-      photoPaths: (json['photoPaths'] as List<dynamic>?)
+      photoPaths:
+          (json['photoPaths'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           [],
