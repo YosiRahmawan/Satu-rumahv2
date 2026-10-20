@@ -308,7 +308,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('renders Step 3 with active step and no photo feature', (
+  testWidgets('renders Step 3 with camera and gallery actions', (
     tester,
   ) async {
     final notifier = container.read(monitoringFormProvider.notifier);
@@ -319,12 +319,10 @@ void main() {
 
     expect(find.text('Dokumentasi Lapangan'), findsOneWidget);
     expect(find.text('Langkah 3 dari 3: Dokumentasi Lapangan'), findsOneWidget);
-    expect(
-      find.textContaining('Dokumentasi foto belum tersedia'),
-      findsOneWidget,
-    );
+    expect(find.text('Kamera'), findsOneWidget);
+    expect(find.text('Galeri'), findsOneWidget);
+    expect(find.textContaining('Belum ada foto'), findsOneWidget);
     expect(find.text('Ringkasan validasi'), findsOneWidget);
-    expect(find.text('Tambah foto'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 

@@ -8,7 +8,7 @@ import '../../../../core/widgets/data_state_view.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
-import '../providers/monitoring_form_provider.dart';
+import 'kamera_flow.dart';
 import '../providers/monitoring_list_provider.dart';
 
 /// Helper model for Perwaskim identity resolution
@@ -103,14 +103,7 @@ class TabBerandaMonitoring extends ConsumerWidget {
     Pengajuan pengajuan,
     PerwaskimIdentity identity,
   ) {
-    final notifier = ref.read(monitoringFormProvider.notifier);
-    notifier.resetForm();
-    notifier.updatePengajuanId(pengajuan.id);
-    notifier.updateNamaPerumahan(pengajuan.namaPerumahan);
-    notifier.updateNamaDeveloper(pengajuan.namaPt);
-    notifier.updateLokasi('Kota Tasikmalaya');
-    notifier.updatePelaksanaNama(identity.nama);
-    notifier.updatePelaksanaJabatan(identity.jabatan);
+    prepareFormForPengajuan(ref, pengajuan);
     context.push('/monitoring/tambah');
   }
 

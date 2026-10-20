@@ -2,6 +2,9 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import '../data/models/monitoring_model.dart';
+import '../data/models/report_photo.dart';
+import '../data/photo_bytes_cache.dart';
+import '../services/stamp_renderer.dart';
 
 class BaPdfGenerator {
   static const List<String> _bulanIndonesia = [
@@ -119,6 +122,7 @@ class BaPdfGenerator {
             'V. Rencana Tindak Lanjut',
             monitoring.rencanaTindakLanjut,
           ),
+          if (monitoring.photos.isNotEmpty) ..._buildPhotoSection(monitoring),
 
           if (monitoring.pelaksanaNama.trim().isNotEmpty ||
               monitoring.ditemuiNama.trim().isNotEmpty) ...[
@@ -148,6 +152,77 @@ class BaPdfGenerator {
     );
 
     return doc;
+  }
+
+  /// Bagian "VI. Dokumentasi Lapangan": foto bergeotag dua kolom beserta
+  /// keterangan waktu, alamat, dan koordinat.
+  static List<pw.Widget> _buildPhotoSection(MonitoringModel monitoring) {
+    const columnWidth = 245.0;
+    const imageHeight = 170.0;
+    pw.Widget cell(ReportPhoto photo, int number) {
+      final bytes = photo.needsReselect ? null : PhotoBytesCache.get(photo.id);
+      final stamp = photo.stamp;
+      final note = stamp.note?.trim();
+      final address = stamp.address?.trim();
+      return pw.Container(
+        width: columnWidth,
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(
+              width: columnWidth,
+              height: imageHeight,
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey500, width: 0.5),
+              ),
+              child: bytes == null
+                  ? pw.Center(
+                      child: pw.Text(
+                        'Foto tidak tersedia',
+                        style: const pw.TextStyle(fontSize: 8),
+                      ),
+                    )
+                  : pw.Image(pw.MemoryImage(bytes), fit: pw.BoxFit.cover),
+            ),
+            pw.SizedBox(height: 3),
+            pw.Text(
+              'Foto $number${note == null || note.isEmpty ? '' : ' - $note'}',
+              style: const pw.TextStyle(
+                fontSize: 9,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+            pw.Text(
+              StampRenderer.formatStampTime(stamp.capturedAt),
+              style: const pw.TextStyle(fontSize: 8),
+            ),
+            if (address != null && address.isNotEmpty)
+              pw.Text(address, style: const pw.TextStyle(fontSize: 8)),
+            pw.Text(
+              StampRenderer.formatStampCoordinates(stamp),
+              style: const pw.TextStyle(fontSize: 8),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return [
+      pw.Text(
+        'VI. Dokumentasi Lapangan',
+        style: const pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+      ),
+      pw.SizedBox(height: 6),
+      pw.Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          for (var i = 0; i < monitoring.photos.length; i++)
+            cell(monitoring.photos[i], i + 1),
+        ],
+      ),
+      pw.SizedBox(height: 10),
+    ];
   }
 
   static pw.Widget _buildPdfSection(String title, List<String> items) {

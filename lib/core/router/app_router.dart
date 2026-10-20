@@ -7,6 +7,7 @@ import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/admin_main_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/monitoring/data/models/monitoring_model.dart';
+import '../../features/monitoring/presentation/screens/kamera_lapangan_screen.dart';
 import '../../features/monitoring/presentation/screens/laporan_preview_screen.dart';
 import '../../features/monitoring/presentation/screens/laporan_success_screen.dart';
 import '../../features/monitoring/presentation/screens/monitoring_list_screen.dart';
@@ -182,6 +183,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             destinationLabel: monitoringFailureDestinationLabel(role),
           );
         },
+      ),
+      GoRoute(
+        path: '/monitoring/kamera',
+        builder: (_, __) => const KameraLapanganScreen(),
       ),
       GoRoute(
         path: '/monitoring/tambah',

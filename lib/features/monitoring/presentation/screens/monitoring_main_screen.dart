@@ -6,6 +6,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../notifikasi/presentation/screens/notifikasi_list_screen.dart';
 import '../providers/monitoring_list_provider.dart';
+import '../widgets/kamera_flow.dart';
 import '../widgets/tab_beranda_monitoring.dart';
 import '../widgets/tab_profil_monitoring.dart';
 import 'monitoring_list_screen.dart';
@@ -118,9 +119,7 @@ class _MonitoringMainScreenState extends ConsumerState<MonitoringMainScreen> {
             tooltip: 'Kamera Lapangan',
             onPressed:
                 widget.onCameraPressed ??
-                () {
-                  // Blocker Tahap 2: Menunggu route / modul Kamera Lapangan
-                },
+                () => openKameraLapangan(context, ref),
             child: const Icon(
               Icons.photo_camera_rounded,
               color: AppColors.textOnRed,

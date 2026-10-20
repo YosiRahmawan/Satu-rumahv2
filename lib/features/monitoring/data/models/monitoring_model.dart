@@ -1,3 +1,4 @@
+import 'report_photo.dart';
 import 'status_hasil_evaluasi.dart';
 
 /// A repeatable person captured during a field monitoring session.
@@ -94,6 +95,9 @@ class MonitoringModel {
   final List<MonitoringPerson> pelaksana;
   final List<MonitoringPerson> ditemui;
 
+  /// Foto dokumentasi bergeotag; isinya ada di `PhotoBytesCache`.
+  final List<ReportPhoto> photos;
+
   final DateTime createdAt;
   final String nomorSuratBA;
   final bool isDraft;
@@ -117,6 +121,7 @@ class MonitoringModel {
     this.ditemuiJabatan = '',
     this.pelaksana = const [],
     this.ditemui = const [],
+    this.photos = const [],
     DateTime? createdAt,
     String? nomorSuratBA,
     this.isDraft = false,
@@ -142,6 +147,7 @@ class MonitoringModel {
     'ditemuiJabatan': ditemuiJabatan,
     'pelaksana': [for (final p in pelaksana) p.toJson()],
     'ditemui': [for (final p in ditemui) p.toJson()],
+    'photos': [for (final p in photos) p.toJson()],
     'createdAt': createdAt.toIso8601String(),
     'nomorSuratBA': nomorSuratBA,
     'isDraft': isDraft,
@@ -189,6 +195,11 @@ class MonitoringModel {
       ditemuiJabatan: json['ditemuiJabatan'] as String? ?? '',
       pelaksana: people(json['pelaksana']),
       ditemui: people(json['ditemui']),
+      photos: [
+        if (json['photos'] is List)
+          for (final item in json['photos'] as List)
+            if (ReportPhoto.fromJson(item) case final photo?) photo,
+      ],
       createdAt: DateTime.tryParse('${json['createdAt']}'),
       nomorSuratBA: json['nomorSuratBA'] as String?,
       isDraft: json['isDraft'] == true,
@@ -214,6 +225,7 @@ class MonitoringModel {
     String? ditemuiJabatan,
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
+    List<ReportPhoto>? photos,
     DateTime? createdAt,
     String? nomorSuratBA,
     bool? isDraft,
@@ -237,6 +249,7 @@ class MonitoringModel {
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
       pelaksana: pelaksana ?? this.pelaksana,
       ditemui: ditemui ?? this.ditemui,
+      photos: photos ?? this.photos,
       createdAt: createdAt ?? this.createdAt,
       nomorSuratBA: nomorSuratBA ?? this.nomorSuratBA,
       isDraft: isDraft ?? this.isDraft,

@@ -10,6 +10,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../providers/monitoring_form_provider.dart';
 import '../providers/monitoring_list_provider.dart';
+import '../widgets/ba_photo_gallery.dart';
 import '../widgets/status_hasil_evaluasi_badge_widget.dart';
 
 /// Screen displaying the inspection details for an in-progress draft monitoring report.
@@ -267,6 +268,12 @@ class MonitoringDraftScreen extends ConsumerWidget {
           _buildSectionLabel('Rencana Tindak Lanjut:'),
           const SizedBox(height: 6),
           _buildBulletList(item.rencanaTindakLanjut),
+          if (item.photos.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _buildSectionLabel('Dokumentasi Lapangan:'),
+            const SizedBox(height: 8),
+            BaPhotoGallery(photos: item.photos),
+          ],
         ],
       ),
     );

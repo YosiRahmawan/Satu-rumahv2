@@ -10,6 +10,7 @@ import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
 import '../widgets/dynamic_bullet_field.dart';
+import '../widgets/foto_dokumentasi_section.dart';
 
 enum _ExitChoice { save, discard }
 
@@ -1316,40 +1317,30 @@ class _TambahMonitoringStepperScreenState
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            border: Border.all(color: AppColors.enterpriseBorder),
-            borderRadius: AppRadii.control,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.info_outline,
-                color: AppColors.enterpriseTextMuted,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Dokumentasi foto belum tersedia. Laporan tetap dapat '
-                  'dibuat tanpa foto.',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    color: AppColors.enterpriseTextMuted,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        FotoDokumentasiSection(onOpenCamera: () => _openCamera(state)),
         const SizedBox(height: 16),
         _buildStep3ValidationSummary(state),
       ],
+    );
+  }
+
+  Future<void> _openCamera(MonitoringFormState state) async {
+    if (state.namaPerumahan.trim().isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Isi nama perumahan di Langkah 1 sebelum memotret.'),
+          ),
+        );
+      return;
+    }
+    await context.push('/monitoring/kamera');
+    if (!mounted) return;
+    // Kamera menyimpan draf setiap kali foto dipakai, jadi isian form
+    // sudah tersimpan seluruhnya saat kembali.
+    _savedSignature = MonitoringFormNotifier.signature(
+      ref.read(monitoringFormProvider),
     );
   }
 
@@ -1361,6 +1352,11 @@ class _TambahMonitoringStepperScreenState
     final checks = [
       (hasHousing, 'Nama perumahan dari Langkah 1'),
       (hasRequiredRtl, 'Rencana tindak lanjut dari Langkah 2'),
+      if (state.photos.isNotEmpty)
+        (
+          photoSubmitBlocker(state.photos) == null,
+          '${state.photos.length} foto dokumentasi siap dilampirkan',
+        ),
     ];
     return Container(
       width: double.infinity,

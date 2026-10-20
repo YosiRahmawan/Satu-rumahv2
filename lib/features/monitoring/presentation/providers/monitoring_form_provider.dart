@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import '../../../../core/auth/role_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
@@ -8,9 +10,20 @@ import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_verifikasi_controller.dart';
 import '../../data/models/monitoring_model.dart';
+import '../../data/models/report_photo.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
+import '../../data/photo_bytes_cache.dart';
 import '../../data/repositories/monitoring_repository.dart';
 import 'monitoring_list_provider.dart';
+
+/// Alasan foto menghalangi pengiriman laporan, atau null bila semuanya siap.
+String? photoSubmitBlocker(List<ReportPhoto> photos) {
+  final reselect = photos.where((p) => p.needsReselect).length;
+  if (reselect > 0) {
+    return '$reselect foto perlu diambil ulang karena berkasnya tidak tersimpan. Hapus lalu potret kembali.';
+  }
+  return null;
+}
 
 final monitoringRepositoryProvider = Provider<MonitoringRepository>((ref) {
   return MonitoringRepository();
@@ -98,6 +111,7 @@ class MonitoringFormState {
   final String ditemuiJabatan;
   final List<MonitoringPerson> pelaksana;
   final List<MonitoringPerson> ditemui;
+  final List<ReportPhoto> photos;
 
   final bool isSubmitting;
   final String? errorMessage;
@@ -122,6 +136,7 @@ class MonitoringFormState {
     this.ditemuiJabatan = '',
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
+    this.photos = const [],
     this.isSubmitting = false,
     this.errorMessage,
   }) : tanggalMonitoring = tanggalMonitoring ?? DateTime.now(),
@@ -148,6 +163,7 @@ class MonitoringFormState {
     String? ditemuiJabatan,
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
+    List<ReportPhoto>? photos,
     bool? isSubmitting,
     String? errorMessage,
   }) {
@@ -171,6 +187,7 @@ class MonitoringFormState {
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
       pelaksana: pelaksana ?? this.pelaksana,
       ditemui: ditemui ?? this.ditemui,
+      photos: photos ?? this.photos,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: errorMessage,
     );
@@ -212,6 +229,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       s.statusHasilEvaluasi.name,
       people(s.pelaksana),
       people(s.ditemui),
+      s.photos.map((p) => '${p.id}:${p.needsReselect}').join(';'),
     ].join('\u0001');
   }
 
@@ -330,6 +348,23 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     );
   }
 
+  /// Menambah foto bergeotag; isinya dititipkan ke [PhotoBytesCache] dengan
+  /// id foto sebagai kunci.
+  void addPhoto(ReportPhoto photo, Uint8List bytes) {
+    PhotoBytesCache.put(photo.id, bytes);
+    state = state.copyWith(photos: [...state.photos, photo]);
+  }
+
+  void removePhoto(String photoId) {
+    PhotoBytesCache.remove(photoId);
+    state = state.copyWith(
+      photos: [
+        for (final photo in state.photos)
+          if (photo.id != photoId) photo,
+      ],
+    );
+  }
+
   /// Tombol "Isi Contoh" (Dummy Fill)
   void fillDummyData() {
     state = state.copyWith(
@@ -429,6 +464,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
           : ditemuiList.first.jabatan,
       pelaksana: pelaksanaList,
       ditemui: ditemuiList,
+      photos: draft.photos,
       isSubmitting: false,
       errorMessage: null,
     );
@@ -501,6 +537,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       ditemuiJabatan: state.ditemuiJabatan,
       pelaksana: state.pelaksana,
       ditemui: state.ditemui,
+      photos: state.photos,
       isDraft: true,
     );
   }
@@ -535,6 +572,9 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     if (draft.namaPerumahan.trim().isEmpty) {
       return _failSubmit('Nama Perumahan wajib diisi.');
     }
+
+    final photoBlocker = photoSubmitBlocker(draft.photos);
+    if (photoBlocker != null) return _failSubmit(photoBlocker);
 
     if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
         draft.rencanaTindakLanjut.every((item) => item.trim().isEmpty)) {
