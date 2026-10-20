@@ -178,117 +178,120 @@ class StampRenderer {
     ui.Image? map,
   ) {
     final u = math.min(w, h) / 1000;
-    final margin = 16 * u;
+    final margin = 24 * u;
+    const white = ui.Color(0xFFFFFFFF);
 
-    // ── Lencana kanan atas ───────────────────────────────────────────────
+    // Gradasi tipis di bawah agar teks putih tetap terbaca di foto terang.
+    final scrimHeight = h * 0.34;
+    canvas.drawRect(
+      ui.Rect.fromLTWH(0, h - scrimHeight, w, scrimHeight),
+      ui.Paint()
+        ..shader = ui.Gradient.linear(
+          ui.Offset(0, h - scrimHeight),
+          ui.Offset(0, h),
+          const [ui.Color(0x00000000), ui.Color(0x8C000000)],
+        ),
+    );
+
+    // Lencana kiri atas.
     final badge = _text(
       'SATU RUMAH',
       size: 30 * u,
       weight: FontWeight.w800,
-      color: const ui.Color(0xFFFFFFFF),
+      color: white,
+      shadow: true,
     );
     final badgeSub = _text(
       'Geotag Dokumentasi',
       size: 20 * u,
-      weight: FontWeight.w500,
-      color: const ui.Color(0xCCFFFFFF),
+      weight: FontWeight.w600,
+      color: const ui.Color(0xE6FFFFFF),
+      shadow: true,
     );
-    final badgeW = math.max(badge.width, badgeSub.width) + 28 * u;
-    final badgeH = badge.height + badgeSub.height + 18 * u;
-    final badgeRect = ui.RRect.fromRectAndRadius(
-      ui.Rect.fromLTWH(w - margin - badgeW, margin, badgeW, badgeH),
-      ui.Radius.circular(12 * u),
-    );
-    canvas.drawRRect(badgeRect, ui.Paint()..color = const ui.Color(0x8C000000));
-    badge.paint(
-      canvas,
-      ui.Offset(badgeRect.left + 14 * u, badgeRect.top + 8 * u),
-    );
-    badgeSub.paint(
-      canvas,
-      ui.Offset(badgeRect.left + 14 * u, badgeRect.top + 8 * u + badge.height),
-    );
+    badge.paint(canvas, ui.Offset(margin, margin));
+    badgeSub.paint(canvas, ui.Offset(margin, margin + badge.height));
 
-    // ── Panel keterangan di bawah ───────────────────────────────────────
+    // Peta kiri bawah (tanpa kotak), teks rata kanan di sebelahnya.
     final hasMap = map != null;
-    final pad = 14 * u;
-    final mapSize = 190 * u;
-    final textLeft = margin + pad + (hasMap ? mapSize + pad : 0);
-    final textWidth = w - margin - pad - textLeft;
+    final mapSize = math.min(w * 0.30, h * 0.22);
+    final gap = 18 * u;
+    final textLeft = hasMap ? margin + mapSize + gap : margin;
+    final textWidth = w - margin - textLeft;
 
     final lines = <TextPainter>[];
-    lines.add(
-      _text(
-        stamp.note == null || stamp.note!.trim().isEmpty
-            ? 'Dokumentasi Lapangan'
-            : stamp.note!.trim(),
-        size: 28 * u,
-        weight: FontWeight.w700,
-        color: const ui.Color(0xFFFFFFFF),
-        maxLines: 2,
-        maxWidth: textWidth,
-      ),
-    );
-    if (stamp.address != null && stamp.address!.trim().isNotEmpty) {
+    final note = stamp.note?.trim();
+    if (note != null && note.isNotEmpty) {
       lines.add(
         _text(
-          stamp.address!.trim(),
-          size: 24 * u,
-          weight: FontWeight.w500,
-          color: const ui.Color(0xFFFFFFFF),
+          note,
+          size: 32 * u,
+          weight: FontWeight.w800,
+          color: white,
           maxLines: 2,
           maxWidth: textWidth,
+          shadow: true,
+          alignRight: true,
         ),
       );
     }
     lines.add(
       _text(
         formatStampTime(stamp.capturedAt),
-        size: 24 * u,
-        weight: FontWeight.w500,
-        color: const ui.Color(0xE6FFFFFF),
-        maxLines: 1,
+        size: 30 * u,
+        weight: FontWeight.w800,
+        color: white,
         maxWidth: textWidth,
+        shadow: true,
+        alignRight: true,
       ),
     );
+    final address = stamp.address?.trim();
+    if (address != null && address.isNotEmpty) {
+      lines.add(
+        _text(
+          address,
+          size: 26 * u,
+          weight: FontWeight.w700,
+          color: white,
+          maxLines: 4,
+          maxWidth: textWidth,
+          shadow: true,
+          alignRight: true,
+        ),
+      );
+    }
     lines.add(
       _text(
         formatStampCoordinates(stamp),
         size: 24 * u,
         weight: FontWeight.w600,
-        color: const ui.Color(0xFFFFFFFF),
-        maxLines: 1,
+        color: const ui.Color(0xF2FFFFFF),
         maxWidth: textWidth,
+        shadow: true,
+        alignRight: true,
       ),
     );
 
-    final gap = 6 * u;
+    final lineGap = 4 * u;
     final textHeight =
         lines.fold<double>(0, (sum, p) => sum + p.height) +
-        gap * (lines.length - 1);
-    final panelHeight = math.max(hasMap ? mapSize : 0.0, textHeight) + 2 * pad;
-    final panel = ui.RRect.fromRectAndRadius(
-      ui.Rect.fromLTWH(
-        margin,
-        h - margin - panelHeight,
-        w - 2 * margin,
-        panelHeight,
-      ),
-      ui.Radius.circular(14 * u),
-    );
-    canvas.drawRRect(panel, ui.Paint()..color = const ui.Color(0x99000000));
+        lineGap * (lines.length - 1);
+    final blockHeight = math.max(hasMap ? mapSize : 0.0, textHeight);
+    final bottom = h - margin;
 
     if (hasMap) {
       final mapRect = ui.Rect.fromLTWH(
-        panel.left + pad,
-        panel.top + (panelHeight - mapSize) / 2,
+        margin,
+        bottom - mapSize,
         mapSize,
         mapSize,
+      );
+      final rrect = ui.RRect.fromRectAndRadius(
+        mapRect,
+        ui.Radius.circular(8 * u),
       );
       canvas.save();
-      canvas.clipRRect(
-        ui.RRect.fromRectAndRadius(mapRect, ui.Radius.circular(10 * u)),
-      );
+      canvas.clipRRect(rrect);
       canvas.drawImageRect(
         map,
         ui.Rect.fromLTWH(0, 0, map.width.toDouble(), map.height.toDouble()),
@@ -296,13 +299,20 @@ class StampRenderer {
         ui.Paint()..filterQuality = ui.FilterQuality.medium,
       );
       canvas.restore();
+      canvas.drawRRect(
+        rrect,
+        ui.Paint()
+          ..style = ui.PaintingStyle.stroke
+          ..strokeWidth = 2 * u
+          ..color = const ui.Color(0xCCFFFFFF),
+      );
       _paintPin(canvas, mapRect.center, 26 * u);
     }
 
-    var y = panel.top + (panelHeight - textHeight) / 2;
+    var y = bottom - blockHeight + (blockHeight - textHeight);
     for (final line in lines) {
       line.paint(canvas, ui.Offset(textLeft, y));
-      y += line.height + gap;
+      y += line.height + lineGap;
     }
   }
 
@@ -348,6 +358,8 @@ class StampRenderer {
     required ui.Color color,
     int maxLines = 1,
     double maxWidth = double.infinity,
+    bool shadow = false,
+    bool alignRight = false,
   }) {
     final painter = TextPainter(
       text: TextSpan(
@@ -358,12 +370,27 @@ class StampRenderer {
           fontWeight: weight,
           color: color,
           height: 1.25,
+          shadows: shadow
+              ? [
+                  Shadow(
+                    color: const ui.Color(0xCC000000),
+                    blurRadius: size * 0.18,
+                    offset: ui.Offset(0, size * 0.05),
+                  ),
+                ]
+              : null,
         ),
       ),
       textDirection: ui.TextDirection.ltr,
+      textAlign: alignRight ? TextAlign.right : TextAlign.left,
       maxLines: maxLines,
       ellipsis: '…',
-    )..layout(maxWidth: maxWidth);
+    );
+    if (alignRight && maxWidth.isFinite) {
+      painter.layout(minWidth: maxWidth, maxWidth: maxWidth);
+    } else {
+      painter.layout(maxWidth: maxWidth);
+    }
     return painter;
   }
 

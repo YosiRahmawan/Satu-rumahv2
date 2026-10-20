@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -37,6 +38,7 @@ class _Pending {
 class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
   CameraSession? _session;
   CameraFailure? _cameraFailure;
+  String? _cameraDetail;
   bool _opening = true;
 
   LocationFix? _fix;
@@ -81,11 +83,13 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
       if (!mounted) return;
       setState(() {
         _cameraFailure = e.failure;
+        _cameraDetail = e.detail;
         _opening = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
+        _cameraDetail = '$e';
         _cameraFailure = CameraFailure.failed;
         _opening = false;
       });
@@ -284,7 +288,9 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     if (failure != null || _session == null) {
       final message = switch (failure) {
         CameraFailure.denied =>
-          'Izin kamera ditolak. Izinkan kamera di pengaturan aplikasi untuk memotret.',
+          kIsWeb
+              ? 'Izin kamera ditolak. Klik ikon gembok di address bar browser, izinkan Kamera dan Lokasi, lalu tekan Coba lagi.'
+              : 'Izin kamera ditolak. Izinkan kamera di pengaturan aplikasi untuk memotret.',
         CameraFailure.notFound => 'Perangkat ini tidak memiliki kamera.',
         _ =>
           'Kamera tidak dapat dibuka. Tutup aplikasi lain yang memakai kamera.',
@@ -309,6 +315,14 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
                   fontFamily: AppTextStyles.enterpriseFontFamily,
                 ),
               ),
+              if (_cameraDetail != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  _cameraDetail!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+                ),
+              ],
               const SizedBox(height: AppSpacing.lg),
               OutlinedButton(
                 onPressed: _openCamera,

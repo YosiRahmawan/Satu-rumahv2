@@ -39,8 +39,8 @@ void main() {
       final decoded = img.decodeJpg(output)!;
       expect(decoded.width, 640);
       expect(decoded.height, 480);
-      // Panel keterangan gelap menutup bagian bawah foto polos berwarna biru.
-      final bottom = decoded.getPixel(320, 440);
+      // Gradasi gelap menutup bagian bawah foto polos berwarna biru.
+      final bottom = decoded.getPixel(320, 477);
       final top = decoded.getPixel(20, 200);
       expect(bottom.r + bottom.g + bottom.b, lessThan(top.r + top.g + top.b));
     });

@@ -8,7 +8,10 @@ enum CameraFailure { denied, notFound, failed }
 
 class CameraUnavailable implements Exception {
   final CameraFailure failure;
-  const CameraUnavailable(this.failure);
+
+  /// Kode/pesan asli dari platform, untuk membantu mencari penyebab.
+  final String? detail;
+  const CameraUnavailable(this.failure, [this.detail]);
 
   @override
   String toString() => 'CameraUnavailable($failure)';
@@ -44,7 +47,7 @@ class DeviceCameraGateway implements CameraGateway {
     try {
       cameras = await availableCameras();
     } on CameraException catch (e) {
-      throw CameraUnavailable(_failureOf(e));
+      throw CameraUnavailable(_failureOf(e), '${e.code}: ${e.description}');
     }
     if (cameras.isEmpty) throw const CameraUnavailable(CameraFailure.notFound);
     final description = cameras.firstWhere(
@@ -61,7 +64,7 @@ class DeviceCameraGateway implements CameraGateway {
       await controller.initialize();
     } on CameraException catch (e) {
       await controller.dispose();
-      throw CameraUnavailable(_failureOf(e));
+      throw CameraUnavailable(_failureOf(e), '${e.code}: ${e.description}');
     }
     return _DeviceCameraSession(controller);
   }
