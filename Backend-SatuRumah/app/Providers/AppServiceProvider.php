@@ -28,13 +28,13 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)
             ->by($request->user()?->currentAccessToken()?->getKey() ?? $request->ip()));
 
-        \Illuminate\Support\Facades\View::composer('layouts.admin', function ($view) {
-            try {
-                $unreadCount = \App\Models\Notifikasi::where('is_read', false)->count();
-            } catch (\Throwable $e) {
-                $unreadCount = 0;
-            }
-            $view->with('unreadCount', $unreadCount);
+        \Illuminate\Support\Facades\View::composer('layouts.portal', function ($view) {
+            $user = auth()->user();
+            $view->with([
+                'unreadCount' => $user ? \App\Models\AppNotification::where('user_id', $user->id)->whereNull('read_at')->count() : 0,
+                'antreanCount' => \App\Models\Submission::whereBetween('stage', [2, 5])
+                    ->whereIn('sub_status', ['baru', 'perbaikan_terkirim'])->count(),
+            ]);
         });
     }
 }

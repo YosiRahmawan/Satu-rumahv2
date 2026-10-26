@@ -213,3 +213,31 @@ Belum dikerjakan di Fase C: riwayat laporan dari server (riwayat masih lokal di 
 kembali), PDF dari server (Fase E), pembuatan tugas oleh Admin (Fase D; sementara `DemoAssignmentSeeder` membuat
 satu tugas contoh untuk `tim_lapangan` di lingkungan local).
 
+
+## 12. Status Fase D (Web Admin pada tabel baru, perbaikan, notifikasi): sudah dikerjakan
+
+Web Admin (sesi Laravel, role `verifikator`/`administrator`) kini membaca dan menulis tabel baru
+(`submissions`, `submission_files`, `inspection_assignments`, `inspection_reports`, foto). Controller dan model demo
+lama (`Pengajuan`, `DokumenPengajuan`, `SurveyPengajuan`, `MonitoringPengajuan`, `RiwayatPengajuan`, `Notifikasi`)
+sudah dihapus; tabelnya baru dibuang di Fase E. Semua perpindahan tahap lewat `SubmissionWorkflow` (satu aturan untuk
+API dan Web).
+
+Tindakan Admin: nilai tiap berkas (`lolos`/`perlu_perbaikan` + catatan wajib), kirim permintaan perbaikan (butuh >= 1
+berkas ditandai; `sub_status = perlu_perbaikan`, SLA berhenti, batas 14 hari), setujui administrasi (semua berkas slot
+tahap 2 `lolos` -> tahap 3), jadwalkan survei (semua berkas slot tahap 2 dan 3 `lolos`; petugas `tim_lapangan` aktif;
+jadwal ulang menutup penugasan lama sebagai `dialihkan`), terima laporan final (tahap 4 -> 5), keputusan akhir
+(setuju: nomor dan tanggal wajib -> tahap 6; tolak: alasan wajib -> `ditolak`). Berkas dan foto laporan diunduh lewat
+route sesi (disk privat). Setiap tindakan mencatat `submission_events` dan mengirim `app_notifications`.
+
+API baru: `GET notifications` (`?unread=1`, `?limit=`; `meta.unread_count`; memuat `submission_number`),
+`POST notifications/{id}/read`, `POST notifications/read-all` (semua role mobile, hanya milik sendiri);
+`GET submissions/{id}/timeline` (Pengembang pemilik). Detail pengajuan sudah memuat `files[].status` dan
+`review_note` untuk layar perbaikan. Status berkas di server: `menunggu_telaah | lolos | perlu_perbaikan`.
+
+Flutter (`feat/api-fase-d-flutter`): "Kirim Revisi" (detail pengajuan dan layar Perbarui Berkas) mengunggah berkas
+pengganti ke slot yang ditandai (`replaces_file_id`) lalu `POST resubmit`; notifikasi Pengembang dan Pengawas ditarik
+dari server (saat aplikasi membuka akun dan saat layar Notifikasi dibuka; tanda dibaca disinkronkan).
+
+Belum: push notification (aplikasi menarik), layar timeline di Flutter, slot berjamak dengan lebih dari satu berkas
+ditandai hanya bisa diganti satu per pengiriman (sisanya tetap ditandai dan resubmit ditolak dengan nama berkasnya),
+SLA hari kerja/libur, unggah berkas keputusan oleh Admin, PDF/QR dari server (Fase E).

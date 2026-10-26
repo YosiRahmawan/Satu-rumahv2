@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeveloperProfileController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\Officer\AssignmentController;
 use App\Http\Controllers\Api\Officer\ReportController;
 use App\Http\Controllers\Api\Officer\ReportPhotoController;
@@ -20,6 +21,11 @@ Route::prefix('v1')->group(function () {
 
         // Jalur lain wajib kata sandi yang sudah bukan sementara (fase B dan seterusnya).
         Route::middleware('password.changed')->group(function () {
+            // Semua role mobile
+            Route::get('notifications', [NotificationController::class, 'index']);
+            Route::post('notifications/read-all', [NotificationController::class, 'readAll']);
+            Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->whereNumber('id');
+
             // Pengembang
             Route::middleware('role:pengembang')->group(function () {
                 Route::get('developer/profile', [DeveloperProfileController::class, 'show']);
@@ -30,6 +36,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('submissions/{id}', [SubmissionController::class, 'show'])->whereNumber('id');
                 Route::patch('submissions/{id}', [SubmissionController::class, 'update'])->whereNumber('id');
                 Route::post('submissions/{id}/submit', [SubmissionController::class, 'submit'])->whereNumber('id');
+                Route::get('submissions/{id}/timeline', [SubmissionController::class, 'timeline'])->whereNumber('id');
                 Route::post('submissions/{id}/resubmit', [SubmissionController::class, 'resubmit'])->whereNumber('id');
 
                 Route::post('submissions/{id}/files', [SubmissionFileController::class, 'store'])->whereNumber('id');

@@ -95,6 +95,21 @@ class SubmissionController extends Controller
         return response()->json(['data' => $this->presenter->detail($this->own($request, $id))]);
     }
 
+    /** Riwayat peristiwa pengajuan untuk pemiliknya (terbaru dahulu). */
+    public function timeline(Request $request, int $id): JsonResponse
+    {
+        $events = $this->own($request, $id)->events()->with('actor:id,name')->limit(200)->get();
+
+        return response()->json(['data' => $events->map(fn ($e) => [
+            'id' => $e->id,
+            'type' => $e->type,
+            'title' => $e->title,
+            'description' => $e->description,
+            'actor' => $e->actor?->name,
+            'created_at' => $e->created_at?->toIso8601String(),
+        ])->values()]);
+    }
+
     public function update(Request $request, int $id): JsonResponse
     {
         $submission = $this->own($request, $id);

@@ -35,7 +35,7 @@
                     </svg>
                     Dashboard
                 </a>
-                <a href="{{ route('pengajuan.index') }}" class="nav-link {{ request()->routeIs('pengajuan.index') ? 'active' : '' }}">
+                <a href="{{ route('pengajuan.index') }}" class="nav-link {{ request()->routeIs('pengajuan.*') ? 'active' : '' }}">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                     </svg>
@@ -44,21 +44,13 @@
                         <span class="nav-count">{{ $antreanCount }}</span>
                     @endif
                 </a>
-                @if(isset($lastPengajuanId))
-                    <a href="{{ route('pengajuan.show', $lastPengajuanId) }}" class="nav-link {{ request()->routeIs('pengajuan.show') ? 'active' : '' }}">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-                        </svg>
-                        Pengajuan
-                    </a>
-                @endif
             </nav>
 
             <div class="sidebar-user">
-                <div class="avatar avatar-sm">{{ auth()->user()->avatar_initials ?? 'VD' }}</div>
+                <div class="avatar avatar-sm">{{ mb_strtoupper(mb_substr(auth()->user()->name ?? 'V', 0, 2)) }}</div>
                 <div>
                     <div class="sidebar-user-name">{{ auth()->user()->name ?? 'Verifikator Disperwaskim' }}</div>
-                    <div class="sidebar-user-role">Verifikator Disperwaskim</div>
+                    <div class="sidebar-user-role">{{ ucfirst(auth()->user()->role) }}</div>
                 </div>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
@@ -87,7 +79,7 @@
                         @endif
                     </a>
                     <div class="user-pill">
-                        <div class="avatar avatar-sm">{{ auth()->user()->avatar_initials ?? 'VD' }}</div>
+                        <div class="avatar avatar-sm">{{ mb_strtoupper(mb_substr(auth()->user()->name ?? 'V', 0, 2)) }}</div>
                         <span>{{ auth()->user()->name ?? 'Verifikator Disperwaskim' }}</span>
                     </div>
                 </div>

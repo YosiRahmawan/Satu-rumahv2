@@ -48,6 +48,21 @@ class Submission extends Model
         return $this->belongsTo(User::class, 'developer_id');
     }
 
+    public function events(): HasMany
+    {
+        return $this->hasMany(SubmissionEvent::class)->latest('id');
+    }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(InspectionAssignment::class)->latest('id');
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(InspectionReport::class)->latest('id');
+    }
+
     public function files(): HasMany
     {
         return $this->hasMany(SubmissionFile::class);
@@ -66,6 +81,32 @@ class Submission extends Model
     public function isInRevision(): bool
     {
         return $this->sub_status === 'perlu_perbaikan';
+    }
+
+    public const TAHAP_LABEL = [
+        self::STAGE_DRAFT => 'Draf',
+        self::STAGE_ADMINISTRASI => 'Verifikasi Administrasi',
+        self::STAGE_TEKNIS => 'Verifikasi Teknis',
+        self::STAGE_SURVEI => 'Survei Lapangan',
+        self::STAGE_PERSETUJUAN => 'Persetujuan',
+        self::STAGE_SELESAI => 'Selesai',
+    ];
+
+    public const STATUS_LABEL = [
+        'draft' => 'Draf', 'baru' => 'Baru masuk', 'dalam_telaah' => 'Dalam telaah',
+        'perlu_perbaikan' => 'Perlu perbaikan', 'perbaikan_terkirim' => 'Perbaikan terkirim',
+        'terjadwal' => 'Terjadwal', 'menunggu_persetujuan' => 'Menunggu persetujuan',
+        'selesai' => 'Selesai', 'ditolak' => 'Ditolak',
+    ];
+
+    public function tahapLabel(): string
+    {
+        return self::TAHAP_LABEL[$this->stage] ?? '-';
+    }
+
+    public function statusLabel(): string
+    {
+        return self::STATUS_LABEL[$this->sub_status] ?? (string) $this->sub_status;
     }
 
     /** Kunci enum `StatusTahapPengajuan` di Flutter (kontrak bagian 3). */

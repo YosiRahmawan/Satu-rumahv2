@@ -1,43 +1,33 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\SubmissionController;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\PengajuanController;
-use App\Http\Controllers\DokumenController;
-use App\Http\Controllers\SurveyController;
-use App\Http\Controllers\MonitoringController;
-use App\Http\Controllers\NotifikasiController;
+use Illuminate\Support\Facades\Route;
 
-// Auth Routes
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-// Protected Admin Routes
+// Web Admin: hanya verifikator dan administrator.
 Route::middleware(['auth', 'role:verifikator,administrator'])->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export', [DashboardController::class, 'exportCsv'])->name('dashboard.export');
 
-    // Pengajuan Routes
-    Route::get('/pengajuan', [PengajuanController::class, 'index'])->name('pengajuan.index');
-    Route::get('/pengajuan/{id}', [PengajuanController::class, 'show'])->name('pengajuan.show');
-    Route::post('/pengajuan/{id}/auto-verifikasi', [PengajuanController::class, 'autoVerifikasi'])->name('pengajuan.auto_verifikasi');
-    Route::post('/pengajuan/{id}/status', [PengajuanController::class, 'updateStatus'])->name('pengajuan.update_status');
+    Route::get('/pengajuan', [SubmissionController::class, 'index'])->name('pengajuan.index');
+    Route::get('/pengajuan/{id}', [SubmissionController::class, 'show'])->name('pengajuan.show');
+    Route::get('/pengajuan/{id}/berkas/{fileId}', [SubmissionController::class, 'file'])->name('pengajuan.berkas');
+    Route::get('/pengajuan/{id}/foto/{photoId}', [SubmissionController::class, 'photo'])->name('pengajuan.foto');
+    Route::post('/pengajuan/{id}/berkas/{fileId}/nilai', [SubmissionController::class, 'review'])->name('pengajuan.nilai');
+    Route::post('/pengajuan/{id}/perbaikan', [SubmissionController::class, 'requestRevision'])->name('pengajuan.perbaikan');
+    Route::post('/pengajuan/{id}/setujui-administrasi', [SubmissionController::class, 'approve'])->name('pengajuan.setujui_administrasi');
+    Route::post('/pengajuan/{id}/jadwal', [SubmissionController::class, 'schedule'])->name('pengajuan.jadwal');
+    Route::post('/pengajuan/{id}/terima-laporan', [SubmissionController::class, 'acceptReports'])->name('pengajuan.terima_laporan');
+    Route::post('/pengajuan/{id}/keputusan', [SubmissionController::class, 'decide'])->name('pengajuan.keputusan');
 
-    // Dokumen Routes
-    Route::post('/dokumen/{id}/status', [DokumenController::class, 'updateStatus'])->name('dokumen.update_status');
-
-    // Survey Routes
-    Route::post('/pengajuan/{id}/survey', [SurveyController::class, 'store'])->name('survey.store');
-
-    // Monitoring Routes
-    Route::post('/pengajuan/{id}/monitoring/toggle', [MonitoringController::class, 'toggleStatus'])->name('monitoring.toggle');
-    Route::post('/pengajuan/{id}/monitoring/action', [MonitoringController::class, 'submitAction'])->name('monitoring.action');
-
-    // Notifikasi Routes
-    Route::get('/notifikasi', [NotifikasiController::class, 'index'])->name('notifikasi.index');
-    Route::post('/notifikasi/{id}/read', [NotifikasiController::class, 'markAsRead'])->name('notifikasi.read');
-    Route::post('/notifikasi/read-all', [NotifikasiController::class, 'markAllAsRead'])->name('notifikasi.read_all');
+    Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifikasi.index');
+    Route::post('/notifikasi/read-all', [NotificationController::class, 'readAll'])->name('notifikasi.read_all');
+    Route::post('/notifikasi/{id}/read', [NotificationController::class, 'read'])->name('notifikasi.read');
 });

@@ -10,8 +10,10 @@ use Illuminate\Validation\ValidationException;
 /** Aturan laporan BA: kirim (final) dan dampaknya pada penugasan. */
 class ReportWorkflow
 {
-    public function __construct(private readonly NumberGenerator $numbers)
-    {
+    public function __construct(
+        private readonly NumberGenerator $numbers,
+        private readonly Notifier $notifier,
+    ) {
     }
 
     /** Draf → final. Menerbitkan nomor BA dan menutup penugasan. Idempoten. */
@@ -51,6 +53,11 @@ class ReportWorkflow
                     'status' => 'selesai',
                     'completed_at' => now(),
                 ]);
+            }
+
+            if ($report->submission) {
+                $this->notifier->event($report->submission, $report->officer, 'report_submitted', 'Laporan survei (BA) dikirim', "BA {$report->report_number} dikirim petugas.", ['report_id' => $report->id]);
+                $this->notifier->toVerifiers($report->submission, 'report_submitted', 'Laporan survei dikirim', "{$report->report_number} · {$report->nama_perumahan}", ['report_id' => $report->id]);
             }
 
             return $report;
