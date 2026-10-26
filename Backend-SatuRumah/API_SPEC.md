@@ -268,3 +268,17 @@ aplikasinya (hanya namanya tercantum di BA).
 Flutter (`feat/tim-pelaksana-flutter`): sesi menyimpan nama dan jabatan dari server (tidak lagi menebak dari username);
 form BA mengisi Tim Pelaksana dari tugas dan menampilkannya hanya-baca (mode API). Mode contoh tetap bisa diedit.
 Asumsi sementara terkait Q08: satu tim per penugasan, tanpa fitur "anggota tidak hadir".
+
+## 14. Keterhubungan data tiga role
+
+| Arah | Data | Sumber di API |
+|---|---|---|
+| Pengembang → Admin | pengajuan, 18 berkas, kiriman ulang perbaikan | Web Admin membaca `submissions`/`submission_files` |
+| Admin → Pengembang | tahap, status berkas, catatan, keputusan, **jadwal survei dan tim** | `GET submissions/{id}`: `status_tahap`, `files[]`, `decision`, `survey {scheduled_date, status, note, team[]}` |
+| Admin → Pengawas | penugasan, tim pelaksana, **data proyek dan kontak pengembang** | `GET officer/assignments`: `team[]`, `submission {nama_direktur, no_hp_direktur, npwp, luas_lahan, jumlah_unit, tipe_perumahan}` |
+| Pengawas → Admin | laporan BA final, foto geotag | Web Admin tab Survei & Monitoring |
+| Pengawas → Pengembang | **ringkasan hasil survei** (tanpa foto) | `GET submissions/{id}`: `survey_reports[] {report_number, monitoring_date, status_hasil_evaluasi, temuan, kesimpulan, kesepakatan, rtl, tim_pelaksana}` |
+| Semua → semua | pemberitahuan | `GET notifications` (tarik, belum push) |
+
+Asumsi sementara: Pengembang boleh melihat ringkasan hasil survei (tanpa foto dan tanpa PDF BA); apakah Pengembang
+berhak atas BA penuh adalah keputusan Disperwaskim (Q03/Q09).

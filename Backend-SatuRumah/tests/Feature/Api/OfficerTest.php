@@ -303,6 +303,28 @@ class OfficerTest extends TestCase
         $this->assertSame('draft', InspectionReport::find($r['id'])->status);
     }
 
+    public function test_data_saling_terhubung_antar_tiga_role(): void
+    {
+        $this->developer->developerProfile->update(['nama_direktur' => 'Pak Direktur', 'no_hp_direktur' => '0812345']);
+        $this->submission->update(['luas_lahan' => 1500, 'jumlah_unit' => 40, 'tipe_perumahan' => 'subsidi']);
+
+        // Pengembang -> Pengawas: tugas membawa data proyek dan kontak.
+        $this->getJson('/api/v1/officer/assignments')->assertOk()
+            ->assertJsonPath('data.0.submission.nama_direktur', 'Pak Direktur')
+            ->assertJsonPath('data.0.submission.jumlah_unit', 40);
+
+        // Pengawas -> Pengembang: setelah BA final, pengembang melihat jadwal dan hasilnya.
+        $r = $this->readyReport();
+        $this->postJson("/api/v1/officer/reports/{$r['id']}/submit", ['latitude' => -7.3, 'longitude' => 108.2])->assertOk();
+
+        Sanctum::actingAs($this->developer);
+        $this->getJson("/api/v1/submissions/{$this->submission->id}")->assertOk()
+            ->assertJsonPath('data.survey.scheduled_date', '2026-11-02')
+            ->assertJsonPath('data.survey.team.0.nama', $this->officer->name)
+            ->assertJsonPath('data.survey_reports.0.status_hasil_evaluasi', 'sesuaiSiteplan')
+            ->assertJsonPath('data.survey_reports.0.temuan.0', 'Jalan selesai');
+    }
+
     public function test_kirim_menerbitkan_nomor_bulanan_menutup_tugas_dan_idempoten(): void
     {
         $r = $this->readyReport();

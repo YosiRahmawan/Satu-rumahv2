@@ -34,7 +34,7 @@ class SubmissionPresenter
     /** @return array<string, mixed> */
     public function detail(Submission $s): array
     {
-        $s->loadMissing('developer.developerProfile', 'currentFiles');
+        $s->loadMissing('developer.developerProfile', 'currentFiles', 'assignments.officer', 'assignments.members', 'reports');
 
         return $this->summary($s) + [
             'alamat_proyek' => $s->alamat_proyek ?? $s->developer?->developerProfile?->alamat_perumahan,
@@ -50,7 +50,40 @@ class SubmissionPresenter
                 'date' => $s->decision_date?->toDateString(),
             ] : null,
             'files' => $s->currentFiles->map(fn (SubmissionFile $f) => $this->file($f))->values()->all(),
+            'survey' => $this->survey($s),
+            'survey_reports' => $s->reports->where('status', 'final')->map(fn ($r) => [
+                'id' => $r->id,
+                'report_number' => $r->report_number,
+                'monitoring_date' => $r->monitoring_date?->toDateString(),
+                'lokasi' => $r->lokasi,
+                'status_hasil_evaluasi' => $r->status_hasil_evaluasi,
+                'temuan' => $r->temuan ?? [],
+                'kesimpulan' => $r->kesimpulan ?? [],
+                'kesepakatan' => $r->kesepakatan ?? [],
+                'rtl' => $r->rtl ?? [],
+                'tim_pelaksana' => $r->tim_pelaksana ?? [],
+                'submitted_at' => $r->submitted_at?->toIso8601String(),
+            ])->values()->all(),
         ];
+    }
+
+    /**
+     * Jadwal survei terkini (yang masih berjalan, atau yang terakhir selesai),
+     * ditetapkan Admin. Null bila belum dijadwalkan.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function survey(Submission $s): ?array
+    {
+        $a = $s->assignments->first(fn ($x) => $x->isOpen())
+            ?? $s->assignments->first(fn ($x) => $x->status === 'selesai');
+
+        return $a ? [
+            'scheduled_date' => $a->scheduled_date?->toDateString(),
+            'status' => $a->status,
+            'note' => $a->note,
+            'team' => $a->team(),
+        ] : null;
     }
 
     /** @return array<string, mixed> */
