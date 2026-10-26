@@ -186,3 +186,30 @@ langkah dan percobaan ulang yang aman (kunci idempotensi dan berkas yang sudah a
 Belum dikerjakan di Fase B: layar perbaikan berkas (Flutter) dan riwayat/timeline. Keduanya butuh Admin web yang
 menulis ke tabel baru (Fase D) agar ada status `perlu_perbaikan` yang nyata. Profil perusahaan tidak punya layar
 pengisian: dibuat Administrator bersama akun (seed `AccountSeeder` membuatnya untuk akun contoh).
+
+## 11. Status Fase C (tugas dan laporan BA Pengawas): sudah dikerjakan
+
+Laravel (50 feature test): `GET officer/assignments` (`?status=open|all|...`), `POST officer/assignments/{id}/accept`;
+`GET/POST officer/reports` (draf idempoten, satu draf per tugas; tugas ditunjuk lewat `assignment_id` atau
+`submission_number`, tanpa keduanya = laporan mandiri), `GET/PUT officer/reports/{id}` (`version`),
+`POST officer/reports/{id}/submit` (`latitude`, `longitude`); foto: `POST/DELETE officer/reports/{id}/photos`,
+`GET .../photos/{photoId}/file`.
+
+Foto: server memverifikasi tanda tangan geotag di dalam JPEG (`GeoStampVerifier`, port dari Flutter, diuji dengan
+fixture bertanda tangan dari Flutter) dan **mengambil lokasi, waktu, dan alamat dari tanda tangan itu**, bukan dari
+isian klien. Berkas disimpan apa adanya. Ditolak (ERR-012): bukan JPEG, tanpa geotag, diubah, ganda (checksum sama),
+atau melebihi 10 foto; ERR-001 bila lebih dari 10 MB.
+
+Kirim: wajib `maksud_tujuan` dan `status_hasil_evaluasi`; hasil selain `sesuaiSiteplan` mewajibkan minimal 1 poin
+`rtl`. Server menerbitkan `600.2.5/BA-MON/<romawi>/<tahun>/<urut 3 digit>` (urut per bulan), mengisi
+`verification_token` (untuk QR di Fase E), dan menutup penugasan (`selesai`).
+
+Flutter (branch `feat/api-fase-c-flutter`): tugas Beranda Pengawas dan pemilih tugas kamera berasal dari server (tarik
+untuk memuat ulang); tombol "Submit Laporan" mengirim isi, semua foto (yang sudah ada di server dilewati saat
+percobaan ulang), lalu final, dengan posisi GPS saat kirim (bila GPS gagal dipakai posisi foto terakhir). Nomor BA
+dari server disimpan di riwayat lokal. Mode API juga membuang laporan contoh bawaan dari riwayat.
+
+Belum dikerjakan di Fase C: riwayat laporan dari server (riwayat masih lokal di perangkat; foto tidak diunduh
+kembali), PDF dari server (Fase E), pembuatan tugas oleh Admin (Fase D; sementara `DemoAssignmentSeeder` membuat
+satu tugas contoh untuk `tim_lapangan` di lingkungan local).
+

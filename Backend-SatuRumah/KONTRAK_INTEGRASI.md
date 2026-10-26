@@ -185,12 +185,12 @@ Berkas disimpan dengan nama acak (`stored_name`) di disk privat, tanpa URL publi
 | `tanggalMonitoring` | `monitoring_date` | |
 | `namaPerumahan` | `nama_perumahan` | |
 | `lokasiPerumahan` | `lokasi` | |
-| `maksudTujuan` | **tidak ada** | tambah kolom (BA resmi memuat bagian I) |
+| `maksudTujuan` | `maksud_tujuan` | Ditambah di Fase C |
 | `temuanLapangan` | `temuan` (json, maks 20) | |
 | `kesimpulan` | `kesimpulan` (json) | |
 | `kesepakatan` | `kesepakatan` (json) | |
 | `rencanaTindakLanjut` | `rtl` (json) | |
-| `statusHasilEvaluasi` (`sesuaiSiteplan`, `tidakSesuaiSiteplan`, `perluEvaluasiLanjutan`) | **tidak ada** | tambah kolom; nilai disimpan sebagai string yang sama |
+| `statusHasilEvaluasi` (`sesuaiSiteplan`, `tidakSesuaiSiteplan`, `perluEvaluasiLanjutan`) | `status_hasil_evaluasi` | Ditambah di Fase C; nilai string yang sama |
 | `pelaksana` | `tim_pelaksana` (json `[{nama, jabatan}]`, maks 10) | |
 | `ditemui` | `pihak_ditemui` (json) | |
 | `isDraft` | `status` | `draft` → `final` (dikirim, `submitted_at`) → `diterbitkan` (`published_at`, Admin) |
@@ -198,9 +198,10 @@ Berkas disimpan dengan nama acak (`stored_name`) di disk privat, tanpa URL publi
 | (tidak ada) | `submit_latitude`, `submit_longitude` | Flutter kirim koordinat saat submit |
 | (tidak ada) | `pdf_path`, `docx_path`, `verification_token` | dihasilkan server (bagian 8) |
 
-**Tabel foto yang perlu ditambah** (`inspection_report_photos`, usulan kolom): `report_id`, `storage_path`,
-`stored_name`, `size_bytes`, `checksum`, `latitude`, `longitude`, `accuracy_m`, `captured_at`, `address`, `note`,
-`source` (`camera`/`gallery`), `signature_ok` (hasil verifikasi tanda tangan JPEG), `position`.
+**Tabel foto** (`inspection_report_photos`, sudah dibuat di Fase C): `report_id`, `position`, `stored_name`,
+`storage_path`, `size_bytes`, `checksum` (sha256, unik per laporan), `latitude`, `longitude`, `accuracy_m`,
+`captured_at`, `address`, `note`, `source` (`camera`/`gallery`). Hanya foto yang tanda tangannya sah yang disimpan,
+jadi tidak ada kolom `signature_ok`.
 
 Aturan foto:
 - Foto sudah **berwatermark di piksel** dan memuat tanda tangan tertanam. Server menyimpan berkas apa adanya
