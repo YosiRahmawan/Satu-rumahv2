@@ -193,6 +193,8 @@ class _SplashScreenState extends State<SplashScreen>
             .signIn(
               result.user.role,
               username: result.user.username,
+              nama: result.user.name,
+              jabatan: result.user.jabatan,
               mustChangePassword: result.mustChangePassword,
             );
         context.go(

@@ -28,6 +28,19 @@ class PerwaskimIdentity {
   });
 
   factory PerwaskimIdentity.fromSession(RoleSessionState session) {
+    final asli = session.nama?.trim();
+    if (asli != null && asli.isNotEmpty) {
+      final jabatan = session.jabatan?.trim();
+      return PerwaskimIdentity(
+        nama: asli,
+        jabatan: jabatan == null || jabatan.isEmpty
+            ? session.role.label
+            : jabatan,
+        nip: 'NIP: Belum tersedia',
+        initials: _extractInitials(asli),
+        email: '${session.username ?? 'petugas'}@tasikmalayakota.go.id',
+      );
+    }
     final username = session.username?.trim();
     if (username != null && username.isNotEmpty) {
       if (username == 'tim_monitoring_perwaskim' ||
@@ -131,36 +144,42 @@ class TabBerandaMonitoring extends ConsumerWidget {
         error: (error, stack) => DataStateView.error(
           onAction: () => ref.invalidate(monitoringListAsyncProvider),
         ),
-        data: (list) => RefreshIndicator(onRefresh: () async { await ref.read(officerAssignmentsProvider.notifier).refresh(); }, child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _PerwaskimHeader(
-                identity: identity,
-                onProfileTap: () {
-                  ref.read(monitoringTabProvider.notifier).state = 3;
-                },
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-                child: _DashboardContent(
-                  monitoring: list,
-                  onStartSurvey: (pengajuan) => _startSurveyForPengajuan(
-                    context,
-                    ref,
-                    pengajuan,
-                    identity,
-                  ),
-                  onOpenBeritaAcara: (item) => _openBeritaAcara(context, item),
-                  onOpenDraft: (item) => _openDraft(context, item),
-                  onOpenHistory: () =>
-                      context.go('/monitoring/lapangan/riwayat'),
+        data: (list) => RefreshIndicator(
+          onRefresh: () async {
+            await ref.read(officerAssignmentsProvider.notifier).refresh();
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _PerwaskimHeader(
+                  identity: identity,
+                  onProfileTap: () {
+                    ref.read(monitoringTabProvider.notifier).state = 3;
+                  },
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                  child: _DashboardContent(
+                    monitoring: list,
+                    onStartSurvey: (pengajuan) => _startSurveyForPengajuan(
+                      context,
+                      ref,
+                      pengajuan,
+                      identity,
+                    ),
+                    onOpenBeritaAcara: (item) =>
+                        _openBeritaAcara(context, item),
+                    onOpenDraft: (item) => _openDraft(context, item),
+                    onOpenHistory: () =>
+                        context.go('/monitoring/lapangan/riwayat'),
+                  ),
+                ),
+              ],
+            ),
           ),
-        )),
+        ),
       ),
     );
   }

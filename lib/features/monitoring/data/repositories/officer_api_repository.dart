@@ -22,6 +22,9 @@ class OfficerAssignment {
   final String? namaPt;
   final String? alamatProyek;
 
+  /// Tim pelaksana yang ditetapkan Admin (petugas utama lebih dulu).
+  final List<MonitoringPerson> team;
+
   const OfficerAssignment({
     required this.id,
     required this.status,
@@ -31,6 +34,7 @@ class OfficerAssignment {
     required this.namaPerumahan,
     this.namaPt,
     this.alamatProyek,
+    this.team = const [],
   });
 
   factory OfficerAssignment.fromJson(Map<String, dynamic> json) {
@@ -44,6 +48,13 @@ class OfficerAssignment {
       namaPerumahan: '${s['nama_perumahan'] ?? '-'}',
       namaPt: s['nama_pt'] as String?,
       alamatProyek: s['alamat_proyek'] as String?,
+      team: [
+        for (final m in ((json['team'] as List?) ?? const []))
+          MonitoringPerson.create(
+            nama: '${(m as Map)['nama'] ?? ''}',
+            jabatan: '${m['jabatan'] ?? ''}',
+          ),
+      ],
     );
   }
 
