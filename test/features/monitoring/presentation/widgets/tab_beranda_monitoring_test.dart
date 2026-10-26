@@ -8,7 +8,6 @@ import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart
 import 'package:satu_rumah/features/monitoring/data/models/status_hasil_evaluasi.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/widgets/tab_beranda_monitoring.dart';
-import 'package:satu_rumah/features/notifikasi/presentation/providers/notifikasi_provider.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
 
 class _FakeMonitoringRepo {

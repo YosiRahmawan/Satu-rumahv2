@@ -159,14 +159,6 @@ class PengajuanListQueryNotifier extends StateNotifier<PengajuanListQuery> {
         : PengajuanSort.terbaru,
   );
 
-  void setSort(PengajuanSort value) => state = PengajuanListQuery(
-    search: state.search,
-    filter: state.filter,
-    year: state.year,
-    limit: state.limit,
-    sort: value,
-  );
-
   void loadMore() => state = PengajuanListQuery(
     search: state.search,
     filter: state.filter,

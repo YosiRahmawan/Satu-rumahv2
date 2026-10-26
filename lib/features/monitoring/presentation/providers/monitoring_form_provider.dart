@@ -268,20 +268,6 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     state = state.copyWith(pelaksanaJabatan: val, pelaksana: people);
   }
 
-  void updateDitemuiNama(String val) {
-    final people = [...state.ditemui];
-    if (people.isEmpty) people.add(const MonitoringPerson());
-    people[0] = people.first.copyWith(nama: val);
-    state = state.copyWith(ditemuiNama: val, ditemui: people);
-  }
-
-  void updateDitemuiJabatan(String val) {
-    final people = [...state.ditemui];
-    if (people.isEmpty) people.add(const MonitoringPerson());
-    people[0] = people.first.copyWith(jabatan: val);
-    state = state.copyWith(ditemuiJabatan: val, ditemui: people);
-  }
-
   void updatePelaksanaPerson(int index, {String? nama, String? jabatan}) {
     final people = [...state.pelaksana];
     if (index < 0 || index >= people.length) return;

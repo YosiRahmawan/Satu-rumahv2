@@ -614,24 +614,6 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     );
   }
 
-  void toggleCakupanGambar(String item) {
-    final current = Set<String>.from(state.selectedCakupanGambar);
-    if (current.contains(item)) {
-      current.remove(item);
-    } else {
-      current.add(item);
-    }
-    state = state.copyWith(selectedCakupanGambar: current);
-  }
-
-  void selectAllCakupanGambar(List<String> allItems) {
-    state = state.copyWith(selectedCakupanGambar: Set.from(allItems));
-  }
-
-  void clearCakupanGambar() {
-    state = state.copyWith(selectedCakupanGambar: {});
-  }
-
   /// Mengosongkan form beserta draf tersimpan (setelah kirim atau mulai baru).
   void reset() {
     state = PengajuanFormState();
@@ -957,11 +939,6 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
     state = state.map((item) => item.id == p.id ? p : item).toList();
   }
 
-  void updatePengajuanStatus(String id, String status) {
-    state = state
-        .map((item) => item.id == id ? item.copyWith(status: status) : item)
-        .toList();
-  }
 }
 
 final pengajuanListProvider =
