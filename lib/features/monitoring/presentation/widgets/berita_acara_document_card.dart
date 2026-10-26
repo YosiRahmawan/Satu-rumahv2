@@ -5,15 +5,16 @@ import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
-import '../../data/models/status_hasil_evaluasi.dart';
 import 'ba_photo_gallery.dart';
 import 'status_hasil_evaluasi_badge_widget.dart';
 
-/// Reusable modern document preview card for Berita Acara Monitoring.
+/// Pratinjau Berita Acara Monitoring dan Evaluasi Lapangan dengan susunan
+/// dokumen resmi Dinas: judul tengah, bagian bernomor Romawi, penutup, kolom
+/// tanda tangan, lalu dokumentasi foto. Sama dengan PDF yang dicetak.
 ///
-/// Consistently used across [LaporanSuccessScreen] and [LaporanPreviewScreen].
-/// Renders authentic data from [MonitoringModel] without inventing fake values,
-/// unverified signatures, or fictional QR codes.
+/// Dipakai oleh [LaporanSuccessScreen] dan [LaporanPreviewScreen]. Hanya
+/// menampilkan data asli dari [MonitoringModel], tanpa tanda tangan atau QR
+/// fiktif.
 class BeritaAcaraDocumentCard extends StatelessWidget {
   final MonitoringModel monitoring;
   final bool isSuccessContext;
@@ -24,20 +25,41 @@ class BeritaAcaraDocumentCard extends StatelessWidget {
     this.isSuccessContext = false,
   });
 
+  static const double _indent = 30;
+
+  static const TextStyle _body = TextStyle(
+    fontFamily: 'serif',
+    fontSize: 13,
+    height: 1.5,
+    color: Colors.black,
+  );
+  static const TextStyle _bold = TextStyle(
+    fontFamily: 'serif',
+    fontSize: 13,
+    height: 1.5,
+    fontWeight: FontWeight.w700,
+    color: Colors.black,
+  );
+
   @override
   Widget build(BuildContext context) {
     final item = monitoring;
+    final location = item.lokasiPerumahan.trim();
+    final housing = item.namaPerumahan.trim();
+    final housingLabel = housing.toLowerCase().startsWith('perumahan')
+        ? housing
+        : 'Perumahan $housing';
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.enterpriseBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -46,49 +68,6 @@ class BeritaAcaraDocumentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Kop Instansi Disperwaskim
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.shield,
-                color: AppColors.enterprisePrimary,
-                size: 38,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'PEMERINTAH KOTA TASIKMALAYA',
-                      style: AppTextStyles.labelLarge.copyWith(
-                        fontFamily: AppTextStyles.enterpriseFontFamily,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 12.5,
-                        letterSpacing: 0.2,
-                        color: AppColors.enterpriseTextMain,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'DINAS PERUMAHAN DAN KAWASAN PERMUKIMAN',
-                      style: AppTextStyles.bodySmall.copyWith(
-                        fontFamily: AppTextStyles.enterpriseFontFamily,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.enterpriseTextMuted,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-
-          // Status Badge
           Align(
             alignment: Alignment.centerLeft,
             child: item.isDraft
@@ -114,273 +93,181 @@ class BeritaAcaraDocumentCard extends StatelessWidget {
                     status: item.statusHasilEvaluasi,
                   ),
           ),
-
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Divider(
-              color: AppColors.enterpriseTextMain,
-              thickness: 1,
-              height: 1,
-            ),
-          ),
-
-          // Judul Dokumen
-          Text(
+          const SizedBox(height: 14),
+          const Text(
             'BERITA ACARA MONITORING DAN EVALUASI LAPANGAN',
-            style: AppTextStyles.labelLarge.copyWith(
-              fontFamily: AppTextStyles.enterpriseFontFamily,
-              fontWeight: FontWeight.w800,
-              fontSize: 12.5,
-              letterSpacing: 0.2,
-              color: AppColors.enterpriseTextMain,
-            ),
             textAlign: TextAlign.center,
+            style: _bold,
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Nomor: ${item.nomorSuratBA}',
-            style: AppTextStyles.bodySmall.copyWith(
-              fontFamily: AppTextStyles.enterpriseFontFamily,
-              color: AppColors.enterpriseTextMuted,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-
-          // Ringkasan Field Dokumen (Real Data)
-          _dataRow('Nomor BA', item.nomorSuratBA),
-          _dataRow(
-            'Perumahan',
-            item.namaPerumahan.isNotEmpty ? item.namaPerumahan : 'Belum diisi',
-          ),
-          _dataRow(
-            'Lokasi',
-            item.lokasiPerumahan.trim().isNotEmpty
-                ? item.lokasiPerumahan
-                : 'Belum diisi',
-          ),
-          _dataRow(
-            'Waktu Monev',
-            _formatIndonesianDate(item.tanggalMonitoring),
-          ),
-          _dataRow('Status Evaluasi', item.statusHasilEvaluasi.label),
-          if (item.namaDeveloper.trim().isNotEmpty)
-            _dataRow('Pengembang', item.namaDeveloper),
-
-          // Poin-poin temuan dan kesimpulan jika tersedia secara asli
-          if (item.temuanLapangan.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _buildSectionTitle('I. Temuan di Lapangan'),
-            _buildBulletList(item.temuanLapangan),
-          ],
-          if (item.kesimpulan.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _buildSectionTitle('II. Kesimpulan'),
-            _buildBulletList(item.kesimpulan),
-          ],
-          if (item.kesepakatan.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _buildSectionTitle('III. Kesepakatan'),
-            _buildBulletList(item.kesepakatan),
-          ],
-          if (item.rencanaTindakLanjut.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _buildSectionTitle('IV. Rencana Tindak Lanjut'),
-            _buildBulletList(item.rencanaTindakLanjut),
-          ],
-          if (item.photos.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            _buildSectionTitle('V. Dokumentasi Lapangan'),
-            BaPhotoGallery(photos: item.photos),
-          ],
-
-          // Identitas pihak yang tercatat (Hanya jika ada data asli, tanpa tanda tangan / QR fiktif)
-          if (_hasSignatoryData(item)) ...[
-            const SizedBox(height: 14),
-            const Divider(color: AppColors.enterpriseBorder),
-            const SizedBox(height: 8),
+          if (item.nomorSuratBA.trim().isNotEmpty)
             Text(
-              'Identitas pihak yang tercatat',
-              style: AppTextStyles.labelMedium.copyWith(
-                fontFamily: AppTextStyles.enterpriseFontFamily,
-                fontWeight: FontWeight.bold,
-                color: AppColors.enterpriseTextMain,
-              ),
+              'Nomor: ${item.nomorSuratBA}',
+              textAlign: TextAlign.center,
+              style: _body.copyWith(fontSize: 12),
             ),
-            const SizedBox(height: 6),
-            if (item.pelaksanaNama.trim().isNotEmpty)
-              _identityRow(
-                'Pelaksana',
-                item.pelaksanaNama,
-                item.pelaksanaJabatan,
+          const SizedBox(height: 12),
+          _paragraph(
+            'Pada hari ini, ${_tanggalKata(item.tanggalMonitoring)} telah '
+            'dilakukan monitoring dan evaluasi lapangan oleh Tim dari Dinas '
+            'Perumahan dan Kawasan Permukiman Kota Tasikmalaya bertempat di '
+            '$housingLabel'
+            '${location.isEmpty ? '' : ' yang berlokasi di $location'}.',
+            indented: false,
+          ),
+          _heading('I.', 'Maksud dan Tujuan'),
+          ..._paragraphs([item.maksudTujuan]),
+          _heading('II.', 'Temuan Di Lapangan'),
+          ..._bullets(item.temuanLapangan),
+          _heading('III.', 'Kesimpulan'),
+          ..._paragraphs(item.kesimpulan),
+          _heading('IV.', 'Kesepakatan'),
+          ..._bullets(item.kesepakatan),
+          _heading('V.', 'Rencana Tindak Lanjut'),
+          ..._bullets(item.rencanaTindakLanjut),
+          const SizedBox(height: 6),
+          _paragraph(
+            'Demikian Berita Acara ini dibuat dengan sebenarnya dan '
+            'ditandatangani untuk digunakan sebagaimana mestinya.',
+            indented: false,
+          ),
+          const SizedBox(height: 24),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _signColumn(
+                'Yang Melaksanakan Observasi / Inspeksi',
+                _people(
+                  item.pelaksana,
+                  item.pelaksanaNama,
+                  item.pelaksanaJabatan,
+                ),
               ),
-            if (item.ditemuiNama.trim().isNotEmpty)
-              _identityRow('Ditemui', item.ditemuiNama, item.ditemuiJabatan),
+              const SizedBox(width: 12),
+              _signColumn(
+                'Yang Ditemui di Lapangan',
+                _people(item.ditemui, item.ditemuiNama, item.ditemuiJabatan),
+              ),
+            ],
+          ),
+          if (item.photos.isNotEmpty) ...[
+            const SizedBox(height: 22),
+            const Divider(color: AppColors.enterpriseBorder, height: 1),
+            const SizedBox(height: 14),
+            const Text('Dokumentasi Lapangan :', style: _bold),
+            const SizedBox(height: 8),
+            BaPhotoGallery(photos: item.photos),
           ],
         ],
       ),
     );
   }
 
-  bool _hasSignatoryData(MonitoringModel item) =>
-      item.pelaksanaNama.trim().isNotEmpty ||
-      item.ditemuiNama.trim().isNotEmpty;
-
-  Widget _identityRow(String label, String name, String role) => Padding(
-    padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+  Widget _heading(String number, String title) => Padding(
+    padding: const EdgeInsets.only(top: 8, bottom: 2),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 80,
-          child: Text(
-            label,
-            style: AppTextStyles.bodySmall.copyWith(
-              fontFamily: AppTextStyles.enterpriseFontFamily,
-              color: AppColors.enterpriseTextMuted,
-            ),
-          ),
+          width: _indent,
+          child: Text(number, style: _bold),
         ),
-        Text(
-          ': ',
-          style: AppTextStyles.bodySmall.copyWith(
-            fontFamily: AppTextStyles.enterpriseFontFamily,
-            color: AppColors.enterpriseTextMuted,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Expanded(
-          child: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(
-                  text: name,
-                  style: AppTextStyles.bodyMedium.copyWith(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    color: AppColors.enterpriseTextMain,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (role.trim().isNotEmpty)
-                  TextSpan(
-                    text: ' ($role)',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontFamily: AppTextStyles.enterpriseFontFamily,
-                      color: AppColors.enterpriseTextMuted,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        Expanded(child: Text(title, style: _bold)),
       ],
     ),
   );
 
-  Widget _dataRow(String label, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 7),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 96,
-          child: Text(
-            label,
-            style: AppTextStyles.bodySmall.copyWith(
-              fontFamily: AppTextStyles.enterpriseFontFamily,
-              fontSize: 11.5,
-              color: AppColors.enterpriseTextMuted,
-            ),
-          ),
-        ),
-        Text(
-          ': ',
-          style: AppTextStyles.bodySmall.copyWith(
-            fontFamily: AppTextStyles.enterpriseFontFamily,
-            fontSize: 11.5,
-            color: AppColors.enterpriseTextMuted,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: AppTextStyles.bodyMedium.copyWith(
-              fontFamily: AppTextStyles.enterpriseFontFamily,
-              fontSize: 11.5,
-              color: AppColors.enterpriseTextMain,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ],
-    ),
+  Widget _paragraph(String value, {bool indented = true}) => Padding(
+    padding: EdgeInsets.only(left: indented ? _indent : 0, bottom: 4),
+    child: Text(value, textAlign: TextAlign.justify, style: _body),
   );
 
-  Widget _buildSectionTitle(String title) => Padding(
-    padding: const EdgeInsets.only(bottom: 4),
-    child: Text(
-      title,
-      style: AppTextStyles.labelSmall.copyWith(
-        fontFamily: AppTextStyles.enterpriseFontFamily,
-        fontWeight: FontWeight.w700,
-        fontSize: 11.5,
-        color: AppColors.enterpriseTextMain,
-      ),
-    ),
-  );
-
-  Widget _buildBulletList(List<String> items) {
+  List<Widget> _paragraphs(List<String> items) {
     final valid = items.where((e) => e.trim().isNotEmpty).toList();
-    if (valid.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Text(
-          '-',
-          style: AppTextStyles.bodySmall.copyWith(
-            fontFamily: AppTextStyles.enterpriseFontFamily,
-            color: AppColors.enterpriseTextMuted,
-          ),
-        ),
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: valid
-          .map(
-            (e) => Padding(
-              padding: const EdgeInsets.only(bottom: 3.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '• ',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.enterpriseTextMain,
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(
-                      e,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        fontFamily: AppTextStyles.enterpriseFontFamily,
-                        color: AppColors.enterpriseTextMain,
-                        height: 1.35,
+    return [
+      for (final e in valid.isEmpty ? const ['-'] : valid) _paragraph(e),
+    ];
+  }
+
+  List<Widget> _bullets(List<String> items) {
+    final valid = items.where((e) => e.trim().isNotEmpty).toList();
+    return [
+      for (final e in valid.isEmpty ? const ['-'] : valid)
+        Padding(
+          padding: const EdgeInsets.only(left: _indent, bottom: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(
+                width: 20,
+                child: Padding(
+                  padding: EdgeInsets.only(top: 9, left: 6),
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: SizedBox(
+                      width: 5,
+                      height: 5,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ),
-                ],
+                ),
+              ),
+              Expanded(
+                child: Text(e, textAlign: TextAlign.justify, style: _body),
+              ),
+            ],
+          ),
+        ),
+    ];
+  }
+
+  Widget _signColumn(String title, List<MonitoringPerson> people) {
+    final shown = people.isEmpty ? const [MonitoringPerson()] : people;
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$title\n(Nama, Jabatan, Tanda Tangan)',
+            textAlign: TextAlign.center,
+            style: _body.copyWith(fontSize: 11.5, height: 1.4),
+          ),
+          const SizedBox(height: 44),
+          for (final person in shown)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Text(
+                'Nama     : ${_orDash(person.nama)}\n'
+                'Jabatan : ${_orDash(person.jabatan)}',
+                style: _bold.copyWith(fontSize: 12, height: 1.4),
               ),
             ),
-          )
-          .toList(),
+        ],
+      ),
     );
   }
 
-  String _formatIndonesianDate(DateTime dt) {
-    const hariList = [
+  static List<MonitoringPerson> _people(
+    List<MonitoringPerson> list,
+    String name,
+    String role,
+  ) {
+    final valid = list.where((p) => p.nama.trim().isNotEmpty).toList();
+    if (valid.isNotEmpty) return valid;
+    if (name.trim().isNotEmpty) {
+      return [MonitoringPerson(nama: name, jabatan: role)];
+    }
+    return const [];
+  }
+
+  static String _orDash(String value) => value.trim().isEmpty ? '-' : value;
+
+  static String _tanggalKata(DateTime dt) {
+    const hari = [
       'Senin',
       'Selasa',
       'Rabu',
@@ -389,7 +276,7 @@ class BeritaAcaraDocumentCard extends StatelessWidget {
       'Sabtu',
       'Minggu',
     ];
-    const bulanList = [
+    const bulan = [
       '',
       'Januari',
       'Februari',
@@ -404,8 +291,6 @@ class BeritaAcaraDocumentCard extends StatelessWidget {
       'November',
       'Desember',
     ];
-    final hari = hariList[dt.weekday - 1];
-    final bulan = bulanList[dt.month];
-    return '$hari, ${dt.day} $bulan ${dt.year}';
+    return '${hari[dt.weekday - 1]} tanggal ${dt.day} bulan ${bulan[dt.month]} tahun ${dt.year}';
   }
 }

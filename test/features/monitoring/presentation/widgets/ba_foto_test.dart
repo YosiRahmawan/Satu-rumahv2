@@ -38,7 +38,7 @@ void main() {
     return p;
   }
 
-  testWidgets('kartu BA memuat bagian dokumentasi dengan keterangan', (
+  testWidgets('kartu BA memuat foto utuh bernomor tanpa keterangan terpisah', (
     tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(390, 1600));
@@ -54,11 +54,13 @@ void main() {
         ),
       ),
     );
-    expect(find.text('V. Dokumentasi Lapangan'), findsOneWidget);
-    expect(find.text('Foto 1 · Drainase'), findsOneWidget);
-    expect(find.text('Foto 2 · Gerbang'), findsOneWidget);
-    expect(find.textContaining('-7.327400, 108.220700'), findsNWidgets(2));
-    expect(find.textContaining('Jl. Contoh No. 1'), findsNWidgets(2));
+    expect(find.text('Dokumentasi Lapangan :'), findsOneWidget);
+    expect(find.text('Foto 1'), findsOneWidget);
+    expect(find.text('Foto 2'), findsOneWidget);
+    // Watermark sudah ada di piksel foto: tidak ada keterangan terpisah.
+    expect(find.textContaining('-7.327400'), findsNothing);
+    expect(find.textContaining('Jl. Contoh No. 1'), findsNothing);
+    expect(find.textContaining('Drainase'), findsNothing);
   });
 
   testWidgets('tanpa foto, bagian dokumentasi tidak muncul', (tester) async {
@@ -71,7 +73,7 @@ void main() {
         ),
       ),
     );
-    expect(find.text('V. Dokumentasi Lapangan'), findsNothing);
+    expect(find.text('Dokumentasi Lapangan :'), findsNothing);
   });
 
   test(

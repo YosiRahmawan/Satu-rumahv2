@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:satu_rumah/features/monitoring/data/models/geo_stamp.dart';
@@ -5,6 +8,26 @@ import 'package:satu_rumah/features/monitoring/services/stamp_renderer.dart';
 import 'package:satu_rumah/features/monitoring/utils/geo_stamp_signer.dart';
 
 import '../../../support/camera_fakes.dart';
+import 'package:satu_rumah/features/monitoring/services/osm_client.dart';
+
+class _TileAdapter implements HttpClientAdapter {
+  final List<RequestOptions> requests = [];
+  final Uint8List png;
+  _TileAdapter(this.png);
+
+  @override
+  Future<ResponseBody> fetch(
+    RequestOptions options,
+    Stream<Uint8List>? requestStream,
+    Future<void>? cancelFuture,
+  ) async {
+    requests.add(options);
+    return ResponseBody.fromBytes(png, 200);
+  }
+
+  @override
+  void close({bool force = false}) {}
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -55,6 +78,45 @@ void main() {
       final decoded = img.decodeJpg(output)!;
       expect(decoded.width, StampRenderer.maxSide);
       expect(decoded.height, 960);
+    });
+  });
+
+  testWidgets('render dengan peta (atribusi OSM) tetap sah dan terbaca', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final map = Uint8List.fromList(
+        img.encodePng(img.Image(width: 256, height: 256)),
+      );
+      final output = await StampRenderer.render(
+        photoBytes: plainJpeg(width: 640, height: 480),
+        stamp: stamp,
+        map: map,
+      );
+      expect(GeoStampSigner.verify(output).stamp, stamp);
+      expect(img.decodeJpg(output)!.width, 640);
+    });
+  });
+
+  testWidgets('peta: tile membawa User-Agent dan dipakai ulang dari cache', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final png = Uint8List.fromList(
+        img.encodePng(img.Image(width: 256, height: 256)),
+      );
+      final adapter = _TileAdapter(png);
+      final dio = newOsmDio(responseType: ResponseType.bytes)
+        ..httpClientAdapter = adapter;
+      final provider = OsmMapThumbnailProvider(dio: dio);
+
+      expect(await provider.thumbnail(-7.4101, 108.3303), isNotNull);
+      final first = adapter.requests.length;
+      expect(first, inInclusiveRange(1, 4));
+      expect(adapter.requests.first.headers['User-Agent'], kOsmUserAgent);
+
+      expect(await provider.thumbnail(-7.4101, 108.3303), isNotNull);
+      expect(adapter.requests.length, first);
     });
   });
 }

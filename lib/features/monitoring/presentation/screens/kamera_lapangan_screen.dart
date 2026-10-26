@@ -6,33 +6,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
-import '../../../../core/theme/app_radii.dart';
-import '../../../../core/theme/app_spacing.dart';
-import '../../../../core/theme/app_text_styles.dart';
+import '../../../pengajuan/data/models/pengajuan_model.dart';
+import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../data/models/geo_stamp.dart';
+import '../../data/models/kamera_context.dart';
 import '../../data/models/report_photo.dart';
 import '../../services/camera_gateway.dart';
 import '../../services/location_service.dart';
+import '../../services/stamp_renderer.dart';
 import '../providers/camera_providers.dart';
 import '../providers/monitoring_form_provider.dart';
+import '../providers/monitoring_list_provider.dart';
+import '../widgets/kamera_flow.dart';
 
 /// Jumlah foto maksimum per laporan.
 const int kMaxReportPhotos = 10;
-
-/// Kamera dokumentasi: memotret, menempelkan watermark geotag langsung ke
-/// piksel foto, lalu menyimpannya ke draf laporan yang sedang aktif.
-class KameraLapanganScreen extends ConsumerStatefulWidget {
-  const KameraLapanganScreen({super.key});
-
-  @override
-  ConsumerState<KameraLapanganScreen> createState() =>
-      _KameraLapanganScreenState();
-}
 
 class _Pending {
   final Uint8List bytes;
   final GeoStamp stamp;
   const _Pending(this.bytes, this.stamp);
+}
+
+/// Kamera Lapangan fullscreen: memotret dengan kamera perangkat, mengunci GPS,
+/// menempelkan watermark geotag di piksel foto, lalu menyimpannya ke draf
+/// Berita Acara tugas survei (dipilih dulu bila dibuka dari mode mandiri).
+class KameraLapanganScreen extends ConsumerStatefulWidget {
+  final KameraContext contextData;
+
+  const KameraLapanganScreen({
+    super.key,
+    this.contextData = const KameraContext.mandiri(),
+  });
+
+  @override
+  ConsumerState<KameraLapanganScreen> createState() =>
+      _KameraLapanganScreenState();
 }
 
 class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
@@ -45,20 +54,35 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
   LocationFailure? _locationFailure;
   bool _locating = true;
 
+  bool _isGridVisible = true;
+  bool _isFlashOn = false;
+
   bool _busy = false;
   String _busyLabel = '';
   _Pending? _pending;
+  int _savedCount = 0;
   final _noteController = TextEditingController();
+
+  // Alamat dan peta untuk posisi terakhir, diambil lebih dulu agar overlay
+  // di viewfinder sama dengan watermark pada foto dan shutter tidak menunggu.
+  String? _geoKey;
+  String? _liveAddress;
+  Uint8List? _liveMap;
+  Timer? _clock;
 
   @override
   void initState() {
     super.initState();
     unawaited(_openCamera());
     unawaited(_refreshLocation());
+    _clock = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && _pending == null) setState(() {});
+    });
   }
 
   @override
   void dispose() {
+    _clock?.cancel();
     _noteController.dispose();
     unawaited(_session?.dispose());
     super.dispose();
@@ -68,6 +92,7 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     setState(() {
       _opening = true;
       _cameraFailure = null;
+      _cameraDetail = null;
     });
     try {
       final session = await ref.read(cameraGatewayProvider).open();
@@ -77,6 +102,7 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
       }
       setState(() {
         _session = session;
+        _isFlashOn = false;
         _opening = false;
       });
     } on CameraUnavailable catch (e) {
@@ -89,8 +115,8 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _cameraDetail = '$e';
         _cameraFailure = CameraFailure.failed;
+        _cameraDetail = '$e';
         _opening = false;
       });
     }
@@ -108,25 +134,56 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
       _fix = result.fix;
       _locationFailure = result.failure;
     });
+    if (result.fix != null) unawaited(_loadGeo(result.fix!));
   }
 
-  bool get _photoLimitReached =>
-      ref.read(monitoringFormProvider).photos.length >= kMaxReportPhotos;
+  static String _geoKeyOf(LocationFix f) =>
+      '${f.latitude.toStringAsFixed(4)},${f.longitude.toStringAsFixed(4)}';
+
+  Future<void> _loadGeo(LocationFix fix) async {
+    final key = _geoKeyOf(fix);
+    if (key == _geoKey) return;
+    _geoKey = key;
+    setState(() {
+      _liveAddress = null;
+      _liveMap = null;
+    });
+    final address = await ref
+        .read(geocodingServiceProvider)
+        .reverse(fix.latitude, fix.longitude);
+    final map = await ref
+        .read(mapThumbnailProvider)
+        .thumbnail(fix.latitude, fix.longitude);
+    if (!mounted || _geoKey != key) return;
+    setState(() {
+      _liveAddress = address;
+      _liveMap = map;
+    });
+  }
+
+  Future<void> _toggleFlash() async {
+    final session = _session;
+    if (session == null) return;
+    final next = !_isFlashOn;
+    final ok = await session.setFlash(next);
+    if (!mounted) return;
+    if (ok) {
+      setState(() => _isFlashOn = next);
+    } else {
+      _snack('Flash tidak tersedia di perangkat ini.');
+    }
+  }
 
   Future<void> _shoot() async {
     final session = _session;
     if (_busy || session == null) return;
-    if (_photoLimitReached) {
-      _snack('Maksimal $kMaxReportPhotos foto per laporan.');
-      return;
-    }
     setState(() {
       _busy = true;
       _busyLabel = 'Mengunci lokasi…';
     });
     try {
-      // Posisi diambil ulang saat memotret agar cap sesuai dengan tempat
-      // petugas berdiri, bukan posisi saat layar dibuka.
+      // Posisi diambil ulang saat memotret agar cap sesuai tempat petugas
+      // berdiri, bukan posisi saat layar dibuka.
       final located = await ref.read(locationServiceProvider).currentFix();
       if (!mounted) return;
       final fix = located.fix;
@@ -149,12 +206,19 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
       setState(() => _busyLabel = 'Menempelkan geotag…');
 
       final note = _noteController.text.trim();
-      final address = await ref
-          .read(geocodingServiceProvider)
-          .reverse(fix.latitude, fix.longitude);
-      final map = await ref
-          .read(mapThumbnailProvider)
-          .thumbnail(fix.latitude, fix.longitude);
+      final reuse =
+          _geoKeyOf(fix) == _geoKey &&
+          (_liveAddress != null || _liveMap != null);
+      final address = reuse
+          ? _liveAddress
+          : await ref
+                .read(geocodingServiceProvider)
+                .reverse(fix.latitude, fix.longitude);
+      final map = reuse
+          ? _liveMap
+          : await ref
+                .read(mapThumbnailProvider)
+                .thumbnail(fix.latitude, fix.longitude);
       final stamp = GeoStamp(
         latitude: fix.latitude,
         longitude: fix.longitude,
@@ -177,33 +241,104 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     }
   }
 
-  void _accept() {
+  Pengajuan? _findTask(String id) {
+    for (final p in ref.read(surveyAktifProvider)) {
+      if (p.id == id) return p;
+    }
+    for (final p in ref.read(pengajuanListProvider)) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+
+  Future<void> _save() async {
     final pending = _pending;
     if (pending == null) return;
+    final ctx = widget.contextData;
     final notifier = ref.read(monitoringFormProvider.notifier);
+
+    if (!ctx.usesActiveForm) {
+      final task = ctx.isTaskFlow
+          ? _findTask(ctx.taskId ?? '')
+          : await _pickTask();
+      if (task == null) {
+        if (ctx.isTaskFlow && mounted) {
+          _snack('Tugas survei tidak ditemukan. Foto belum disimpan.');
+        }
+        return;
+      }
+      prepareFormForPengajuan(ref, task);
+    }
+
+    if (ref.read(monitoringFormProvider).photos.length >= kMaxReportPhotos) {
+      _snack('Maksimal $kMaxReportPhotos foto per laporan.');
+      return;
+    }
     notifier.addPhoto(
       ReportPhoto.create(source: PhotoSource.camera, stamp: pending.stamp),
       pending.bytes,
     );
     final saved = notifier.saveDraft();
+    if (!mounted) return;
     setState(() {
       _pending = null;
+      _savedCount++;
       _noteController.clear();
     });
     final count = ref.read(monitoringFormProvider).photos.length;
     _snack(
       saved == null
           ? 'Foto ditambahkan, tetapi draf belum tersimpan.'
-          : 'Foto $count tersimpan di draf.',
+          : 'Foto $count tersimpan di draf Berita Acara.',
     );
   }
 
-  void _retake() => setState(() => _pending = null);
+  /// Mode mandiri: foto harus punya tujuan, yaitu draf sebuah tugas survei.
+  Future<Pengajuan?> _pickTask() async {
+    final tasks = ref.read(surveyAktifProvider);
+    if (tasks.isEmpty) {
+      _snack(
+        'Belum ada tugas survei aktif, jadi foto belum bisa disimpan ke draf.',
+      );
+      return null;
+    }
+    if (tasks.length == 1) return tasks.first;
+    return showModalBottomSheet<Pengajuan>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            const ListTile(
+              title: Text(
+                'Simpan foto ke tugas mana?',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+            ),
+            for (final task in tasks)
+              ListTile(
+                title: Text(task.namaPerumahan),
+                subtitle: Text(task.namaPt),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(sheetContext).pop(task),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 
   void _snack(String message) {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
   }
 
   static String _locationMessage(LocationFailure failure) => switch (failure) {
@@ -221,35 +356,17 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final photoCount = ref.watch(monitoringFormProvider).photos.length;
-    final housing = ref.watch(monitoringFormProvider).namaPerumahan;
     return Scaffold(
       backgroundColor: Colors.black,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Stack(
           children: [
-            Positioned.fill(child: _buildViewfinder()),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _TopBar(
-                housing: housing,
-                photoCount: photoCount,
-                onClose: () => Navigator.of(context).maybePop(),
-              ),
+            Positioned.fill(
+              child: _pending != null
+                  ? _buildPhotoReviewLayout(_pending!)
+                  : _buildLiveCameraLayout(),
             ),
-            if (_pending == null)
-              Positioned(left: 0, right: 0, bottom: 0, child: _buildControls()),
-            if (_pending != null)
-              Positioned.fill(
-                child: _ReviewPanel(
-                  pending: _pending!,
-                  onRetake: _retake,
-                  onAccept: _accept,
-                ),
-              ),
             if (_busy)
               Positioned.fill(
                 child: ColoredBox(
@@ -259,12 +376,12 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const CircularProgressIndicator(color: Colors.white),
-                        const SizedBox(height: AppSpacing.lg),
+                        const SizedBox(height: 16),
                         Text(
                           _busyLabel,
-                          style: AppTextStyles.bodyMedium.copyWith(
+                          style: const TextStyle(
+                            fontFamily: 'Plus Jakarta Sans',
                             color: Colors.white,
-                            fontFamily: AppTextStyles.enterpriseFontFamily,
                           ),
                         ),
                       ],
@@ -278,134 +395,436 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     );
   }
 
-  Widget _buildViewfinder() {
-    if (_opening) {
-      return const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      );
-    }
-    final failure = _cameraFailure;
-    if (failure != null || _session == null) {
-      final message = switch (failure) {
-        CameraFailure.denied =>
-          kIsWeb
-              ? 'Izin kamera ditolak. Klik ikon gembok di address bar browser, izinkan Kamera dan Lokasi, lalu tekan Coba lagi.'
-              : 'Izin kamera ditolak. Izinkan kamera di pengaturan aplikasi untuk memotret.',
-        CameraFailure.notFound => 'Perangkat ini tidak memiliki kamera.',
-        _ =>
-          'Kamera tidak dapat dibuka. Tutup aplikasi lain yang memakai kamera.',
-      };
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+  // ==========================================
+  // LIVE CAMERA
+  // ==========================================
+  Widget _buildLiveCameraLayout() {
+    return Column(
+      children: [
+        _buildTopBar(),
+        Expanded(
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              const Icon(
-                Icons.no_photography_outlined,
-                color: Colors.white70,
-                size: 48,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: Colors.white,
-                  fontFamily: AppTextStyles.enterpriseFontFamily,
+              Container(color: const Color(0xFF0F172A)),
+              if (_session != null)
+                Center(
+                  child: AspectRatio(
+                    aspectRatio: _session!.aspectRatio,
+                    child: _session!.buildPreview(),
+                  ),
                 ),
-              ),
-              if (_cameraDetail != null) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  _cameraDetail!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white54, fontSize: 11),
+              if (_session != null && _isGridVisible)
+                const IgnorePointer(
+                  child: CustomPaint(painter: _GridPainter()),
                 ),
-              ],
-              const SizedBox(height: AppSpacing.lg),
-              OutlinedButton(
-                onPressed: _openCamera,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.white54),
-                  minimumSize: const Size(0, 48),
+              if (_session != null) _buildCenterFocusBracket(),
+              if (_session != null && _fix != null)
+                Positioned(
+                  left: 10,
+                  right: 10,
+                  bottom: 10,
+                  child: IgnorePointer(
+                    child: _LiveStampOverlay(
+                      fix: _fix!,
+                      address: _liveAddress,
+                      map: _liveMap,
+                      note: _noteController,
+                    ),
+                  ),
                 ),
-                child: const Text('Coba lagi'),
-              ),
+              if (_opening)
+                const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                )
+              else if (_session == null)
+                _buildCameraProblemCard(),
             ],
           ),
         ),
-      );
-    }
-    final session = _session!;
-    return Center(
-      child: AspectRatio(
-        aspectRatio: session.aspectRatio,
-        child: session.buildPreview(),
+        _buildInfoCard(),
+        _buildShutterControlsBar(),
+      ],
+    );
+  }
+
+  Widget _buildTopBar() {
+    final isTask = widget.contextData.isTaskFlow;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      color: Colors.black.withValues(alpha: 0.85),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: 'Kembali',
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.12),
+              shape: const CircleBorder(),
+              minimumSize: const Size(48, 48),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: isTask
+                            ? AppColors.primaryRed
+                            : const Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        isTask
+                            ? 'Tugas: ${widget.contextData.taskTitle}'
+                            : 'Dokumentasi Mandiri',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          _buildGpsChip(),
+        ],
       ),
     );
   }
 
-  Widget _buildControls() {
-    final cameraReady = _session != null && _cameraFailure == null;
-    final canShoot = cameraReady && !_busy;
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg,
-        AppSpacing.lg + bottomInset,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0x00000000), Color(0xCC000000)],
+  Widget _buildGpsChip() {
+    final String text;
+    final IconData icon;
+    final Color color;
+    if (_locating) {
+      text = 'Mencari GPS…';
+      icon = Icons.gps_not_fixed_rounded;
+      color = const Color(0xFFFBBF24);
+    } else if (_fix != null) {
+      text = 'GPS ±${_fix!.accuracyMeters.round()} m';
+      icon = Icons.gps_fixed_rounded;
+      color = const Color(0xFF34D399);
+    } else {
+      text = 'GPS belum siap';
+      icon = Icons.location_off_outlined;
+      color = const Color(0xFFF87171);
+    }
+    return InkWell(
+      onTap: _locating ? null : _refreshLocation,
+      borderRadius: BorderRadius.circular(16),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 48),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withValues(alpha: 0.4)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 14, color: color),
+              const SizedBox(width: 4),
+              Text(
+                text,
+                style: TextStyle(
+                  fontFamily: 'Plus Jakarta Sans',
+                  color: color,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCenterFocusBracket() {
+    return Center(
+      child: IgnorePointer(
+        child: Container(
+          width: 64,
+          height: 64,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: const Color(0xFFFBBF24).withValues(alpha: 0.75),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Center(
+            child: SizedBox(
+              width: 6,
+              height: 6,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Color(0xFFFBBF24),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCameraProblemCard() {
+    final failure = _cameraFailure;
+    final message = switch (failure) {
+      CameraFailure.denied =>
+        kIsWeb
+            ? 'Izin kamera ditolak. Klik ikon gembok di address bar browser, izinkan Kamera dan Lokasi, lalu tekan Coba lagi.'
+            : 'Izin kamera ditolak. Buka Pengaturan > Aplikasi > Satu Rumah > Izin, aktifkan Kamera dan Lokasi.',
+      CameraFailure.notFound => 'Perangkat ini tidak memiliki kamera.',
+      _ =>
+        'Kamera tidak dapat dibuka. Tutup aplikasi lain yang memakai kamera lalu coba lagi.',
+    };
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 28),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.75),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.no_photography_outlined,
+              color: Colors.white70,
+              size: 40,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                color: Colors.white,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            if (_cameraDetail != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                _cameraDetail!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white54, fontSize: 10.5),
+              ),
+            ],
+            const SizedBox(height: 14),
+            OutlinedButton(
+              onPressed: _openCamera,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white54),
+                minimumSize: const Size(0, 48),
+              ),
+              child: const Text('Coba lagi'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Kartu informasi: konteks tugas, posisi terkini, dan catatan foto.
+  Widget _buildInfoCard() {
+    final ctx = widget.contextData;
+    final contextLabel = ctx.isTaskFlow
+        ? 'Tugas: ${ctx.taskTitle}'
+        : 'Mode Mandiri (pilih tugas saat menyimpan)';
+    final fix = _fix;
+    final locationLine = fix != null
+        ? '${fix.latitude.toStringAsFixed(6)}, ${fix.longitude.toStringAsFixed(6)} · ±${fix.accuracyMeters.round()} m'
+        : (_locationFailure != null
+              ? _locationMessage(_locationFailure!)
+              : 'Mencari lokasi GPS…');
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A).withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _GpsStatus(
-            locating: _locating,
-            fix: _fix,
-            failure: _locationFailure,
-            message: _locationFailure == null
-                ? null
-                : _locationMessage(_locationFailure!),
-            onRetry: _refreshLocation,
-            onOpenSettings: () =>
-                ref.read(locationServiceProvider).openSettings(),
+          Text(
+            contextLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          const SizedBox(height: AppSpacing.md),
+          if (fix == null) const SizedBox(height: 4),
+          if (fix == null)
+            Row(
+              children: [
+                Icon(
+                  fix != null
+                      ? Icons.location_on_outlined
+                      : Icons.location_off_outlined,
+                  size: 13,
+                  color: fix != null
+                      ? const Color(0xFF34D399)
+                      : const Color(0xFFF87171),
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    locationLine,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'JetBrains Mono',
+                      color: fix != null
+                          ? const Color(0xFF34D399)
+                          : const Color(0xFFFCA5A5),
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                if (_locationFailure == LocationFailure.deniedForever)
+                  TextButton(
+                    onPressed: () =>
+                        ref.read(locationServiceProvider).openSettings(),
+                    child: const Text('Pengaturan'),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 6),
           TextField(
             controller: _noteController,
             maxLength: 60,
             textInputAction: TextInputAction.done,
             style: const TextStyle(
               color: Colors.white,
-              fontFamily: AppTextStyles.enterpriseFontFamily,
+              fontFamily: 'Plus Jakarta Sans',
+              fontSize: 13,
             ),
             decoration: InputDecoration(
-              hintText: 'Catatan foto (opsional)',
-              hintStyle: const TextStyle(color: Colors.white60),
+              hintText: 'Catatan foto (opsional, ikut dicetak)',
+              hintStyle: const TextStyle(color: Colors.white54),
               counterText: '',
               isDense: true,
               filled: true,
-              fillColor: const Color(0x33FFFFFF),
+              fillColor: Colors.white.withValues(alpha: 0.1),
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.md,
+                horizontal: 12,
+                vertical: 10,
               ),
               border: OutlineInputBorder(
-                borderRadius: AppRadii.control,
+                borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
               ),
             ),
           ),
-          const SizedBox(height: AppSpacing.lg),
+          if (_savedCount > 0) ...[
+            const SizedBox(height: 6),
+            Text(
+              '$_savedCount foto tersimpan dari sesi ini',
+              style: const TextStyle(
+                fontFamily: 'Plus Jakarta Sans',
+                color: Colors.white70,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShutterControlsBar() {
+    final canShoot = _session != null && !_busy;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
+      color: Colors.black.withValues(alpha: 0.95),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                tooltip: 'Flash',
+                onPressed: _session == null ? null : _toggleFlash,
+                icon: Icon(
+                  _isFlashOn ? Icons.flash_on_rounded : Icons.flash_off_rounded,
+                  color: _isFlashOn ? const Color(0xFFFBBF24) : Colors.white70,
+                  size: 20,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                  shape: const CircleBorder(),
+                  minimumSize: const Size(48, 48),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: 'Garis bantu grid',
+                onPressed: () =>
+                    setState(() => _isGridVisible = !_isGridVisible),
+                icon: Icon(
+                  _isGridVisible
+                      ? Icons.grid_on_rounded
+                      : Icons.grid_off_rounded,
+                  color: _isGridVisible
+                      ? const Color(0xFF60A5FA)
+                      : Colors.white70,
+                  size: 20,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.1),
+                  shape: const CircleBorder(),
+                  minimumSize: const Size(48, 48),
+                ),
+              ),
+            ],
+          ),
           Semantics(
             button: true,
             enabled: canShoot,
@@ -432,203 +851,256 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
               ),
             ),
           ),
+          // Penyeimbang agar shutter tetap di tengah.
+          const SizedBox(width: 104),
         ],
       ),
     );
   }
-}
 
-class _TopBar extends StatelessWidget {
-  final String housing;
-  final int photoCount;
-  final VoidCallback onClose;
-
-  const _TopBar({
-    required this.housing,
-    required this.photoCount,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xs,
-        AppSpacing.xs,
-        AppSpacing.lg,
-        AppSpacing.md,
-      ),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xB3000000), Color(0x00000000)],
-        ),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            tooltip: 'Tutup kamera',
-            onPressed: onClose,
-            icon: const Icon(Icons.close_rounded, color: Colors.white),
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+  // ==========================================
+  // PHOTO REVIEW
+  // ==========================================
+  Widget _buildPhotoReviewLayout(_Pending pending) {
+    final isTask = widget.contextData.isTaskFlow;
+    final saveLabel = isTask ? 'Simpan ke Draf BA' : 'Pilih tugas & simpan';
+    final stamp = pending.stamp;
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          color: Colors.black.withValues(alpha: 0.85),
+          width: double.infinity,
+          child: const Text(
+            'Pratinjau Bukti Lapangan',
+            style: TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Kamera Lapangan',
-                  style: AppTextStyles.labelLarge.copyWith(
-                    color: Colors.white,
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (housing.trim().isNotEmpty)
-                  Text(
-                    housing,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: Colors.white70,
-                      fontFamily: AppTextStyles.enterpriseFontFamily,
+        ),
+        Expanded(
+          child: Container(
+            color: const Color(0xFF0F172A),
+            alignment: Alignment.center,
+            child: Image.memory(
+              pending.bytes,
+              fit: BoxFit.contain,
+              gaplessPlayback: true,
+            ),
+          ),
+        ),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+          color: Colors.black.withValues(alpha: 0.95),
+          child: Text(
+            '${StampRenderer.formatStampTime(stamp.capturedAt)}\n'
+            '${StampRenderer.formatStampCoordinates(stamp)}'
+            '${stamp.address == null ? '\nAlamat tidak tersedia (offline), hanya koordinat.' : '\n${stamp.address}'}',
+            style: const TextStyle(
+              fontFamily: 'Plus Jakarta Sans',
+              color: Colors.white70,
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          color: Colors.black.withValues(alpha: 0.95),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => setState(() => _pending = null),
+                  icon: const Icon(Icons.replay_rounded, size: 16),
+                  label: const Text('Foto Ulang'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.4),
+                    ),
+                    minimumSize: const Size(0, 52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-              ],
-            ),
-          ),
-          Text(
-            '$photoCount/$kMaxReportPhotos foto',
-            style: AppTextStyles.labelMedium.copyWith(
-              color: Colors.white,
-              fontFamily: AppTextStyles.enterpriseFontFamily,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GpsStatus extends StatelessWidget {
-  final bool locating;
-  final LocationFix? fix;
-  final LocationFailure? failure;
-  final String? message;
-  final VoidCallback onRetry;
-  final VoidCallback onOpenSettings;
-
-  const _GpsStatus({
-    required this.locating,
-    required this.fix,
-    required this.failure,
-    required this.message,
-    required this.onRetry,
-    required this.onOpenSettings,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final String text;
-    final IconData icon;
-    if (locating) {
-      text = 'Mencari lokasi GPS…';
-      icon = Icons.gps_not_fixed_rounded;
-    } else if (fix != null) {
-      text = 'GPS siap · akurasi ±${fix!.accuracyMeters.round()} m';
-      icon = Icons.gps_fixed_rounded;
-    } else {
-      text = message ?? 'Lokasi belum tersedia.';
-      icon = Icons.location_off_outlined;
-    }
-    final action = failure == LocationFailure.deniedForever
-        ? ('Buka pengaturan', onOpenSettings)
-        : (failure != null ? ('Coba lagi', onRetry) : null);
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white, size: 18),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: Text(
-            text,
-            style: AppTextStyles.bodySmall.copyWith(
-              color: Colors.white,
-              fontFamily: AppTextStyles.enterpriseFontFamily,
-            ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: FilledButton.icon(
+                  onPressed: _save,
+                  icon: const Icon(
+                    Icons.check_circle_outline_rounded,
+                    size: 16,
+                  ),
+                  label: Text(
+                    saveLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primaryRed,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(0, 52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        if (action != null)
-          TextButton(
-            onPressed: action.$2,
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              minimumSize: const Size(0, 44),
-            ),
-            child: Text(action.$1),
-          ),
       ],
     );
   }
 }
 
-class _ReviewPanel extends StatelessWidget {
-  final _Pending pending;
-  final VoidCallback onRetake;
-  final VoidCallback onAccept;
+/// Garis bantu 3x3 (rule of thirds).
+class _GridPainter extends CustomPainter {
+  const _GridPainter();
 
-  const _ReviewPanel({
-    required this.pending,
-    required this.onRetake,
-    required this.onAccept,
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.2)
+      ..strokeWidth = 1;
+    for (var i = 1; i < 3; i++) {
+      final x = size.width * i / 3;
+      final y = size.height * i / 3;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Pratinjau watermark langsung di viewfinder: tata letak sama dengan cap
+/// yang ditempel ke foto (peta kiri bawah, teks rata kanan).
+class _LiveStampOverlay extends StatelessWidget {
+  final LocationFix fix;
+  final String? address;
+  final Uint8List? map;
+  final TextEditingController note;
+
+  const _LiveStampOverlay({
+    required this.fix,
+    required this.address,
+    required this.map,
+    required this.note,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: Colors.black,
-      child: Column(
+    const shadows = [
+      Shadow(color: Color(0xCC000000), blurRadius: 4, offset: Offset(0, 1)),
+    ];
+    TextStyle style(double size, FontWeight weight) => TextStyle(
+      fontFamily: 'Plus Jakarta Sans',
+      color: Colors.white,
+      fontSize: size,
+      fontWeight: weight,
+      height: 1.25,
+      shadows: shadows,
+    );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(6, 28, 6, 4),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x00000000), Color(0x99000000)],
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          const SizedBox(height: 56),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-              child: Image.memory(
-                pending.bytes,
-                fit: BoxFit.contain,
-                gaplessPlayback: true,
+          if (map != null) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: SizedBox(
+                width: 84,
+                height: 84,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.memory(map!, fit: BoxFit.cover),
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.only(bottom: 18),
+                        child: Icon(
+                          Icons.location_on,
+                          color: Color(0xFFB91C1C),
+                          size: 26,
+                        ),
+                      ),
+                    ),
+                    const Positioned(
+                      left: 3,
+                      bottom: 1,
+                      child: Text(
+                        '© OpenStreetMap',
+                        style: TextStyle(
+                          fontSize: 7,
+                          color: Color(0xFF222222),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: onRetake,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.white,
-                      side: const BorderSide(color: Colors.white54),
-                      minimumSize: const Size(0, 52),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            child: ListenableBuilder(
+              listenable: note,
+              builder: (context, _) {
+                final text = note.text.trim();
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (text.isNotEmpty)
+                      Text(
+                        text,
+                        textAlign: TextAlign.right,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: style(13, FontWeight.w800),
+                      ),
+                    Text(
+                      StampRenderer.formatStampTime(DateTime.now()),
+                      textAlign: TextAlign.right,
+                      style: style(13, FontWeight.w800),
                     ),
-                    child: const Text('Ulangi'),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  flex: 2,
-                  child: FilledButton(
-                    onPressed: onAccept,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primaryRed,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(0, 52),
+                    if (address != null)
+                      Text(
+                        address!,
+                        textAlign: TextAlign.right,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: style(11, FontWeight.w700),
+                      ),
+                    Text(
+                      '${fix.latitude.toStringAsFixed(6)}, '
+                      '${fix.longitude.toStringAsFixed(6)} · '
+                      '±${fix.accuracyMeters.round()} m',
+                      textAlign: TextAlign.right,
+                      style: style(10.5, FontWeight.w600),
                     ),
-                    child: const Text('Pakai foto ini'),
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             ),
           ),
         ],

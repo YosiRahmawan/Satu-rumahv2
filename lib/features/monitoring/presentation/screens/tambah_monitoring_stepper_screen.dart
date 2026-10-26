@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../data/models/kamera_context.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
@@ -1335,7 +1336,10 @@ class _TambahMonitoringStepperScreenState
         );
       return;
     }
-    await context.push('/monitoring/kamera');
+    await context.push(
+      '/monitoring/kamera',
+      extra: KameraContext.formAktif(taskTitle: state.namaPerumahan),
+    );
     if (!mounted) return;
     // Kamera menyimpan draf setiap kali foto dipakai, jadi isian form
     // sudah tersimpan seluruhnya saat kembali.

@@ -9,6 +9,7 @@ import 'package:image/image.dart' as img;
 
 import '../data/models/geo_stamp.dart';
 import '../utils/geo_stamp_signer.dart';
+import 'osm_client.dart';
 
 /// Peta kecil (potongan ubin OpenStreetMap) yang berpusat di sebuah titik.
 abstract class MapThumbnailProvider {
@@ -23,16 +24,13 @@ class OsmMapThumbnailProvider implements MapThumbnailProvider {
   static const int _zoom = 17;
   static const int _tile = 256;
 
+  /// Ubin yang sudah diambil dipakai ulang (foto berurutan di tempat yang
+  /// sama), sesuai kebijakan tile OSM untuk meminimalkan permintaan.
+  static final Map<String, Uint8List> _tileCache = {};
+  static const int _tileCacheLimit = 48;
+
   OsmMapThumbnailProvider({Dio? dio})
-    : _dio =
-          dio ??
-          Dio(
-            BaseOptions(
-              connectTimeout: const Duration(seconds: 4),
-              receiveTimeout: const Duration(seconds: 5),
-              responseType: ResponseType.bytes,
-            ),
-          );
+    : _dio = dio ?? newOsmDio(responseType: ResponseType.bytes);
 
   @override
   Future<Uint8List?> thumbnail(double latitude, double longitude) async {
@@ -52,15 +50,14 @@ class OsmMapThumbnailProvider implements MapThumbnailProvider {
       final y0 = (top / _tile).floor();
       final y1 = ((top + _tile - 1) / _tile).floor();
 
-      final fetches = <Future<(int, int, Uint8List)?>>[];
+      // Berurutan (maks. 4 ubin) agar tidak membuka banyak koneksi ke OSM.
+      final tiles = <(int, int, Uint8List)>[];
       for (var tx = x0; tx <= x1; tx++) {
         for (var ty = y0; ty <= y1; ty++) {
-          fetches.add(_fetchTile(tx, ty));
+          final tile = await _fetchTile(tx, ty);
+          if (tile != null) tiles.add(tile);
         }
       }
-      final tiles = (await Future.wait(
-        fetches,
-      )).whereType<(int, int, Uint8List)>();
       if (tiles.isEmpty) return null;
 
       final recorder = ui.PictureRecorder();
@@ -89,13 +86,19 @@ class OsmMapThumbnailProvider implements MapThumbnailProvider {
   }
 
   Future<(int, int, Uint8List)?> _fetchTile(int x, int y) async {
+    final key = '$_zoom/$x/$y';
+    final cached = _tileCache[key];
+    if (cached != null) return (x, y, cached);
     try {
       final response = await _dio.get<List<int>>(
-        'https://tile.openstreetmap.org/$_zoom/$x/$y.png',
+        'https://tile.openstreetmap.org/$key.png',
       );
       final data = response.data;
       if (data == null || data.isEmpty) return null;
-      return (x, y, Uint8List.fromList(data));
+      final bytes = Uint8List.fromList(data);
+      if (_tileCache.length >= _tileCacheLimit) _tileCache.clear();
+      _tileCache[key] = bytes;
+      return (x, y, bytes);
     } catch (_) {
       return null;
     }
@@ -297,6 +300,25 @@ class StampRenderer {
         ui.Rect.fromLTWH(0, 0, map.width.toDouble(), map.height.toDouble()),
         mapRect,
         ui.Paint()..filterQuality = ui.FilterQuality.medium,
+      );
+      final credit = _text(
+        kOsmAttribution,
+        size: 14 * u,
+        weight: FontWeight.w600,
+        color: const ui.Color(0xFF222222),
+      );
+      canvas.drawRect(
+        ui.Rect.fromLTWH(
+          mapRect.left,
+          mapRect.bottom - credit.height - 4 * u,
+          mapRect.width,
+          credit.height + 4 * u,
+        ),
+        ui.Paint()..color = const ui.Color(0xCCFFFFFF),
+      );
+      credit.paint(
+        canvas,
+        ui.Offset(mapRect.left + 6 * u, mapRect.bottom - credit.height - 2 * u),
       );
       canvas.restore();
       canvas.drawRRect(

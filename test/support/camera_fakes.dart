@@ -33,6 +33,14 @@ class FakeCameraSession implements CameraSession {
     return plainJpeg();
   }
 
+  bool flashOn = false;
+
+  @override
+  Future<bool> setFlash(bool on) async {
+    flashOn = on;
+    return true;
+  }
+
   @override
   Future<void> dispose() async => disposed = true;
 }

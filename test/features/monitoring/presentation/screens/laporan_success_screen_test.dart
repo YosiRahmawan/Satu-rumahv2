@@ -49,12 +49,10 @@ void main() {
       find.text('Berita Acara Monitoring & Evaluasi Lapangan resmi telah diterbitkan oleh sistem.'),
       findsOneWidget,
     );
-    expect(find.text('PEMERINTAH KOTA TASIKMALAYA'), findsOneWidget);
-    expect(find.text('DINAS PERUMAHAN DAN KAWASAN PERMUKIMAN'), findsOneWidget);
     expect(find.text('BERITA ACARA MONITORING DAN EVALUASI LAPANGAN'), findsOneWidget);
-    expect(find.text('Perumahan Uji'), findsOneWidget);
-    expect(find.text('Jl. Karikil, Cipari'), findsOneWidget);
-    expect(find.text('BA/2026/001'), findsOneWidget);
+    expect(find.textContaining('Perumahan Uji'), findsOneWidget);
+    expect(find.textContaining('Jl. Karikil, Cipari'), findsOneWidget);
+    expect(find.textContaining('BA/2026/001'), findsOneWidget);
     expect(find.text('Download / Cetak PDF'), findsOneWidget);
     expect(find.text('Bagikan ringkasan'), findsOneWidget);
     expect(find.textContaining('Download Word'), findsNothing);
@@ -94,8 +92,8 @@ void main() {
       ),
     );
 
-    expect(find.text('Identitas pihak yang tercatat'), findsOneWidget);
-    expect(find.text('Petugas Uji, S.T.'), findsOneWidget);
+    expect(find.text('Identitas pihak yang tercatat'), findsNothing);
+    expect(find.textContaining('Nama     : Petugas Uji, S.T.'), findsOneWidget);
     expect(find.byIcon(Icons.qr_code), findsNothing);
     expect(find.byIcon(Icons.qr_code_2), findsNothing);
   });

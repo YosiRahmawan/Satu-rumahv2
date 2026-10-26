@@ -6,6 +6,7 @@ import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/admin_main_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/monitoring/data/models/kamera_context.dart';
 import '../../features/monitoring/data/models/monitoring_model.dart';
 import '../../features/monitoring/presentation/screens/kamera_lapangan_screen.dart';
 import '../../features/monitoring/presentation/screens/laporan_preview_screen.dart';
@@ -15,7 +16,6 @@ import '../../features/monitoring/presentation/screens/monitoring_draft_screen.d
 import '../../features/monitoring/presentation/screens/monitoring_main_screen.dart';
 import '../../features/monitoring/presentation/screens/tambah_monitoring_stepper_screen.dart';
 import '../../features/monitoring/presentation/providers/monitoring_form_provider.dart';
-import '../../features/notifikasi/presentation/screens/notifikasi_list_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_admin_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_step1_screen.dart';
@@ -186,7 +186,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/monitoring/kamera',
-        builder: (_, __) => const KameraLapanganScreen(),
+        builder: (_, state) {
+          final extra = state.extra;
+          final contextData = extra is KameraContext
+              ? extra
+              : (extra is Map
+                    ? KameraContext(
+                        isTaskFlow: extra['isTaskFlow'] == true,
+                        taskId: extra['taskId']?.toString(),
+                        taskTitle:
+                            extra['taskTitle']?.toString() ??
+                            'Dokumentasi Mandiri',
+                        nomorRegistrasi: extra['nomorRegistrasi']?.toString(),
+                      )
+                    : const KameraContext.mandiri());
+          return KameraLapanganScreen(contextData: contextData);
+        },
       ),
       GoRoute(
         path: '/monitoring/tambah',
@@ -319,8 +334,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/jadwal-survey',
-        builder: (_, state) =>
-            _withNotice(state, const JadwalSurveyScreen()),
+        builder: (_, state) => _withNotice(state, const JadwalSurveyScreen()),
       ),
       GoRoute(
         path: '/unduh-sk-ba',
@@ -331,13 +345,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/template-berkas',
-        builder: (_, state) =>
-            _withNotice(state, const TemplateBerkasScreen()),
+        builder: (_, state) => _withNotice(state, const TemplateBerkasScreen()),
       ),
       GoRoute(
         path: '/bantuan',
-        builder: (_, state) =>
-            _withNotice(state, const PusatBantuanScreen()),
+        builder: (_, state) => _withNotice(state, const PusatBantuanScreen()),
       ),
       GoRoute(
         path: '/tentang',

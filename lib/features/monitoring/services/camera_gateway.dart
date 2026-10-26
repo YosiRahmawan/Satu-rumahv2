@@ -28,6 +28,10 @@ abstract class CameraSession {
   /// Memotret dan mengembalikan berkas JPEG mentah (belum berwatermark).
   Future<Uint8List> capture();
 
+  /// Menyalakan/mematikan flash untuk pemotretan berikutnya. Mengembalikan
+  /// false bila perangkat tidak mendukung.
+  Future<bool> setFlash(bool on);
+
   Future<void> dispose();
 }
 
@@ -96,6 +100,16 @@ class _DeviceCameraSession implements CameraSession {
   Future<Uint8List> capture() async {
     final file = await _controller.takePicture();
     return file.readAsBytes();
+  }
+
+  @override
+  Future<bool> setFlash(bool on) async {
+    try {
+      await _controller.setFlashMode(on ? FlashMode.always : FlashMode.off);
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override

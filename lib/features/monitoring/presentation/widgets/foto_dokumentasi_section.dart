@@ -218,56 +218,59 @@ class _PhotoTile extends StatelessWidget {
           aspectRatio: 4 / 3,
           child: ClipRRect(
             borderRadius: AppRadii.control,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (bytes != null && !photo.needsReselect)
-                  Image.memory(
-                    bytes,
-                    fit: BoxFit.cover,
-                    gaplessPlayback: true,
-                    semanticLabel: 'Foto dokumentasi $index',
-                  )
-                else
-                  Container(
-                    color: AppColors.enterpriseSurface,
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'Berkas foto tidak tersimpan. Hapus lalu potret ulang.',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.bodySmall.copyWith(
-                        fontFamily: AppTextStyles.enterpriseFontFamily,
-                        color: AppColors.enterprisePrimary,
+            child: ColoredBox(
+              color: Colors.black,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (bytes != null && !photo.needsReselect)
+                    Image.memory(
+                      bytes,
+                      fit: BoxFit.contain,
+                      gaplessPlayback: true,
+                      semanticLabel: 'Foto dokumentasi $index',
+                    )
+                  else
+                    Container(
+                      color: AppColors.enterpriseSurface,
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      alignment: Alignment.center,
+                      child: Text(
+                        'Berkas foto tidak tersimpan. Hapus lalu potret ulang.',
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.bodySmall.copyWith(
+                          fontFamily: AppTextStyles.enterpriseFontFamily,
+                          color: AppColors.enterprisePrimary,
+                        ),
                       ),
                     ),
-                  ),
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Semantics(
-                    button: true,
-                    label: 'Hapus foto $index',
-                    child: InkWell(
-                      onTap: onDelete,
-                      child: Container(
-                        width: 44,
-                        height: 44,
-                        alignment: Alignment.center,
-                        child: const CircleAvatar(
-                          radius: 14,
-                          backgroundColor: Color(0xB3000000),
-                          child: Icon(
-                            Icons.close_rounded,
-                            color: Colors.white,
-                            size: 16,
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Semantics(
+                      button: true,
+                      label: 'Hapus foto $index',
+                      child: InkWell(
+                        onTap: onDelete,
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          alignment: Alignment.center,
+                          child: const CircleAvatar(
+                            radius: 14,
+                            backgroundColor: Color(0xB3000000),
+                            child: Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                              size: 16,
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
