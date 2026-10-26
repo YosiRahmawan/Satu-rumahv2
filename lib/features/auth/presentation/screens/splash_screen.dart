@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/api/api_client.dart';
+import '../../../../core/auth/auth_repository.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -52,10 +54,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
 
     _setupAnimationTimeline();
 
@@ -88,13 +87,21 @@ class _SplashScreenState extends State<SplashScreen>
     _titleSlideAnim = Tween<double>(begin: 16.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(600 / 2600, 1250 / 2600, curve: Curves.easeOutCubic),
+        curve: const Interval(
+          600 / 2600,
+          1250 / 2600,
+          curve: Curves.easeOutCubic,
+        ),
       ),
     );
     _linesExpandAnim = Tween<double>(begin: 0.0, end: 24.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(650 / 2600, 1250 / 2600, curve: Curves.easeOutCubic),
+        curve: const Interval(
+          650 / 2600,
+          1250 / 2600,
+          curve: Curves.easeOutCubic,
+        ),
       ),
     );
     _linesFadeAnim = CurvedAnimation(
@@ -110,7 +117,11 @@ class _SplashScreenState extends State<SplashScreen>
     _subtitleSlideAnim = Tween<double>(begin: 12.0, end: 0.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(1150 / 2600, 1600 / 2600, curve: Curves.easeOutCubic),
+        curve: const Interval(
+          1150 / 2600,
+          1600 / 2600,
+          curve: Curves.easeOutCubic,
+        ),
       ),
     );
 
@@ -151,6 +162,10 @@ class _SplashScreenState extends State<SplashScreen>
           context.go(session.role.homeRoute);
           return;
         }
+        if (container.read(apiEnabledProvider)) {
+          _restoreSession(container);
+          return;
+        }
       } catch (_) {
         // Fallback jika ProviderScope belum ada di hierarki (misal testing)
       }
@@ -165,6 +180,32 @@ class _SplashScreenState extends State<SplashScreen>
     _navigationTimer = null;
     _controller.dispose();
     super.dispose();
+  }
+
+  /// Mode API: pulihkan sesi dari token tersimpan; gagal atau kedaluwarsa → login.
+  Future<void> _restoreSession(ProviderContainer container) async {
+    try {
+      final result = await container.read(authRepositoryProvider).restore();
+      if (!mounted) return;
+      if (result != null) {
+        container
+            .read(roleSessionProvider.notifier)
+            .signIn(
+              result.user.role,
+              username: result.user.username,
+              mustChangePassword: result.mustChangePassword,
+            );
+        context.go(
+          result.mustChangePassword
+              ? '/ganti-sandi'
+              : result.user.role.homeRoute,
+        );
+        return;
+      }
+    } catch (_) {
+      // Tidak ada jaringan: token tetap tersimpan, masuk lagi manual.
+    }
+    if (mounted) context.go('/login');
   }
 
   @override
@@ -186,10 +227,7 @@ class _SplashScreenState extends State<SplashScreen>
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  AppColors.primaryRed,
-                  AppColors.primaryDark,
-                ],
+                colors: [AppColors.primaryRed, AppColors.primaryDark],
               ),
             ),
             child: SafeArea(
@@ -222,11 +260,11 @@ class _SplashScreenState extends State<SplashScreen>
                                       fit: BoxFit.contain,
                                       errorBuilder:
                                           (context, error, stackTrace) {
-                                        return const SizedBox(
-                                          width: 196,
-                                          height: 46,
-                                        );
-                                      },
+                                            return const SizedBox(
+                                              width: 196,
+                                              height: 46,
+                                            );
+                                          },
                                     ),
                                   ),
                                 ),
@@ -259,8 +297,9 @@ class _SplashScreenState extends State<SplashScreen>
                                         height: 2.5,
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFE5A823),
-                                          borderRadius:
-                                              BorderRadius.circular(2),
+                                          borderRadius: BorderRadius.circular(
+                                            2,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -288,8 +327,9 @@ class _SplashScreenState extends State<SplashScreen>
                                         height: 2.5,
                                         decoration: BoxDecoration(
                                           color: const Color(0xFFE5A823),
-                                          borderRadius:
-                                              BorderRadius.circular(2),
+                                          borderRadius: BorderRadius.circular(
+                                            2,
+                                          ),
                                         ),
                                       ),
                                     ),

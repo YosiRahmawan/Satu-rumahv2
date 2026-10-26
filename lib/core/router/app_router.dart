@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/screens/ganti_sandi_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/admin_main_screen.dart';
@@ -51,10 +52,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (path == '/') {
         return '/splash';
       }
-      return roleRouteRedirect(
-        role: ref.read(roleSessionProvider).role,
-        path: path,
-      );
+      final session = ref.read(roleSessionProvider);
+      if (session.isAuthenticated &&
+          session.mustChangePassword &&
+          path != '/ganti-sandi') {
+        return '/ganti-sandi';
+      }
+      return roleRouteRedirect(role: session.role, path: path);
     },
     errorBuilder: (context, state) {
       final session = ref.read(roleSessionProvider);
@@ -73,6 +77,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', redirect: (_, __) => '/splash'),
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(
+        path: '/ganti-sandi',
+        builder: (_, __) => const GantiSandiScreen(),
+      ),
       GoRoute(path: '/onboarding', redirect: (_, __) => '/login'),
       GoRoute(
         path: '/dashboard',

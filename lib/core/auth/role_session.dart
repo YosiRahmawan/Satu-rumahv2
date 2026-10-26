@@ -39,14 +39,26 @@ class RoleSessionState {
   final AppRole role;
   final String? username;
 
-  const RoleSessionState({this.role = AppRole.guest, this.username});
+  /// Kata sandi masih sementara; pengguna wajib menggantinya dulu.
+  final bool mustChangePassword;
+
+  const RoleSessionState({
+    this.role = AppRole.guest,
+    this.username,
+    this.mustChangePassword = false,
+  });
 
   bool get isAuthenticated => role.isAuthenticated;
 
-  RoleSessionState copyWith({AppRole? role, String? username}) {
+  RoleSessionState copyWith({
+    AppRole? role,
+    String? username,
+    bool? mustChangePassword,
+  }) {
     return RoleSessionState(
       role: role ?? this.role,
       username: username ?? this.username,
+      mustChangePassword: mustChangePassword ?? this.mustChangePassword,
     );
   }
 }
@@ -54,13 +66,23 @@ class RoleSessionState {
 class RoleSessionNotifier extends StateNotifier<RoleSessionState> {
   RoleSessionNotifier() : super(const RoleSessionState());
 
-  void signIn(AppRole role, {String? username}) {
+  void signIn(
+    AppRole role, {
+    String? username,
+    bool mustChangePassword = false,
+  }) {
     if (role == AppRole.guest) {
       signOut();
       return;
     }
-    state = RoleSessionState(role: role, username: username);
+    state = RoleSessionState(
+      role: role,
+      username: username,
+      mustChangePassword: mustChangePassword,
+    );
   }
+
+  void passwordChanged() => state = state.copyWith(mustChangePassword: false);
 
   AppRole signInFromUsername(String username) {
     final normalized = username.trim().toLowerCase();
@@ -76,8 +98,7 @@ class RoleSessionNotifier extends StateNotifier<RoleSessionState> {
   static AppRole roleForUsername(String username) {
     final normalized = username.trim().toLowerCase();
     if (normalized.isEmpty) return AppRole.guest;
-    if (normalized == 'admin_disperwaskim' ||
-        normalized.startsWith('admin')) {
+    if (normalized == 'admin_disperwaskim' || normalized.startsWith('admin')) {
       return AppRole.admin;
     }
     if (normalized == 'monitoring_perwaskim' ||

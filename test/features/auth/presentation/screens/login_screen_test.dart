@@ -26,9 +26,7 @@ GoRouter _testRouter() {
 }
 
 Widget _testApp(GoRouter router) {
-  return ProviderScope(
-    child: MaterialApp.router(routerConfig: router),
-  );
+  return ProviderScope(child: MaterialApp.router(routerConfig: router));
 }
 
 void main() {
@@ -78,9 +76,7 @@ void main() {
     );
   });
 
-  testWidgets('Validates required fields when submitted empty', (
-    tester,
-  ) async {
+  testWidgets('Validates required fields when submitted empty', (tester) async {
     final router = _testRouter();
     addTearDown(router.dispose);
 
@@ -109,10 +105,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Hubungi Administrator'), findsOneWidget);
-    expect(
-      find.textContaining('Admin Disperwaskim'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Admin Disperwaskim'), findsOneWidget);
 
     await tester.tap(find.text('Tutup'));
     await tester.pumpAndSettle();

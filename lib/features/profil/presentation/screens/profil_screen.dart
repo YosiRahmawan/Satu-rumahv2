@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
-import '../../../../core/auth/role_session.dart';
+import '../../../../core/auth/auth_repository.dart';
 import '../../../../core/config/app_config.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -674,9 +674,10 @@ class ProfilScreen extends ConsumerWidget {
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(dialogContext);
-              ref.read(roleSessionProvider.notifier).signOut();
+              await performLogout(ref);
+              if (!context.mounted) return;
               context.go('/login');
             },
             child: const Text(
