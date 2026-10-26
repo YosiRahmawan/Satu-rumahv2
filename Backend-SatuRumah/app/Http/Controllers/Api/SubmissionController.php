@@ -72,9 +72,15 @@ class SubmissionController extends Controller
             return response()->json(['data' => $this->presenter->detail($existing)]);
         }
 
+        // Nilai bawaan dari profil; pengembang bebas mengubahnya per pengajuan.
+        $profile = $request->user()->developerProfile;
+
         $submission = Submission::create([
             'developer_id' => $request->user()->id,
             'client_uuid' => $key,
+            'nama_perumahan' => $profile?->nama_perumahan,
+            'alamat_proyek' => $profile?->alamat_perumahan,
+            'tipe_pengajuan' => $profile?->tipe_pengajuan,
             'stage' => Submission::STAGE_DRAFT,
             'sub_status' => 'draft',
             'current_step' => 1,
@@ -95,6 +101,10 @@ class SubmissionController extends Controller
 
         $data = $request->validate([
             'version' => ['required', 'integer'],
+            'nama_perumahan' => ['nullable', 'string', 'max:150'],
+            'alamat_proyek' => ['nullable', 'string', 'max:500'],
+            'tipe_pengajuan' => ['nullable', 'string', 'max:40'],
+            'daya_listrik' => ['nullable', 'string', 'max:20'],
             'npwp' => ['nullable', 'string', 'max:20'],
             'luas_lahan' => ['nullable', 'numeric', 'min:0'],
             'jumlah_unit' => ['nullable', 'integer', 'min:1'],
@@ -109,7 +119,10 @@ class SubmissionController extends Controller
             return $this->versionConflict($submission->version);
         }
 
-        $changes = array_intersect_key($data, array_flip(['npwp', 'luas_lahan', 'jumlah_unit', 'tipe_perumahan', 'current_step']));
+        $changes = array_intersect_key($data, array_flip([
+            'nama_perumahan', 'alamat_proyek', 'tipe_pengajuan', 'daya_listrik',
+            'npwp', 'luas_lahan', 'jumlah_unit', 'tipe_perumahan', 'current_step',
+        ]));
         $submission->forceFill($changes + ['version' => $submission->version + 1])->save();
 
         return response()->json(['data' => $this->presenter->detail($submission->fresh())]);

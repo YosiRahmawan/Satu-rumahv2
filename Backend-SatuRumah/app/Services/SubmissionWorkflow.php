@@ -49,7 +49,7 @@ class SubmissionWorkflow
         if (!$profile) {
             $problems['profile'] = ['Lengkapi profil perusahaan dan perumahan terlebih dahulu.'];
         }
-        foreach (['npwp', 'luas_lahan', 'jumlah_unit', 'tipe_perumahan'] as $field) {
+        foreach (['nama_perumahan', 'alamat_proyek', 'tipe_pengajuan', 'npwp', 'luas_lahan', 'jumlah_unit', 'tipe_perumahan'] as $field) {
             if (blank($submission->{$field})) {
                 $problems[$field] = ['Wajib diisi.'];
             }

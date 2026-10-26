@@ -20,7 +20,7 @@ class Submission extends Model
     public const STAGE_SELESAI = 6;
 
     protected $fillable = [
-        'number', 'client_uuid', 'developer_id', 'npwp', 'luas_lahan', 'jumlah_unit', 'tipe_perumahan',
+        'number', 'client_uuid', 'developer_id', 'nama_perumahan', 'alamat_proyek', 'tipe_pengajuan', 'daya_listrik', 'npwp', 'luas_lahan', 'jumlah_unit', 'tipe_perumahan',
         'stage', 'sub_status', 'current_step', 'submitted_at', 'stage_entered_at',
         'sla_paused_at', 'sla_paused_seconds', 'correction_deadline_at',
         'decision_number', 'decision_date', 'decision_file_path', 'completed_at', 'version',

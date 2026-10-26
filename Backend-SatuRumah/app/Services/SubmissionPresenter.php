@@ -23,7 +23,7 @@ class SubmissionPresenter
             'tahap_asal_perbaikan' => $s->isInRevision() ? $this->tahapKey($s->stage) : null,
             'current_step' => $s->current_step,
             'version' => $s->version,
-            'nama_perumahan' => $profile?->nama_perumahan,
+            'nama_perumahan' => $s->nama_perumahan ?? $profile?->nama_perumahan,
             'nama_pt' => $profile?->nama_pt,
             'submitted_at' => $s->submitted_at?->toIso8601String(),
             'correction_deadline_at' => $s->correction_deadline_at?->toIso8601String(),
@@ -37,6 +37,9 @@ class SubmissionPresenter
         $s->loadMissing('developer.developerProfile', 'currentFiles');
 
         return $this->summary($s) + [
+            'alamat_proyek' => $s->alamat_proyek ?? $s->developer?->developerProfile?->alamat_perumahan,
+            'tipe_pengajuan' => $s->tipe_pengajuan ?? $s->developer?->developerProfile?->tipe_pengajuan,
+            'daya_listrik' => $s->daya_listrik,
             'npwp' => $s->npwp,
             'luas_lahan' => $s->luas_lahan,
             'jumlah_unit' => $s->jumlah_unit,

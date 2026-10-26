@@ -54,6 +54,7 @@ class SubmissionTest extends TestCase
         return Submission::create($attrs + [
             'developer_id' => ($owner ?? $this->dev)->id, 'client_uuid' => $this->uuid(),
             'stage' => 1, 'sub_status' => 'draft', 'current_step' => 1, 'version' => 1,
+            'nama_perumahan' => 'Perumahan Uji', 'alamat_proyek' => 'Jl. Uji', 'tipe_pengajuan' => 'site_plan_baru',
             'npwp' => '01.234.567.8-901.000', 'luas_lahan' => 1200.5, 'jumlah_unit' => 50,
             'tipe_perumahan' => 'subsidi',
         ]);
@@ -145,6 +146,18 @@ class SubmissionTest extends TestCase
         $with = collect($this->getJson('/api/v1/submissions?detail=1')->assertOk()->json('data'))->keyBy('id');
         $this->assertCount(1, $with[$mine->id]['files']);
         $this->assertArrayNotHasKey('files', $this->getJson('/api/v1/submissions')->json('data.0'));
+    }
+
+    public function test_draf_baru_mewarisi_data_proyek_dari_profil_dan_bisa_diubah(): void
+    {
+        $res = $this->postJson('/api/v1/submissions', [], ['Idempotency-Key' => $this->uuid()])->assertStatus(201);
+        $res->assertJsonPath('data.nama_perumahan', 'Perumahan dev1')
+            ->assertJsonPath('data.alamat_proyek', 'Jl. A')
+            ->assertJsonPath('data.tipe_pengajuan', 'site_plan_baru');
+
+        $this->patchJson('/api/v1/submissions/' . $res->json('data.id'), [
+            'version' => 1, 'nama_perumahan' => 'Griya Baru', 'daya_listrik' => '2200',
+        ])->assertOk()->assertJsonPath('data.nama_perumahan', 'Griya Baru')->assertJsonPath('data.daya_listrik', '2200');
     }
 
     public function test_pengajuan_orang_lain_memberi_404(): void
@@ -267,7 +280,7 @@ class SubmissionTest extends TestCase
 
     public function test_kirim_gagal_bila_berkas_dan_profil_belum_lengkap(): void
     {
-        $s = $this->draft(attrs: ['npwp' => null]);
+        $s = $this->draft(attrs: ['npwp' => null, 'alamat_proyek' => null]);
 
         $res = $this->postJson("/api/v1/submissions/{$s->id}/submit")
             ->assertStatus(422)->assertJsonPath('error.code', 'ERR-010');
@@ -275,6 +288,7 @@ class SubmissionTest extends TestCase
         $this->assertContains('S2-01', $res->json('error.fields.slots'));
         $this->assertNotContains('S3-10', $res->json('error.fields.slots')); // opsional
         $this->assertArrayHasKey('npwp', $res->json('error.fields'));
+        $this->assertArrayHasKey('alamat_proyek', $res->json('error.fields'));
         $this->assertSame('draft', $s->fresh()->sub_status);
         $this->assertNull($s->fresh()->number);
     }
