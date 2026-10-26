@@ -39,12 +39,18 @@ class RoleSessionState {
   final AppRole role;
   final String? username;
 
+  /// Nama lengkap dan jabatan dari server (mode API); null pada mode contoh.
+  final String? nama;
+  final String? jabatan;
+
   /// Kata sandi masih sementara; pengguna wajib menggantinya dulu.
   final bool mustChangePassword;
 
   const RoleSessionState({
     this.role = AppRole.guest,
     this.username,
+    this.nama,
+    this.jabatan,
     this.mustChangePassword = false,
   });
 
@@ -58,6 +64,8 @@ class RoleSessionState {
     return RoleSessionState(
       role: role ?? this.role,
       username: username ?? this.username,
+      nama: nama,
+      jabatan: jabatan,
       mustChangePassword: mustChangePassword ?? this.mustChangePassword,
     );
   }
@@ -69,6 +77,8 @@ class RoleSessionNotifier extends StateNotifier<RoleSessionState> {
   void signIn(
     AppRole role, {
     String? username,
+    String? nama,
+    String? jabatan,
     bool mustChangePassword = false,
   }) {
     if (role == AppRole.guest) {
@@ -78,6 +88,8 @@ class RoleSessionNotifier extends StateNotifier<RoleSessionState> {
     state = RoleSessionState(
       role: role,
       username: username,
+      nama: nama,
+      jabatan: jabatan,
       mustChangePassword: mustChangePassword,
     );
   }

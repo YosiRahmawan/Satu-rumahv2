@@ -24,8 +24,11 @@ void prepareFormForPengajuan(WidgetRef ref, Pengajuan pengajuan) {
       .read(monitoringRepositoryProvider)
       .getAllMonitoring()
       .where((m) => m.isDraft && m.pengajuanId == pengajuan.id);
+  // Mode API: tim pelaksana ditetapkan Admin pada penugasan.
+  final team = ref.read(assignmentTeamProvider(pengajuan.id));
   if (existing.isNotEmpty) {
     notifier.loadDraft(existing.first);
+    if (team != null) notifier.setTimPelaksana(team);
     return;
   }
 
@@ -33,8 +36,12 @@ void prepareFormForPengajuan(WidgetRef ref, Pengajuan pengajuan) {
   notifier.updateNamaPerumahan(pengajuan.namaPerumahan);
   notifier.updateNamaDeveloper(pengajuan.namaPt);
   notifier.updateLokasi('Kota Tasikmalaya');
-  notifier.updatePelaksanaNama(identity.nama);
-  notifier.updatePelaksanaJabatan(identity.jabatan);
+  if (team != null) {
+    notifier.setTimPelaksana(team);
+  } else {
+    notifier.updatePelaksanaNama(identity.nama);
+    notifier.updatePelaksanaJabatan(identity.jabatan);
+  }
 }
 
 /// Membuka bottom sheet modal Kamera Lapangan (Mode Selector).

@@ -45,9 +45,24 @@ final surveyAktifProvider = Provider<List<Pengajuan>>((ref) {
   }).toList();
 });
 
+/// Tim pelaksana yang ditetapkan Admin untuk tugas dengan nomor pengajuan [id].
+/// Null di mode contoh atau bila tugasnya tidak ada.
+final assignmentTeamProvider = Provider.family<List<MonitoringPerson>?, String>(
+  (ref, id) {
+    if (!ref.watch(apiEnabledProvider)) return null;
+    for (final a in ref.watch(officerAssignmentsProvider)) {
+      if ((a.submissionNumber ?? 'TUGAS-${a.id}') == id && a.team.isNotEmpty) {
+        return a.team;
+      }
+    }
+    return null;
+  },
+);
+
 /// Tugas survei terbuka milik petugas yang masuk. Kosong sampai dimuat dari
 /// server; berganti akun membuat daftar baru.
-class OfficerAssignmentsNotifier extends StateNotifier<List<OfficerAssignment>> {
+class OfficerAssignmentsNotifier
+    extends StateNotifier<List<OfficerAssignment>> {
   OfficerAssignmentsNotifier(this.remote) : super(const []);
 
   final OfficerRemote? remote;

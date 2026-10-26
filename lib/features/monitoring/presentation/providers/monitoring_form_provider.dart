@@ -17,7 +17,8 @@ import '../../data/models/status_hasil_evaluasi.dart';
 import '../../data/photo_bytes_cache.dart';
 import '../../data/repositories/monitoring_repository.dart';
 import '../../data/repositories/officer_api_repository.dart';
-import '../../../pengajuan/data/repositories/pengajuan_api_repository.dart' show newDraftKey;
+import '../../../pengajuan/data/repositories/pengajuan_api_repository.dart'
+    show newDraftKey;
 import 'camera_providers.dart';
 import 'monitoring_list_provider.dart';
 
@@ -262,6 +263,21 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       state = state.copyWith(rencanaTindakLanjut: val);
   void updateStatusHasilEvaluasi(StatusHasilEvaluasi val) =>
       state = state.copyWith(statusHasilEvaluasi: val);
+
+  /// Mengisi tim pelaksana dari penugasan Admin (mode API); tidak diedit petugas.
+  void setTimPelaksana(List<MonitoringPerson> people) {
+    if (people.isEmpty) return;
+    final fresh = [
+      for (final p in people)
+        MonitoringPerson.create(nama: p.nama, jabatan: p.jabatan),
+    ];
+    state = state.copyWith(
+      pelaksana: fresh,
+      pelaksanaNama: fresh.first.nama,
+      pelaksanaJabatan: fresh.first.jabatan,
+    );
+  }
+
   void updatePelaksanaNama(String val) {
     final people = [...state.pelaksana];
     if (people.isEmpty) people.add(const MonitoringPerson());
@@ -645,7 +661,8 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
 
   /// Alasan laporan belum boleh dikirim, atau null bila siap.
   String? _submitBlocker(MonitoringModel draft) {
-    if (draft.namaPerumahan.trim().isEmpty) return 'Nama Perumahan wajib diisi.';
+    if (draft.namaPerumahan.trim().isEmpty)
+      return 'Nama Perumahan wajib diisi.';
     final photoBlocker = photoSubmitBlocker(draft.photos);
     if (photoBlocker != null) return photoBlocker;
     if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
@@ -677,9 +694,11 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     try {
       // Posisi saat mengirim; bila GPS tidak tersedia, pakai posisi foto terakhir
       // (foto itu bertanda tangan geotag).
-      final fix = (await _ref.read(locationServiceProvider).currentFix(
-        timeout: const Duration(seconds: 10),
-      )).fix;
+      final fix =
+          (await _ref
+                  .read(locationServiceProvider)
+                  .currentFix(timeout: const Duration(seconds: 10)))
+              .fix;
       final stamp = draft.photos.isEmpty ? null : draft.photos.last.stamp;
       final lat = fix?.latitude ?? stamp?.latitude;
       final lng = fix?.longitude ?? stamp?.longitude;
@@ -689,13 +708,15 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
         );
       }
 
-      final number = await _ref.read(officerRemoteProvider).submitReport(
-        draft,
-        draftKey: _apiDraftKeys.putIfAbsent(draft.id, newDraftKey),
-        latitude: lat,
-        longitude: lng,
-        onProgress: onProgress,
-      );
+      final number = await _ref
+          .read(officerRemoteProvider)
+          .submitReport(
+            draft,
+            draftKey: _apiDraftKeys.putIfAbsent(draft.id, newDraftKey),
+            latitude: lat,
+            longitude: lng,
+            onProgress: onProgress,
+          );
 
       final finalModel = draft.copyWith(isDraft: false, nomorSuratBA: number);
       _repository.addMonitoring(finalModel);
