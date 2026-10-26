@@ -133,3 +133,38 @@ Matriks final **[KEPUTUSAN Q10]**.
 | C | Tugas dan laporan Pengawas, foto geotag | Pengawas mengirim BA yang tampil di Admin web |
 | D | Notifikasi dan alur revisi | Admin minta perbaikan, pengembang kirim ulang |
 | E | PDF/QR server, pembersihan tabel lama | Dokumen resmi dan satu skema |
+
+## 9. Status Fase A (autentikasi): sudah dikerjakan
+
+Laravel: Sanctum, `routes/api.php`, `Api\AuthController` (login, logout, `me`, ganti kata sandi), middleware `role` dan
+`password.changed`, `AccountSeeder` (satu akun per role), `DeveloperProfile`, 17 feature test. Web Admin kini hanya
+untuk `verifikator` dan `administrator`. Flutter (branch `feat/api-fase-a-flutter`): klien HTTP, `flutter_secure_storage`
+untuk token, login nyata, layar Ganti Kata Sandi, pemulihan sesi di splash, logout yang mencabut token.
+
+Mode Flutter ditentukan saat build: tanpa `API_BASE_URL` aplikasi tetap mode demo lokal (pintasan demo aktif);
+dengan `API_BASE_URL` login memakai server dan pintasan demo dimatikan.
+
+Akun seed (hanya `local`/`testing`; di lingkungan lain wajib mengisi `SEED_DEFAULT_PASSWORD`):
+
+| Username | Role | Kata sandi awal |
+|---|---|---|
+| `pengembang` | pengembang | `SatuRumah#2026` (wajib diganti saat masuk pertama) |
+| `tim_lapangan` | tim_lapangan | sama |
+| `verifikator`, `administrator` | Web Admin (ditolak oleh API mobile) | sama |
+
+Menjalankan untuk uji di HP (laptop dan HP satu Wi-Fi):
+
+```bash
+# Laravel (butuh PHP 8.2+)
+cd Backend-SatuRumah
+composer install && cp .env.example .env && php artisan key:generate
+php artisan migrate --seed
+php artisan serve --host=0.0.0.0 --port=8000   # izinkan port 8000 di firewall Windows
+
+# Flutter (ganti IP-LAN dengan IP laptop, mis. 192.168.1.10)
+flutter run --dart-define=API_BASE_URL=http://IP-LAN:8000/api/v1/
+```
+
+HTTP biasa hanya diizinkan pada build debug/profile. APK release wajib memakai HTTPS (server sungguhan atau terowongan
+seperti Cloudflare Tunnel/ngrok). Batas percobaan masuk dan durasi kunci: `AUTH_MAX_ATTEMPTS` dan `AUTH_LOCK_MINUTES`
+di `.env` (usulan 5 kali dan 15 menit, menunggu keputusan Q14).
