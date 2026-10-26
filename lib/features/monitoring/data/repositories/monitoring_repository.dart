@@ -10,7 +10,12 @@ import 'monitoring_store.dart';
 class MonitoringRepository {
   /// [store] menyimpan draf dan laporan buatan pengguna di perangkat. Tanpa
   /// store, data hanya hidup selama aplikasi berjalan (perilaku tes).
-  MonitoringRepository({MonitoringStore? store}) : _store = store {
+  ///
+  /// [seed] false (mode API) membuang laporan contoh bawaan agar riwayat hanya
+  /// berisi laporan nyata.
+  MonitoringRepository({MonitoringStore? store, bool seed = true})
+    : _store = store {
+    if (!seed) _items.clear();
     _seedJson = {for (final item in _items) item.id: jsonEncode(item.toJson())};
   }
 

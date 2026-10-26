@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:typed_data';
 
+import '../../../../core/api/api_client.dart';
 import '../../../../core/auth/role_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
@@ -14,6 +16,9 @@ import '../../data/models/report_photo.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../../data/photo_bytes_cache.dart';
 import '../../data/repositories/monitoring_repository.dart';
+import '../../data/repositories/officer_api_repository.dart';
+import '../../../pengajuan/data/repositories/pengajuan_api_repository.dart' show newDraftKey;
+import 'camera_providers.dart';
 import 'monitoring_list_provider.dart';
 
 /// Alasan foto menghalangi pengiriman laporan, atau null bila semuanya siap.
@@ -199,6 +204,9 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
   final Ref _ref;
   final MonitoringBaUpload? _baUploadOverride;
   final Map<String, MonitoringModel> _successfulSubmissions = {};
+
+  /// Kunci idempotensi per draf untuk kiriman lewat server (sama saat dicoba ulang).
+  final Map<String, String> _apiDraftKeys = {};
 
   MonitoringFormNotifier(
     this._repository,
@@ -555,19 +563,8 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       return _failSubmit('Laporan yang sudah final tidak dapat dikirim ulang.');
     }
 
-    if (draft.namaPerumahan.trim().isEmpty) {
-      return _failSubmit('Nama Perumahan wajib diisi.');
-    }
-
-    final photoBlocker = photoSubmitBlocker(draft.photos);
-    if (photoBlocker != null) return _failSubmit(photoBlocker);
-
-    if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
-        draft.rencanaTindakLanjut.every((item) => item.trim().isEmpty)) {
-      return _failSubmit(
-        'Untuk status "${draft.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.',
-      );
-    }
+    final blocker = _submitBlocker(draft);
+    if (blocker != null) return _failSubmit(blocker);
 
     state = state.copyWith(isSubmitting: true, errorMessage: null);
 
@@ -643,6 +640,74 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       return MonitoringSubmitResult.success(finalModel);
     } catch (error) {
       return _failSubmit('Laporan gagal dikirim: $error');
+    }
+  }
+
+  /// Alasan laporan belum boleh dikirim, atau null bila siap.
+  String? _submitBlocker(MonitoringModel draft) {
+    if (draft.namaPerumahan.trim().isEmpty) return 'Nama Perumahan wajib diisi.';
+    final photoBlocker = photoSubmitBlocker(draft.photos);
+    if (photoBlocker != null) return photoBlocker;
+    if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
+        draft.rencanaTindakLanjut.every((item) => item.trim().isEmpty)) {
+      return 'Untuk status "${draft.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.';
+    }
+    return null;
+  }
+
+  /// Mode API: kirim laporan ke server (isi, foto, lalu final). Nomor BA
+  /// diterbitkan server; laporan final disimpan juga di riwayat lokal.
+  Future<MonitoringSubmitResult> submitFinalViaApi(
+    MonitoringModel draft, {
+    void Function(String message, double fraction)? onProgress,
+  }) async {
+    if (state.isSubmitting) {
+      return MonitoringSubmitResult.failure('Laporan sedang dikirim.');
+    }
+    final previous = _successfulSubmissions[draft.id];
+    if (previous != null) return MonitoringSubmitResult.duplicate(previous);
+    if (draft.id.trim().isEmpty) return _failSubmit('ID laporan tidak valid.');
+    if (!draft.isDraft) {
+      return _failSubmit('Laporan yang sudah final tidak dapat dikirim ulang.');
+    }
+    final blocker = _submitBlocker(draft);
+    if (blocker != null) return _failSubmit(blocker);
+
+    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    try {
+      // Posisi saat mengirim; bila GPS tidak tersedia, pakai posisi foto terakhir
+      // (foto itu bertanda tangan geotag).
+      final fix = (await _ref.read(locationServiceProvider).currentFix(
+        timeout: const Duration(seconds: 10),
+      )).fix;
+      final stamp = draft.photos.isEmpty ? null : draft.photos.last.stamp;
+      final lat = fix?.latitude ?? stamp?.latitude;
+      final lng = fix?.longitude ?? stamp?.longitude;
+      if (lat == null || lng == null) {
+        return _failSubmit(
+          'Lokasi tidak tersedia. Aktifkan GPS lalu kirim kembali.',
+        );
+      }
+
+      final number = await _ref.read(officerRemoteProvider).submitReport(
+        draft,
+        draftKey: _apiDraftKeys.putIfAbsent(draft.id, newDraftKey),
+        latitude: lat,
+        longitude: lng,
+        onProgress: onProgress,
+      );
+
+      final finalModel = draft.copyWith(isDraft: false, nomorSuratBA: number);
+      _repository.addMonitoring(finalModel);
+      _successfulSubmissions[draft.id] = finalModel;
+      _ref.read(monitoringListProvider.notifier).refresh();
+      // Tugas yang baru diselesaikan hilang dari daftar tugas aktif.
+      unawaited(_ref.read(officerAssignmentsProvider.notifier).refresh());
+      state = state.copyWith(isSubmitting: false, errorMessage: null);
+      resetForm();
+      return MonitoringSubmitResult.success(finalModel);
+    } on ApiException catch (e) {
+      return _failSubmit(e.message);
     }
   }
 

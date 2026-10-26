@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../../core/auth/role_session.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../data/models/monitoring_model.dart';
+import '../../data/repositories/officer_api_repository.dart';
 import 'monitoring_form_provider.dart';
 
 final monitoringListProvider =
@@ -27,12 +32,56 @@ final monitoringListAsyncProvider = Provider<AsyncValue<List<MonitoringModel>>>(
 
 /// Provider penugasan survey aktif yang dikirim dari Admin ke Tim Perwaskim
 final surveyAktifProvider = Provider<List<Pengajuan>>((ref) {
+  // Mode API: tugas berasal dari server (penugasan petugas ini).
+  if (ref.watch(apiEnabledProvider)) {
+    return [
+      for (final a in ref.watch(officerAssignmentsProvider)) a.asPengajuan(),
+    ];
+  }
   final pengajuanList = ref.watch(pengajuanListProvider);
   return pengajuanList.where((p) {
     return p.statusTahap == StatusTahapPengajuan.surveyLapangan ||
         p.tanggalSurvey != null;
   }).toList();
 });
+
+/// Tugas survei terbuka milik petugas yang masuk. Kosong sampai dimuat dari
+/// server; berganti akun membuat daftar baru.
+class OfficerAssignmentsNotifier extends StateNotifier<List<OfficerAssignment>> {
+  OfficerAssignmentsNotifier(this.remote) : super(const []);
+
+  final OfficerRemote? remote;
+
+  /// Memuat ulang; mengembalikan galatnya (bila ada) dan mempertahankan daftar lama.
+  Future<ApiException?> refresh() async {
+    final source = remote;
+    if (source == null) return null;
+    try {
+      final items = await source.assignments();
+      if (mounted) state = items;
+      return null;
+    } on ApiException catch (e) {
+      return e;
+    }
+  }
+}
+
+final officerAssignmentsProvider =
+    StateNotifierProvider<OfficerAssignmentsNotifier, List<OfficerAssignment>>((
+      ref,
+    ) {
+      final session = ref.watch(
+        roleSessionProvider.select((s) => (s.role, s.username)),
+      );
+      final remote = ref.watch(apiEnabledProvider)
+          ? ref.watch(officerRemoteProvider)
+          : null;
+      final notifier = OfficerAssignmentsNotifier(remote);
+      if (remote != null && session.$1 == AppRole.perwaskim) {
+        unawaited(notifier.refresh());
+      }
+      return notifier;
+    });
 
 class MonitoringListNotifier extends StateNotifier<List<MonitoringModel>> {
   final dynamic _repository;

@@ -131,7 +131,8 @@ class TabBerandaMonitoring extends ConsumerWidget {
         error: (error, stack) => DataStateView.error(
           onAction: () => ref.invalidate(monitoringListAsyncProvider),
         ),
-        data: (list) => SingleChildScrollView(
+        data: (list) => RefreshIndicator(onRefresh: () async { await ref.read(officerAssignmentsProvider.notifier).refresh(); }, child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -159,7 +160,7 @@ class TabBerandaMonitoring extends ConsumerWidget {
               ),
             ],
           ),
-        ),
+        )),
       ),
     );
   }

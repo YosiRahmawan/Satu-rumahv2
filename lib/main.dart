@@ -1,3 +1,4 @@
+import 'core/api/api_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +16,7 @@ void main() async {
   // gagal dibaca, aplikasi tetap berjalan dengan data awal.
   final monitoringRepository = MonitoringRepository(
     store: const SharedPrefsMonitoringStore(),
+    seed: kApiBaseUrl.isEmpty,
   );
   try {
     await monitoringRepository.hydrate();

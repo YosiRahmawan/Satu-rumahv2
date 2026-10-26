@@ -58,7 +58,6 @@ PengajuanFormState _form() => PengajuanFormState(
 
 void main() {
   late FakeHttpAdapter adapter;
-  late ApiException? Function() lastError;
 
   PengajuanApiRepository build({BytesReader? reader}) {
     adapter = FakeHttpAdapter();
@@ -69,8 +68,6 @@ void main() {
     )..httpClientAdapter = adapter;
     return PengajuanApiRepository(dio, readBytes: reader ?? (ref) async => Uint8List.fromList(List.filled(ref.length * 10, 1)));
   }
-
-  setUp(() => lastError = () => null);
 
   group('SlotCatalog', () {
     test('semua kunci kontrak form punya kode slot, 18 kode unik', () {
@@ -230,7 +227,6 @@ void main() {
         repo.submit(_form(), draftKey: 'k'),
         throwsA(isA<ApiException>().having((e) => e.code, 'kode', 'ERR-001')),
       );
-      lastError = () => null;
     });
   });
 

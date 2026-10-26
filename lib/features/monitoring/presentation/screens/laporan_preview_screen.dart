@@ -1,3 +1,4 @@
+import '../../../../core/api/api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -115,10 +116,11 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
               ),
               onPressed: formState.isSubmitting
                   ? null
-                  : () {
-                      final result = ref
-                          .read(monitoringFormProvider.notifier)
-                          .submitFinal(monitoring);
+                  : () async {
+                      final notifier = ref.read(monitoringFormProvider.notifier);
+                      final result = ref.read(apiEnabledProvider)
+                          ? await notifier.submitFinalViaApi(monitoring)
+                          : notifier.submitFinal(monitoring);
                       if (!context.mounted) return;
                       if (result.isSuccess && result.model != null) {
                         context.go(
