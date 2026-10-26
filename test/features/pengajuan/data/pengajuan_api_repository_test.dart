@@ -274,4 +274,47 @@ void main() {
       await expectLater(repo.list(), throwsA(anything));
     });
   });
+
+  group('resubmit', () {
+    Map<String, dynamic> flagged(int id, String slot) => {
+      'id': id, 'slot_code': slot, 'original_name': 'lama.pdf', 'size_bytes': 10,
+      'status': 'perlu_perbaikan', 'review_note': 'Buram',
+    };
+
+    test('mengganti hanya berkas yang ditandai lalu kirim ulang', () async {
+      final repo = build();
+      final revision = _submission(
+        statusTahap: 'perluPerbaikan',
+        number: 'SR-2026-0007',
+        files: [_file('S2-01', 'ktp.pdf', 10, status: 'lolos'), flagged(9, 'S2-02')],
+      );
+      adapter.reply(200, {'data': [revision], 'meta': {}}); // list (mengenali id)
+      adapter.reply(200, {'data': revision}); // detail
+      adapter.reply(201, {'data': {'id': 10}}); // unggah pengganti
+      adapter.reply(200, {'data': _submission(statusTahap: 'verifikasiAdministrasi', number: 'SR-2026-0007')});
+
+      final result = await repo.resubmit('SR-2026-0007', {'nib': 'nib-baru.pdf', 'ktp': 'ktp-baru.pdf'});
+
+      expect(result.id, 'SR-2026-0007');
+      final uploads = adapter.requests.where((r) => r.path.endsWith('/files')).toList();
+      expect(uploads, hasLength(1)); // ktp tidak diminta, tidak diunggah
+      final fields = {for (final f in (uploads.single.data as FormData).fields) f.key: f.value};
+      expect(fields['slot_code'], 'S2-02');
+      expect(fields['replaces_file_id'], '9');
+      expect(adapter.requests.last.path, endsWith('submissions/5/resubmit'));
+    });
+
+    test('berkas yang belum diganti: pesan menyebut nama berkasnya', () async {
+      final repo = build();
+      final revision = _submission(statusTahap: 'perluPerbaikan', number: 'SR-2026-0007', files: [flagged(9, 'S2-02')]);
+      adapter.reply(200, {'data': [revision], 'meta': {}});
+      adapter.reply(200, {'data': revision});
+      adapter.reply(422, {'error': {'code': 'ERR-010', 'message': 'x', 'fields': {'slots': ['S2-02']}}});
+
+      await expectLater(
+        repo.resubmit('SR-2026-0007', const {}),
+        throwsA(isA<ApiException>().having((e) => e.message, 'message', contains('belum diganti'))),
+      );
+    });
+  });
 }

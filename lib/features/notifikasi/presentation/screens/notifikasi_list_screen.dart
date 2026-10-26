@@ -134,6 +134,12 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
   NotifikasiFilter _developerFilter = NotifikasiFilter.semua;
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(notifikasiProvider.notifier).refresh());
+  }
+
+  @override
   Widget build(BuildContext context) {
     final notifier = ref.read(notifikasiProvider.notifier);
     final session = ref.watch(roleSessionProvider);
