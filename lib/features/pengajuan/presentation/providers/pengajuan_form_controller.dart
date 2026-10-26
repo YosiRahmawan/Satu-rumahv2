@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/api/api_client.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
+import '../../data/repositories/pengajuan_api_repository.dart';
 import '../../data/repositories/pengajuan_draft_store.dart';
 
 /// One source of truth for the current Fase 3 document form.
@@ -692,8 +694,10 @@ final pengajuanFormProvider =
 
 // Repository data pengajuan lokal (data contoh prototipe, bukan database server)
 class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
-  PengajuanListNotifier()
-    : super([
+  /// Dengan [remote] (mode API) daftar mulai kosong dan diisi dari server;
+  /// tanpa itu dipakai data contoh prototipe.
+  PengajuanListNotifier({this.remote})
+    : super(remote != null ? const <Pengajuan>[] : [
         Pengajuan(
           id: 'REG-2026-0142',
           namaPerumahan: 'Perumahan Green Tasik',
@@ -925,6 +929,33 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
         ),
       ]);
 
+  final PengajuanRemote? remote;
+  final Map<String, Pengajuan> _justSubmitted = {};
+
+  /// Memuat ulang dari server. Mengembalikan galatnya (bila ada) agar layar
+  /// bisa menampilkannya; daftar lama dipertahankan saat gagal.
+  Future<ApiException?> refresh() async {
+    final source = remote;
+    if (source == null) return null;
+    try {
+      final items = await source.list();
+      if (!mounted) return null;
+      // Hasil kirim yang belum tampil di jawaban server (balapan dengan
+      // pemuatan yang lebih dulu dimulai) tidak boleh hilang.
+      _justSubmitted.removeWhere((id, _) => items.any((i) => i.id == id));
+      state = [..._justSubmitted.values, ...items];
+      return null;
+    } on ApiException catch (e) {
+      return e;
+    }
+  }
+
+  /// Memasukkan hasil kirim dari server (menggantikan yang bernomor sama).
+  void upsert(Pengajuan p) {
+    _justSubmitted[p.id] = p;
+    state = [p, ...state.where((item) => item.id != p.id)];
+  }
+
   void addPengajuan(Pengajuan p) {
     state = [p, ...state];
   }
@@ -943,5 +974,16 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
 
 final pengajuanListProvider =
     StateNotifierProvider<PengajuanListNotifier, List<Pengajuan>>((ref) {
-      return PengajuanListNotifier();
+      // Berganti akun membuat daftar baru (tidak ada data akun sebelumnya).
+      final session = ref.watch(
+        roleSessionProvider.select((s) => (s.role, s.username)),
+      );
+      final remote = ref.watch(apiEnabledProvider)
+          ? ref.watch(pengajuanRemoteProvider)
+          : null;
+      final notifier = PengajuanListNotifier(remote: remote);
+      if (remote != null && session.$1 == AppRole.developer) {
+        unawaited(notifier.refresh());
+      }
+      return notifier;
     });

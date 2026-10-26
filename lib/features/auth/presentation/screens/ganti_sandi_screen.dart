@@ -50,11 +50,11 @@ class _GantiSandiScreenState extends ConsumerState<GantiSandiScreen> {
       ref.read(roleSessionProvider.notifier).passwordChanged();
       context.go(ref.read(roleSessionProvider).role.homeRoute);
     } on ApiException catch (e) {
-      if (mounted)
-        setState(
-          () => _error =
-              e.fields.values.expand((v) => v).firstOrNull ?? e.message,
-        );
+      if (!mounted) return;
+      setState(
+        () =>
+            _error = e.fields.values.expand((v) => v).firstOrNull ?? e.message,
+      );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -71,8 +71,9 @@ class _GantiSandiScreenState extends ConsumerState<GantiSandiScreen> {
     if (!RegExp(r'[A-Za-z]').hasMatch(v) || !RegExp(r'\d').hasMatch(v)) {
       return 'Harus memuat huruf dan angka';
     }
-    if (v == _current.text)
+    if (v == _current.text) {
       return 'Tidak boleh sama dengan kata sandi saat ini';
+    }
     return null;
   }
 

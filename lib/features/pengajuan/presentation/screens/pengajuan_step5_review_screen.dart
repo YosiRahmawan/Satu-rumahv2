@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import '../../../../core/api/api_client.dart';
 import '../../../../core/auth/role_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +13,7 @@ import '../../../../core/widgets/stepper_header.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../data/models/pengajuan_model.dart';
+import '../../data/repositories/pengajuan_api_repository.dart';
 import '../providers/pengajuan_form_controller.dart';
 
 /// Halaman Tinjau & Kirim Pengajuan (Langkah 5 dari 5).
@@ -25,6 +29,10 @@ class PengajuanStep5ReviewScreen extends ConsumerStatefulWidget {
 class _PengajuanStep5ReviewScreenState
     extends ConsumerState<PengajuanStep5ReviewScreen> {
   bool _isSubmitting = false;
+  String _progress = '';
+
+  /// Kunci idempotensi satu percobaan kirim; sama pada percobaan ulang.
+  String? _draftKey;
 
   // State ekspansi accordion
   bool _ptExpanded = false;
@@ -716,13 +724,29 @@ class _PengajuanStep5ReviewScreenState
         padding: const EdgeInsets.symmetric(horizontal: 12),
       ),
       child: _isSubmitting
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+                if (_progress.isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      _progress,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ],
             )
           : const Text(
               'Kirim Pengajuan',
@@ -804,6 +828,53 @@ class _PengajuanStep5ReviewScreenState
     }
   }
 
+  Future<void> _submitViaApi(PengajuanFormState state) async {
+    setState(() {
+      _isSubmitting = true;
+      _progress = 'Menyiapkan…';
+    });
+    _draftKey ??= newDraftKey();
+    try {
+      final item = await ref
+          .read(pengajuanRemoteProvider)
+          .submit(
+            state,
+            draftKey: _draftKey!,
+            onProgress: (message, _) {
+              if (mounted) setState(() => _progress = message);
+            },
+          );
+      if (!mounted) return;
+      ref.read(pengajuanListProvider.notifier).upsert(item);
+      ref
+          .read(notifikasiProvider.notifier)
+          .addNotification(
+            NotifikasiModel(
+              id: 'notif-${item.id}',
+              jenis: JenisNotifikasi.pengajuanBaru,
+              judul: 'Pengajuan Baru: ${item.namaPerumahan}',
+              deskripsi:
+                  'Pengajuan (${item.id}) telah diterima dan dalam verifikasi administrasi.',
+              waktu: DateTime.now(),
+              targetRoute: '/pengajuan/detail/${item.id}',
+              pengajuanId: item.id,
+              penerima: AppRole.developer,
+            ),
+          );
+      ref.read(pengajuanFormProvider.notifier).reset();
+      context.pushReplacement('/pengajuan/success', extra: item.id);
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _progress = '';
+      });
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   void _submit() {
     if (_isSubmitting) return;
     final state = ref.read(pengajuanFormProvider);
@@ -811,6 +882,10 @@ class _PengajuanStep5ReviewScreenState
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_missing(state))));
+      return;
+    }
+    if (ref.read(apiEnabledProvider)) {
+      unawaited(_submitViaApi(state));
       return;
     }
     setState(() => _isSubmitting = true);

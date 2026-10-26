@@ -38,7 +38,8 @@ class PengajuanSayaListScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
-      body: CustomScrollView(
+      body: _PullToRefresh(child: CustomScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         key: const PageStorageKey('developer-submissions'),
         slivers: [
           // 1. HEADER MERAH (Scrolls naturally with content)
@@ -257,7 +258,21 @@ class PengajuanSayaListScreen extends ConsumerWidget {
           else
             const SliverToBoxAdapter(child: SizedBox(height: 96.0)),
         ],
-      ),
+      )),
     );
   }
+}
+
+/// Tarik untuk memuat ulang daftar dari server (mode API); tanpa server tidak berbuat apa-apa.
+class _PullToRefresh extends ConsumerWidget {
+  final Widget child;
+  const _PullToRefresh({required this.child});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => RefreshIndicator(
+    onRefresh: () async {
+      await ref.read(pengajuanListProvider.notifier).refresh();
+    },
+    child: child,
+  );
 }
