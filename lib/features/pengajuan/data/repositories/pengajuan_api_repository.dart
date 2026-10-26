@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../../core/utils/file_picker_util.dart';
 import '../../presentation/providers/pengajuan_form_controller.dart';
+import '../models/hasil_survey_model.dart';
 import '../models/pengajuan_model.dart';
 import '../models/status_tahap_pengajuan.dart';
 import '../slot_catalog.dart';
@@ -324,6 +325,35 @@ StatusTahapPengajuan? _tahap(String? name) {
   return null;
 }
 
+List<String> _strings(Object? v) =>
+    ((v as List?) ?? const []).map((e) => '$e').toList();
+
+/// Hasil evaluasi server → kosakata layar Pengembang.
+String _evaluasi(String? v) => switch (v) {
+  'tidakSesuaiSiteplan' => 'tidak_sesuai',
+  'perluEvaluasiLanjutan' => 'perlu_perbaikan',
+  _ => 'sesuai',
+};
+
+HasilSurveyItem _hasilSurvey(Map<String, dynamic> r) {
+  final tim = ((r['tim_pelaksana'] as List?) ?? const [])
+      .cast<Map<String, dynamic>>();
+  return HasilSurveyItem(
+    id: '${r['id']}',
+    tanggalSurvey:
+        DateTime.tryParse('${r['monitoring_date'] ?? ''}') ?? DateTime.now(),
+    pelaksanaNama: tim.isEmpty ? '-' : '${tim.first['nama']}',
+    pelaksanaJabatan: tim.isEmpty ? '-' : '${tim.first['jabatan'] ?? ''}',
+    lokasiPerumahan: '${r['lokasi'] ?? ''}',
+    statusHasilEvaluasi: _evaluasi(r['status_hasil_evaluasi'] as String?),
+    temuanLapangan: _strings(r['temuan']),
+    kesimpulan: _strings(r['kesimpulan']),
+    kesepakatan: _strings(r['kesepakatan']),
+    rencanaTindakLanjut: _strings(r['rtl']),
+    nomorSuratBA: r['report_number'] as String?,
+  );
+}
+
 /// Pengajuan dari JSON `detail` server. `id` memakai nomor pengajuan.
 Pengajuan pengajuanFromApi(Map<String, dynamic> json) {
   final files = ((json['files'] as List?) ?? const [])
@@ -352,6 +382,16 @@ Pengajuan pengajuanFromApi(Map<String, dynamic> json) {
       if (note is String && note.trim().isNotEmpty) catatan.add(note.trim());
     }
   }
+
+  final survey = (json['survey'] as Map?)?.cast<String, dynamic>();
+  final surveyTeam = ((survey?['team'] as List?) ?? const [])
+      .cast<Map<String, dynamic>>();
+  final riwayatSurvey = [
+    for (final r
+        in ((json['survey_reports'] as List?) ?? const [])
+            .cast<Map<String, dynamic>>())
+      _hasilSurvey(r),
+  ];
 
   final tahap =
       _tahap(json['status_tahap'] as String?) ??
@@ -389,6 +429,14 @@ Pengajuan pengajuanFromApi(Map<String, dynamic> json) {
     technicalFiles: technical,
     tahapAsalPerbaikan: _tahap(json['tahap_asal_perbaikan'] as String?),
     revisionSubmitted: json['sub_status'] == 'perbaikan_terkirim',
+    tanggalSurvey: DateTime.tryParse('${survey?['scheduled_date'] ?? ''}'),
+    // Catatan Admin untuk survei; bila kosong, daftar tim yang ditugaskan.
+    catatanSurvey: (survey?['note'] as String?)?.trim().isNotEmpty == true
+        ? survey!['note'] as String
+        : (surveyTeam.isEmpty
+              ? null
+              : 'Tim: ${surveyTeam.map((m) => m['nama']).join(', ')}'),
+    riwayatSurvey: riwayatSurvey,
     nomorSk: decision?['number'] as String?,
     tanggalSk: decision == null ? null : _tanggal(decision['date'] as String?),
   );

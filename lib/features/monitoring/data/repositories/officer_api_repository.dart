@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/api/api_client.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
+import '../../../pengajuan/data/slot_catalog.dart';
 import '../models/monitoring_model.dart';
 import '../models/report_photo.dart';
 import '../photo_bytes_cache.dart';
@@ -21,6 +22,12 @@ class OfficerAssignment {
   final String namaPerumahan;
   final String? namaPt;
   final String? alamatProyek;
+  final String? namaDirektur;
+  final String? noHpDirektur;
+  final String? npwp;
+  final double luasLahan;
+  final int jumlahUnit;
+  final String? tipePerumahan;
 
   /// Tim pelaksana yang ditetapkan Admin (petugas utama lebih dulu).
   final List<MonitoringPerson> team;
@@ -34,6 +41,12 @@ class OfficerAssignment {
     required this.namaPerumahan,
     this.namaPt,
     this.alamatProyek,
+    this.namaDirektur,
+    this.noHpDirektur,
+    this.npwp,
+    this.luasLahan = 0,
+    this.jumlahUnit = 0,
+    this.tipePerumahan,
     this.team = const [],
   });
 
@@ -48,6 +61,12 @@ class OfficerAssignment {
       namaPerumahan: '${s['nama_perumahan'] ?? '-'}',
       namaPt: s['nama_pt'] as String?,
       alamatProyek: s['alamat_proyek'] as String?,
+      namaDirektur: s['nama_direktur'] as String?,
+      noHpDirektur: s['no_hp_direktur'] as String?,
+      npwp: s['npwp'] as String?,
+      luasLahan: (s['luas_lahan'] as num?)?.toDouble() ?? 0,
+      jumlahUnit: (s['jumlah_unit'] as num?)?.toInt() ?? 0,
+      tipePerumahan: s['tipe_perumahan'] as String?,
       team: [
         for (final m in ((json['team'] as List?) ?? const []))
           MonitoringPerson.create(
@@ -64,11 +83,11 @@ class OfficerAssignment {
     id: submissionNumber ?? 'TUGAS-$id',
     namaPerumahan: namaPerumahan,
     namaPt: namaPt ?? '-',
-    namaDirektur: '-',
-    npwpPerusahaan: '-',
-    luasLahan: 0,
-    jumlahUnit: 0,
-    tipePerumahan: 'Subsidi',
+    namaDirektur: namaDirektur ?? '-',
+    npwpPerusahaan: npwp ?? '-',
+    luasLahan: luasLahan,
+    jumlahUnit: jumlahUnit,
+    tipePerumahan: SlotCatalog.tipePerumahanFromApi(tipePerumahan),
     alamatProyek: alamatProyek,
     status: 'Survey Dijadwalkan',
     statusTahap: StatusTahapPengajuan.surveyLapangan,
