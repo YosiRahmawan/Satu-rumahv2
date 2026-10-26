@@ -45,6 +45,11 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    public function submissions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Submission::class, 'developer_id');
+    }
+
     public function developerProfile(): HasOne
     {
         return $this->hasOne(DeveloperProfile::class);

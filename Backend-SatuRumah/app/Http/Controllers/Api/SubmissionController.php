@@ -31,11 +31,12 @@ class SubmissionController extends Controller
             'sub_status' => ['nullable', 'string', 'max:30'],
             'q' => ['nullable', 'string', 'max:100'],
             'per_page' => ['nullable', 'integer', 'between:1,50'],
+            'detail' => ['nullable', 'boolean'],
         ]);
 
         $query = Submission::query()
             ->where('developer_id', $request->user()->id)
-            ->with('developer.developerProfile')
+            ->with('developer.developerProfile', 'currentFiles')
             ->when($request->filled('stage'), fn ($q) => $q->where('stage', $request->integer('stage')))
             ->when($request->filled('sub_status'), fn ($q) => $q->where('sub_status', $request->input('sub_status')))
             ->when($request->filled('q'), function ($q) use ($request) {
@@ -49,7 +50,10 @@ class SubmissionController extends Controller
         $page = $query->paginate($request->integer('per_page', 20));
 
         return response()->json([
-            'data' => $page->getCollection()->map(fn (Submission $s) => $this->presenter->summary($s))->all(),
+            // detail=1: sertakan berkas aktif tiap pengajuan (satu panggilan untuk daftar lengkap).
+            'data' => $page->getCollection()->map(fn (Submission $s) => $request->boolean('detail')
+                ? $this->presenter->detail($s)
+                : $this->presenter->summary($s))->all(),
             'meta' => ['page' => $page->currentPage(), 'per_page' => $page->perPage(), 'total' => $page->total()],
         ]);
     }

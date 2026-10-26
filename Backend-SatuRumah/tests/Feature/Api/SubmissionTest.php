@@ -130,7 +130,7 @@ class SubmissionTest extends TestCase
     public function test_daftar_hanya_milik_sendiri_dengan_filter_dan_paginasi(): void
     {
         $other = $this->makeDeveloper('dev2', '3333333333333');
-        $this->draft();
+        $mine = $this->draft();
         $this->draft(attrs: ['stage' => 2, 'sub_status' => 'baru', 'number' => 'SR-2026-0001']);
         $this->draft($other);
 
@@ -140,6 +140,11 @@ class SubmissionTest extends TestCase
             ->assertJsonPath('data.0.status_tahap', 'pengajuanBaru');
         $this->getJson('/api/v1/submissions?q=SR-2026-0001')->assertJsonCount(1, 'data');
         $this->getJson('/api/v1/submissions?per_page=1')->assertJsonCount(1, 'data')->assertJsonPath('meta.total', 2);
+
+        $this->postJson("/api/v1/submissions/{$mine->id}/files", ['slot_code' => 'S2-01', 'file' => $this->pdf()])->assertStatus(201);
+        $with = collect($this->getJson('/api/v1/submissions?detail=1')->assertOk()->json('data'))->keyBy('id');
+        $this->assertCount(1, $with[$mine->id]['files']);
+        $this->assertArrayNotHasKey('files', $this->getJson('/api/v1/submissions')->json('data.0'));
     }
 
     public function test_pengajuan_orang_lain_memberi_404(): void
