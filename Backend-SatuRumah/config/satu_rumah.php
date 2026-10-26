@@ -35,6 +35,7 @@ return [
     /*
      * Katalog 18 slot berkas (FSD 2.5).
      * stage: tahap verifikasi yang memeriksa slot (2 = Administrasi, 3 = Teknis).
+     * required: bila tidak diisi dianggap wajib (hanya S3-10 yang opsional).
      */
     'slots' => [
         'S2-01' => ['step' => 2, 'name' => 'KTP Elektronik Pemohon', 'formats' => ['pdf'], 'multiple' => false, 'stage' => 2],
@@ -52,7 +53,7 @@ return [
         'S3-07' => ['step' => 3, 'name' => 'Rekomendasi Air Bersih', 'formats' => ['pdf'], 'multiple' => false, 'stage' => 2],
         'S3-08' => ['step' => 3, 'name' => 'Rekomendasi Listrik PLN', 'formats' => ['pdf'], 'multiple' => false, 'stage' => 2],
         'S3-09' => ['step' => 3, 'name' => 'Surat Pernyataan Kesanggupan Penyediaan dan Penyerahan PSU', 'formats' => ['pdf'], 'multiple' => false, 'stage' => 2],
-        'S3-10' => ['step' => 3, 'name' => 'Data Penanggung Jawab Dokumen Teknis', 'formats' => ['pdf'], 'multiple' => false, 'stage' => 2],
+        'S3-10' => ['step' => 3, 'name' => 'Data Penanggung Jawab Dokumen Teknis', 'formats' => ['pdf'], 'multiple' => false, 'required' => false, 'stage' => 2],
         'S3-11' => ['step' => 3, 'name' => 'Proposal Rencana Pembangunan Perumahan', 'formats' => ['pdf'], 'multiple' => false, 'stage' => 2],
 
         'S4-01' => ['step' => 4, 'name' => 'Dokumen Perencanaan dan Perancangan Site Plan', 'formats' => ['dwg', 'pdf'], 'multiple' => true, 'stage' => 3],
