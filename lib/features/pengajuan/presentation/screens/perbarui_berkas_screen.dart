@@ -2376,9 +2376,9 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen>
           for (final d in _revisiDocs)
             if (_updates[d.key] != null) d.key: _updates[d.key]!.fileName,
         };
-        result = ref
+        result = await ref
             .read(pengajuanVerifikasiControllerProvider.notifier)
-            .kirimRevisi(submission!.id, mapDocs);
+            .kirimRevisiAsync(submission!.id, mapDocs);
       },
     );
     _isSubmittingRevisi = false;

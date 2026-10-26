@@ -37,6 +37,10 @@ class FakeRemote implements PengajuanRemote {
     if (submitError != null) throw submitError!;
     return _item('SR-2026-0042');
   }
+
+  @override
+  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs) async =>
+      _item(number);
 }
 
 Pengajuan _item(String id) => Pengajuan(
@@ -212,4 +216,8 @@ class _Failing implements PengajuanRemote {
     required String draftKey,
     void Function(String message, double fraction)? onProgress,
   }) => throw UnimplementedError();
+
+  @override
+  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs) =>
+      throw UnimplementedError();
 }

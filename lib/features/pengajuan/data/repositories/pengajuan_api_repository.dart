@@ -24,6 +24,10 @@ abstract class PengajuanRemote {
     required String draftKey,
     void Function(String message, double fraction)? onProgress,
   });
+
+  /// Mengganti berkas yang diminta diperbaiki (kunci Flutter → rujukan berkas
+  /// baru) lalu mengirim ulang pengajuan bernomor [number].
+  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs);
 }
 
 /// UUID v4 untuk header Idempotency-Key.
@@ -46,6 +50,9 @@ class PengajuanApiRepository implements PengajuanRemote {
   final Dio _dio;
   final BytesReader _readBytes;
 
+  /// Nomor pengajuan → id server (diisi saat daftar dimuat atau dikirim).
+  final Map<String, int> _idByNumber = {};
+
   PengajuanApiRepository(this._dio, {BytesReader? readBytes})
     : _readBytes = readBytes ?? FilePickerUtil.readBytesOrNull;
 
@@ -58,6 +65,7 @@ class PengajuanApiRepository implements PengajuanRemote {
       );
       final data = (response.data!['data'] as List)
           .cast<Map<String, dynamic>>();
+      _remember(data);
       return [
         for (final item in data)
           if (item['status_tahap'] != 'draft') pengajuanFromApi(item),
@@ -123,9 +131,87 @@ class PengajuanApiRepository implements PengajuanRemote {
               )).data!['data']
               as Map<String, dynamic>;
       progress('Selesai', 1);
+      _remember([sent]);
       return pengajuanFromApi(sent);
     } on DioException catch (e) {
       throw _describe(ApiException.fromDio(e));
+    }
+  }
+
+  void _remember(List<Map<String, dynamic>> items) {
+    for (final item in items) {
+      final number = item['number'];
+      if (number is String) _idByNumber[number] = item['id'] as int;
+    }
+  }
+
+  @override
+  Future<Pengajuan> resubmit(
+    String number,
+    Map<String, String> revisedDocs,
+  ) async {
+    try {
+      if (!_idByNumber.containsKey(number)) await list();
+      final id = _idByNumber[number];
+      if (id == null) {
+        throw const ApiException(
+          code: 'ERR-013',
+          message: 'Pengajuan tidak ditemukan di server.',
+        );
+      }
+
+      final detail =
+          (await _dio.get<Map<String, dynamic>>(
+                'submissions/$id',
+              )).data!['data']
+              as Map<String, dynamic>;
+      final flagged = (detail['files'] as List)
+          .cast<Map<String, dynamic>>()
+          .where((f) => f['status'] == 'perlu_perbaikan')
+          .toList();
+
+      for (final entry in revisedDocs.entries) {
+        final code = SlotCatalog.codeByKey[entry.key];
+        final target = flagged.where((f) => f['slot_code'] == code).firstOrNull;
+        if (code == null || target == null) continue; // bukan yang diminta
+        final name = _basename(entry.value);
+        final bytes = await _readBytes(entry.value);
+        if (bytes == null) {
+          throw ApiException(
+            code: 'FILE',
+            message:
+                'Berkas "$name" tidak dapat dibaca. Pilih ulang berkas pengganti lalu kirim kembali.',
+          );
+        }
+        await _dio.post<Map<String, dynamic>>(
+          'submissions/$id/files',
+          data: FormData.fromMap({
+            'slot_code': code,
+            'replaces_file_id': target['id'],
+            'file': MultipartFile.fromBytes(bytes, filename: name),
+          }),
+        );
+      }
+
+      final sent =
+          (await _dio.post<Map<String, dynamic>>(
+                'submissions/$id/resubmit',
+              )).data!['data']
+              as Map<String, dynamic>;
+      return pengajuanFromApi(sent);
+    } on DioException catch (e) {
+      final err = ApiException.fromDio(e);
+      final slots = err.fields['slots'];
+      if (slots != null && slots.isNotEmpty) {
+        throw ApiException(
+          code: err.code,
+          status: err.status,
+          message:
+              'Masih ada berkas yang belum diganti: ${slots.map(SlotCatalog.labelOfCode).join(', ')}.',
+          fields: err.fields,
+        );
+      }
+      throw err;
     }
   }
 
@@ -229,7 +315,9 @@ String _tanggal(String? iso) {
 StatusTahapPengajuan? _tahap(String? name) {
   // Pengajuan yang baru dikirim tampil sebagai Verifikasi Administrasi, sama
   // dengan alur lokal sebelumnya (enum pengajuanBaru dilewati).
-  if (name == 'pengajuanBaru') return StatusTahapPengajuan.verifikasiAdministrasi;
+  if (name == 'pengajuanBaru') {
+    return StatusTahapPengajuan.verifikasiAdministrasi;
+  }
   for (final v in StatusTahapPengajuan.values) {
     if (v.name == name) return v;
   }
@@ -256,7 +344,7 @@ Pengajuan pengajuanFromApi(Map<String, dynamic> json) {
     if (key == null) continue;
     uploaded.putIfAbsent(key, () => name);
     final status = f['status'];
-    if (status == 'sesuai') verified[key] = true;
+    if (status == 'lolos' || status == 'sesuai') verified[key] = true;
     if (status == 'perlu_perbaikan') {
       verified[key] = false;
       revisi.add(key);
