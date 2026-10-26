@@ -8,12 +8,11 @@ use Tests\TestCase;
 class ExampleTest extends TestCase
 {
     /**
-     * A basic test example.
+     * Halaman utama butuh login; /up dipakai pemantau uptime.
      */
-    public function test_the_application_returns_a_successful_response(): void
+    public function test_tamu_diarahkan_ke_login_dan_health_check_hidup(): void
     {
-        $response = $this->get('/');
-
-        $response->assertStatus(200);
+        $this->get('/')->assertRedirect('/login');
+        $this->get('/up')->assertStatus(200);
     }
 }

@@ -15,7 +15,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Protected Admin Routes
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role:verifikator,administrator'])->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/export', [DashboardController::class, 'exportCsv'])->name('dashboard.export');

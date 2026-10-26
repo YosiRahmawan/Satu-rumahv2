@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(AccountSeeder::class);
+
         // 1. Create Verifikator Disperwaskim & Surveyor Users
         User::updateOrCreate(
             ['email' => 'admin@saturumah.go.id'],
@@ -42,7 +44,7 @@ class DatabaseSeeder extends Seeder
             [
                 'name' => 'Rahmat Hidayat, S.T.',
                 'password' => Hash::make('password'),
-                'role' => 'perwaskim',
+                'role' => 'tim_lapangan',
                 'avatar_initials' => 'RH',
             ]
         );

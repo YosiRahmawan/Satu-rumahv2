@@ -20,6 +20,10 @@ return [
         'sla.warning_percent' => (int) env('SLA_WARNING_PERCENT', 80),
         'revision.deadline_days' => (int) env('REVISION_DEADLINE_DAYS', 14),
 
+        // Keamanan login (usulan, menunggu keputusan Q14)
+        'auth.max_attempts' => (int) env('AUTH_MAX_ATTEMPTS', 5),
+        'auth.lock_minutes' => (int) env('AUTH_LOCK_MINUTES', 15),
+
         // Batas upload
         'upload.pdf_max_mb' => (int) env('UPLOAD_PDF_MAX_MB', 10),
         'upload.dwg_max_mb' => (int) env('UPLOAD_DWG_MAX_MB', 50),
