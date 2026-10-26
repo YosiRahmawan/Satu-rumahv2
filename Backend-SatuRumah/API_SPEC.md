@@ -31,7 +31,9 @@ Format galat (semua 4xx/5xx):
 | ERR-002 | 422 | Format atau jumlah berkas pada slot tidak sesuai | sudah ada |
 | ERR-003 | 422 | Berkas tidak terbaca, rusak, atau terkunci | sudah ada |
 | ERR-004 | 422 | Site Plan wajib memuat minimal 1 DWG dan 1 PDF | sudah ada |
-| ERR-015 | 409 | `version` sudah usang | disebut di migrasi |
+| ERR-015 | 409 | `version` sudah usang (memuat `current_version`) | disebut di migrasi |
+| ERR-013 | 404 | Data tidak ditemukan, atau milik akun lain | baru |
+| ERR-030 | 429 | Terlalu banyak permintaan | baru |
 | ERR-010 | 422 | Validasi isian gagal (lihat `fields`) | baru |
 | ERR-011 | 409 | Aksi tidak diizinkan pada tahap/status ini | baru |
 | ERR-012 | 422 | Foto ditolak (tanda tangan tidak sah, bukan JPEG, melebihi batas) | baru |
@@ -59,7 +61,7 @@ Tombol "Masuk sebagai Pengembang/Tim Perwaskim" di Flutter hanya untuk mode demo
 | `GET /submissions` | Pengajuan milik sendiri; filter `stage`, `sub_status`, `q` | Respons memuat `stage`, `sub_status`, `statusTahap` (pemetaan Flutter), jumlah berkas perlu perbaikan |
 | `POST /submissions` | Buat draf (`stage=1`, `sub_status=draft`) | `Idempotency-Key` |
 | `GET /submissions/{id}` | Detail: data, `files` per slot (versi aktif), `assignment` aktif, `reports` yang boleh dilihat pengembang **[KEPUTUSAN Q09]** | |
-| `PATCH /submissions/{id}` | Simpan isian draf dan `current_step` | Hanya saat `draft` atau `perlu_perbaikan`; wajib `version` |
+| `PATCH /submissions/{id}` | Simpan isian draf dan `current_step` | Hanya saat `draft` (perbaikan lewat penggantian berkas, bukan PATCH); wajib `version`. Kolom: `nama_perumahan`, `alamat_proyek`, `tipe_pengajuan`, `daya_listrik`, `npwp`, `luas_lahan`, `jumlah_unit`, `tipe_perumahan`, `current_step` |
 | `POST /submissions/{id}/files` | Unggah satu berkas: `slot_code`, `file` | Memakai `SubmissionFileValidator`; kode slot `S2-01`…`S4-02` (Flutter memetakan dari kunci). Saat revisi, baris lama `is_current=false`, `replaced_at` terisi, `version` naik |
 | `DELETE /submissions/{id}/files/{fileId}` | Hapus berkas draf | Hanya saat `draft`; saat revisi digantikan, tidak dihapus |
 | `GET /submissions/{id}/files/{fileId}/download` | Unduh berkas | Terautentikasi, disk privat, tanpa URL publik |
@@ -168,3 +170,19 @@ flutter run --dart-define=API_BASE_URL=http://IP-LAN:8000/api/v1/
 HTTP biasa hanya diizinkan pada build debug/profile. APK release wajib memakai HTTPS (server sungguhan atau terowongan
 seperti Cloudflare Tunnel/ngrok). Batas percobaan masuk dan durasi kunci: `AUTH_MAX_ATTEMPTS` dan `AUTH_LOCK_MINUTES`
 di `.env` (usulan 5 kali dan 15 menit, menunggu keputusan Q14).
+
+## 10. Status Fase B (pengajuan dan berkas Pengembang): sudah dikerjakan
+
+Laravel (35 feature test): `GET/PUT developer/profile`; `GET/POST submissions` (`?detail=1` memuat berkas aktif,
+`Idempotency-Key` wajib pada POST); `GET/PATCH submissions/{id}`; `POST/DELETE submissions/{id}/files`;
+`GET submissions/{id}/files/{fileId}/download`; `POST submissions/{id}/submit` dan `/resubmit`.
+Nomor `SR-<tahun>-<urut>` diterbitkan server saat kirim. Berkas disimpan di disk privat dengan nama acak.
+
+Flutter (branch `feat/api-fase-b-flutter`): daftar "Pengajuan" dimuat dari server (tarik untuk memuat ulang);
+tombol Kirim di Langkah 5 membuat draf, menyimpan isian, mengunggah tiap berkas, lalu mengirim, dengan indikator
+langkah dan percobaan ulang yang aman (kunci idempotensi dan berkas yang sudah ada tidak diunggah ulang). Tanpa
+`API_BASE_URL` perilaku prototipe lama tidak berubah.
+
+Belum dikerjakan di Fase B: layar perbaikan berkas (Flutter) dan riwayat/timeline. Keduanya butuh Admin web yang
+menulis ke tabel baru (Fase D) agar ada status `perlu_perbaikan` yang nyata. Profil perusahaan tidak punya layar
+pengisian: dibuat Administrator bersama akun (seed `AccountSeeder` membuatnya untuk akun contoh).

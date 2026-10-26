@@ -155,17 +155,17 @@ Berkas disimpan dengan nama acak (`stored_name`) di disk privat, tanpa URL publi
 | Flutter (`Pengajuan` / form) | Laravel | Catatan |
 |---|---|---|
 | `id` | `submissions.number` | `submissions.id` angka internal, `number` yang tampil |
-| `namaPerumahan` | `developer_profiles.nama_perumahan` | |
+| `namaPerumahan` | `submissions.nama_perumahan` | Per pengajuan (satu pengembang bisa mengajukan beberapa perumahan). Nilai awal disalin dari `developer_profiles.nama_perumahan` |
 | `namaPt` | `developer_profiles.nama_pt` | |
 | `namaDirektur` | `developer_profiles.nama_direktur` | |
 | `nib` | `developer_profiles.nib` | 13 digit, unik |
-| `alamatProyek` | `developer_profiles.alamat_perumahan` | |
-| `tipePengajuan` (teks bebas, "Pengajuan Site Plan Baru") | `developer_profiles.tipe_pengajuan` (maks 30) | samakan kosakata **[KEPUTUSAN]** |
+| `alamatProyek` | `submissions.alamat_proyek` | Per pengajuan; nilai awal dari `developer_profiles.alamat_perumahan` |
+| `tipePengajuan` (teks bebas, "Pengajuan Site Plan Baru") | `submissions.tipe_pengajuan` (maks 40) | Per pengajuan; Flutter mengirim teks pilihan form. Kosakata final **[KEPUTUSAN]** |
 | `npwpPerusahaan` | `submissions.npwp` | |
 | `luasLahan` | `submissions.luas_lahan` | |
 | `jumlahUnit` | `submissions.jumlah_unit` | |
 | `tipePerumahan`: `Subsidi`/`Komersil`/`Campuran` | `submissions.tipe_perumahan`: `subsidi`/`komersil`/`subsidi_komersil` | `Campuran` ↔ `subsidi_komersil` |
-| `dayaListrik` | **tidak ada** | tambah kolom bila memang dipakai |
+| `dayaListrik` | `submissions.daya_listrik` | Opsional |
 | (tidak ada di Flutter) | `alamat_pt`, `no_hp_direktur`, `email_pt` | tambahkan ke form Langkah 1 atau jadikan opsional |
 | `tanggal` | `submitted_at` | |
 | `catatanPerbaikan` | `submission_files.review_note` (per berkas) | |
