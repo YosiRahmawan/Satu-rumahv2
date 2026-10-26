@@ -1,6 +1,13 @@
 # Kontrak Integrasi SATU RUMAH: Admin Web (Laravel) ↔ Flutter (Pengembang, Pengawas)
 
-Status: **USULAN untuk disetujui**. Disusun 26 Oktober 2026 dari pembacaan kode, tanpa menjalankan aplikasi.
+Status: **disinkronkan dengan implementasi Fase A–D** (26 Oktober 2026). Nilai di bawah adalah yang benar-benar
+dipakai kode di branch `feat/backend-satu-rumah` dan `feat/alur-pengawas-lapangan`. Bagian yang masih menunggu
+Disperwaskim tetap bertanda **[KEPUTUSAN]**; implementasi memakai **asumsi sementara** untuk semuanya (bagian 10),
+dan asumsi itu bukan keputusan resmi.
+
+Backend utama: `satu-rumahv2-backend/Backend-SatuRumah`, branch `feat/backend-satu-rumah`. Clone `Backend-SatuRumah`
+di luar repo (milik teman) dan folder `backend/` prototipe di repo Flutter **bukan** sumber kebenaran.
+
 Dokumen ini menjawab satu hal: **nilai apa yang dipakai bersama** oleh tiga role agar data dari Flutter bisa
 masuk ke Laravel tanpa tebak-tebakan. Hal yang butuh keputusan Disperwaskim ditandai **[KEPUTUSAN]**
 (rujukan Q-nomor ada di `design.md` bagian 18).
@@ -20,11 +27,11 @@ Sumber yang dibandingkan:
 
 **Dihentikan (skema lama, migrasi 19 Agu 2026):**
 `pengajuan`, `dokumen_pengajuan`, `survey_pengajuan`, `monitoring_pengajuan`, `riwayat_pengajuan`, `notifikasi`.
-Tabel lama baru boleh dihapus setelah controller Admin dipindah ke tabel baru. Sampai saat itu keduanya
-berjalan berdampingan dan **data tidak boleh ditulis ke dua tempat**.
+Status: controller, model, dan tampilan yang memakainya **sudah dihapus** (Fase D) dan tidak ada kode yang menulis ke
+tabel ini lagi. **Tabelnya sendiri masih ada di database**; pembuangannya (migrasi) dijadwalkan di Fase E.
 
-**Perlu ditambah (belum ada di skema):** tabel foto laporan (bagian 7), tabel riwayat/audit,
-tabel notifikasi baru, penanda wajib/opsional pada katalog slot (bagian 5).
+**Sudah ditambah:** `inspection_report_photos` (Fase C, bagian 7), `submission_events` (riwayat) dan
+`app_notifications` (notifikasi) (Fase D), penanda `required` pada katalog slot (bagian 5).
 
 ---
 
@@ -37,17 +44,18 @@ tabel notifikasi baru, penanda wajib/opsional pada katalog slot (bagian 5).
 | Administrator sistem | (tidak ada) | `administrator` (hanya di config) | `administrator` |
 | Pengawas / Perwaskim | `perwaskim` | `perwaskim` (seeder) | `tim_lapangan` |
 
-Yang harus diubah: `config/satu_rumah.php` sudah memakai `administrator, verifikator, pengembang, tim_lapangan`.
-Seeder (`perwaskim`) dan default kolom (`admin_dpkp`) harus mengikuti config. Di sisi Flutter, API mengirim
-nilai Laravel dan Flutter memetakannya: `pengembang→developer`, `verifikator→admin`, `tim_lapangan→perwaskim`.
-`AppRole.admin` di Flutter hanya dipakai selama layar Admin prototipe masih ada (bagian 9).
+Status: `AccountSeeder` membuat akun `administrator`, `verifikator`, `pengembang`, `tim_lapangan` (Fase A); login dan
+peran berasal dari backend. Flutter memetakan `pengembang→developer`, `tim_lapangan→perwaskim`. Role `verifikator`
+dan `administrator` masuk lewat Web Admin; keduanya sama-sama punya akses Web Admin saat ini (pemisahan hak
+Administrator vs Verifikator belum dibedakan, **[KEPUTUSAN Q10]**). `AppRole.admin` di Flutter masih ada untuk layar
+Admin prototipe (bagian 9).
 
 ---
 
 ## 3. Tahap dan status pengajuan
 
 Laravel menyimpan **dua kolom**: `stage` (angka) dan `sub_status` (teks). Flutter punya **satu enum**
-`StatusTahapPengajuan` + penanda revisi. Pemetaan usulan:
+`StatusTahapPengajuan` + penanda revisi. Pemetaan yang dipakai kode (tahap 1 dan 6 masih usulan, Q04):
 
 | `stage` | Arti | Flutter `statusTahap` |
 |---|---|---|
@@ -86,14 +94,16 @@ akhir**; Flutter hanya menampilkan dan tidak boleh mengubah `stage` sendiri.
 | `submission_files.status` | Flutter `verifiedDocs[key]` |
 |---|---|
 | `menunggu_telaah` | tidak ada entri |
-| `sesuai` | `true` |
+| `lolos` | `true` (Flutter juga menerima `sesuai`) |
 | `perlu_perbaikan` | `false` (dan masuk `dokumenPerluRevisi`) |
 
-Nilai `sesuai` dan `perlu_perbaikan` adalah usulan; kolom `decision_type` (maks 10 karakter) belum didefinisikan
-**[KEPUTUSAN Q05]**. Berkas hasil revisi disimpan sebagai baris baru (`version` naik, `is_current` berpindah).
+Nilai di server adalah `lolos`, bukan `sesuai` (dokumen versi awal keliru). Saat Admin menandai `perlu_perbaikan`,
+`decision_type` diisi `revisi`; nilai `tolak` belum dipakai **[KEPUTUSAN Q05]**. Berkas hasil revisi disimpan sebagai baris baru (`version` naik, `is_current` berpindah).
 
 **Status penugasan** (`inspection_assignments.status`): `dijadwalkan` → `diterima` → `selesai`;
-cabang `dialihkan` (isi `reassigned_from_id` dan `reassign_reason`) dan `dibatalkan`. **[KEPUTUSAN Q08]**
+cabang `dialihkan` (isi `reassigned_from_id` dan `reassign_reason`; dipakai saat Admin menjadwal ulang atau mengganti
+petugas) dan `dibatalkan` (**belum ada tindakan Admin yang menghasilkannya**). Satu penugasan = satu petugas;
+tim banyak orang belum didukung **[KEPUTUSAN Q08]**.
 
 ---
 
@@ -104,11 +114,9 @@ cabang `dialihkan` (isi `reassigned_from_id` dan `reassign_reason`) dan `dibatal
 | Pengajuan | `SR-<tahun>-<urut 4 digit>`, contoh `SR-2026-0001` | **Server**, saat Submit (`submissions.number`) |
 | BA Monitoring | `600.2.5/BA-MON/<bulan Romawi>/<tahun>/<urut 3 digit>`, contoh `600.2.5/BA-MON/X/2026/002` | **Server**, saat laporan final |
 
-Perubahan yang dibutuhkan:
-- Laravel saat ini merencanakan `BA-MON/2026/0001` (urut per tahun). Flutter memakai format dinas di atas dengan urut
-  **per bulan** (keputusan pemilik produk). Samakan ke format Flutter: kunci `number_sequences` menjadi `BA-MON-<tahun>-<bulan>`.
-- Kolom `report_number` sepanjang 30 karakter cukup (nomor terpanjang `…/XII/2026/001` = 27 karakter).
-- Nomor di Flutter hanya **sementara** selama draf; nomor sah diterbitkan server saat final.
+Status: **sudah dilaksanakan** (`NumberGenerator`, Fase B dan C). Urut BA per bulan mengikuti format Flutter; nomor di
+Flutter hanya sementara selama draf, nomor sah diterbitkan server saat Submit/final. Kolom `report_number` (30
+karakter) cukup (terpanjang 27).
 
 ---
 
@@ -137,14 +145,16 @@ Kunci Flutter ↔ kode Laravel. Urutan, nama, dan kardinalitas sudah cocok; yang
 | S4-01 | `site_plan_dwg` + `technicalFiles` | Dokumen Perencanaan dan Perancangan Site Plan | dwg, pdf | **ya** | ya |
 | S4-02 | `kajian_teknis` | Dokumen Kajian Teknis | pdf | **ya** | ya |
 
-Selisih yang harus ditutup:
-1. **Wajib/opsional** belum ada di katalog Laravel. Tambah atribut `required` per slot; S3-10 ditandai `false`
-   mengikuti Flutter **[KEPUTUSAN Q06/Q07]**.
-2. **Ukuran:** Laravel memakai pdf 10 MB dan dwg 50 MB; Flutter memakai 10 MB untuk semua. Flutter harus
-   menerima dwg hingga 50 MB di slot S4-01.
+Status selisih:
+1. **Wajib/opsional:** selesai. Atribut `required` ada di `config/satu_rumah.php`; S3-10 `false`
+   **[KEPUTUSAN Q06/Q07 untuk kewajiban resmi]**.
+2. **Ukuran:** server menerima pdf 10 MB dan dwg 50 MB; Flutter menerima dwg/pdf hingga 50 MB untuk site plan
+   (`FilePickerUtil.revisionRule`). Cocok.
 3. **Tahap pemeriksa:** semua slot S2 dan S3 diperiksa pada tahap 2 (Administrasi), S4 pada tahap 3 (Teknis).
    Ini sudah sama dengan guard Flutter.
-4. Penamaan dan susunan DOC01–DOC16 di `design.md` bagian 10 belum sama dengan 18 slot ini **[KEPUTUSAN Q07]**.
+4. Hubungan DOC01–DOC16 dengan slot: lihat `design.md` bagian 10. Hanya **jumlahnya** yang cocok (16 = S2 yang 5
+   + S3 yang 11); pemetaan per nomor **belum ada sumbernya** dan tidak ditebak **[KEPUTUSAN Q07]**. Slot S4-01
+   dan S4-02 adalah dua dokumen teknis tambahan (total 18).
 
 Berkas disimpan dengan nama acak (`stored_name`) di disk privat, tanpa URL publik; unduhan lewat endpoint terautentikasi.
 
@@ -180,7 +190,7 @@ Berkas disimpan dengan nama acak (`stored_name`) di disk privat, tanpa URL publi
 |---|---|---|
 | `nomorSuratBA` | `report_number` | bagian 4 |
 | `pengajuanId` | `submission_id` | |
-| (tugas) | `assignment_id` | **Flutter belum menyimpan ID tugas**; saat ini hanya `pengajuanId` |
+| (tugas) | `assignment_id` | Sejak Fase C laporan menunjuk tugas lewat `assignment_id` atau `submission_number`; tanpa keduanya = laporan mandiri |
 | (login) | `officer_id` | dari token |
 | `tanggalMonitoring` | `monitoring_date` | |
 | `namaPerumahan` | `nama_perumahan` | |
@@ -193,8 +203,8 @@ Berkas disimpan dengan nama acak (`stored_name`) di disk privat, tanpa URL publi
 | `statusHasilEvaluasi` (`sesuaiSiteplan`, `tidakSesuaiSiteplan`, `perluEvaluasiLanjutan`) | `status_hasil_evaluasi` | Ditambah di Fase C; nilai string yang sama |
 | `pelaksana` | `tim_pelaksana` (json `[{nama, jabatan}]`, maks 10) | |
 | `ditemui` | `pihak_ditemui` (json) | |
-| `isDraft` | `status` | `draft` → `final` (dikirim, `submitted_at`) → `diterbitkan` (`published_at`, Admin) |
-| `photos` | **tidak ada tabel** | lihat di bawah |
+| `isDraft` | `status` | `draft` → `final` (dikirim, `submitted_at`). `diterbitkan` (`published_at`, Admin) **belum ada tindakannya** (Fase E / Q09) |
+| `photos` | `inspection_report_photos` | lihat di bawah |
 | (tidak ada) | `submit_latitude`, `submit_longitude` | Flutter kirim koordinat saat submit |
 | (tidak ada) | `pdf_path`, `docx_path`, `verification_token` | dihasilkan server (bagian 8) |
 
@@ -206,8 +216,7 @@ jadi tidak ada kolom `signature_ok`.
 Aturan foto:
 - Foto sudah **berwatermark di piksel** dan memuat tanda tangan tertanam. Server menyimpan berkas apa adanya
   (jangan kompres ulang, itu merusak tanda tangan) dan menyimpan metadata di kolom.
-- **Batas jumlah:** Laravel `upload.photo_max_count = 15`, Flutter `kMaxReportPhotos = 10`.
-  Disepakati **10** (keputusan pemilik produk); ubah default Laravel menjadi 10.
+- **Batas jumlah:** **10** di Laravel (`upload.photo_max_count`) dan Flutter (`kMaxReportPhotos`) (keputusan pemilik produk).
 - **Batas ukuran:** 10 MB per foto, sama di kedua sisi.
 - Server memverifikasi ulang tanda tangan dan menolak foto yang rusak. Kunci tanda tangan saat ini ada di aplikasi,
   jadi ini hanya mendeteksi perubahan, bukan keamanan penuh **[KEPUTUSAN]** (pindahkan penandatanganan ke server
@@ -218,7 +227,7 @@ Aturan foto:
 ## 8. PDF dan QR
 
 Flutter membuat PDF di perangkat (format resmi Dinas, F4, Times 12). Laravel menyiapkan `pdf_path`, `docx_path`,
-dan `verification_token` (untuk QR) tetapi belum ada pembuatnya. Usulan: PDF resmi dibuat **server** dari data
+dan `verification_token` (untuk QR) tetapi **belum ada pembuatnya (dijadwalkan Fase E)**. Usulan: PDF resmi dibuat **server** dari data
 laporan agar sama untuk semua perangkat dan bisa diberi QR verifikasi; PDF di HP dipertahankan hanya sebagai pratinjau.
 **[KEPUTUSAN Q09]** siapa yang menandatangani dan kapan sebuah BA dianggap resmi.
 
@@ -227,21 +236,34 @@ laporan agar sama untuk semua perangkat dan bisa diberi QR verifikasi; PDF di HP
 ## 9. Yang harus dihapus atau dimatikan setelah integrasi
 
 - Layar Admin di Flutter (`pengajuan_admin_*`, `AppRole.admin`) setelah Admin web siap **[KEPUTUSAN Q16]**.
-- Data dummy tetap di `MonitoringController` Laravel lama (`tanggal_survey: '22 Mei 2025'`, petugas bawaan).
-- Tabel lama (bagian 1).
+- ~~Data dummy di `MonitoringController` Laravel lama~~ — **selesai**, controller dihapus di Fase D.
+- Tabel lama (bagian 1): kode sudah tidak memakainya, migrasi pembuangan menunggu Fase E.
 
 ---
 
-## 10. Daftar keputusan yang menunggu Disperwaskim
+## 10. Status implementasi dan keputusan Disperwaskim yang masih terbuka
 
-| Rujukan | Pertanyaan |
-|---|---|
-| Q04 | Nomor tahap 1 dan 6; status `ditolak` final atau boleh diajukan ulang; arti `selesai` |
-| Q05 | Nilai `decision_type` berkas; apakah revisi wajib diperiksa ulang per berkas |
-| Q06/Q07 | Slot mana yang wajib; hubungan 18 slot dengan DOC01–DOC16 |
-| Q08 | Satu petugas atau tim; pengalihan dan pembatalan tugas |
-| Q09 | Penandatangan BA, arti final, siapa membuat PDF resmi |
-| Q16 | Waktu penghentian layar Admin di Flutter |
+**Sudah ada di kode (Fase A–D):** login dan peran dari backend; pengajuan, 18 slot berkas, nomor `SR-…` dari
+server; penugasan dan laporan BA dengan foto geotag (maks 10, tanpa kompresi ulang, tanda tangan diverifikasi);
+Web Admin pada tabel baru (nilai berkas, permintaan perbaikan, setujui administrasi, jadwal/alihkan survei, terima
+laporan, keputusan akhir); riwayat, notifikasi dalam aplikasi, kirim revisi dari Flutter.
 
-Setelah butir-butir ini disetujui, langkah berikutnya adalah merancang endpoint API di atas kontrak ini
-(login token, daftar tugas, kirim berkas, kirim BA beserta foto).
+**Belum ada:** PDF dan QR dari server, tindakan `diterbitkan` dan `dibatalkan` (Fase E, menunggu Q09). Tabel lama sudah punya migrasi pembuangan (`2026_10_26_140000`) tetapi baru hilang setelah `migrate` dijalankan;
+push notification; layar timeline di Flutter; SLA hari kerja dan hari libur; unggah berkas keputusan oleh Admin;
+pemisahan hak Administrator vs Verifikator.
+
+**Keputusan Disperwaskim yang terbuka.** Kolom kanan adalah asumsi sementara di kode, **bukan keputusan resmi**:
+
+| Rujukan | Pertanyaan | Asumsi sementara di kode |
+|---|---|---|
+| Q04 | Nomor tahap 1 dan 6; `ditolak` final atau boleh diajukan ulang; arti `selesai` | Tahap 1 draf, 6 selesai; `ditolak` final (tidak ada pengajuan ulang) |
+| Q05 | Nilai `decision_type`; apakah revisi wajib diperiksa ulang per berkas | `revisi`; berkas pengganti kembali `menunggu_telaah` dan dinilai ulang |
+| Q06/Q07 | Slot mana yang wajib; hubungan 18 slot dengan DOC01–DOC16 | Semua wajib kecuali S3-10; pemetaan DOC belum dibuat |
+| Q08 | Satu petugas atau tim; pengalihan dan pembatalan tugas | Satu petugas; pengalihan lewat jadwal ulang |
+| Q09 | Penandatangan BA, arti final, siapa membuat PDF resmi | `final` = terkirim petugas; belum ada PDF server |
+| Q10 | Matriks hak Administrator vs Verifikator | Keduanya akses Web Admin penuh |
+| Q16 | Waktu penghentian layar Admin di Flutter | Layar Admin prototipe masih ada |
+
+**Keputusan bahwa persetujuan akhir sah** (setuju/tolak, nomor dan tanggal SK) saat ini dicatat oleh verifikator di
+Web Admin. Apakah itu cukup sebagai keputusan resmi, atau perlu pejabat Disperwaskim menyetujui lebih dulu, adalah
+keputusan Disperwaskim; data di sistem tidak boleh dianggap usulan administratif sebagai keputusan resmi sebelum itu.

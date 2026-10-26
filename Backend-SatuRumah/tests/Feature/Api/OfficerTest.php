@@ -168,13 +168,31 @@ class OfficerTest extends TestCase
         $this->putJson($url, ['version' => 1, 'maksud_tujuan' => 'Tujuan', 'temuan' => ['A', 'B'],
             'tim_pelaksana' => [['nama' => 'Rian', 'jabatan' => 'Ketua']], 'status_hasil_evaluasi' => 'sesuaiSiteplan'])
             ->assertOk()->assertJsonPath('data.version', 2)->assertJsonPath('data.temuan.1', 'B')
-            ->assertJsonPath('data.tim_pelaksana.0.nama', 'Rian');
+            ->assertJsonPath('data.tim_pelaksana.0.nama', $this->officer->name); // isian klien diabaikan
 
         $this->putJson($url, ['version' => 1, 'maksud_tujuan' => 'Lain'])
             ->assertStatus(409)->assertJsonPath('error.code', 'ERR-015')->assertJsonPath('error.current_version', 2);
         $this->putJson($url, ['version' => 2, 'status_hasil_evaluasi' => 'asal'])->assertStatus(422);
         $this->putJson($url, ['version' => 2, 'temuan' => array_fill(0, 21, 'x')])->assertStatus(422);
-        $this->putJson($url, ['version' => 2, 'tim_pelaksana' => array_fill(0, 11, ['nama' => 'x'])])->assertStatus(422);
+    }
+
+    public function test_tim_pelaksana_berasal_dari_penugasan_admin_dan_tidak_bisa_diubah_petugas(): void
+    {
+        $member = $this->makeUser('petugas2', 'tim_lapangan');
+        $member->forceFill(['name' => 'Anggota Dua', 'jabatan' => 'Staf Perwaskim'])->save();
+        $this->officer->forceFill(['name' => 'Ketua Satu', 'jabatan' => 'Ketua Tim'])->save();
+        $this->assignment->members()->attach($member->id);
+
+        // Tugas membawa petugas dan tim untuk ditampilkan (hanya-baca) di aplikasi.
+        $this->getJson('/api/v1/officer/assignments')->assertOk()
+            ->assertJsonPath('data.0.officer.nama', 'Ketua Satu')
+            ->assertJsonPath('data.0.team.1.nama', 'Anggota Dua');
+
+        $r = $this->draftReport();
+        $this->assertSame(['Ketua Satu', 'Anggota Dua'], array_column($r['tim_pelaksana'], 'nama'));
+
+        $this->putJson("/api/v1/officer/reports/{$r['id']}", ['version' => 1, 'tim_pelaksana' => [['nama' => 'Orang Lain']]])
+            ->assertOk()->assertJsonPath('data.tim_pelaksana.1.jabatan', 'Staf Perwaskim');
     }
 
     public function test_laporan_orang_lain_memberi_404(): void

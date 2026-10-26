@@ -44,7 +44,7 @@ class SubmissionController extends Controller
 
     public function show(Request $request, int $id)
     {
-        $s = Submission::with(['developer.developerProfile', 'currentFiles', 'events.actor', 'assignments.officer', 'reports.photos', 'reports.officer'])
+        $s = Submission::with(['developer.developerProfile', 'currentFiles', 'events.actor', 'assignments.officer', 'assignments.members', 'reports.photos', 'reports.officer'])
             ->where('stage', '>=', Submission::STAGE_ADMINISTRASI)->findOrFail($id);
 
         $tab = in_array($request->query('tab'), ['dokumen', 'monitoring', 'riwayat'], true) ? $request->query('tab') : 'ringkasan';
@@ -105,12 +105,14 @@ class SubmissionController extends Controller
             'tanggal' => 'required|date|after_or_equal:today',
             'catatan' => 'nullable|string|max:500',
             'alasan' => 'nullable|string|max:300',
+            'anggota' => 'nullable|array|max:9',
+            'anggota.*' => 'integer',
         ]);
         $s = Submission::findOrFail($id);
         $officer = User::findOrFail($data['petugas_id']);
 
         return $this->run($s, fn () => $this->workflow->scheduleSurvey(
-            $s, $officer, $data['tanggal'], $data['catatan'] ?? null, $request->user(), $data['alasan'] ?? null
+            $s, $officer, $data['tanggal'], $data['catatan'] ?? null, $request->user(), $data['alasan'] ?? null, $data['anggota'] ?? []
         ), 'Jadwal survei disimpan dan petugas diberi tahu.', 'monitoring');
     }
 

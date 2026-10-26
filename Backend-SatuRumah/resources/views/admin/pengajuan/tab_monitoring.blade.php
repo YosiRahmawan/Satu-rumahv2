@@ -24,6 +24,19 @@
                 <label class="form-label">Tanggal survei</label>
                 <input type="date" name="tanggal" class="form-input" min="{{ now()->toDateString() }}" value="{{ old('tanggal', $openAssignment?->scheduled_date?->toDateString()) }}" required>
             </div>
+            <div class="form-group" style="grid-column:1/-1;">
+                <label class="form-label">Anggota tim pelaksana (selain petugas utama)</label>
+                <div style="display:flex;flex-wrap:wrap;gap:6px 18px;">
+                    @php $chosen = collect(old('anggota', $openAssignment?->members->pluck('id')->all() ?? [])); @endphp
+                    @foreach($officers as $o)
+                        <label style="display:flex;gap:6px;align-items:center;font-size:13px;">
+                            <input type="checkbox" name="anggota[]" value="{{ $o->id }}" @checked($chosen->contains($o->id))>
+                            {{ $o->name }}@if($o->jabatan) <span class="text-muted">({{ $o->jabatan }})</span>@endif
+                        </label>
+                    @endforeach
+                </div>
+                <div class="text-muted" style="font-size:12px;margin-top:4px;">Nama tim ini otomatis tertulis di Berita Acara; petugas tidak bisa mengubahnya di aplikasi.</div>
+            </div>
             <div class="form-group">
                 <label class="form-label">Catatan untuk petugas</label>
                 <input name="catatan" class="form-input" value="{{ old('catatan') }}">
@@ -44,11 +57,11 @@
     <div class="card-head bordered"><div class="card-title" style="font-size:16px;">Penugasan</div></div>
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Petugas</th><th>Tanggal</th><th>Status</th><th>Catatan</th></tr></thead>
+            <thead><tr><th>Petugas / Tim</th><th>Tanggal</th><th>Status</th><th>Catatan</th></tr></thead>
             <tbody>
                 @forelse($s->assignments as $a)
                     <tr>
-                        <td class="col-strong">{{ $a->officer?->name }}</td>
+                        <td class="col-strong">{{ collect($a->team())->pluck('nama')->implode(', ') }}</td>
                         <td>{{ $a->scheduled_date?->translatedFormat('d M Y') }}</td>
                         <td><span class="badge {{ $a->status === 'selesai' ? 'badge-success' : ($a->isOpen() ? 'badge-info' : '') }} badge-dot">{{ ucfirst($a->status) }}</span></td>
                         <td class="text-muted">{{ $a->reassign_reason ?? $a->note }}</td>

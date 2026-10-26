@@ -1,7 +1,17 @@
 # Spesifikasi API v1: Flutter (Pengembang, Pengawas) ↔ Laravel
 
-Status: **USULAN**, turunan dari `KONTRAK_INTEGRASI.md` (nilai role, tahap, status, slot, penomoran ikut dokumen itu).
-Belum ada kode. Hal yang butuh keputusan Disperwaskim ditandai **[KEPUTUSAN]**.
+Status: **Fase A–D sudah dikerjakan**; bagian 9–12 adalah status nyata per fase dan menang bila berbeda dengan
+bagian 1–8. Bagian 1–8 adalah rancangan awal (historis); hal yang sudah berubah ditandai di tempatnya. Turunan dari
+`KONTRAK_INTEGRASI.md` (nilai role, tahap, status, slot, penomoran ikut dokumen itu). Hal yang butuh keputusan
+Disperwaskim ditandai **[KEPUTUSAN]**. Fase E (PDF/QR server, pembuangan tabel lama) belum dikerjakan.
+
+| Fase | Isi | Status |
+|---|---|---|
+| A | Autentikasi | selesai (bagian 9) |
+| B | Pengajuan dan berkas Pengembang | selesai (bagian 10) |
+| C | Tugas dan laporan BA Pengawas, foto geotag | selesai (bagian 11) |
+| D | Web Admin pada tabel baru, perbaikan, notifikasi | selesai (bagian 12) |
+| E | PDF/QR server, pembersihan tabel lama | belum |
 
 Admin memakai Web Admin (sesi Laravel, route `web.php`), bukan API ini. Aksi Admin (verifikasi berkas, jadwal survei,
 persetujuan) harus memanggil **service yang sama** dengan yang dipakai API supaya aturan transisi hanya ada satu.
@@ -11,7 +21,7 @@ persetujuan) harus memanggil **service yang sama** dengan yang dipakai API supay
 | Hal | Aturan |
 |---|---|
 | Basis | `https://<host>/api/v1`, JSON UTF-8; unggahan `multipart/form-data` |
-| Autentikasi | Token bearer (Laravel Sanctum). **Paket belum ada di `composer.json`**, harus ditambah |
+| Autentikasi | Token bearer (Laravel Sanctum); sudah terpasang sejak Fase A |
 | Zona waktu | Server menyimpan UTC, mengirim ISO 8601 dengan offset (`2026-10-26T09:30:15+07:00`) |
 | Paginasi | `?page=1&per_page=20`; respons `{data, meta:{page, per_page, total}}` |
 | Penguncian | Objek yang bisa diubah membawa `version`. Ubah dengan `version` lama; bila berbeda → 409 `ERR-015` |
@@ -106,7 +116,7 @@ Versi 1 memakai penarikan berkala (polling) saat aplikasi terbuka; dorongan (FCM
 
 Matriks final **[KEPUTUSAN Q10]**.
 
-## 6. Pekerjaan di Laravel (berurutan)
+## 6. Pekerjaan di Laravel (berurutan) — historis, butir 1–5 dan 7–8 sudah selesai; butir 6 (PDF/QR) dan penghapusan tabel lama di Fase E
 
 1. Tambah Sanctum; `routes/api.php`; middleware peran (`administrator`, `verifikator`, `pengembang`, `tim_lapangan`).
 2. Model dan relasi untuk tabel baru: `DeveloperProfile`, `Submission`, `SubmissionFile`, `InspectionAssignment`, `InspectionReport`, plus foto.
@@ -117,7 +127,7 @@ Matriks final **[KEPUTUSAN Q10]**.
 7. Ubah controller Admin web agar memakai service yang sama; lalu hapus tabel lama.
 8. Uji fitur (feature test) per jalur: kepemilikan, transisi terlarang, konflik `version`, idempotensi, validator berkas.
 
-## 7. Pekerjaan di Flutter
+## 7. Pekerjaan di Flutter — historis; butir 1–5 selesai, butir 6 (mematikan layar Admin) menunggu Q16
 
 1. Klien HTTP (Dio sudah ada) dengan token dan penanganan 401/423. Penyimpanan token aman membutuhkan paket yang sudah kita hapus (`flutter_secure_storage`), jadi harus ditambah lagi.
 2. Lapisan pemetaan (role, tahap, kunci slot ↔ kode slot, tipe perumahan) sesuai kontrak.
@@ -126,7 +136,7 @@ Matriks final **[KEPUTUSAN Q10]**.
 5. Unggah berkas dan foto dengan antrean ulang; ukuran dwg hingga 50 MB.
 6. Mematikan layar Admin setelah Web Admin siap.
 
-## 8. Tahapan pengerjaan yang disarankan
+## 8. Tahapan pengerjaan (rencana awal; status di tabel atas)
 
 | Fase | Isi | Hasil yang bisa diuji |
 |---|---|---|
@@ -238,6 +248,23 @@ Flutter (`feat/api-fase-d-flutter`): "Kirim Revisi" (detail pengajuan dan layar 
 pengganti ke slot yang ditandai (`replaces_file_id`) lalu `POST resubmit`; notifikasi Pengembang dan Pengawas ditarik
 dari server (saat aplikasi membuka akun dan saat layar Notifikasi dibuka; tanda dibaca disinkronkan).
 
-Belum: push notification (aplikasi menarik), layar timeline di Flutter, slot berjamak dengan lebih dari satu berkas
-ditandai hanya bisa diganti satu per pengiriman (sisanya tetap ditandai dan resubmit ditolak dengan nama berkasnya),
-SLA hari kerja/libur, unggah berkas keputusan oleh Admin, PDF/QR dari server (Fase E).
+Slot berjamak dengan beberapa berkas ditandai: cukup satu berkas pengganti per slot; saat `resubmit` berkas bertanda
+lainnya di slot itu dipensiunkan (`is_current = false`).
+
+Migrasi `2026_10_26_140000_drop_legacy_demo_tables` membuang enam tabel demo lama (tidak bisa dibatalkan). Migrasi ini
+baru berlaku di database yang menjalankan `php artisan migrate`.
+
+Belum: push notification (aplikasi menarik), layar timeline di Flutter, SLA hari kerja/libur, unggah berkas keputusan oleh Admin, PDF/QR dari server (Fase E).
+
+## 13. Tim pelaksana dari penugasan Admin
+
+Tim pelaksana Berita Acara ditetapkan **Admin** saat menjadwalkan survei: satu petugas utama (`officer_id`) ditambah
+anggota (`inspection_assignment_members`, hanya `tim_lapangan` aktif). `GET officer/assignments` kini memuat
+`officer {nama, jabatan}` dan `team [{nama, jabatan}]` (petugas utama lebih dulu). Server mengisi `tim_pelaksana`
+laporan dari penugasan saat laporan dibuat, diubah, dan dikirim; **isian `tim_pelaksana` dari klien diabaikan**.
+Laporan mandiri (tanpa tugas) memakai petugas yang masuk. Anggota selain petugas utama belum melihat tugas di
+aplikasinya (hanya namanya tercantum di BA).
+
+Flutter (`feat/tim-pelaksana-flutter`): sesi menyimpan nama dan jabatan dari server (tidak lagi menebak dari username);
+form BA mengisi Tim Pelaksana dari tugas dan menampilkannya hanya-baca (mode API). Mode contoh tetap bisa diedit.
+Asumsi sementara terkait Q08: satu tim per penugasan, tanpa fitur "anggota tidak hadir".

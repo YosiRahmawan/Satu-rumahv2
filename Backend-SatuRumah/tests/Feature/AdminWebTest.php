@@ -126,11 +126,23 @@ class AdminWebTest extends TestCase
         $this->assertSame([4, 'terjadwal'], [$s->stage, $s->sub_status]);
         $this->assertSame(1, AppNotification::where('user_id', $this->officer->id)->where('type', 'assignment')->count());
 
+        // Anggota tim: hanya petugas lapangan aktif, dan tampil di tim penugasan.
+        $anggota = $this->makeUser('petugas3', 'tim_lapangan');
+        $this->post("/pengajuan/{$id}/jadwal", ['petugas_id' => $this->officer->id, 'tanggal' => now()->addDay()->toDateString(), 'anggota' => [$this->developer->id]])
+            ->assertSessionHasErrors('anggota');
+        $this->post("/pengajuan/{$id}/jadwal", ['petugas_id' => $this->officer->id, 'tanggal' => now()->addDay()->toDateString(), 'anggota' => [$anggota->id, $this->officer->id]])
+            ->assertSessionHas('success');
+        $this->assertSame(
+            [$this->officer->name, $anggota->name],
+            array_column(InspectionAssignment::whereIn('status', InspectionAssignment::OPEN)->latest('id')->first()->team(), 'nama')
+        );
+        $this->get("/pengajuan/{$id}?tab=monitoring")->assertOk()->assertSee($anggota->name);
+
         // Alihkan petugas: penugasan lama ditutup sebagai dialihkan.
         $other = $this->makeUser('petugas2', 'tim_lapangan');
         $this->post("/pengajuan/{$id}/jadwal", ['petugas_id' => $other->id, 'tanggal' => now()->addDays(2)->toDateString(), 'alasan' => 'Bentrok'])
             ->assertSessionHas('success');
-        $this->assertSame(1, InspectionAssignment::where('submission_id', $id)->where('status', 'dialihkan')->count());
+        $this->assertSame(2, InspectionAssignment::where('submission_id', $id)->where('status', 'dialihkan')->count());
         $this->assertSame(1, InspectionAssignment::where('submission_id', $id)->whereIn('status', InspectionAssignment::OPEN)->count());
 
         // Tanpa laporan final belum bisa diterima.
@@ -198,6 +210,35 @@ class AdminWebTest extends TestCase
         $this->assertSame(1, AppNotification::where('user_id', $this->admin->id)->where('type', 'resubmitted')->count());
         $this->actingAs($this->admin, 'web');
         $this->get("/pengajuan/{$id}?tab=riwayat")->assertOk()->assertSee('Perbaikan dikirim ulang')->assertSee('Permintaan perbaikan dikirim');
+    }
+
+    public function test_slot_berjamak_dengan_dua_berkas_bertanda_cukup_satu_pengganti(): void
+    {
+        Storage::fake('local');
+        $id = $this->submission->id;
+        $first = $this->submission->files()->where('slot_code', 'S3-05')->first();
+        $second = $this->submission->files()->create([
+            'slot_code' => 'S3-05', 'version' => 2, 'is_current' => true, 'original_name' => 'rek2.pdf', 'stored_name' => 'rek2.pdf',
+            'storage_path' => 'submissions/1/rek2.pdf', 'file_type' => 'pdf', 'size_bytes' => 1000, 'checksum' => str_repeat('b', 64),
+            'status' => 'menunggu_telaah', 'uploaded_by' => $this->developer->id,
+        ]);
+
+        $this->actingAs($this->admin);
+        foreach ([$first, $second] as $f) {
+            $this->post("/pengajuan/{$id}/berkas/{$f->id}/nilai", ['decision' => 'perlu_perbaikan', 'catatan' => 'Buram']);
+        }
+        $this->post("/pengajuan/{$id}/perbaikan")->assertSessionHas('success');
+
+        Sanctum::actingAs($this->developer);
+        $this->postJson("/api/v1/submissions/{$id}/resubmit")->assertStatus(422);
+        $this->post("/api/v1/submissions/{$id}/files", [
+            'slot_code' => 'S3-05', 'replaces_file_id' => $first->id,
+            'file' => UploadedFile::fake()->createWithContent('rek-baru.pdf', "%PDF-1.4\n%%EOF\n"),
+        ], ['Accept' => 'application/json'])->assertCreated();
+        $this->postJson("/api/v1/submissions/{$id}/resubmit")->assertOk();
+
+        $this->assertFalse($second->fresh()->is_current);
+        $this->assertSame(1, $this->submission->currentFiles()->where('slot_code', 'S3-05')->count());
     }
 
     public function test_pengajuan_draf_tidak_tampil_di_antrean(): void

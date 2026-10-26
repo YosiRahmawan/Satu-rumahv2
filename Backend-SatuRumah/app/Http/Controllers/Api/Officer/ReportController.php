@@ -88,6 +88,7 @@ class ReportController extends Controller
             'status' => 'draft',
             'version' => 1,
         ]);
+        $report->forceFill(['tim_pelaksana' => $this->workflow->team($report->load('assignment', 'officer'))])->save();
 
         return response()->json(['data' => $this->presenter->detail($report)], 201);
     }
@@ -113,7 +114,6 @@ class ReportController extends Controller
             'kesepakatan' => $list(20), 'kesepakatan.*' => ['string', 'max:1000'],
             'rtl' => $list(20), 'rtl.*' => ['string', 'max:1000'],
             'status_hasil_evaluasi' => ['nullable', Rule::in(InspectionReport::EVALUASI)],
-            'tim_pelaksana' => $list(10), 'tim_pelaksana.*.nama' => ['nullable', 'string', 'max:150'], 'tim_pelaksana.*.jabatan' => ['nullable', 'string', 'max:150'],
             'pihak_ditemui' => $list(10), 'pihak_ditemui.*.nama' => ['nullable', 'string', 'max:150'], 'pihak_ditemui.*.jabatan' => ['nullable', 'string', 'max:150'],
         ]);
 
@@ -125,7 +125,8 @@ class ReportController extends Controller
         }
 
         unset($data['version']);
-        $report->forceFill($data + ['version' => $report->version + 1])->save();
+        // Tim pelaksana ditetapkan server; isian klien (bila ada) diabaikan.
+        $report->forceFill($data + ['tim_pelaksana' => $this->workflow->team($report), 'version' => $report->version + 1])->save();
 
         return response()->json(['data' => $this->presenter->detail($report->fresh())]);
     }

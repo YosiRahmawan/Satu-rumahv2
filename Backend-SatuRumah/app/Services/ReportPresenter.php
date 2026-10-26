@@ -20,6 +20,9 @@ class ReportPresenter
             'status' => $a->status,
             'scheduled_date' => $a->scheduled_date?->toDateString(),
             'note' => $a->note,
+            'officer' => ['nama' => $a->officer?->name, 'jabatan' => $a->officer?->jabatan],
+            // Ditetapkan Admin; dipakai aplikasi untuk mengisi Tim Pelaksana (hanya-baca).
+            'team' => $a->team(),
             'accepted_at' => $a->accepted_at?->toIso8601String(),
             'submission' => $s ? [
                 'id' => $s->id,

@@ -16,6 +16,21 @@ class ReportWorkflow
     ) {
     }
 
+    /**
+     * Tim pelaksana yang sah untuk laporan ini: dari penugasan (ditetapkan Admin),
+     * atau petugas sendiri untuk laporan mandiri. Isian klien tidak dipakai.
+     *
+     * @return list<array{nama: string, jabatan: string}>
+     */
+    public function team(InspectionReport $report): array
+    {
+        if ($report->assignment) {
+            return $report->assignment->team();
+        }
+
+        return $report->officer ? [['nama' => (string) $report->officer->name, 'jabatan' => (string) ($report->officer->jabatan ?? '')]] : [];
+    }
+
     /** Draf → final. Menerbitkan nomor BA dan menutup penugasan. Idempoten. */
     public function submit(InspectionReport $report, float $latitude, float $longitude): InspectionReport
     {
@@ -39,6 +54,7 @@ class ReportWorkflow
 
         return DB::transaction(function () use ($report, $latitude, $longitude) {
             $report->forceFill([
+                'tim_pelaksana' => $this->team($report),
                 'report_number' => $this->numbers->reportNumber(),
                 'status' => 'final',
                 'submit_latitude' => $latitude,

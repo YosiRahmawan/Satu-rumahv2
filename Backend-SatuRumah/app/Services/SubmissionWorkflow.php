@@ -91,12 +91,27 @@ class SubmissionWorkflow
         });
     }
 
-    /** Berkas yang diminta diperbaiki Admin dan belum diganti. @return list<string> */
+    /**
+     * Berkas yang diminta diperbaiki Admin dan belum diganti. Pada slot berjamak,
+     * satu berkas baru yang diunggah setelah penandaan dianggap menggantikan
+     * semua berkas yang ditandai di slot itu (yang lama dipensiunkan saat kirim ulang).
+     *
+     * @return list<string>
+     */
     public function unresolvedRevisionSlots(Submission $submission): array
     {
-        return $submission->currentFiles()
-            ->where('status', 'perlu_perbaikan')
-            ->pluck('slot_code')->unique()->values()->all();
+        return $this->flaggedWithoutReplacement($submission)->pluck('slot_code')->unique()->values()->all();
+    }
+
+    private function flaggedWithoutReplacement(Submission $submission)
+    {
+        $current = $submission->currentFiles()->get();
+
+        return $current->where('status', 'perlu_perbaikan')->filter(
+            fn (SubmissionFile $f) => !$current->contains(
+                fn (SubmissionFile $n) => $n->slot_code === $f->slot_code && $n->id > $f->id && $n->status === 'menunggu_telaah'
+            )
+        );
     }
 
     /** Perlu perbaikan → perbaikan terkirim; jam SLA berjalan lagi. */
@@ -110,6 +125,10 @@ class SubmissionWorkflow
         if ($unresolved) {
             throw ValidationException::withMessages(['slots' => $unresolved]);
         }
+
+        // Berkas bertanda di slot berjamak yang sudah punya penggantinya dipensiunkan.
+        $submission->currentFiles()->where('status', 'perlu_perbaikan')
+            ->update(['is_current' => false, 'replaced_at' => now()]);
 
         $paused = $submission->sla_paused_at
             ? (int) abs(now()->diffInSeconds($submission->sla_paused_at))
@@ -262,7 +281,7 @@ class SubmissionWorkflow
      * Menjadwalkan survei (atau menjadwal ulang/mengalihkan petugas bila sudah
      * dijadwalkan). Dari Verifikasi Teknis (semua berkas teknis sesuai) → Survei.
      */
-    public function scheduleSurvey(Submission $s, User $officer, string $date, ?string $note, User $creator, ?string $reason = null): InspectionAssignment
+    public function scheduleSurvey(Submission $s, User $officer, string $date, ?string $note, User $creator, ?string $reason = null, array $memberIds = []): InspectionAssignment
     {
         $this->ensureWorkable($s);
         if (!in_array($s->stage, [Submission::STAGE_TEKNIS, Submission::STAGE_SURVEI], true) || $s->isInRevision()) {
@@ -271,12 +290,16 @@ class SubmissionWorkflow
         if ($officer->role !== 'tim_lapangan' || !$officer->is_active) {
             throw ValidationException::withMessages(['petugas' => ['Pilih petugas lapangan yang aktif.']]);
         }
+        $memberIds = array_values(array_unique(array_diff(array_map('intval', $memberIds), [$officer->id])));
+        if ($memberIds && User::whereIn('id', $memberIds)->where('role', 'tim_lapangan')->where('is_active', true)->count() !== count($memberIds)) {
+            throw ValidationException::withMessages(['anggota' => ['Anggota tim harus petugas lapangan yang aktif.']]);
+        }
         if ($s->stage === Submission::STAGE_TEKNIS) {
             $this->requireSlotsApproved($s, 2);
             $this->requireSlotsApproved($s, 3);
         }
 
-        return DB::transaction(function () use ($s, $officer, $date, $note, $creator, $reason) {
+        return DB::transaction(function () use ($s, $officer, $date, $note, $creator, $reason, $memberIds) {
             $previous = InspectionAssignment::where('submission_id', $s->id)
                 ->whereIn('status', InspectionAssignment::OPEN)->get();
             foreach ($previous as $old) {
@@ -294,6 +317,8 @@ class SubmissionWorkflow
                 'created_by' => $creator->id,
             ]);
 
+            $assignment->members()->sync($memberIds);
+
             $movingIn = $s->stage === Submission::STAGE_TEKNIS;
             $s->forceFill([
                 'stage' => Submission::STAGE_SURVEI,
@@ -307,7 +332,7 @@ class SubmissionWorkflow
             $this->notifier->event(
                 $s, $creator, $previous->isNotEmpty() ? 'survey_rescheduled' : 'survey_scheduled',
                 $previous->isNotEmpty() ? 'Jadwal survei diubah' : 'Survei dijadwalkan',
-                "{$tanggal} · {$officer->name}" . ($note ? " · {$note}" : ''),
+                "{$tanggal} · " . collect($assignment->team())->pluck('nama')->implode(', ') . ($note ? " · {$note}" : ''),
                 ['assignment_id' => $assignment->id],
             );
             $this->notifier->toUser($officer, $s, 'assignment', 'Tugas survei baru', "{$name} · {$tanggal}", ['assignment_id' => $assignment->id]);
