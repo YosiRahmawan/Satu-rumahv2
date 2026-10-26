@@ -9,6 +9,10 @@
 
 return [
 
+    // Kunci penanda geotag foto; harus sama dengan konstanta di aplikasi Flutter
+    // (geo_stamp_signer.dart). Penandatanganan di server menggantikannya kelak.
+    'photo_stamp_key' => env('PHOTO_STAMP_KEY', 'satu-rumah.geostamp.v1'),
+
     'roles' => ['administrator', 'verifikator', 'pengembang', 'tim_lapangan'],
 
     'defaults' => [
@@ -29,7 +33,7 @@ return [
         'upload.dwg_max_mb' => (int) env('UPLOAD_DWG_MAX_MB', 50),
         'upload.max_files_per_slot' => (int) env('UPLOAD_MAX_FILES_PER_SLOT', 10),
         'upload.photo_max_mb' => (int) env('UPLOAD_PHOTO_MAX_MB', 10),
-        'upload.photo_max_count' => (int) env('UPLOAD_PHOTO_MAX_COUNT', 15),
+        'upload.photo_max_count' => (int) env('UPLOAD_PHOTO_MAX_COUNT', 10),
     ],
 
     /*

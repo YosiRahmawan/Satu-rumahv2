@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(AccountSeeder::class);
+        if (app()->environment('local', 'testing')) {
+            $this->call(DemoAssignmentSeeder::class);
+        }
 
         // 1. Create Verifikator Disperwaskim & Surveyor Users
         User::updateOrCreate(

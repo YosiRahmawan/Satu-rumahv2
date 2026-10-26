@@ -15,6 +15,19 @@ class NumberGenerator
         return sprintf('SR-%s-%04d', $year, $this->next("SR-{$year}"));
     }
 
+    /**
+     * BA Monitoring: 600.2.5/BA-MON/<bulan Romawi>/<tahun>/<urut 3 digit>,
+     * urut per bulan (keputusan pemilik produk; sama dengan format di Flutter).
+     */
+    public function reportNumber(?\DateTimeInterface $at = null): string
+    {
+        $at ??= now();
+        $roman = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][(int) $at->format('n') - 1];
+        $key = 'BA-MON-' . $at->format('Y-m');
+
+        return sprintf('600.2.5/BA-MON/%s/%s/%03d', $roman, $at->format('Y'), $this->next($key));
+    }
+
     private function next(string $key): int
     {
         return DB::transaction(function () use ($key) {

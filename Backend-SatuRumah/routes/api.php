@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeveloperProfileController;
+use App\Http\Controllers\Api\Officer\AssignmentController;
+use App\Http\Controllers\Api\Officer\ReportController;
+use App\Http\Controllers\Api\Officer\ReportPhotoController;
 use App\Http\Controllers\Api\SubmissionController;
 use App\Http\Controllers\Api\SubmissionFileController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +35,22 @@ Route::prefix('v1')->group(function () {
                 Route::post('submissions/{id}/files', [SubmissionFileController::class, 'store'])->whereNumber('id');
                 Route::delete('submissions/{id}/files/{fileId}', [SubmissionFileController::class, 'destroy'])->whereNumber(['id', 'fileId']);
                 Route::get('submissions/{id}/files/{fileId}/download', [SubmissionFileController::class, 'download'])->whereNumber(['id', 'fileId']);
+            });
+
+            // Pengawas (tim lapangan)
+            Route::middleware('role:tim_lapangan')->prefix('officer')->group(function () {
+                Route::get('assignments', [AssignmentController::class, 'index']);
+                Route::post('assignments/{id}/accept', [AssignmentController::class, 'accept'])->whereNumber('id');
+
+                Route::get('reports', [ReportController::class, 'index']);
+                Route::post('reports', [ReportController::class, 'store']);
+                Route::get('reports/{id}', [ReportController::class, 'show'])->whereNumber('id');
+                Route::put('reports/{id}', [ReportController::class, 'update'])->whereNumber('id');
+                Route::post('reports/{id}/submit', [ReportController::class, 'submit'])->whereNumber('id');
+
+                Route::post('reports/{id}/photos', [ReportPhotoController::class, 'store'])->whereNumber('id');
+                Route::delete('reports/{id}/photos/{photoId}', [ReportPhotoController::class, 'destroy'])->whereNumber(['id', 'photoId']);
+                Route::get('reports/{id}/photos/{photoId}/file', [ReportPhotoController::class, 'file'])->whereNumber(['id', 'photoId']);
             });
         });
     });
