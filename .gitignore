@@ -48,6 +48,7 @@ app.*.map.json
 # Environment variables / Secrets
 .env
 .env.*
+!.env.example
 
 # Ignore documentation files
 docs/

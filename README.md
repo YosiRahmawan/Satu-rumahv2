@@ -39,7 +39,7 @@ Aplikasi ini menghubungkan **3 peran** dalam satu ekosistem digital:
 | Navigasi | GoRouter |
 | PDF | `pdf` + `printing` |
 | Berbagi File | `share_plus` |
-| Backend (Web Admin) | Laravel 11 (PHP 8.3) |
+| Backend (Web Admin) | Laravel 12 (PHP 8.2+), folder `Backend-SatuRumah/` |
 
 ---
 

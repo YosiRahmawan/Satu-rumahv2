@@ -43,8 +43,8 @@ Koreksi terhadap audit terdahulu: audit S02 menyatakan `design.md` tidak ditemuk
 | Mobile | **CONFIRMED S01:** Flutter mobile untuk Pengembang dan Tim Lapangan. **DOCUMENTED CONTEXT S04:** Flutter 3.x / Dart, Riverpod 2.x, GoRouter; penetapan versi produksi **OPEN QUESTION Q16** |
 | Web Admin dan backend | **CONFIRMED S01:** Laravel Web Admin untuk Admin. **DOCUMENTED CONTEXT S04:** Laravel 11 / PHP 8.3; versi backend belum dapat diverifikasi dari checkout dan penetapan versi produksi **OPEN QUESTION Q16** |
 | PDF dan berbagi | **EXISTING IMPLEMENTATION S02:** dependency `pdf`, `printing`, `share_plus`; kesiapan lampiran PDF produksi **OPEN QUESTION Q09/Q16** |
-| Data | **DOCUMENTED CONTEXT S04 / EXISTING IMPLEMENTATION S02:** prototype lokal/dummy; README menyebut target integrasi Laravel API, dengan kontrak produksi **OPEN QUESTION Q16** |
-| Kesiapan backend | **EXISTING IMPLEMENTATION:** potongan controller, model, middleware, migration, seeder; audit belum menemukan `composer.json`, `artisan`, bootstrap aplikasi, atau UI Web Admin |
+| Data | **EXISTING IMPLEMENTATION (diperbarui 26 Okt 2026):** Flutter memakai Laravel API v1 bila dibangun dengan `--dart-define=API_BASE_URL` (login, pengajuan, berkas, tugas, laporan BA, revisi, notifikasi; Fase A–D). Tanpa nilai itu aplikasi berjalan dengan data contoh lokal. Kontrak: `Backend-SatuRumah/KONTRAK_INTEGRASI.md` dan `API_SPEC.md`; versi produksi **OPEN QUESTION Q16** |
+| Kesiapan backend | **EXISTING IMPLEMENTATION (diperbarui):** backend utama `satu-rumahv2-backend/Backend-SatuRumah` (Laravel 12, PHP 8.2, Sanctum) dengan Web Admin di tabel baru, API v1, dan 60 feature test. Belum: PDF/QR server dan pembuangan tabel demo lama (Fase E). Catatan audit lama "tidak ada `composer.json`/`artisan`" berlaku untuk checkout sebelum integrasi |
 | Batas layanan | **OPEN QUESTION Q01:** hubungan pengajuan PSU, persetujuan site plan, dan istilah perizinan dalam prototype |
 | Nama panjang produk/instansi | **OPEN QUESTION Q02:** README dan master memakai kepanjangan SATU RUMAH serta nama dinas yang berbeda; gunakan nama SATU RUMAH V2 dan Disperwaskim sampai redaksi resmi dipastikan |
 
@@ -65,7 +65,7 @@ Menyetujui tahap administratif tidak otomatis berarti berwenang menandatangani B
 | Role | Platform produksi — CONFIRMED S01 | Keadaan prototype — EXISTING IMPLEMENTATION |
 |---|---|---|
 | Pengembang | Flutter mobile | Area Pengembang pada Flutter |
-| Admin Disperwaskim | Laravel Web Admin | Area Admin masih berada pada Flutter; Web Admin belum tersedia dalam audit |
+| Admin Disperwaskim | Laravel Web Admin | Web Admin sudah tersedia (Fase D). Layar Admin prototipe di Flutter masih ada sampai keputusan **Q16** |
 | Tim Perwaskim Lapangan | Flutter mobile | Area Monitoring/Lapangan pada Flutter |
 
 Keputusan ini menggantikan teks master lama yang memasukkan Tim Pengawas Perwaskim ke Web Desktop. Acuan desktop pada master berlaku untuk Admin; adaptasi layar Tim Lapangan mobile masih **OPEN QUESTION Q13**. Keberadaan route Admin Flutter tidak menjadikannya target produksi. Jadwal migrasi dan penghentian area Admin prototype masih **OPEN QUESTION Q16**.
@@ -223,26 +223,36 @@ Struktur layar yang ada: form laporan bertahap → preview → sukses → riwaya
 
 ## 10. DOC01–DOC16 mapping placeholder
 
-**CONFIRMED S01:** dokumentasi menyediakan 16 placeholder DOC01–DOC16 sesuai permintaan pengguna; README juga menyebut 16 slot. Jumlah placeholder dan nomor slot tidak menetapkan jumlah persyaratan produksi, nama dokumen, urutan prosedur, atau kewajibannya. Semua isi pemetaan berikut **OPEN QUESTION Q06/Q07**; jangan memetakan berdasarkan urutan array/seeder.
+**CONFIRMED S01:** dokumentasi menyediakan 16 placeholder DOC01–DOC16 sesuai permintaan pengguna; README juga menyebut 16 slot. Jumlah placeholder dan nomor slot tidak menetapkan jumlah persyaratan produksi, nama dokumen, urutan prosedur, atau kewajibannya.
 
-| Slot | Nama resmi | Key Flutter / ID API | Wajib / kondisional | Format, ukuran, jumlah berkas | Tahap / pemeriksa |
+**Pembaruan 27 Okt 2026:** dokumen *Proses Bisnis Aplikasi SATU RUMAH* memuat 18 dokumen unggahan (Step 2: 5, Step 3: 11, Step 4: 2) dengan nama dan urutan yang sama dengan katalog di bawah; **label DOC01–DOC16 tetap tidak ada** di dokumen itu, jadi kolom pasangan DOC belum diisi. Warna dokumen itu (palet "Rustic Indulgence") berbeda dari `design.md`; **`design.md` yang dipakai** (keputusan pemilik produk).
+
+**Hasil pemeriksaan sumber (26 Okt 2026):** tidak ada berkas di repo (kode, README, kontrak, seeder) yang memasangkan nomor DOC01–DOC16 dengan satu pun kode slot. Satu-satunya fakta yang terverifikasi adalah **jumlah**: dokumen Fase 2–3 berjumlah 16 (S2-01..05 = 5 dan S3-01..11 = 11) dan Fase 4 menambah 2 dokumen teknis (S4-01, S4-02), total 18 slot. Karena itu **kolom pemasangan di bawah sengaja kosong**; memasangkan berdasarkan urutan akan mengarang data. Pemasangan resmi menunggu acuan Disperwaskim (**OPEN QUESTION Q06/Q07**).
+
+Katalog slot yang **terverifikasi di kode** (`config/satu_rumah.php`, kunci Flutter dari `slot_catalog.dart`). Wajib: semua kecuali S3-10. Diperiksa pada tahap Administrasi untuk S2 dan S3, tahap Teknis untuk S4.
+
+| Kode slot | Kunci Flutter | Nama di sistem | Format | Banyak berkas | Pasangan DOC |
 |---|---|---|---|---|---|
-| DOC01 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC02 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC03 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC04 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC05 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC06 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC07 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC08 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC09 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC10 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC11 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC12 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC13 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC14 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC15 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
-| DOC16 | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION | OPEN QUESTION |
+| S2-01 | `ktp` | KTP Elektronik Pemohon | pdf | tidak | BELUM TERVERIFIKASI |
+| S2-02 | `nib` | Nomor Induk Berusaha (NIB) | pdf | tidak | BELUM TERVERIFIKASI |
+| S2-03 | `npwp_doc` | NPWP Perusahaan | pdf | tidak | BELUM TERVERIFIKASI |
+| S2-04 | `asosiasi` | Bukti Keanggotaan Asosiasi (REI/APERSI) | pdf | tidak | BELUM TERVERIFIKASI |
+| S2-05 | `legalitas` | Akta Pendirian/Perubahan dan SK Kemenkumham | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-01 | `surat_permohonan` | Surat Permohonan Persetujuan | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-02 | `info_intensitas_ruang` | Informasi Intensitas Pemanfaatan Ruang / KKPR | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-03 | `bukti_kepemilikan_lahan` | Bukti Kepemilikan Lahan atas nama PT / Sertifikat Induk | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-04 | `bukti_tpu` | Bukti Penyediaan Lahan TPU | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-05 | `rekomendasi_lingkungan` | Rekomendasi Teknis Dinas Terkait | pdf | ya | BELUM TERVERIFIKASI |
+| S3-06 | `andalalin` | Persetujuan ANDALALIN | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-07 | `rekomendasi_air_bersih` | Rekomendasi Air Bersih | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-08 | `rekomendasi_listrik` | Rekomendasi Listrik PLN | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-09 | `pernyataan_psu` | Surat Pernyataan Kesanggupan Penyediaan dan Penyerahan PSU | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-10 | `penanggung_jawab_teknis` | Data Penanggung Jawab Dokumen Teknis (opsional) | pdf | tidak | BELUM TERVERIFIKASI |
+| S3-11 | `proposal_pembangunan` | Proposal Rencana Pembangunan Perumahan | pdf | tidak | BELUM TERVERIFIKASI |
+| S4-01 | `site_plan_dwg` + `technicalFiles` | Dokumen Perencanaan dan Perancangan Site Plan | dwg + pdf | ya | di luar DOC01–16 (dokumen teknis Fase 4) |
+| S4-02 | `kajian_teknis` | Dokumen Kajian Teknis | pdf | ya | di luar DOC01–16 (dokumen teknis Fase 4) |
+
+Baris DOC01–DOC16 itu sendiri tetap **OPEN QUESTION Q06/Q07** (nama resmi, wajib/kondisional, pemeriksa) sampai Disperwaskim memberi acuan.
 
 Inventaris teknis terpisah — **EXISTING IMPLEMENTATION S06**, tidak dipasangkan ke DOC:
 
@@ -252,6 +262,8 @@ Inventaris teknis terpisah — **EXISTING IMPLEMENTATION S06**, tidak dipasangka
 | Administrasi perumahan | `surat_permohonan`, `info_intensitas_ruang`, `bukti_kepemilikan_lahan`, `bukti_tpu`, `kkpr_doc`, `pbg_induk`, `rekomendasi_lingkungan`, `pernyataan_pelepasan`, `pernyataan_keabsahan`, `pernyataan_psu` |
 | Teknis | `site_plan_dwg` atau isi `technicalFiles`; ada `selectedCakupanGambar` |
 | Tambahan | `pelepasan_lahan` opsional di Flutter; `drainase_doc` tambahan dalam seeder menurut audit |
+
+Pemeriksaan 26 Okt 2026: kunci `kkpr_doc`, `pbg_induk`, `pernyataan_pelepasan`, `pernyataan_keabsahan`, `pelepasan_lahan` hanya muncul sebagai data contoh/isian dummy di `pengajuan_form_controller.dart`, **bukan** slot di kontrak form dan **tidak ada** di katalog 18 slot server; server tidak menerimanya.
 
 **OPEN QUESTION Q07:** apakah tambahan tersebut bagian dari 16 slot, lampiran kondisional, atau data prototype yang tidak dipakai? Penetapan label resmi dan persyaratan perlu acuan Disperwaskim.
 
