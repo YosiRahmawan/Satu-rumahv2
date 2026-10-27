@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Professional Housing & Site Plan Architectural Illustration
 /// Faithful vector representation of Google Stitch design.
@@ -465,22 +465,12 @@ class _PengajuanEmptyStateState extends State<PengajuanEmptyState>
                 Semantics(
                   label:
                       'Maskot SATU RUMAH memeriksa dokumen tidak ada pengajuan ditemukan',
-                  child: SvgPicture.asset(
-                    'assets/images/pengajuan_empty_search.svg',
-                    width: 193,
-                    height: 145,
-                    fit: BoxFit.contain,
-                  ),
+                  child: const AppIllustration(AppIllustration.hasilSurvey),
                 )
               else
                 Semantics(
                   label: 'Maskot SATU RUMAH mengajak membuat pengajuan pertama',
-                  child: SvgPicture.asset(
-                    'assets/images/pengajuan_empty_onboarding.svg',
-                    width: 193,
-                    height: 145,
-                    fit: BoxFit.contain,
-                  ),
+                  child: const AppIllustration(AppIllustration.tugasLapangan),
                 ),
               const SizedBox(height: 20),
 

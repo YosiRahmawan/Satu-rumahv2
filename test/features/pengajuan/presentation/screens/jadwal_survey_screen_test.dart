@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:satu_rumah/core/widgets/app_illustration.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satu_rumah/core/widgets/app_housing_loader.dart';
@@ -7,7 +8,6 @@ import 'package:satu_rumah/features/pengajuan/data/models/hasil_survey_model.dar
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/status_tahap_pengajuan.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/jadwal_survey_screen.dart';
-import 'package:satu_rumah/features/pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 
 void main() {
   group('JadwalSurveyScreen Targeted Tests', () {
@@ -244,7 +244,7 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+      expect(find.byType(AppIllustration), findsOneWidget);
       expect(find.text('Reset Filter'), findsOneWidget);
     });
 

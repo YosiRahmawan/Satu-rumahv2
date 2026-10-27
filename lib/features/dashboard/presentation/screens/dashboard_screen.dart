@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -11,6 +10,7 @@ import 'tab_beranda.dart';
 import '../../../pengajuan/presentation/screens/pengajuan_saya_list_screen.dart';
 import '../../../notifikasi/presentation/screens/notifikasi_list_screen.dart';
 import '../../../profil/presentation/screens/profil_screen.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -24,27 +24,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   /// dipertahankan, supaya frame pertama setelah login tidak berat.
   final Set<int> _builtTabs = {};
 
-  /// Ilustrasi SVG yang dipakai halaman sukses, empty state, dan notifikasi.
+  /// Ilustrasi yang sering muncul di kondisi kosong dan notifikasi.
   static const _illustrations = [
-    'assets/images/pengajuan_sukses_saved.svg',
-    'assets/images/pengajuan_empty_search.svg',
-    'assets/images/pengajuan_empty_onboarding.svg',
-    'assets/images/notifikasi_unread_empty.svg',
+    AppIllustration.hasilSurvey,
+    AppIllustration.tugasLapangan,
+    AppIllustration.notifikasi,
   ];
 
   @override
   void initState() {
     super.initState();
     // Setelah frame pertama, supaya tidak menunda tampilnya Beranda.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _precacheIllustrations());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _precacheIllustrations(),
+    );
   }
 
-  /// Memuat dan mem-parse SVG lebih awal agar sudah ada di cache flutter_svg
-  /// saat ilustrasinya ditampilkan, jadi tidak muncul tiba-tiba.
+  /// Memuat gambar lebih awal agar sudah ada di cache saat ilustrasinya
+  /// ditampilkan, jadi tidak muncul tiba-tiba.
   Future<void> _precacheIllustrations() async {
     for (final asset in _illustrations) {
+      if (!mounted) return;
       try {
-        await SvgAssetLoader(asset).loadBytes(null);
+        await precacheImage(AssetImage(asset), context);
       } catch (_) {
         // Gagal precache tidak boleh mengganggu dashboard.
       }
@@ -69,6 +71,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
+      resizeToAvoidBottomInset: false,
       body: IndexedStack(
         index: currentIndex,
         children: [
@@ -77,35 +80,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: SizedBox(
-        width: fabSize,
-        height: fabSize,
-        child: Container(
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x38B91C1C),
-                blurRadius: 10,
-                offset: Offset(0, 4),
+      // Saat keyboard terbuka tombol disembunyikan, supaya tidak melayang di atasnya.
+      floatingActionButton: MediaQuery.viewInsetsOf(context).bottom > 0
+          ? null
+          : SizedBox(
+              width: fabSize,
+              height: fabSize,
+              child: Container(
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0x38B91C1C),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  elevation: 2,
+                  backgroundColor: AppColors.primaryRed,
+                  shape: const CircleBorder(
+                    side: BorderSide(color: AppColors.cardSurface, width: 3),
+                  ),
+                  onPressed: () => mulaiPengajuanBaru(context, ref),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    color: AppColors.textOnRed,
+                    size: 28,
+                  ),
+                ),
               ),
-            ],
-          ),
-          child: FloatingActionButton(
-            elevation: 2,
-            backgroundColor: AppColors.primaryRed,
-            shape: const CircleBorder(
-              side: BorderSide(color: AppColors.cardSurface, width: 3),
             ),
-            onPressed: () => mulaiPengajuanBaru(context, ref),
-            child: const Icon(
-              Icons.add_rounded,
-              color: AppColors.textOnRed,
-              size: 28,
-            ),
-          ),
-        ),
-      ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: BottomAppBar(
@@ -250,9 +256,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: 2),
             Text(
               label,
-              textScaler: MediaQuery.textScalerOf(context).clamp(
-                maxScaleFactor: 1.0,
-              ),
+              textScaler: MediaQuery.textScalerOf(
+                context,
+              ).clamp(maxScaleFactor: 1.0),
               style: AppTextStyles.labelSmall.copyWith(
                 color: color,
                 fontSize: 11,

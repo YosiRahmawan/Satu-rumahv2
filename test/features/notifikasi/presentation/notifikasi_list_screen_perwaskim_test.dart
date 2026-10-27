@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/core/widgets/app_illustration.dart';
 import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:satu_rumah/core/theme/app_colors.dart';
 import 'package:satu_rumah/features/notifikasi/data/models/notifikasi_model.dart';
 import 'package:satu_rumah/features/notifikasi/presentation/providers/notifikasi_provider.dart';
 import 'package:satu_rumah/features/notifikasi/presentation/screens/notifikasi_list_screen.dart';
-import 'package:satu_rumah/features/pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 
 Widget _buildSubject({
   required AppRole role,
@@ -252,7 +252,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.text('Belum ada notifikasi'), findsOneWidget);
         expect(
           find.text('Informasi penugasan dan pengawasan akan muncul di sini.'),
@@ -271,7 +271,7 @@ void main() {
         await tester.tap(find.text('Belum Dibaca (0)'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.text('Semua notifikasi sudah dibaca'), findsOneWidget);
         expect(
           find.text('Belum ada pemberitahuan baru yang perlu dibaca.'),
@@ -283,7 +283,7 @@ void main() {
         await tester.tap(find.text('Perlu Tindak Lanjut'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.text('Tidak ada tindak lanjut'), findsOneWidget);
         expect(
           find.text('Belum ada tugas atau evaluasi yang memerlukan tindakan.'),

@@ -41,4 +41,30 @@ void main() {
     drainOverflow(tester);
     expect(find.byType(NotifikasiListScreen, skipOffstage: false), findsOneWidget);
   });
+
+  testWidgets('tombol tambah tidak melayang di atas keyboard', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(390, 844));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    Widget app(double keyboard) => ProviderScope(
+      child: MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            viewInsets: EdgeInsets.only(bottom: keyboard),
+          ),
+          child: child!,
+        ),
+        home: const DashboardScreen(),
+      ),
+    );
+
+    await tester.pumpWidget(app(0));
+    await tester.pumpAndSettle();
+    drainOverflow(tester);
+    expect(find.byType(FloatingActionButton), findsOneWidget);
+
+    await tester.pumpWidget(app(300));
+    await tester.pumpAndSettle();
+    drainOverflow(tester);
+    expect(find.byType(FloatingActionButton), findsNothing);
+  });
 }

@@ -12,6 +12,7 @@ import '../../services/stamp_renderer.dart';
 import '../providers/camera_providers.dart';
 import '../providers/monitoring_form_provider.dart';
 import '../screens/kamera_lapangan_screen.dart' show kMaxReportPhotos;
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Bagian foto di Langkah 3: ambil lewat kamera aplikasi atau pilih dari
 /// galeri (hanya foto yang sudah bergeotag Satu Rumah), lalu daftar fotonya.
@@ -184,12 +185,19 @@ class _EmptyPhotos extends StatelessWidget {
         border: Border.all(color: AppColors.enterpriseBorder),
         borderRadius: AppRadii.control,
       ),
-      child: Text(
-        'Belum ada foto. Laporan tetap dapat dikirim tanpa foto.',
-        style: AppTextStyles.bodySmall.copyWith(
-          fontFamily: AppTextStyles.enterpriseFontFamily,
-          color: AppColors.enterpriseTextMuted,
-        ),
+      child: Column(
+        children: [
+          const AppIllustration(AppIllustration.fotoKosong, width: 170),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Belum ada foto. Laporan tetap dapat dikirim tanpa foto.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodySmall.copyWith(
+              fontFamily: AppTextStyles.enterpriseFontFamily,
+              color: AppColors.enterpriseTextMuted,
+            ),
+          ),
+        ],
       ),
     );
   }

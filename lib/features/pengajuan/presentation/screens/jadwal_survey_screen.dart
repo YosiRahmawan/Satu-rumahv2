@@ -11,8 +11,8 @@ import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 import '../providers/pengajuan_form_controller.dart';
-import '../widgets/survey_not_found_illustration.dart';
 import 'pengajuan_detail_screen.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Provider data jadwal survey yang bersumber dari daftar pengajuan aktif pengembang.
 final jadwalSurveyListProvider = FutureProvider.autoDispose<List<Pengajuan>>((
@@ -1027,49 +1027,10 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
           children: [
             // Illustration
             if (isFilterEmpty)
-              const SurveyNotFoundIllustration(width: 200, height: 157)
+              const AppIllustration(AppIllustration.hasilSurvey)
             else
-              // Calendar with SATU RUMAH House Accent illustration
-              Container(
-                width: 110,
-                height: 110,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFEF2F2),
-                  shape: BoxShape.circle,
-                  border: Border.fromBorderSide(
-                    BorderSide(color: Color(0xFFFEE2E2), width: 2),
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: const Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      Icons.calendar_month_outlined,
-                      size: 54,
-                      color: AppColors.primaryRed,
-                    ),
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryDark,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.home_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Maskot dengan kalender jadwal yang belum ditetapkan.
+              const AppIllustration(AppIllustration.jadwalSurvey),
             const SizedBox(height: 20),
 
             // Title
@@ -1203,20 +1164,7 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF1F2), // rose-50
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFFFE4E6)), // rose-100
-              ),
-              child: const Icon(
-                Icons.wifi_off_rounded,
-                color: Color(0xFFB91C1C),
-                size: 30,
-              ),
-            ),
+            const AppIllustration(AppIllustration.galat, width: 200),
             const SizedBox(height: 16),
             const Text(
               'Gagal Memuat Jadwal Survey',

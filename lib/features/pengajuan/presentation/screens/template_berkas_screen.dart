@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
-import '../widgets/survey_not_found_illustration.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Enum kelompok fase dokumen pengajuan
 enum TemplateBerkasGroup {
@@ -1058,7 +1058,7 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SurveyNotFoundIllustration(width: 180, height: 140),
+            const AppIllustration(AppIllustration.hasilSurvey, width: 200),
             const SizedBox(height: 14),
             const Text(
               'Dokumen Tidak Ditemukan',

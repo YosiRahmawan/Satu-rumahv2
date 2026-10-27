@@ -375,6 +375,8 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
+      var picks =
+          0; // nama berbeda tiap pilihan: Site Plan dan Kajian tidak kembar
       late GoRouter router;
       router = GoRouter(
         initialLocation: '/pengajuan/step3',
@@ -392,7 +394,7 @@ void main() {
             path: '/pengajuan/step4',
             builder: (_, __) => PengajuanStep4Screen(
               pickerSeam: ({required allowMultiple, allowedExtensions}) async =>
-                  [_file('technical.pdf', 2)],
+                  [_file('technical-${picks++}.pdf', 2)],
             ),
           ),
           GoRoute(
@@ -418,6 +420,26 @@ void main() {
       );
       await tester.pumpAndSettle();
       final next = find.text('Lanjut ke Review');
+
+      // Site Plan saja belum cukup: Kajian Teknis juga wajib diisi.
+      await tester.tap(next);
+      await tester.pumpAndSettle();
+      // Font uji lebih lebar dari font asli; overflow lembar bawah bukan yang diuji.
+      while (tester.takeException() != null) {}
+      expect(find.text('step 5'), findsNothing);
+      expect(find.text('Berkas Teknis Belum Lengkap'), findsOneWidget);
+      expect(find.text('2. Dokumen Kajian Teknis Lainnya *'), findsOneWidget);
+      expect(
+        find.text('1. Dokumen Perencanaan & Perancangan Site Plan *'),
+        findsNothing,
+      );
+      await tester.tap(find.text('Kembali ke Formulir'));
+      await tester.pumpAndSettle();
+
+      final kajian = find.text('Unggah File Kajian (PDF)');
+      await tester.ensureVisible(kajian);
+      await tester.tap(kajian);
+      await tester.pumpAndSettle();
       await tester.tap(next);
       await tester.pumpAndSettle();
       expect(find.text('step 5'), findsOneWidget);

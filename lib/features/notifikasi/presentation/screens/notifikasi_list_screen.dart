@@ -10,7 +10,6 @@ import '../../../../core/auth/role_session.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
-import '../../../pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
@@ -19,6 +18,7 @@ import '../../data/models/notifikasi_model.dart';
 import '../providers/notifikasi_provider.dart';
 import '../widgets/developer_notification_view.dart';
 import '../../../monitoring/presentation/widgets/tab_beranda_monitoring.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Rewrites a notification's local target into a route valid for the active
 /// role. A null result is an explicit unavailable outcome, never a silent
@@ -534,7 +534,12 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SurveyNotFoundIllustration(width: 140, height: 110),
+            AppIllustration(
+              _selectedFilter == 'Perlu Tindak Lanjut'
+                  ? AppIllustration.semuaBeres
+                  : AppIllustration.notifikasi,
+              width: 200,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               title,

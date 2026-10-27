@@ -210,13 +210,19 @@ class OfficerApiRepository implements OfficerRemote {
         0.2 + 0.7 * done / draft.photos.length,
       );
       if (onServer.contains(sha256.convert(bytes).toString())) continue;
-      await _dio.post<Map<String, dynamic>>(
-        'officer/reports/$reportId/photos',
-        data: FormData.fromMap({
-          'file': MultipartFile.fromBytes(bytes, filename: 'foto-$done.jpg'),
-          'source': photo.source == PhotoSource.gallery ? 'gallery' : 'camera',
-        }),
-      );
+      try {
+        await _dio.post<Map<String, dynamic>>(
+          'officer/reports/$reportId/photos',
+          data: FormData.fromMap({
+            'file': MultipartFile.fromBytes(bytes, filename: 'foto-$done.jpg'),
+            'source': photo.source == PhotoSource.gallery
+                ? 'gallery'
+                : 'camera',
+          }),
+        );
+      } on DioException catch (e) {
+        throw ApiException.fromDio(e).withPrefix('Foto $done gagal diunggah.');
+      }
     }
   }
 

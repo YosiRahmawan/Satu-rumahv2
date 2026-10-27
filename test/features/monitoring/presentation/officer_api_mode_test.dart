@@ -21,6 +21,9 @@ import '../../../support/camera_fakes.dart';
 class FakeOfficerRemote implements OfficerRemote {
   List<OfficerAssignment> items = [];
   ApiException? error;
+
+  /// Galat non-API (mis. kesalahan tak terduga) yang dilempar saat kirim.
+  Object? crash;
   int lists = 0;
   final List<String> keys = [];
   final List<({double lat, double lng})> positions = [];
@@ -44,6 +47,7 @@ class FakeOfficerRemote implements OfficerRemote {
     positions.add((lat: latitude, lng: longitude));
     lastDraft = draft;
     onProgress?.call('Mengunggah…', 0.5);
+    if (crash != null) throw crash!;
     if (error != null) throw error!;
     return '600.2.5/BA-MON/X/2026/007';
   }
@@ -172,6 +176,33 @@ void main() {
         ),
       );
     }
+
+    test(
+      'galat tak terduga: gagal dengan pesan, tombol tidak terkunci',
+      () async {
+        final remote = FakeOfficerRemote()..crash = StateError('boom');
+        final c = _container(remote, location: FakeLocationService());
+        c
+            .read(roleSessionProvider.notifier)
+            .signIn(AppRole.perwaskim, username: 'a');
+        final notifier = c.read(monitoringFormProvider.notifier);
+
+        final result = await notifier.submitFinalViaApi(
+          _draft(photos: [photo('p1')]),
+        );
+
+        expect(result.isSuccess, isFalse);
+        expect(result.errorMessage, contains('kendala tak terduga'));
+        expect(c.read(monitoringFormProvider).isSubmitting, isFalse);
+
+        // Percobaan ulang setelah galat berjalan normal.
+        remote.crash = null;
+        final retry = await notifier.submitFinalViaApi(
+          _draft(photos: [photo('p1')]),
+        );
+        expect(retry.isSuccess, isTrue);
+      },
+    );
 
     test(
       'berhasil: nomor server, riwayat lokal, tugas dimuat ulang, form dikosongkan',

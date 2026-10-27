@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/core/widgets/app_illustration.dart';
 import 'package:satu_rumah/core/theme/app_colors.dart';
 import 'package:satu_rumah/core/widgets/app_button.dart';
 import 'package:satu_rumah/core/widgets/app_housing_loader.dart';
@@ -295,7 +296,8 @@ void main() {
         expect(find.text('Data Kosong'), findsOneWidget);
 
         // Error state uses error icon and retry button
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        // Galat memakai ilustrasi maskot, bukan ikon polos.
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.text('Coba lagi'), findsOneWidget);
 
         await tester.tap(find.text('Coba lagi'));

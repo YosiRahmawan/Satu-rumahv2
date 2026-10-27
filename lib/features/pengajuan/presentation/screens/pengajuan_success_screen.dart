@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 class PengajuanSuccessScreen extends ConsumerWidget {
   final String pengajuanId;
@@ -38,11 +38,9 @@ class PengajuanSuccessScreen extends ConsumerWidget {
                     child: Semantics(
                       label:
                           'Ilustrasi maskot SATU RUMAH pengajuan berhasil disimpan',
-                      child: SvgPicture.asset(
-                        'assets/images/pengajuan_sukses_saved.svg',
-                        width: 200,
-                        height: 150,
-                        fit: BoxFit.contain,
+                      child: const AppIllustration(
+                        AppIllustration.semuaBeres,
+                        width: 240,
                       ),
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:satu_rumah/core/widgets/app_illustration.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -7,7 +8,6 @@ import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart
 import 'package:satu_rumah/features/monitoring/data/models/status_hasil_evaluasi.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/screens/monitoring_list_screen.dart';
-import 'package:satu_rumah/features/pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 
 class _FakeMonitoringRepository {
   final List<MonitoringModel> items;
@@ -149,7 +149,7 @@ void main() {
     await tester.pumpWidget(buildSubject([]));
     await tester.pumpAndSettle();
 
-    expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+    expect(find.byType(AppIllustration), findsOneWidget);
     expect(find.byIcon(Icons.assignment_outlined), findsNothing);
     expect(find.text('Belum ada laporan survey'), findsOneWidget);
     expect(
@@ -172,14 +172,12 @@ void main() {
       await tester.enterText(find.byType(TextField), 'tidak ada nama ini');
       await tester.pumpAndSettle();
 
-      expect(find.byType(SurveyNotFoundIllustration), findsNothing);
-      expect(find.byType(Image), findsOneWidget);
+      expect(find.byType(AppIllustration), findsOneWidget);
       final image = tester.widget<Image>(find.byType(Image));
       expect(
         (image.image as AssetImage).assetName,
-        equals('assets/images/Maskot Rumah Mencari yang Tak Ditemukan.png'),
+        equals(AppIllustration.hasilSurvey),
       );
-      expect(image.fit, equals(BoxFit.contain));
       expect(find.text('Laporan tidak ditemukan'), findsOneWidget);
       expect(find.textContaining('tidak ada nama ini'), findsWidgets);
       final clearButton = find.text('Hapus Pencarian');
@@ -204,7 +202,7 @@ void main() {
     await tester.tap(find.text('Draf'));
     await tester.pumpAndSettle();
 
-    expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+    expect(find.byType(AppIllustration), findsOneWidget);
     expect(find.text('Tidak ada laporan dengan status ini'), findsOneWidget);
     expect(
       find.text(
@@ -237,7 +235,7 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Permata');
       await tester.pumpAndSettle();
 
-      expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+      expect(find.byType(AppIllustration), findsOneWidget);
       expect(find.text('Tidak ada laporan yang sesuai filter'), findsOneWidget);
       expect(
         find.text(
@@ -265,7 +263,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+      expect(find.byType(AppIllustration), findsOneWidget);
     });
 
     testWidgets(
@@ -279,9 +277,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(tester.takeException(), isNull);
-        expect(find.byType(Image), findsOneWidget);
-        final image = tester.widget<Image>(find.byType(Image));
-        expect(image.width, inInclusiveRange(140.0, 160.0));
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.text('Laporan tidak ditemukan'), findsOneWidget);
       },
     );

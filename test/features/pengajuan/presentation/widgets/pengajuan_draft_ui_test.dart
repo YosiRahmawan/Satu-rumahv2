@@ -64,50 +64,57 @@ void main() {
     addTearDown(container.dispose);
   });
 
-  testWidgets('tombol Simpan Draft: animasi centang saat berhasil, tenang saat kosong', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: const MaterialApp(home: Scaffold(body: DraftStatusRow())),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(find.byIcon(PhosphorIconsRegular.bookmarkSimple), findsOneWidget);
-    expect(find.text('Disimpan otomatis di perangkat ini'), findsOneWidget);
+  testWidgets(
+    'tombol Simpan Draft: animasi centang saat berhasil, tenang saat kosong',
+    (tester) async {
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(home: Scaffold(body: DraftStatusRow())),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byIcon(PhosphorIconsRegular.bookmarkSimple), findsOneWidget);
+      expect(find.text('Disimpan otomatis di perangkat ini'), findsOneWidget);
 
-    // Kosong: snackbar, tanpa animasi centang.
-    await tester.tap(find.text('Simpan Draft'));
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.text('Belum ada isian yang perlu disimpan.'), findsOneWidget);
-    expect(find.byIcon(PhosphorIconsRegular.checkCircle), findsNothing);
-    await tester.pumpAndSettle();
+      // Kosong: snackbar, tanpa animasi centang.
+      await tester.tap(find.text('Simpan Draft'));
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Belum ada isian yang perlu disimpan.'), findsOneWidget);
+      expect(find.byIcon(PhosphorIconsRegular.checkCircle), findsNothing);
+      await tester.pumpAndSettle();
 
-    // Berisi: ikon berubah jadi centang sebentar lalu kembali, tanpa snackbar.
-    await tester.runAsync(SharedPreferences.getInstance);
-    container.read(pengajuanFormProvider.notifier).updateNamaPerumahan('Taman Asri');
-    await tester.pump();
-    await tester.tap(find.text('Simpan Draft'));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-    await tester.pump(); // frame pertama: animasi mulai
-    await tester.pump(const Duration(milliseconds: 300));
-    expect(find.byIcon(PhosphorIconsRegular.checkCircle), findsOneWidget);
-    expect(find.text('Draf tersimpan di perangkat ini.'), findsNothing);
-    expect(find.textContaining('Tersimpan otomatis pukul'), findsOneWidget);
-    expect(find.text('Tersimpan'), findsOneWidget);
+      // Berisi: ikon berubah jadi centang sebentar lalu kembali, tanpa snackbar.
+      await tester.runAsync(SharedPreferences.getInstance);
+      container
+          .read(pengajuanFormProvider.notifier)
+          .updateNamaPerumahan('Taman Asri');
+      await tester.pump();
+      await tester.tap(find.text('Simpan Draft'));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump(); // frame pertama: animasi mulai
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byIcon(PhosphorIconsRegular.checkCircle), findsOneWidget);
+      expect(find.text('Draf tersimpan di perangkat ini.'), findsNothing);
+      expect(find.textContaining('Tersimpan otomatis pukul'), findsOneWidget);
+      expect(find.text('Tersimpan'), findsOneWidget);
 
-    // Tetap hijau selama isian tidak berubah.
-    await tester.pumpAndSettle();
-    expect(find.byIcon(PhosphorIconsRegular.checkCircle), findsOneWidget);
-    expect(find.text('Tersimpan'), findsOneWidget);
+      // Tetap hijau selama isian tidak berubah.
+      await tester.pumpAndSettle();
+      expect(find.byIcon(PhosphorIconsRegular.checkCircle), findsOneWidget);
+      expect(find.text('Tersimpan'), findsOneWidget);
 
-    // Begitu form diubah, tombol kembali ke Simpan Draft.
-    container.read(pengajuanFormProvider.notifier).updateAlamatProyek('Jl. Baru');
-    await tester.pumpAndSettle();
-    expect(find.byIcon(PhosphorIconsRegular.bookmarkSimple), findsOneWidget);
-    expect(find.text('Simpan Draft'), findsOneWidget);
-  });
+      // Begitu form diubah, tombol kembali ke Simpan Draft.
+      container
+          .read(pengajuanFormProvider.notifier)
+          .updateAlamatProyek('Jl. Baru');
+      await tester.pumpAndSettle();
+      expect(find.byIcon(PhosphorIconsRegular.bookmarkSimple), findsOneWidget);
+      expect(find.text('Simpan Draft'), findsOneWidget);
+    },
+  );
 
   group('kartu draf', () {
     Future<void> pumpCard(WidgetTester tester) async {
@@ -151,7 +158,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Draf pengajuan belum dikirim'), findsOneWidget);
-      expect(find.textContaining('Taman Asri · Disimpan pukul'), findsOneWidget);
+      expect(
+        find.textContaining('Taman Asri · Disimpan pukul'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.text('Lanjutkan'));
       await tester.pumpAndSettle();
@@ -175,7 +185,7 @@ void main() {
 
       await tester.tap(find.text('Hapus'));
       await tester.pumpAndSettle();
-      await tester.tap(find.widgetWithText(TextButton, 'Hapus').last);
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Hapus'));
       await tester.pumpAndSettle();
       expect(find.text('Draf pengajuan belum dikirim'), findsNothing);
 
@@ -211,10 +221,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Halaman Langkah 2'), findsOneWidget);
-    expect(
-      container.read(pengajuanFormProvider).namaPerumahan,
-      'Taman Asri',
-    );
+    expect(container.read(pengajuanFormProvider).namaPerumahan, 'Taman Asri');
   });
 
   testWidgets('ada draf: Mulai baru menghapus draf dan membuka Langkah 1', (

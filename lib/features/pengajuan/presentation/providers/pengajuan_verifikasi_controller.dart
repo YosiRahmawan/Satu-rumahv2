@@ -572,6 +572,10 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
       );
     } on ApiException catch (e) {
       return PengajuanOperationResult.blocked(e.message);
+    } catch (_) {
+      return const PengajuanOperationResult.blocked(
+        'Revisi belum terkirim karena kendala tak terduga. Coba lagi.',
+      );
     }
   }
 

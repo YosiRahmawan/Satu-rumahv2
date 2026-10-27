@@ -85,8 +85,11 @@ class _MonitoringMainScreenState extends ConsumerState<MonitoringMainScreen> {
       }
     });
 
+    final isKeyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
+
     return Scaffold(
       backgroundColor: AppColors.enterpriseCanvas,
+      resizeToAvoidBottomInset: false,
       body: IndexedStack(
         index: _currentIndex,
         children: [
@@ -95,7 +98,9 @@ class _MonitoringMainScreenState extends ConsumerState<MonitoringMainScreen> {
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: SizedBox(
+      floatingActionButton: isKeyboardOpen
+          ? null
+          : SizedBox(
         width: fabSize,
         height: fabSize,
         child: Container(
