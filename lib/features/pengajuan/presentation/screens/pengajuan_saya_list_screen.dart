@@ -16,10 +16,18 @@ import '../widgets/pengajuan_empty_state.dart';
 import '../widgets/pengajuan_list_card.dart';
 import '../widgets/pengajuan_list_filters.dart';
 import '../widgets/pengajuan_list_summary.dart';
+import '../../../../core/api/remote_load.dart';
+import '../../../../core/widgets/connection_banner.dart';
+import '../../../../core/widgets/data_state_view.dart';
 
 /// The dashboard owns bottom navigation and the single central AJUKAN action.
 class PengajuanSayaListScreen extends ConsumerWidget {
   const PengajuanSayaListScreen({super.key});
+
+  Future<void> _retry(BuildContext context, WidgetRef ref) async {
+    final error = await ref.read(pengajuanListProvider.notifier).refresh();
+    if (context.mounted) showRefreshError(context, error);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -59,6 +67,14 @@ class PengajuanSayaListScreen extends ConsumerWidget {
           ),
           // 2. GAP 16dp antara header dan search bar / filter
           const SliverToBoxAdapter(child: SizedBox(height: 16.0)),
+          // Gagal memperbarui padahal data lama ada: jelaskan dan tawarkan coba lagi.
+          SliverToBoxAdapter(
+            child: LoadFailedBanner(
+              load: ref.read(pengajuanListProvider.notifier).load,
+              hasData: items.isNotEmpty,
+              onRetry: () => _retry(context, ref),
+            ),
+          ),
           // Draf pengajuan yang belum dikirim (bila ada)
           const SliverToBoxAdapter(child: PengajuanDraftCard()),
           if (items.isEmpty)
@@ -83,13 +99,34 @@ class PengajuanSayaListScreen extends ConsumerWidget {
                 vertical: AppSpacing.md,
               ),
               sliver: SliverToBoxAdapter(
-                child: PengajuanEmptyState(
-                  isFilteredEmpty: items.isNotEmpty,
-                  totalRegistered: items.length,
-                  onReset: items.isEmpty
-                      ? null
-                      : ref.read(pengajuanListQueryProvider.notifier).reset,
-                  onCreateNew: () => mulaiPengajuanBaru(context, ref),
+                // Daftar kosong bisa berarti masih memuat atau gagal memuat:
+                // jangan tampilkan "Belum ada pengajuan" untuk keduanya.
+                child: ValueListenableBuilder<RemoteLoad>(
+                  valueListenable: ref.read(pengajuanListProvider.notifier).load,
+                  builder: (context, load, _) {
+                    if (items.isEmpty && load.isLoading) {
+                      return const DataStateView.loading(
+                        title: 'Memuat pengajuan',
+                        message: 'Mengambil data terbaru dari server.',
+                      );
+                    }
+                    if (items.isEmpty && load.isFailed) {
+                      return DataStateView.error(
+                        title: loadErrorText(load.error),
+                        message:
+                            'Pengajuan Anda belum dapat dimuat. Periksa sinyal lalu coba lagi.',
+                        onAction: () => _retry(context, ref),
+                      );
+                    }
+                    return PengajuanEmptyState(
+                      isFilteredEmpty: items.isNotEmpty,
+                      totalRegistered: items.length,
+                      onReset: items.isEmpty
+                          ? null
+                          : ref.read(pengajuanListQueryProvider.notifier).reset,
+                      onCreateNew: () => mulaiPengajuanBaru(context, ref),
+                    );
+                  },
                 ),
               ),
             )
@@ -271,7 +308,8 @@ class _PullToRefresh extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) => RefreshIndicator(
     onRefresh: () async {
-      await ref.read(pengajuanListProvider.notifier).refresh();
+      final error = await ref.read(pengajuanListProvider.notifier).refresh();
+      if (context.mounted) showRefreshError(context, error);
     },
     child: child,
   );

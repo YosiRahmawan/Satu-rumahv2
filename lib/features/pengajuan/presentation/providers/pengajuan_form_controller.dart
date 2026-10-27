@@ -10,6 +10,7 @@ import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 import '../../data/repositories/pengajuan_api_repository.dart';
 import '../../data/repositories/pengajuan_draft_store.dart';
+import '../../../../core/api/remote_load.dart';
 
 /// One source of truth for the current Fase 3 document form.
 class PengajuanStep3DocumentConfig {
@@ -269,9 +270,17 @@ class PengajuanFormState {
   bool get isStep3Valid =>
       PengajuanStep3DocumentContract.requiredKeys.every(_hasDocument);
 
-  bool get isStep4Valid =>
+  /// Site Plan: cukup satu berkas, DWG atau PDF (boleh campur).
+  bool get hasSitePlan =>
       _hasDocument('site_plan_dwg') ||
       technicalFiles.any((file) => file.trim().isNotEmpty);
+
+  /// Kajian Teknis (PDF): wajib, sama seperti di server (slot S4-02).
+  bool get hasKajianTeknis =>
+      technicalOtherFiles.any((file) => file.trim().isNotEmpty);
+
+  /// Kedua dokumen teknis harus terisi; mengikuti aturan server.
+  bool get isStep4Valid => hasSitePlan && hasKajianTeknis;
 
   bool get isAllValid =>
       isStep1Valid && isStep2Valid && isStep3Valid && isStep4Valid && isAgreed;
@@ -662,6 +671,11 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
         'design_siteplan_layout.dwg',
         'berkas_gambar_teknis_lengkap.pdf',
       ],
+      multiUploadedDocs: {
+        PengajuanFormState.technicalOtherDocumentsKey: [
+          'kajian_teknis_tanah.pdf',
+        ],
+      },
       selectedCakupanGambar: {
         '1 Cover',
         '2 Lembar Pengesahan Rencana Tapak',
@@ -932,20 +946,32 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
   final PengajuanRemote? remote;
   final Map<String, Pengajuan> _justSubmitted = {};
 
+  /// Status pemuatan dari server: layar membedakan memuat, kosong, dan gagal.
+  final ValueNotifier<RemoteLoad> load = ValueNotifier(RemoteLoad.idle);
+
+  @override
+  void dispose() {
+    load.dispose();
+    super.dispose();
+  }
+
   /// Memuat ulang dari server. Mengembalikan galatnya (bila ada) agar layar
   /// bisa menampilkannya; daftar lama dipertahankan saat gagal.
   Future<ApiException?> refresh() async {
     final source = remote;
     if (source == null) return null;
+    load.value = RemoteLoad.loading;
     try {
       final items = await source.list();
       if (!mounted) return null;
+      load.value = RemoteLoad.loaded;
       // Hasil kirim yang belum tampil di jawaban server (balapan dengan
       // pemuatan yang lebih dulu dimulai) tidak boleh hilang.
       _justSubmitted.removeWhere((id, _) => items.any((i) => i.id == id));
       state = [..._justSubmitted.values, ...items];
       return null;
     } on ApiException catch (e) {
+      if (mounted) load.value = RemoteLoad(LoadState.failed, e);
       return e;
     }
   }

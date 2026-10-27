@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:satu_rumah/core/widgets/app_illustration.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satu_rumah/core/theme/app_theme.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
@@ -87,7 +87,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Card & Illustration
-        expect(find.byType(SvgPicture), findsOneWidget);
+        expect(find.byType(AppIllustration), findsOneWidget);
 
         // Verbatim Headline
         expect(find.text('Tidak ada pengajuan ditemukan'), findsOneWidget);
@@ -130,7 +130,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(SvgPicture), findsOneWidget);
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.text('Belum ada pengajuan'), findsOneWidget);
         expect(
           find.text(
@@ -326,7 +326,7 @@ void main() {
 
         // Empty State must be rendered
         expect(find.text('Tidak ada pengajuan ditemukan'), findsOneWidget);
-        expect(find.byType(SvgPicture), findsOneWidget);
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.textContaining('pengajuan terdaftar'), findsNothing);
         expect(find.textContaining('Mode prototipe lokal'), findsNothing);
 

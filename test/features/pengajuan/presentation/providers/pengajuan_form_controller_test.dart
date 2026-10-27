@@ -115,8 +115,14 @@ void main() {
       notifier.uploadDocument('site_plan_dwg', '');
       expect(notifier.state.uploadedDocs, isEmpty);
       notifier.addTechnicalFiles(['', '  ', 'siteplan.dwg']);
-      expect(notifier.state.isStep4Valid, isTrue);
+      expect(notifier.state.hasSitePlan, isTrue);
       expect(notifier.state.technicalFiles, ['siteplan.dwg']);
+      // Kajian Teknis juga wajib: Site Plan saja belum cukup untuk Langkah 4.
+      expect(notifier.state.isStep4Valid, isFalse);
+      notifier.uploadDocuments(PengajuanFormState.technicalOtherDocumentsKey, [
+        'kajian.pdf',
+      ]);
+      expect(notifier.state.isStep4Valid, isTrue);
       notifier.removeTechnicalFile(0);
       expect(notifier.state.isStep4Valid, isFalse);
       expect(notifier.state.uploadedDocs.containsKey('site_plan_dwg'), isFalse);

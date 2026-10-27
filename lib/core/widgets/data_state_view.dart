@@ -6,6 +6,7 @@ import '../theme/app_spacing.dart';
 import '../theme/app_text_styles.dart';
 
 import 'app_housing_loader.dart';
+import 'app_illustration.dart';
 
 enum AppDataState { loading, empty, error }
 
@@ -52,7 +53,7 @@ class DataStateView extends StatelessWidget {
     this.actionLabel = 'Coba lagi',
     this.onAction,
   }) : state = AppDataState.error,
-       illustration = null;
+       illustration = const AppIllustration(AppIllustration.galat, width: 180);
 
   @override
   Widget build(BuildContext context) {

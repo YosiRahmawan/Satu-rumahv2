@@ -13,6 +13,8 @@ import '../../../pengajuan/presentation/screens/unduh_sk_ba_screen.dart';
 import '../../../pengajuan/presentation/screens/template_berkas_screen.dart';
 import '../../../bantuan/presentation/screens/pusat_bantuan_screen.dart';
 import '../providers/dashboard_provider.dart';
+import '../../../../core/api/remote_load.dart';
+import '../../../../core/widgets/connection_banner.dart';
 
 Pengajuan? latestPengajuan(List<Pengajuan> submissions) {
   return submissions.isEmpty ? null : submissions.first;
@@ -259,18 +261,42 @@ class _BelumAdaPengajuanCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Belum ada pengajuan',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textMain,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Pengajuan yang Anda kirim akan tampil di sini.',
-              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ValueListenableBuilder<RemoteLoad>(
+              valueListenable: ref.read(pengajuanListProvider.notifier).load,
+              builder: (context, load, _) {
+                // Kosong bisa berarti memuat atau gagal, bukan "belum ada".
+                final title = load.isLoading
+                    ? 'Memuat pengajuan…'
+                    : load.isFailed
+                    ? loadErrorText(load.error)
+                    : 'Belum ada pengajuan';
+                final message = load.isLoading
+                    ? 'Mengambil data terbaru dari server.'
+                    : load.isFailed
+                    ? 'Pengajuan Anda belum dapat dimuat. Buka tab Pengajuan lalu tarik ke bawah untuk mencoba lagi.'
+                    : 'Pengajuan yang Anda kirim akan tampil di sini.';
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textMain,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
             const SizedBox(height: 14),
             Material(

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart
 import '../../data/models/monitoring_model.dart';
 import '../../data/repositories/officer_api_repository.dart';
 import 'monitoring_form_provider.dart';
+import '../../../../core/api/remote_load.dart';
 
 final monitoringListProvider =
     StateNotifierProvider<MonitoringListNotifier, List<MonitoringModel>>((ref) {
@@ -67,15 +69,29 @@ class OfficerAssignmentsNotifier
 
   final OfficerRemote? remote;
 
+  /// Status pemuatan dari server: layar membedakan memuat, kosong, dan gagal.
+  final ValueNotifier<RemoteLoad> load = ValueNotifier(RemoteLoad.idle);
+
+  @override
+  void dispose() {
+    load.dispose();
+    super.dispose();
+  }
+
   /// Memuat ulang; mengembalikan galatnya (bila ada) dan mempertahankan daftar lama.
   Future<ApiException?> refresh() async {
     final source = remote;
     if (source == null) return null;
+    load.value = RemoteLoad.loading;
     try {
       final items = await source.assignments();
-      if (mounted) state = items;
+      if (mounted) {
+        state = items;
+        load.value = RemoteLoad.loaded;
+      }
       return null;
     } on ApiException catch (e) {
+      if (mounted) load.value = RemoteLoad(LoadState.failed, e);
       return e;
     }
   }

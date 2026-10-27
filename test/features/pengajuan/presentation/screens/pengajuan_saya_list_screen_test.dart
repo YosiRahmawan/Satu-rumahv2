@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:satu_rumah/core/widgets/app_illustration.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +21,6 @@ import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_say
 import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_empty_state.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_list_card.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_list_filters.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _Submissions extends PengajuanListNotifier {
@@ -211,12 +211,12 @@ void main() {
     await tester.enterText(find.byType(TextField), 'missing');
     await tester.pumpAndSettle();
     expect(find.text('Tidak ada pengajuan ditemukan'), findsOneWidget);
-    expect(find.byType(SvgPicture), findsOneWidget);
+    expect(find.byType(AppIllustration), findsOneWidget);
     expect(find.byType(HousingSitePlanIllustration), findsNothing);
     await tester.ensureVisible(find.text('Reset pencarian dan filter'));
     await tester.tap(find.text('Reset pencarian dan filter'));
     await tester.pumpAndSettle();
-    expect(find.byType(SvgPicture), findsNothing);
+    expect(find.byType(AppIllustration), findsNothing);
     expect(
       tester.widget<TextField>(find.byType(TextField)).controller!.text,
       isEmpty,
@@ -410,7 +410,7 @@ void main() {
     expect(find.text('Buat Pengajuan'), findsOneWidget);
     expect(find.byType(PengajuanListCard), findsNothing);
     expect(find.text('Total: 0 Pengajuan'), findsOneWidget);
-    expect(find.byType(SvgPicture), findsOneWidget);
+    expect(find.byType(AppIllustration), findsOneWidget);
 
     // Tap Buat Pengajuan navigates to /pengajuan/step1
     await tester.tap(find.text('Buat Pengajuan'));

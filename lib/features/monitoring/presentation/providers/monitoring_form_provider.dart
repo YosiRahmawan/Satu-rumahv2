@@ -729,6 +729,11 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       return MonitoringSubmitResult.success(finalModel);
     } on ApiException catch (e) {
       return _failSubmit(e.message);
+    } catch (_) {
+      // Galat tak terduga tidak boleh meninggalkan tombol berputar selamanya.
+      return _failSubmit(
+        'Laporan belum terkirim karena kendala tak terduga. Coba lagi.',
+      );
     }
   }
 

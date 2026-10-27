@@ -184,14 +184,20 @@ class PengajuanApiRepository implements PengajuanRemote {
                 'Berkas "$name" tidak dapat dibaca. Pilih ulang berkas pengganti lalu kirim kembali.',
           );
         }
-        await _dio.post<Map<String, dynamic>>(
-          'submissions/$id/files',
-          data: FormData.fromMap({
-            'slot_code': code,
-            'replaces_file_id': target['id'],
-            'file': MultipartFile.fromBytes(bytes, filename: name),
-          }),
-        );
+        try {
+          await _dio.post<Map<String, dynamic>>(
+            'submissions/$id/files',
+            data: FormData.fromMap({
+              'slot_code': code,
+              'replaces_file_id': target['id'],
+              'file': MultipartFile.fromBytes(bytes, filename: name),
+            }),
+          );
+        } on DioException catch (e) {
+          throw ApiException.fromDio(e).withPrefix(
+            'Berkas "$name" (${SlotCatalog.labelOfCode(code)}) gagal diunggah.',
+          );
+        }
       }
 
       final sent =
@@ -245,13 +251,20 @@ class PengajuanApiRepository implements PengajuanRemote {
         done++;
         progress('Mengunggah $name ($done/$total)…', 0.2 + 0.7 * done / total);
         if (existing[entry.key]?.contains(bytes.length) == true) continue;
-        await _dio.post<Map<String, dynamic>>(
-          'submissions/$id/files',
-          data: FormData.fromMap({
-            'slot_code': entry.key,
-            'file': MultipartFile.fromBytes(bytes, filename: name),
-          }),
-        );
+        try {
+          await _dio.post<Map<String, dynamic>>(
+            'submissions/$id/files',
+            data: FormData.fromMap({
+              'slot_code': entry.key,
+              'file': MultipartFile.fromBytes(bytes, filename: name),
+            }),
+          );
+        } on DioException catch (e) {
+          // Sebut berkas yang gagal; yang sebelumnya sudah tersimpan di server.
+          throw ApiException.fromDio(e).withPrefix(
+            'Berkas "$name" (${SlotCatalog.labelOfCode(entry.key)}) gagal diunggah.',
+          );
+        }
       }
     }
   }

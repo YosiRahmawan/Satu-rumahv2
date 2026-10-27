@@ -33,12 +33,27 @@ Map<String, dynamic> _submission({
   'tipe_perumahan': 'subsidi_komersil',
   'submitted_at': '2026-10-26T09:30:00+07:00',
   'updated_at': '2026-10-26T09:30:00+07:00',
-  'developer_profile': {'nama_pt': 'PT Uji', 'nama_direktur': 'Direktur Uji', 'nib': '1234567890123'},
+  'developer_profile': {
+    'nama_pt': 'PT Uji',
+    'nama_direktur': 'Direktur Uji',
+    'nib': '1234567890123',
+  },
   'files': files,
 };
 
-Map<String, dynamic> _file(String slot, String name, int size, {String status = 'menunggu_telaah', String? note}) => {
-  'id': 1, 'slot_code': slot, 'original_name': name, 'size_bytes': size, 'status': status, 'review_note': note,
+Map<String, dynamic> _file(
+  String slot,
+  String name,
+  int size, {
+  String status = 'menunggu_telaah',
+  String? note,
+}) => {
+  'id': 1,
+  'slot_code': slot,
+  'original_name': name,
+  'size_bytes': size,
+  'status': status,
+  'review_note': note,
 };
 
 PengajuanFormState _form() => PengajuanFormState(
@@ -48,7 +63,10 @@ PengajuanFormState _form() => PengajuanFormState(
   luasLahan: 1200.5,
   jumlahUnit: 40,
   tipePerumahan: 'Campuran',
-  uploadedDocs: const {'ktp': r'C:\cache\ktp.pdf', 'site_plan_dwg': r'C:\cache\site.dwg'},
+  uploadedDocs: const {
+    'ktp': r'C:\cache\ktp.pdf',
+    'site_plan_dwg': r'C:\cache\site.dwg',
+  },
   multiUploadedDocs: const {
     'rekomendasi_lingkungan': ['rek1.pdf', 'rek2.pdf'],
     'kajian_teknis': ['kajian.pdf'],
@@ -66,7 +84,12 @@ void main() {
       tokenStore: MemoryTokenStore('tok'),
       onUnauthorized: () {},
     )..httpClientAdapter = adapter;
-    return PengajuanApiRepository(dio, readBytes: reader ?? (ref) async => Uint8List.fromList(List.filled(ref.length * 10, 1)));
+    return PengajuanApiRepository(
+      dio,
+      readBytes:
+          reader ??
+          (ref) async => Uint8List.fromList(List.filled(ref.length * 10, 1)),
+    );
   }
 
   group('SlotCatalog', () {
@@ -100,26 +123,51 @@ void main() {
 
   test('newDraftKey berbentuk UUID v4 dan berbeda tiap panggilan', () {
     final a = newDraftKey();
-    expect(RegExp(r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$').hasMatch(a), isTrue);
+    expect(
+      RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$',
+      ).hasMatch(a),
+      isTrue,
+    );
     expect(newDraftKey(), isNot(a));
   });
 
   group('submit', () {
     test('urutan: profil, draf, ubah, unggah tiap berkas, kirim', () async {
       final repo = build();
-      adapter.reply(200, {'data': {'nib': '1'}});
+      adapter.reply(200, {
+        'data': {'nib': '1'},
+      });
       adapter.reply(201, {'data': _submission()});
       adapter.reply(200, {'data': _submission(version: 2)});
       for (var i = 0; i < 6; i++) {
-        adapter.reply(201, {'data': {'id': i}});
+        adapter.reply(201, {
+          'data': {'id': i},
+        });
       }
-      adapter.reply(200, {'data': _submission(statusTahap: 'pengajuanBaru', number: 'SR-2026-0001', version: 3)});
+      adapter.reply(200, {
+        'data': _submission(
+          statusTahap: 'pengajuanBaru',
+          number: 'SR-2026-0001',
+          version: 3,
+        ),
+      });
 
       final steps = <String>[];
-      final result = await repo.submit(_form(), draftKey: 'kunci-1', onProgress: (m, f) => steps.add(m));
+      final result = await repo.submit(
+        _form(),
+        draftKey: 'kunci-1',
+        onProgress: (m, f) => steps.add(m),
+      );
 
-      final calls = adapter.requests.map((r) => '${r.method} ${r.path}').toList();
-      expect(calls.take(3), ['GET developer/profile', 'POST submissions', 'PATCH submissions/5']);
+      final calls = adapter.requests
+          .map((r) => '${r.method} ${r.path}')
+          .toList();
+      expect(calls.take(3), [
+        'GET developer/profile',
+        'POST submissions',
+        'PATCH submissions/5',
+      ]);
       expect(calls.where((c) => c == 'POST submissions/5/files'), hasLength(6));
       expect(calls.last, 'POST submissions/5/submit');
       expect(adapter.requests[1].headers['Idempotency-Key'], 'kunci-1');
@@ -132,7 +180,11 @@ void main() {
 
       final slotsUploaded = adapter.requests
           .where((r) => r.path.endsWith('/files'))
-          .map((r) => (r.data as FormData).fields.firstWhere((f) => f.key == 'slot_code').value)
+          .map(
+            (r) => (r.data as FormData).fields
+                .firstWhere((f) => f.key == 'slot_code')
+                .value,
+          )
           .toList();
       expect(slotsUploaded.toSet(), {'S2-01', 'S3-05', 'S4-01', 'S4-02'});
       expect(slotsUploaded.where((s) => s == 'S3-05'), hasLength(2));
@@ -142,36 +194,76 @@ void main() {
       expect(steps.last, 'Selesai');
     });
 
-    test('percobaan ulang tidak mengunggah ulang berkas yang sudah ada di server', () async {
-      final repo = build(reader: (ref) async => Uint8List.fromList(List.filled(100, 1)));
-      adapter.reply(200, {'data': {'nib': '1'}});
-      adapter.reply(200, {'data': _submission(files: [_file('S2-01', 'ktp.pdf', 100)])});
-      adapter.reply(200, {'data': _submission(version: 2)});
-      adapter.reply(201, {'data': {'id': 1}}); // S3-05 #1
-      adapter.reply(201, {'data': {'id': 2}}); // S3-05 #2
-      adapter.reply(201, {'data': {'id': 3}}); // S4-01 .dwg
-      adapter.reply(201, {'data': {'id': 4}}); // S4-01 .pdf
-      adapter.reply(201, {'data': {'id': 5}}); // S4-02
-      adapter.reply(200, {'data': _submission(statusTahap: 'pengajuanBaru', number: 'SR-2026-0002')});
+    test(
+      'percobaan ulang tidak mengunggah ulang berkas yang sudah ada di server',
+      () async {
+        final repo = build(
+          reader: (ref) async => Uint8List.fromList(List.filled(100, 1)),
+        );
+        adapter.reply(200, {
+          'data': {'nib': '1'},
+        });
+        adapter.reply(200, {
+          'data': _submission(files: [_file('S2-01', 'ktp.pdf', 100)]),
+        });
+        adapter.reply(200, {'data': _submission(version: 2)});
+        adapter.reply(201, {
+          'data': {'id': 1},
+        }); // S3-05 #1
+        adapter.reply(201, {
+          'data': {'id': 2},
+        }); // S3-05 #2
+        adapter.reply(201, {
+          'data': {'id': 3},
+        }); // S4-01 .dwg
+        adapter.reply(201, {
+          'data': {'id': 4},
+        }); // S4-01 .pdf
+        adapter.reply(201, {
+          'data': {'id': 5},
+        }); // S4-02
+        adapter.reply(200, {
+          'data': _submission(
+            statusTahap: 'pengajuanBaru',
+            number: 'SR-2026-0002',
+          ),
+        });
 
-      await repo.submit(_form(), draftKey: 'k');
+        await repo.submit(_form(), draftKey: 'k');
 
-      final uploads = adapter.requests.where((r) => r.path.endsWith('/files')).length;
-      expect(uploads, 5); // S2-01 dilewati
-    });
+        final uploads = adapter.requests
+            .where((r) => r.path.endsWith('/files'))
+            .length;
+        expect(uploads, 5); // S2-01 dilewati
+      },
+    );
 
-    test('berkas yang tidak terbaca menghentikan proses sebelum kirim', () async {
-      final repo = build(reader: (ref) async => null);
-      adapter.reply(200, {'data': {'nib': '1'}});
-      adapter.reply(201, {'data': _submission()});
-      adapter.reply(200, {'data': _submission(version: 2)});
+    test(
+      'berkas yang tidak terbaca menghentikan proses sebelum kirim',
+      () async {
+        final repo = build(reader: (ref) async => null);
+        adapter.reply(200, {
+          'data': {'nib': '1'},
+        });
+        adapter.reply(201, {'data': _submission()});
+        adapter.reply(200, {'data': _submission(version: 2)});
 
-      await expectLater(
-        repo.submit(_form(), draftKey: 'k'),
-        throwsA(isA<ApiException>().having((e) => e.message, 'pesan', contains('ktp.pdf'))),
-      );
-      expect(adapter.requests.any((r) => r.path.endsWith('/submit')), isFalse);
-    });
+        await expectLater(
+          repo.submit(_form(), draftKey: 'k'),
+          throwsA(
+            isA<ApiException>().having(
+              (e) => e.message,
+              'pesan',
+              contains('ktp.pdf'),
+            ),
+          ),
+        );
+        expect(
+          adapter.requests.any((r) => r.path.endsWith('/submit')),
+          isFalse,
+        );
+      },
+    );
 
     test('profil belum ada: berhenti dengan pesan jelas', () async {
       final repo = build();
@@ -179,24 +271,36 @@ void main() {
 
       await expectLater(
         repo.submit(_form(), draftKey: 'k'),
-        throwsA(isA<ApiException>().having((e) => e.message, 'pesan', contains('Profil'))),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.message,
+            'pesan',
+            contains('Profil'),
+          ),
+        ),
       );
       expect(adapter.requests, hasLength(1));
     });
 
     test('berkas wajib kurang: pesan memuat nama berkas', () async {
       final repo = build();
-      adapter.reply(200, {'data': {'nib': '1'}});
+      adapter.reply(200, {
+        'data': {'nib': '1'},
+      });
       adapter.reply(201, {'data': _submission()});
       adapter.reply(200, {'data': _submission(version: 2)});
       for (var i = 0; i < 6; i++) {
-        adapter.reply(201, {'data': {'id': i}});
+        adapter.reply(201, {
+          'data': {'id': i},
+        });
       }
       adapter.reply(422, {
         'error': {
           'code': 'ERR-010',
           'message': 'Isian tidak valid.',
-          'fields': {'slots': ['S2-02', 'S3-11']},
+          'fields': {
+            'slots': ['S2-02', 'S3-11'],
+          },
         },
       });
 
@@ -206,20 +310,55 @@ void main() {
           isA<ApiException>().having(
             (e) => e.message,
             'pesan',
-            allOf(contains('NIB Perusahaan'), contains('Proposal Rencana Pembangunan')),
+            allOf(
+              contains('NIB Perusahaan'),
+              contains('Proposal Rencana Pembangunan'),
+            ),
           ),
+        ),
+      );
+    });
+
+    test('galat unggah menyebut nama berkas dan slotnya', () async {
+      final repo = build();
+      adapter.reply(200, {
+        'data': {'nib': '1'},
+      });
+      adapter.reply(201, {'data': _submission()});
+      adapter.reply(200, {'data': _submission()}); // simpan data pengajuan
+      adapter.reply(422, {
+        'error': {'code': 'ERR-003', 'message': 'Berkas tidak dapat dibaca.'},
+      });
+
+      await expectLater(
+        repo.submit(_form(), draftKey: 'k'),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.code, 'kode', 'ERR-003')
+              .having(
+                (e) => e.message,
+                'pesan',
+                allOf(
+                  contains('ktp.pdf'),
+                  contains('gagal diunggah'),
+                  contains('Berkas tidak dapat dibaca'),
+                ),
+              ),
         ),
       );
     });
 
     test('galat validasi server ditampilkan apa adanya', () async {
       final repo = build();
-      adapter.reply(200, {'data': {'nib': '1'}});
+      adapter.reply(200, {
+        'data': {'nib': '1'},
+      });
       adapter.reply(201, {'data': _submission()});
       adapter.reply(422, {
         'error': {
           'code': 'ERR-001',
-          'message': 'Ukuran berkas melebihi 10 MB. Kecilkan berkas lalu unggah kembali.',
+          'message':
+              'Ukuran berkas melebihi 10 MB. Kecilkan berkas lalu unggah kembali.',
         },
       });
 
@@ -231,42 +370,54 @@ void main() {
   });
 
   group('list dan pemetaan', () {
-    test('draf tidak ikut daftar; berkas, verifikasi, dan perbaikan terpetakan', () async {
-      final repo = build();
-      final revision = _submission(
-        statusTahap: 'perluPerbaikan',
-        number: 'SR-2026-0007',
-        files: [
-          _file('S2-01', 'ktp.pdf', 10, status: 'sesuai'),
-          _file('S2-02', 'nib.pdf', 10, status: 'perlu_perbaikan', note: 'Buram'),
-          _file('S4-01', 'siteplan.dwg', 10),
-          _file('S4-02', 'kajian.pdf', 10),
-        ],
-      )..['tahap_asal_perbaikan'] = 'verifikasiAdministrasi';
-      adapter.reply(200, {
-        'data': [_submission(), revision],
-        'meta': {'page': 1, 'per_page': 50, 'total': 2},
-      });
+    test(
+      'draf tidak ikut daftar; berkas, verifikasi, dan perbaikan terpetakan',
+      () async {
+        final repo = build();
+        final revision = _submission(
+          statusTahap: 'perluPerbaikan',
+          number: 'SR-2026-0007',
+          files: [
+            _file('S2-01', 'ktp.pdf', 10, status: 'sesuai'),
+            _file(
+              'S2-02',
+              'nib.pdf',
+              10,
+              status: 'perlu_perbaikan',
+              note: 'Buram',
+            ),
+            _file('S4-01', 'siteplan.dwg', 10),
+            _file('S4-02', 'kajian.pdf', 10),
+          ],
+        )..['tahap_asal_perbaikan'] = 'verifikasiAdministrasi';
+        adapter.reply(200, {
+          'data': [_submission(), revision],
+          'meta': {'page': 1, 'per_page': 50, 'total': 2},
+        });
 
-      final list = await repo.list();
+        final list = await repo.list();
 
-      expect(list, hasLength(1));
-      final p = list.single;
-      expect(p.id, 'SR-2026-0007');
-      expect(p.statusTahap, StatusTahapPengajuan.perluPerbaikan);
-      expect(p.status, 'Perlu Perbaikan');
-      expect(p.tahapAsalPerbaikan, StatusTahapPengajuan.verifikasiAdministrasi);
-      expect(p.verifiedDocs, {'ktp': true, 'nib': false});
-      expect(p.dokumenPerluRevisi, ['nib']);
-      expect(p.catatanPerbaikan, 'Buram');
-      expect(p.uploadedDocs['ktp'], 'ktp.pdf');
-      expect(p.uploadedDocs['site_plan_dwg'], 'siteplan.dwg');
-      expect(p.technicalFiles, ['siteplan.dwg', 'kajian.pdf']);
-      expect(p.tipePerumahan, 'Campuran');
-      expect(p.namaDirektur, 'Direktur Uji');
-      expect(p.tanggal, '26 Okt 2026');
-      expect(adapter.requests.single.queryParameters['detail'], 1);
-    });
+        expect(list, hasLength(1));
+        final p = list.single;
+        expect(p.id, 'SR-2026-0007');
+        expect(p.statusTahap, StatusTahapPengajuan.perluPerbaikan);
+        expect(p.status, 'Perlu Perbaikan');
+        expect(
+          p.tahapAsalPerbaikan,
+          StatusTahapPengajuan.verifikasiAdministrasi,
+        );
+        expect(p.verifiedDocs, {'ktp': true, 'nib': false});
+        expect(p.dokumenPerluRevisi, ['nib']);
+        expect(p.catatanPerbaikan, 'Buram');
+        expect(p.uploadedDocs['ktp'], 'ktp.pdf');
+        expect(p.uploadedDocs['site_plan_dwg'], 'siteplan.dwg');
+        expect(p.technicalFiles, ['siteplan.dwg', 'kajian.pdf']);
+        expect(p.tipePerumahan, 'Campuran');
+        expect(p.namaDirektur, 'Direktur Uji');
+        expect(p.tanggal, '26 Okt 2026');
+        expect(adapter.requests.single.queryParameters['detail'], 1);
+      },
+    );
 
     test('tanpa jaringan: ApiException NETWORK', () async {
       final repo = build();
@@ -277,8 +428,12 @@ void main() {
 
   group('resubmit', () {
     Map<String, dynamic> flagged(int id, String slot) => {
-      'id': id, 'slot_code': slot, 'original_name': 'lama.pdf', 'size_bytes': 10,
-      'status': 'perlu_perbaikan', 'review_note': 'Buram',
+      'id': id,
+      'slot_code': slot,
+      'original_name': 'lama.pdf',
+      'size_bytes': 10,
+      'status': 'perlu_perbaikan',
+      'review_note': 'Buram',
     };
 
     test('mengganti hanya berkas yang ditandai lalu kirim ulang', () async {
@@ -286,19 +441,40 @@ void main() {
       final revision = _submission(
         statusTahap: 'perluPerbaikan',
         number: 'SR-2026-0007',
-        files: [_file('S2-01', 'ktp.pdf', 10, status: 'lolos'), flagged(9, 'S2-02')],
+        files: [
+          _file('S2-01', 'ktp.pdf', 10, status: 'lolos'),
+          flagged(9, 'S2-02'),
+        ],
       );
-      adapter.reply(200, {'data': [revision], 'meta': {}}); // list (mengenali id)
+      adapter.reply(200, {
+        'data': [revision],
+        'meta': {},
+      }); // list (mengenali id)
       adapter.reply(200, {'data': revision}); // detail
-      adapter.reply(201, {'data': {'id': 10}}); // unggah pengganti
-      adapter.reply(200, {'data': _submission(statusTahap: 'verifikasiAdministrasi', number: 'SR-2026-0007')});
+      adapter.reply(201, {
+        'data': {'id': 10},
+      }); // unggah pengganti
+      adapter.reply(200, {
+        'data': _submission(
+          statusTahap: 'verifikasiAdministrasi',
+          number: 'SR-2026-0007',
+        ),
+      });
 
-      final result = await repo.resubmit('SR-2026-0007', {'nib': 'nib-baru.pdf', 'ktp': 'ktp-baru.pdf'});
+      final result = await repo.resubmit('SR-2026-0007', {
+        'nib': 'nib-baru.pdf',
+        'ktp': 'ktp-baru.pdf',
+      });
 
       expect(result.id, 'SR-2026-0007');
-      final uploads = adapter.requests.where((r) => r.path.endsWith('/files')).toList();
+      final uploads = adapter.requests
+          .where((r) => r.path.endsWith('/files'))
+          .toList();
       expect(uploads, hasLength(1)); // ktp tidak diminta, tidak diunggah
-      final fields = {for (final f in (uploads.single.data as FormData).fields) f.key: f.value};
+      final fields = {
+        for (final f in (uploads.single.data as FormData).fields)
+          f.key: f.value,
+      };
       expect(fields['slot_code'], 'S2-02');
       expect(fields['replaces_file_id'], '9');
       expect(adapter.requests.last.path, endsWith('submissions/5/resubmit'));
@@ -306,14 +482,35 @@ void main() {
 
     test('berkas yang belum diganti: pesan menyebut nama berkasnya', () async {
       final repo = build();
-      final revision = _submission(statusTahap: 'perluPerbaikan', number: 'SR-2026-0007', files: [flagged(9, 'S2-02')]);
-      adapter.reply(200, {'data': [revision], 'meta': {}});
+      final revision = _submission(
+        statusTahap: 'perluPerbaikan',
+        number: 'SR-2026-0007',
+        files: [flagged(9, 'S2-02')],
+      );
+      adapter.reply(200, {
+        'data': [revision],
+        'meta': {},
+      });
       adapter.reply(200, {'data': revision});
-      adapter.reply(422, {'error': {'code': 'ERR-010', 'message': 'x', 'fields': {'slots': ['S2-02']}}});
+      adapter.reply(422, {
+        'error': {
+          'code': 'ERR-010',
+          'message': 'x',
+          'fields': {
+            'slots': ['S2-02'],
+          },
+        },
+      });
 
       await expectLater(
         repo.resubmit('SR-2026-0007', const {}),
-        throwsA(isA<ApiException>().having((e) => e.message, 'message', contains('belum diganti'))),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.message,
+            'message',
+            contains('belum diganti'),
+          ),
+        ),
       );
     });
   });

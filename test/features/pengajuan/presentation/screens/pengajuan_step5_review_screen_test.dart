@@ -196,8 +196,9 @@ void main() {
       'kajian-a.pdf',
       'kajian-b.pdf',
     ]);
-    notifier.removeTechnicalOtherFile(0);
-    notifier.removeTechnicalOtherFile(0);
+    // Kajian bawaan tetap ada (wajib); yang dihapus tidak boleh ikut terkirim.
+    notifier.removeTechnicalOtherFile(1);
+    notifier.removeTechnicalOtherFile(1);
 
     final router = GoRouter(
       initialLocation: '/pengajuan/step5',
@@ -226,7 +227,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final submitted = container.read(pengajuanListProvider).first;
-    expect(submitted.uploadedDocs.containsKey('kajian_teknis'), isFalse);
+    expect(submitted.uploadedDocs['kajian_teknis'], 'kajian_teknis_tanah.pdf');
     expect(submitted.technicalFiles, isNot(contains('kajian-a.pdf')));
     expect(submitted.technicalFiles, isNot(contains('kajian-b.pdf')));
   });
@@ -333,6 +334,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Draf tersimpan'), findsOneWidget);
+      // Kedua tombol sejajar (satu baris), bukan bertumpuk.
+      expect(
+        tester.getCenter(find.text('Lanjut mengisi')).dy,
+        tester.getCenter(find.text('Ke Pengajuan')).dy,
+      );
       expect(
         container.read(pengajuanFormProvider.notifier).lastSavedAt.value,
         isNotNull,
@@ -345,10 +351,10 @@ void main() {
       expect(find.text('Draf tersimpan'), findsNothing);
       expect(find.text('Simpan sebagai Draft'), findsOneWidget);
 
-      // Ke daftar pengajuan: keluar sekali jalan ke tab Pengajuan.
+      // Ke Pengajuan: keluar sekali jalan ke tab Pengajuan.
       await tester.tap(find.text('Simpan sebagai Draft'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Ke daftar pengajuan'));
+      await tester.tap(find.text('Ke Pengajuan'));
       await tester.pumpAndSettle();
       expect(find.text('dashboard'), findsOneWidget);
       expect(container.read(dashboardTabProvider), 1);

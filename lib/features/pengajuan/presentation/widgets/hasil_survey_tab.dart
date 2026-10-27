@@ -8,6 +8,7 @@ import '../../../monitoring/utils/ba_pdf_generator.dart';
 import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../providers/pengajuan_verifikasi_controller.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 class HasilSurveyTab extends ConsumerStatefulWidget {
   final Pengajuan pengajuan;
@@ -108,24 +109,12 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
   Widget _buildEmptyState() {
     return Container(
       margin: const EdgeInsets.only(top: 32),
-      child: Column(
+      child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: const BoxDecoration(
-              color: Color(0xFFF0EFEA),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.location_searching,
-              color: AppColors.grey600,
-              size: 32,
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
+          AppIllustration(AppIllustration.hasilSurvey, width: 200),
+          SizedBox(height: 16),
+          Text(
             'Belum Ada Survey',
             style: TextStyle(
               fontSize: 16,
@@ -133,8 +122,8 @@ class _HasilSurveyTabState extends ConsumerState<HasilSurveyTab> {
               color: AppColors.textMain,
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
+          SizedBox(height: 6),
+          Text(
             'Survey lapangan belum dijadwalkan.\nGunakan tombol "Jadwalkan Survey" di bawah.',
             textAlign: TextAlign.center,
             style: TextStyle(

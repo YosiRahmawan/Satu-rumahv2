@@ -242,5 +242,39 @@ void main() {
         expect(find.byType(FloatingActionButton), findsOneWidget);
       },
     );
+
+    testWidgets('tombol kamera tidak melayang di atas keyboard', (
+      WidgetTester tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(390, 844));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      Widget app(double keyboard) => MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            viewInsets: EdgeInsets.only(bottom: keyboard),
+          ),
+          child: child!,
+        ),
+        home: buildSubject(),
+      );
+
+      // Keyboard tertutup: FAB kamera tampil di docked bottom bar
+      await tester.pumpWidget(app(0));
+      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+      expect(find.byType(BottomAppBar), findsOneWidget);
+
+      // Keyboard terbuka: FAB kamera disembunyikan agar tidak melayang di atas keyboard
+      await tester.pumpWidget(app(300));
+      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsNothing);
+      expect(find.byType(BottomAppBar), findsOneWidget);
+
+      // Keyboard ditutup kembali: FAB kamera muncul kembali di posisi semula
+      await tester.pumpWidget(app(0));
+      await tester.pumpAndSettle();
+      expect(find.byType(FloatingActionButton), findsOneWidget);
+    });
   });
 }

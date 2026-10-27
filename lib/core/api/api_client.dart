@@ -32,7 +32,16 @@ class ApiException implements Exception {
     this.lockedUntil,
   });
 
-  bool get isNetwork => code == 'NETWORK';
+  bool get isNetwork => code == 'NETWORK' || code == 'TIMEOUT';
+
+  /// Salinan dengan awalan pada pesan (mis. nama berkas yang gagal diunggah).
+  ApiException withPrefix(String prefix) => ApiException(
+    code: code,
+    message: '$prefix $message',
+    status: status,
+    fields: fields,
+    lockedUntil: lockedUntil,
+  );
 
   factory ApiException.fromDio(DioException e) {
     final data = e.response?.data;
@@ -52,6 +61,16 @@ class ApiException implements Exception {
               }
             : const {},
         lockedUntil: DateTime.tryParse('${error['locked_until'] ?? ''}'),
+      );
+    }
+    if (e.response == null &&
+        (e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.receiveTimeout ||
+            e.type == DioExceptionType.sendTimeout)) {
+      return const ApiException(
+        code: 'TIMEOUT',
+        message:
+            'Server terlalu lama menjawab. Periksa sinyal Anda lalu coba lagi.',
       );
     }
     if (e.response == null) {

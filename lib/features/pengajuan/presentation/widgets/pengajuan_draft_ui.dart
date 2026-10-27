@@ -73,13 +73,11 @@ Future<void> dialogDrafTersimpan(BuildContext context, WidgetRef ref) async {
         'melanjutkannya kapan saja dari halaman Pengajuan.',
       ),
       actions: [
-        _TombolTenang(
-          label: 'Lanjut mengisi',
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        _TombolUtama(
-          label: 'Ke daftar pengajuan',
-          onPressed: () => Navigator.of(context).pop(true),
+        _DialogButtons(
+          secondaryLabel: 'Lanjut mengisi',
+          onSecondary: () => Navigator.of(context).pop(false),
+          primaryLabel: 'Ke Pengajuan',
+          onPrimary: () => Navigator.of(context).pop(true),
         ),
       ],
     ),
@@ -103,13 +101,11 @@ Future<void> keluarDenganKonfirmasi(BuildContext context, WidgetRef ref) async {
         'Pengajuan.',
       ),
       actions: [
-        _TombolTenang(
-          label: 'Lanjut mengisi',
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        _TombolUtama(
-          label: 'Simpan & keluar',
-          onPressed: () => Navigator.of(context).pop(true),
+        _DialogButtons(
+          secondaryLabel: 'Lanjut mengisi',
+          onSecondary: () => Navigator.of(context).pop(false),
+          primaryLabel: 'Simpan & keluar',
+          onPrimary: () => Navigator.of(context).pop(true),
         ),
       ],
     ),
@@ -306,6 +302,74 @@ class _DraftStatusRowState extends ConsumerState<DraftStatusRow> {
 /// Pasangan tombol dialog draf: pilihan aman dan utama berupa tombol merah
 /// terisi, pilihan yang menghapus berupa teks abu tipis agar tidak terpencet
 /// tidak sengaja.
+/// Dua tombol dialog sejajar, sama lebar dan sama tinggi (tidak bertumpuk).
+class _DialogButtons extends StatelessWidget {
+  const _DialogButtons({
+    required this.secondaryLabel,
+    required this.onSecondary,
+    required this.primaryLabel,
+    required this.onPrimary,
+  });
+
+  final String secondaryLabel;
+  final VoidCallback onSecondary;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    const shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(10)),
+    );
+    const padding = EdgeInsets.symmetric(horizontal: 8);
+    const text = TextStyle(fontWeight: FontWeight.w700, fontSize: 14);
+    return SizedBox(
+      width: double.infinity,
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: onSecondary,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(46),
+                padding: padding,
+                shape: shape,
+                foregroundColor: AppColors.textSecondary,
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
+              ),
+              child: Text(
+                secondaryLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: text,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: FilledButton(
+              onPressed: onPrimary,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(46),
+                padding: padding,
+                shape: shape,
+                backgroundColor: AppColors.primaryRed,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                primaryLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: text,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TombolUtama extends StatelessWidget {
   const _TombolUtama({required this.label, required this.onPressed});
 
@@ -355,13 +419,11 @@ class _DraftDialog extends StatelessWidget {
         'terakhir, atau mulai pengajuan baru. Mulai baru akan menghapus draf ini.',
       ),
       actions: [
-        _TombolTenang(
-          label: 'Mulai baru',
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        _TombolUtama(
-          label: 'Lanjutkan',
-          onPressed: () => Navigator.of(context).pop(true),
+        _DialogButtons(
+          secondaryLabel: 'Mulai baru',
+          onSecondary: () => Navigator.of(context).pop(false),
+          primaryLabel: 'Lanjutkan',
+          onPrimary: () => Navigator.of(context).pop(true),
         ),
       ],
     );
@@ -393,13 +455,11 @@ class PengajuanDraftCard extends ConsumerWidget {
           'Isian dan berkas yang sudah dipilih pada draf ini akan dihapus.',
         ),
         actions: [
-          _TombolTenang(
-            label: 'Hapus',
-            onPressed: () => Navigator.of(context).pop(true),
-          ),
-          _TombolUtama(
-            label: 'Batal',
-            onPressed: () => Navigator.of(context).pop(false),
+          _DialogButtons(
+            secondaryLabel: 'Hapus',
+            onSecondary: () => Navigator.of(context).pop(true),
+            primaryLabel: 'Batal',
+            onPrimary: () => Navigator.of(context).pop(false),
           ),
         ],
       ),

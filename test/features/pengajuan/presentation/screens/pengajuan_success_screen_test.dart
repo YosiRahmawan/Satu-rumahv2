@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satu_rumah/core/widgets/app_illustration.dart';
 import 'package:satu_rumah/features/dashboard/presentation/providers/dashboard_provider.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_success_screen.dart';
 
@@ -182,7 +182,7 @@ void main() {
       },
     );
 
-    testWidgets('renders new SvgPicture saved illustration asset correctly', (
+    testWidgets('renders the saved illustration (maskot) correctly', (
       tester,
     ) async {
       final router = testRouter();
@@ -193,7 +193,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byType(SvgPicture), findsOneWidget);
+      expect(find.byType(AppIllustration), findsOneWidget);
     });
   });
 }

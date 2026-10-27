@@ -866,7 +866,9 @@ class _PengajuanStep5ReviewScreenState
           );
       ref.read(pengajuanFormProvider.notifier).reset();
       context.pushReplacement('/pengajuan/success', extra: item.id);
-    } on ApiException catch (e) {
+    } catch (e) {
+      // Galat server memakai pesannya; galat tak terduga tidak boleh membuat
+      // tombol berputar selamanya.
       if (!mounted) return;
       setState(() {
         _isSubmitting = false;
@@ -874,7 +876,15 @@ class _PengajuanStep5ReviewScreenState
       });
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(e.message)));
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException
+                  ? e.message
+                  : 'Pengajuan belum terkirim karena kendala tak terduga. Coba lagi.',
+            ),
+          ),
+        );
     }
   }
 
@@ -971,7 +981,8 @@ class _PengajuanStep5ReviewScreenState
     if (!state.isStep1Valid) missing.add('data dasar Step 1');
     if (!state.isStep2Valid) missing.add('5 dokumen Step 2');
     if (!state.isStep3Valid) missing.add('dokumen wajib Step 3');
-    if (!state.isStep4Valid) missing.add('minimal 1 berkas teknis Step 4');
+    if (!state.hasSitePlan) missing.add('berkas Site Plan Step 4');
+    if (!state.hasKajianTeknis) missing.add('berkas Kajian Teknis Step 4');
     if (!state.isAgreed) missing.add('persetujuan pernyataan');
     return "Lengkapi ${missing.join(', ')} sebelum mengirim pengajuan.";
   }

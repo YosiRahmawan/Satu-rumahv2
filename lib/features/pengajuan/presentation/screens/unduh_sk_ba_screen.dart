@@ -17,8 +17,8 @@ import '../../../monitoring/utils/ba_pdf_generator.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 import '../providers/pengajuan_form_controller.dart';
-import '../widgets/survey_not_found_illustration.dart';
 import 'pengajuan_detail_screen.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Provider pengajuan lokal untuk layar Unduh SK & BA.
 final unduhSkBaListProvider = FutureProvider.autoDispose<List<Pengajuan>>((
@@ -1297,19 +1297,8 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF1F5F9),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.folder_open_rounded,
-                size: 36,
-                color: Color(0xFF94A3B8),
-              ),
-            ),
+            // Maskot dengan dokumen SK/BA yang belum terbit.
+            const AppIllustration(AppIllustration.unduhSkBa),
             const SizedBox(height: 16),
             const Text(
               'Belum Ada Dokumen Tersedia',
@@ -1380,7 +1369,7 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const SurveyNotFoundIllustration(width: 180, height: 140),
+            const AppIllustration(AppIllustration.hasilSurvey, width: 200),
             const SizedBox(height: 14),
             const Text(
               'Data Tidak Ditemukan',

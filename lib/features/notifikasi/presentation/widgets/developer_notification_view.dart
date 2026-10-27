@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -7,6 +6,7 @@ import '../../../../core/widgets/data_state_view.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../data/models/notifikasi_model.dart';
 import 'developer_notification_tile.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Filter daftar notifikasi Pengembang.
 enum NotifikasiFilter { semua, belumDibaca, perluRevisi }
@@ -192,19 +192,11 @@ class DeveloperNotificationView extends StatelessWidget {
     );
   }
 
-  /// Ilustrasi kosong yang sama untuk semua filter notifikasi.
-  Widget _emptyIllustration() => SvgPicture.asset(
-    'assets/images/notifikasi_unread_empty.svg',
-    width: 180,
-    height: 135,
-    fit: BoxFit.contain,
-  );
-
   Widget _emptyState() {
     switch (filter) {
       case NotifikasiFilter.belumDibaca:
         return DataStateView.empty(
-          illustration: _emptyIllustration(),
+          illustration: const AppIllustration(AppIllustration.notifikasi),
           title: 'Tidak ada notifikasi belum dibaca',
           message:
               'Semua notifikasi sudah dibaca. Anda dapat melihatnya kembali di daftar semua notifikasi.',
@@ -213,7 +205,7 @@ class DeveloperNotificationView extends StatelessWidget {
         );
       case NotifikasiFilter.perluRevisi:
         return DataStateView.empty(
-          illustration: _emptyIllustration(),
+          illustration: const AppIllustration(AppIllustration.semuaBeres),
           title: 'Tidak ada revisi aktif',
           message:
               'Pengajuan Anda belum memiliki permintaan perbaikan yang perlu ditindaklanjuti.',
@@ -221,8 +213,8 @@ class DeveloperNotificationView extends StatelessWidget {
           onAction: () => onFilterChanged(NotifikasiFilter.semua),
         );
       case NotifikasiFilter.semua:
-        return DataStateView.empty(
-          illustration: _emptyIllustration(),
+        return const DataStateView.empty(
+          illustration: AppIllustration(AppIllustration.notifikasi),
           title: 'Belum ada notifikasi',
           message: 'Informasi terkait pengajuan akan ditampilkan di sini.',
         );
