@@ -276,6 +276,13 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
       backgroundColor: AppColors.backgroundCanvas,
       bottomNavigationBar: isPerluPerbaikan
           ? _buildBottomBar(context, item)
+          : item.statusTahap == StatusTahapPengajuan.ditolak
+          ? _buildBottomBar(
+              context,
+              item,
+              label: 'Ajukan Ulang',
+              onPressed: () => _ajukanUlang(context, item),
+            )
           : null,
       body: SingleChildScrollView(
         child: Column(
@@ -1845,7 +1852,42 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
   }
 
   // ─── 8. BOTTOM ACTION BAR ────────────────────────────────────────────────
-  Widget _buildBottomBar(BuildContext context, Pengajuan item) {
+  /// Pengajuan ditolak: isi form baru dengan data lama, berkas diunggah lagi.
+  Future<void> _ajukanUlang(BuildContext context, Pengajuan item) async {
+    final notifier = ref.read(pengajuanFormProvider.notifier);
+    if (await notifier.hasDraft()) {
+      if (!context.mounted) return;
+      final lanjut = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Ganti draf tersimpan?'),
+          content: const Text(
+            'Draf pengajuan yang tersimpan akan diganti dengan data pengajuan yang ditolak ini.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Ganti'),
+            ),
+          ],
+        ),
+      );
+      if (lanjut != true) return;
+    }
+    notifier.prefillFrom(item);
+    if (context.mounted) context.push('/pengajuan/step1');
+  }
+
+  Widget _buildBottomBar(
+    BuildContext context,
+    Pengajuan item, {
+    String? label,
+    VoidCallback? onPressed,
+  }) {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
@@ -1877,13 +1919,14 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            onPressed: () => _showRevisionBottomSheet(context, item),
+            onPressed: onPressed ?? () => _showRevisionBottomSheet(context, item),
             child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                item.revisionSubmitted
-                    ? 'Periksa Revisi Terkirim'
-                    : 'Perbaiki Sekarang',
+                label ??
+                    (item.revisionSubmitted
+                        ? 'Periksa Revisi Terkirim'
+                        : 'Perbaiki Sekarang'),
                 style: AppTextStyles.labelLarge.copyWith(
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
