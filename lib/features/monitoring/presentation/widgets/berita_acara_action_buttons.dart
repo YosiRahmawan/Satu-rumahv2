@@ -44,11 +44,7 @@ class BeritaAcaraActionButtons extends StatelessWidget {
         }
 
         return Column(
-          children: [
-            pdfButton,
-            const SizedBox(height: 10),
-            shareButton,
-          ],
+          children: [pdfButton, const SizedBox(height: 10), shareButton],
         );
       },
     );

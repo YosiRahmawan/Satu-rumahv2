@@ -6,11 +6,12 @@ import 'package:satu_rumah/core/theme/app_colors.dart';
 import 'package:satu_rumah/features/notifikasi/data/models/notifikasi_model.dart';
 import 'package:satu_rumah/features/notifikasi/presentation/providers/notifikasi_provider.dart';
 import 'package:satu_rumah/features/notifikasi/presentation/screens/notifikasi_list_screen.dart';
-import 'package:satu_rumah/features/pengajuan/presentation/widgets/survey_not_found_illustration.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 Widget _buildSubject({
   required AppRole role,
   List<NotifikasiModel>? initialNotifs,
+  Size? size,
 }) {
   return ProviderScope(
     overrides: [
@@ -26,7 +27,14 @@ Widget _buildSubject({
           return notifier;
         }),
     ],
-    child: const MaterialApp(home: NotifikasiListScreen()),
+    child: MaterialApp(
+      home: size != null
+          ? MediaQuery(
+              data: MediaQueryData(size: size),
+              child: const NotifikasiListScreen(),
+            )
+          : const NotifikasiListScreen(),
+    ),
   );
 }
 
@@ -242,17 +250,25 @@ void main() {
     });
 
     testWidgets(
-      'shows contextual empty states with SurveyNotFoundIllustration for Semua, Belum Dibaca, and Perlu Tindak Lanjut',
+      'shows contextual empty states with notifikasi_unread_empty.svg for Semua, Belum Dibaca, and Perlu Tindak Lanjut',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(390, 844));
 
         // 1. Test "Semua" with 0 notifications
         await tester.pumpWidget(
-          _buildSubject(role: AppRole.perwaskim, initialNotifs: []),
+          _buildSubject(
+            role: AppRole.perwaskim,
+            initialNotifs: [],
+            size: const Size(390, 844),
+          ),
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+        expect(find.byType(SvgPicture), findsOneWidget);
+        final svg1 = tester.widget<SvgPicture>(find.byType(SvgPicture));
+        final loader1 = svg1.bytesLoader as SvgAssetLoader;
+        expect(loader1.assetName, 'assets/images/notifikasi_unread_empty.svg');
+        expect(svg1.width, 160.0);
         expect(find.text('Belum ada notifikasi'), findsOneWidget);
         expect(
           find.text('Informasi penugasan dan pengawasan akan muncul di sini.'),
@@ -271,7 +287,10 @@ void main() {
         await tester.tap(find.text('Belum Dibaca (0)'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+        expect(find.byType(SvgPicture), findsOneWidget);
+        final svg2 = tester.widget<SvgPicture>(find.byType(SvgPicture));
+        final loader2 = svg2.bytesLoader as SvgAssetLoader;
+        expect(loader2.assetName, 'assets/images/notifikasi_unread_empty.svg');
         expect(find.text('Semua notifikasi sudah dibaca'), findsOneWidget);
         expect(
           find.text('Belum ada pemberitahuan baru yang perlu dibaca.'),
@@ -283,7 +302,10 @@ void main() {
         await tester.tap(find.text('Perlu Tindak Lanjut'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+        expect(find.byType(SvgPicture), findsOneWidget);
+        final svg3 = tester.widget<SvgPicture>(find.byType(SvgPicture));
+        final loader3 = svg3.bytesLoader as SvgAssetLoader;
+        expect(loader3.assetName, 'assets/images/notifikasi_unread_empty.svg');
         expect(find.text('Tidak ada tindak lanjut'), findsOneWidget);
         expect(
           find.text('Belum ada tugas atau evaluasi yang memerlukan tindakan.'),
@@ -292,7 +314,7 @@ void main() {
       },
     );
 
-    for (final width in [360.0, 390.0, 412.0]) {
+    for (final width in [360.0, 390.0, 412.0, 420.0]) {
       testWidgets(
         'responsive layout on width ${width}dp with 200% text scale without overflow',
         (tester) async {
@@ -308,6 +330,30 @@ void main() {
           );
           await tester.pumpAndSettle();
 
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
+    for (final entry in {360.0: 150.0, 390.0: 160.0, 420.0: 170.0}.entries) {
+      testWidgets(
+        'empty state SvgPicture responsive width at ${entry.key}dp is ${entry.value}dp',
+        (tester) async {
+          await tester.binding.setSurfaceSize(Size(entry.key, 800));
+          await tester.pumpWidget(
+            _buildSubject(
+              role: AppRole.perwaskim,
+              initialNotifs: [],
+              size: Size(entry.key, 800),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final svgFinder = find.byType(SvgPicture);
+          expect(svgFinder, findsOneWidget);
+          final svg = tester.widget<SvgPicture>(svgFinder);
+          expect(svg.width, closeTo(entry.value, 0.01));
+          expect(svg.fit, BoxFit.contain);
           expect(tester.takeException(), isNull);
         },
       );

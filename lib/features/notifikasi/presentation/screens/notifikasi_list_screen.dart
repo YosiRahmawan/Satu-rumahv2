@@ -10,7 +10,7 @@ import '../../../../core/auth/role_session.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
-import '../../../pengajuan/presentation/widgets/survey_not_found_illustration.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
@@ -524,6 +524,10 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
         break;
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final illustrationWidth = (150.0 + ((screenWidth - 360.0) / 60.0 * 20.0))
+        .clamp(150.0, 170.0);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -534,7 +538,11 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SurveyNotFoundIllustration(width: 140, height: 110),
+            SvgPicture.asset(
+              'assets/images/notifikasi_unread_empty.svg',
+              width: illustrationWidth,
+              fit: BoxFit.contain,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               title,
