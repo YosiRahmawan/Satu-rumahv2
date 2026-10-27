@@ -11,6 +11,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
+import '../../../profil/data/developer_profile_repository.dart';
 import '../providers/pengajuan_form_controller.dart';
 import '../widgets/pengajuan_draft_ui.dart';
 import '../widgets/smart_validation_bottom_sheet.dart';
@@ -120,6 +121,25 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
     _selectedTipePerumahan = state.tipePerumahan.isNotEmpty
         ? state.tipePerumahan
         : 'Komersil';
+    // Mode API: nama perumahan, alamat, dan tipe pengajuan terisi otomatis dari
+    // akun (hanya bila belum diisi), tetap bisa diubah per pengajuan.
+    ref.listenManual(developerProfileProvider, (_, next) {
+      final p = next.valueOrNull;
+      if (p == null || !mounted) return;
+      if (_namaPerumahanController.text.trim().isEmpty) {
+        _namaPerumahanController.text = p.namaPerumahan;
+      }
+      if (_alamatProyekController.text.trim().isEmpty) {
+        _alamatProyekController.text = p.alamatPerumahan;
+      }
+      if (ref.read(pengajuanFormProvider).tipePengajuan.isEmpty &&
+          p.tipePengajuanLabel.isNotEmpty) {
+        setState(() => _selectedTipePengajuan = p.tipePengajuanLabel);
+        ref
+            .read(pengajuanFormProvider.notifier)
+            .updateTipePengajuan(p.tipePengajuanLabel);
+      }
+    }, fireImmediately: true);
   }
 
   @override
@@ -394,39 +414,29 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
           const SizedBox(height: AppSpacing.sm),
           const Divider(color: AppColors.borderSubtle, height: 1),
           const SizedBox(height: AppSpacing.md),
-          _buildReadOnlyField(
-            label: 'Nomor Induk Berusaha (NIB)',
-            value: 'Belum tersedia',
-            isAvailable: false,
-          ),
-          _buildReadOnlyField(
-            label: 'Nama Perusahaan (PT)',
-            value: 'Belum tersedia',
-            isAvailable: false,
-          ),
-          _buildReadOnlyField(
-            label: 'Penanggung Jawab / Direktur',
-            value: 'Belum tersedia',
-            isAvailable: false,
-          ),
-          _buildReadOnlyField(
-            label: 'Email Perusahaan',
-            value: 'Belum tersedia',
-            isAvailable: false,
-          ),
-          _buildReadOnlyField(
-            label: 'No. Telepon / WhatsApp',
-            value: 'Belum tersedia',
-            isAvailable: false,
-          ),
-          _buildReadOnlyField(
-            label: 'Alamat Kantor Perusahaan',
-            value: 'Belum tersedia',
-            isAvailable: false,
-          ),
+          ..._profileFields(ref.watch(developerProfileProvider).valueOrNull),
         ],
       ),
     );
+  }
+
+  /// Data PT dari akun yang dibuat Dinas (hanya-baca, tidak diisi ulang).
+  List<Widget> _profileFields(DeveloperProfileData? p) {
+    Widget row(String label, String? value) => _buildReadOnlyField(
+      label: label,
+      value: (value == null || value.trim().isEmpty)
+          ? 'Belum tersedia'
+          : value,
+      isAvailable: value != null && value.trim().isNotEmpty,
+    );
+    return [
+      row('Nomor Induk Berusaha (NIB)', p?.nib),
+      row('Nama Perusahaan (PT)', p?.namaPt),
+      row('Penanggung Jawab / Direktur', p?.namaDirektur),
+      row('Email Perusahaan', p?.emailPt),
+      row('No. Telepon / WhatsApp', p?.noHpDirektur),
+      row('Alamat Kantor Perusahaan', p?.alamatPt),
+    ];
   }
 
   Widget _buildTipePengajuanRadioGroup() {

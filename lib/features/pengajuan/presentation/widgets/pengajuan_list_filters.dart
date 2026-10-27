@@ -115,9 +115,10 @@ class _PengajuanListFiltersState extends ConsumerState<PengajuanListFilters> {
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
+              // Angka hanya tampil bila filter tahun benar-benar aktif.
               icon: Badge(
-                isLabelVisible: true,
-                label: Text(query.year != null ? '1' : '2'),
+                isLabelVisible: query.year != null,
+                label: const Text('1'),
                 backgroundColor: AppColors.primaryRed,
                 child: const Icon(Icons.tune, color: AppColors.textSecondary),
               ),

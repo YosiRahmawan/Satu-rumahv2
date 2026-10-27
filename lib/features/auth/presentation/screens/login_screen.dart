@@ -21,6 +21,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _rememberMe = false;
   bool _obscurePassword = true;
   bool _submitting = false;
+
+  /// Galat login yang tampil di dalam kartu (tidak hilang seperti snackbar).
+  String? _loginError;
   AppRole _selectedRole = AppRole.developer;
 
   @override
@@ -31,7 +34,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _loginWithApi(String username) async {
-    setState(() => _submitting = true);
+    setState(() {
+      _submitting = true;
+      _loginError = null;
+    });
     try {
       final result = await ref
           .read(authRepositoryProvider)
@@ -51,9 +57,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       );
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text(_loginMessage(e))));
+      setState(() => _loginError = _loginMessage(e));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -883,6 +887,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                 ),
                               ),
+
+                              if (_loginError != null) ...[
+                                const SizedBox(height: 14),
+                                Semantics(
+                                  liveRegion: true,
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primarySurface,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: AppColors.primaryRed,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.error_outline_rounded,
+                                          size: 18,
+                                          color: AppColors.primaryRed,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _loginError!,
+                                            style: const TextStyle(
+                                              fontFamily:
+                                                  AppTextStyles.fontFamily,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primaryRed,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
 
                               const SizedBox(height: 18),
 

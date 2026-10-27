@@ -224,6 +224,22 @@ void main() {
     expect(find.text('Perumahan Green Tasik'), findsOneWidget);
   });
 
+  testWidgets('lencana filter hanya tampil saat filter tahun aktif', (
+    tester,
+  ) async {
+    await _pump(tester);
+    expect(find.byType(Badge), findsOneWidget);
+    expect(tester.widget<Badge>(find.byType(Badge)).isLabelVisible, isFalse);
+
+    await tester.tap(find.byTooltip('Filter tahun'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Tahun 2025'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Terapkan Filter'));
+    await tester.pumpAndSettle();
+    expect(tester.widget<Badge>(find.byType(Badge)).isLabelVisible, isTrue);
+  });
+
   testWidgets('year and status filters combine without mutating source data', (
     tester,
   ) async {

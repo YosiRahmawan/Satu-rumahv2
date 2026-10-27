@@ -11,10 +11,12 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
+import '../../../profil/data/developer_profile_repository.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/repositories/pengajuan_api_repository.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/pengajuan_draft_ui.dart';
 
 /// Halaman Tinjau & Kirim Pengajuan (Langkah 5 dari 5).
 /// Redesain UI Google Stitch dengan Smart Document Accordions.
@@ -234,14 +236,11 @@ class _PengajuanStep5ReviewScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: _summaryField('Nama PT', 'Belum tersedia'),
+                            child: _summaryField('Nama PT', _namaPt),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: _summaryField(
-                              'Nama Direktur',
-                              'Belum tersedia',
-                            ),
+                            child: _summaryField('Nama Direktur', _namaDirektur),
                           ),
                         ],
                       ),
@@ -284,9 +283,9 @@ class _PengajuanStep5ReviewScreenState
                         ],
                       ),
                     ] else ...[
-                      _summaryField('Nama PT', 'Belum tersedia'),
+                      _summaryField('Nama PT', _namaPt),
                       const SizedBox(height: 10),
-                      _summaryField('Nama Direktur', 'Belum tersedia'),
+                      _summaryField('Nama Direktur', _namaDirektur),
                       const SizedBox(height: 10),
                       _summaryField('NPWP Perusahaan', state.npwpPerusahaan),
                       const SizedBox(height: 10),
@@ -312,6 +311,10 @@ class _PengajuanStep5ReviewScreenState
       ),
     );
   }
+
+  String get _namaPt => ref.watch(developerProfileProvider).valueOrNull?.namaPt ?? '';
+  String get _namaDirektur =>
+      ref.watch(developerProfileProvider).valueOrNull?.namaDirektur ?? '';
 
   Widget _summaryField(String label, String value) {
     return Column(
@@ -812,13 +815,13 @@ class _PengajuanStep5ReviewScreenState
   // ---------------------------------------------------------------------------
   // Action Handlers
   // ---------------------------------------------------------------------------
-  void _saveDraft() => ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text(
-        'Draft formulir disimpan untuk sesi ini. Perubahan aman selama aplikasi aktif.',
-      ),
-    ),
-  );
+  /// Simpan draf sungguhan (bukan sekadar pesan), lalu tawarkan lanjut atau keluar.
+  Future<void> _saveDraft() async {
+    final result = await simpanDraf(context, ref);
+    if (result == DraftSaveResult.saved && mounted) {
+      await dialogDrafTersimpan(context, ref);
+    }
+  }
 
   void _backToStep4() {
     if (context.canPop()) {

@@ -10,6 +10,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
+import '../../data/developer_profile_repository.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../../bantuan/presentation/screens/pusat_bantuan_screen.dart';
 
@@ -121,9 +122,12 @@ class ProfilScreen extends ConsumerWidget {
     final dalamProses = total - selesai;
 
     // Sumber data identitas pengembang
-    final companyName = pengajuan.isNotEmpty
-        ? pengajuan.first.namaPt
-        : 'PT. Tasik Indah Sentosa';
+    final server = ref.watch(developerProfileProvider).valueOrNull;
+    final companyName = (server?.namaPt.isNotEmpty ?? false)
+        ? server!.namaPt
+        : (pengajuan.isNotEmpty
+              ? pengajuan.first.namaPt
+              : 'PT. Tasik Indah Sentosa');
     const developerId = 'Dev-2026-082';
     const verificationStatus = VerificationStatus.verified;
 
@@ -167,7 +171,7 @@ class ProfilScreen extends ConsumerWidget {
                   // 3. Section Data Akun & Perusahaan
                   _buildSectionHeader('Data Akun & Perusahaan'),
                   const SizedBox(height: 8),
-                  _buildAccountCard(),
+                  _buildAccountCard(server),
 
                   const SizedBox(height: 20),
 
@@ -387,7 +391,7 @@ class ProfilScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildAccountCard() {
+  Widget _buildAccountCard(DeveloperProfileData? p) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
@@ -406,7 +410,9 @@ class ProfilScreen extends ConsumerWidget {
           _buildAccountRow(
             icon: PhosphorIconsRegular.envelope,
             label: 'Email Terdaftar',
-            value: 'tasikindah@developer.com',
+            value: p?.emailPt.isNotEmpty == true
+                ? p!.emailPt
+                : 'tasikindah@developer.com',
           ),
           const Divider(
             height: 1,
@@ -418,7 +424,9 @@ class ProfilScreen extends ConsumerWidget {
           _buildAccountRow(
             icon: PhosphorIconsRegular.phone,
             label: 'No. Kontak Pengembang',
-            value: '0812-9876-5432',
+            value: p?.noHpDirektur.isNotEmpty == true
+                ? p!.noHpDirektur
+                : '0812-9876-5432',
           ),
         ],
       ),

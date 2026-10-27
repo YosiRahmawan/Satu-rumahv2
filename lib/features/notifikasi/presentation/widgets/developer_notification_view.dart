@@ -192,16 +192,19 @@ class DeveloperNotificationView extends StatelessWidget {
     );
   }
 
+  /// Ilustrasi kosong yang sama untuk semua filter notifikasi.
+  Widget _emptyIllustration() => SvgPicture.asset(
+    'assets/images/notifikasi_unread_empty.svg',
+    width: 180,
+    height: 135,
+    fit: BoxFit.contain,
+  );
+
   Widget _emptyState() {
     switch (filter) {
       case NotifikasiFilter.belumDibaca:
         return DataStateView.empty(
-          illustration: SvgPicture.asset(
-            'assets/images/notifikasi_unread_empty.svg',
-            width: 180,
-            height: 135,
-            fit: BoxFit.contain,
-          ),
+          illustration: _emptyIllustration(),
           title: 'Tidak ada notifikasi belum dibaca',
           message:
               'Semua notifikasi sudah dibaca. Anda dapat melihatnya kembali di daftar semua notifikasi.',
@@ -210,6 +213,7 @@ class DeveloperNotificationView extends StatelessWidget {
         );
       case NotifikasiFilter.perluRevisi:
         return DataStateView.empty(
+          illustration: _emptyIllustration(),
           title: 'Tidak ada revisi aktif',
           message:
               'Pengajuan Anda belum memiliki permintaan perbaikan yang perlu ditindaklanjuti.',
@@ -217,7 +221,8 @@ class DeveloperNotificationView extends StatelessWidget {
           onAction: () => onFilterChanged(NotifikasiFilter.semua),
         );
       case NotifikasiFilter.semua:
-        return const DataStateView.empty(
+        return DataStateView.empty(
+          illustration: _emptyIllustration(),
           title: 'Belum ada notifikasi',
           message: 'Informasi terkait pengajuan akan ditampilkan di sini.',
         );
