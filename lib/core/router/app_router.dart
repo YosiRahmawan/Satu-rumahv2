@@ -35,6 +35,7 @@ import '../../features/bantuan/presentation/screens/pusat_bantuan_screen.dart';
 import '../../features/profil/presentation/screens/tentang_aplikasi_screen.dart';
 import '../auth/role_session.dart';
 import 'route_policy.dart';
+import '../../features/pengajuan/presentation/widgets/pengajuan_draft_ui.dart';
 import '../widgets/route_feedback.dart';
 
 export 'route_policy.dart';
@@ -264,23 +265,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/pengajuan/step1',
-        builder: (_, __) => const PengajuanStep1Screen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep1Screen()),
       ),
       GoRoute(
         path: '/pengajuan/step2',
-        builder: (_, __) => const PengajuanStep2Screen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep2Screen()),
       ),
       GoRoute(
         path: '/pengajuan/step3',
-        builder: (_, __) => const PengajuanStep3Screen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep3Screen()),
       ),
       GoRoute(
         path: '/pengajuan/step4',
-        builder: (_, __) => const PengajuanStep4Screen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep4Screen()),
       ),
       GoRoute(
         path: '/pengajuan/step5',
-        builder: (_, __) => const PengajuanStep5ReviewScreen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep5ReviewScreen()),
       ),
       GoRoute(
         path: '/pengajuan/success',

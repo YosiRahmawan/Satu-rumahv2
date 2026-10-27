@@ -174,6 +174,8 @@ void main() {
   ) async {
     await _pump(tester, items: []);
     expect(find.text('Belum ada notifikasi'), findsOneWidget);
+    // Ilustrasi kosong dari aset, bukan ikon polos.
+    expect(find.byType(SvgPicture), findsWidgets);
     expect(find.byType(DeveloperNotificationTile), findsNothing);
     expect(
       tester.widget<TextButton>(find.byType(TextButton).first).onPressed,

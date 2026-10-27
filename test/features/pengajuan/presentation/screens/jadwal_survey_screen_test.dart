@@ -344,11 +344,64 @@ void main() {
       await tester.pumpAndSettle();
 
       // Grand Tasik Harmoni has HasilSurveyItem with statusHasilEvaluasi: 'perlu_perbaikan'
-      expect(find.text('Hasil Evaluasi: Perlu Perbaikan'), findsOneWidget);
+      expect(find.text('Hasil Monitoring: Perlu Perbaikan'), findsOneWidget);
       expect(find.text('Drainase perimeter belum dibuat'), findsOneWidget);
 
       // Kencana & Pesona do not have perlu_perbaikan status
-      expect(find.text('Hasil Evaluasi: Sesuai'), findsNothing);
+      expect(find.text('Hasil Monitoring: Sesuai'), findsNothing);
+    });
+
+    testWidgets('9b. Progres monitoring dan hasil BA tampil untuk Pengembang', (
+      tester,
+    ) async {
+      final selesai = Pengajuan(
+        id: 'SR-2026-0001',
+        namaPerumahan: 'Griya Uji',
+        namaPt: 'PT Uji',
+        namaDirektur: 'D',
+        npwpPerusahaan: '1',
+        luasLahan: 1,
+        jumlahUnit: 1,
+        tipePerumahan: 'Subsidi',
+        status: 'Dalam Proses',
+        statusTahap: StatusTahapPengajuan.persetujuan,
+        tanggal: '2 Nov 2026',
+        tanggalSurvey: DateTime(2026, 11, 2),
+        uploadedDocs: const {},
+        riwayatSurvey: [
+          HasilSurveyItem(
+            id: '9',
+            tanggalSurvey: DateTime(2026, 11, 2),
+            pelaksanaNama: 'Ketua Satu',
+            pelaksanaJabatan: 'Ketua Tim',
+            lokasiPerumahan: 'Griya Uji',
+            statusHasilEvaluasi: 'sesuai',
+            kesimpulan: const ['Pelaksanaan sesuai site plan'],
+            rencanaTindakLanjut: const ['Rapikan saluran'],
+            nomorSuratBA: '600.2.5/BA-MON/XI/2026/001',
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        createWidgetUnderTest(
+          tester,
+          height: 1400,
+          overrides: [
+            jadwalSurveyListProvider.overrideWith(
+              (ref) => Future.value([selesai]),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dijadwalkan'), findsWidgets);
+      expect(find.text('Survei dilaksanakan'), findsOneWidget);
+      expect(find.text('Hasil terbit'), findsOneWidget);
+      expect(find.text('Hasil Monitoring: Sesuai'), findsOneWidget);
+      expect(find.text('BA 600.2.5/BA-MON/XI/2026/001'), findsOneWidget);
+      expect(find.text('Pelaksanaan sesuai site plan'), findsOneWidget);
+      expect(find.text('• Rapikan saluran'), findsOneWidget);
     });
 
     testWidgets('10. Navigasi ke Detail Pengajuan', (tester) async {
