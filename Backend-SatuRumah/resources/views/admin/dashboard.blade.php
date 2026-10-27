@@ -12,36 +12,8 @@
     <div class="hero-meta">Diperbarui {{ now()->translatedFormat('d M Y, H.i') }} WIB</div>
 </div>
 
-@if($stats['perlu_tindak_lanjut'] > 0)
-<div class="alert alert-warning" style="align-items:center;">
-    <div style="flex:1;">
-        <div class="alert-title">{{ $stats['perlu_tindak_lanjut'] }} pengajuan menunggu perbaikan dari pengembang</div>
-    </div>
-    <a href="{{ route('pengajuan.index', ['status' => 'perlu_perbaikan']) }}" class="btn btn-sm" style="background:#B45309;color:#fff;white-space:nowrap;">Lihat</a>
-</div>
-@endif
-
-<div class="kpi-grid">
-    <div class="kpi">
-        <div class="kpi-top"><span class="kpi-label">Perlu Ditelaah</span></div>
-        <div class="kpi-value">{{ $stats['pengajuan_baru'] }}<span class="kpi-unit">Berkas</span></div>
-        <div class="kpi-note">Baru masuk atau perbaikan terkirim</div>
-    </div>
-    <div class="kpi">
-        <div class="kpi-top"><span class="kpi-label">Verifikasi Teknis</span></div>
-        <div class="kpi-value">{{ $stats['verifikasi_teknis'] }}<span class="kpi-unit">Proses</span></div>
-        <div class="kpi-note">Berkas teknis sedang diperiksa</div>
-    </div>
-    <div class="kpi">
-        <div class="kpi-top"><span class="kpi-label">Survei Berjalan</span></div>
-        <div class="kpi-value">{{ $stats['survey_terjadwal'] }}<span class="kpi-unit">Lokasi</span></div>
-        <div class="kpi-note">Penugasan belum selesai</div>
-    </div>
-    <div class="kpi">
-        <div class="kpi-top"><span class="kpi-label">Menunggu Pengembang</span></div>
-        <div class="kpi-value">{{ $stats['perlu_tindak_lanjut'] }}<span class="kpi-unit">Revisi</span></div>
-        <div class="kpi-note">Perbaikan belum dijawab</div>
-    </div>
+<div id="kpi" data-url="{{ route('dashboard.kpi') }}">
+    @include('admin.partials.kpi')
 </div>
 
 <div class="card">
@@ -65,18 +37,23 @@
 
 @section('scripts')
 <script>
-// Kartu ringkasan dimuat ulang tiap 5 detik (berhenti saat tab tersembunyi); batang bergeser halus ke nilai baru.
+// Kartu angka dan ringkasan dimuat ulang tiap 5 detik (berhenti saat tab tersembunyi); batang bergeser halus ke nilai baru.
 (function () {
+    const kpi = document.getElementById('kpi');
     const box = document.getElementById('ringkasan');
-    if (!box) return;
+    async function ambil(el) {
+        const res = await fetch(el.dataset.url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+        return res.ok ? res.text() : null;
+    }
     async function segarkan() {
         if (document.hidden) return;
         try {
-            const res = await fetch(box.dataset.url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
-            if (!res.ok) return;
+            const [htmlKpi, htmlBox] = await Promise.all([ambil(kpi), ambil(box)]);
+            if (htmlKpi !== null) kpi.innerHTML = htmlKpi;
+            if (htmlBox === null) return;
             const lama = {};
             box.querySelectorAll('.progress-bar[data-kec]').forEach(b => lama[b.dataset.kec] = b.style.width);
-            box.innerHTML = await res.text();
+            box.innerHTML = htmlBox;
             box.querySelectorAll('.progress-bar[data-kec]').forEach(b => {
                 const baru = b.dataset.lebar + '%';
                 b.style.width = lama[b.dataset.kec] ?? '0%';

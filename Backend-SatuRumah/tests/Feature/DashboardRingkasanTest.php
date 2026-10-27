@@ -107,6 +107,24 @@ class DashboardRingkasanTest extends TestCase
             ->assertSee('3 Berkas')->assertSee('data-lebar="15"', false)->assertSee('15% Target');
     }
 
+    public function test_kartu_angka_menghitung_masuk_selesai_ditolak_tahun_ini_dan_ikut_berubah(): void
+    {
+        $this->actingAs($this->admin);
+        $this->pengajuan('Jl. A, Kawalu');
+        $this->pengajuan('Jl. B, Kawalu', 'selesai', 6);
+        $this->pengajuan('Jl. C, Kawalu', 'ditolak', 5);
+        $this->pengajuan('Jl. D, Kawalu', 'draft', 1); // draf tidak dihitung
+
+        $k = (new DashboardSummary())->kpi();
+        $this->assertSame([3, 1, 1], [$k['masuk'], $k['selesai'], $k['ditolak']]);
+
+        $this->get('/dashboard/kpi')->assertOk()->assertSee('Dari 3 pengajuan masuk', false)->assertSee('1 ditolak');
+
+        $this->pengajuan('Jl. E, Kawalu', 'selesai', 6);
+        $this->get('/dashboard/kpi')->assertOk()->assertSee('Dari 4 pengajuan masuk', false);
+        $this->get('/dashboard')->assertOk()->assertSee('id="kpi"', false)->assertSee('Disetujui');
+    }
+
     public function test_ringkasan_hanya_untuk_verifikator_dan_administrator(): void
     {
         $this->actingAs($this->developer)->get('/dashboard/ringkasan')->assertRedirect('/login');

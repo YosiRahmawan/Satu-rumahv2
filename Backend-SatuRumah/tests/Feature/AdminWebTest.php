@@ -75,6 +75,18 @@ class AdminWebTest extends TestCase
         $this->get('/notifikasi')->assertOk();
     }
 
+    public function test_notifikasi_menandai_sudah_dan_belum_dibaca_dengan_jenis_berbeda(): void
+    {
+        $this->actingAs($this->admin);
+        $n = app(\App\Services\Notifier::class);
+        $n->toUser($this->admin, $this->submission, 'submitted', 'Pengajuan baru masuk');
+        $n->toUser($this->admin, $this->submission, 'report_submitted', 'Laporan survei dikirim')->forceFill(['read_at' => now()])->save();
+
+        $this->get('/notifikasi')->assertOk()
+            ->assertSee('Belum dibaca')->assertSee('Sudah dibaca')
+            ->assertSee('Pengajuan Baru')->assertSee('Laporan Survei');
+    }
+
     public function test_pengembang_tidak_bisa_membuka_web_admin(): void
     {
         $this->actingAs($this->developer)->get('/dashboard')->assertRedirect('/login');

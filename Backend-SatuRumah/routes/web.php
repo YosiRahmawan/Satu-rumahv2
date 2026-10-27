@@ -14,6 +14,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth', 'role:verifikator,administrator'])->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/kpi', [DashboardController::class, 'kpi'])->name('dashboard.kpi');
     Route::get('/dashboard/ringkasan', [DashboardController::class, 'ringkasan'])->name('dashboard.ringkasan');
     Route::get('/dashboard/export', [DashboardController::class, 'exportCsv'])->name('dashboard.export');
 

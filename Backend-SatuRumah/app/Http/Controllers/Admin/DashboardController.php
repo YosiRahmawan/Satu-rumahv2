@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\InspectionAssignment;
 use App\Models\Submission;
 use App\Services\DashboardSummary;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -12,25 +11,22 @@ class DashboardController extends Controller
 {
     public function index(DashboardSummary $summary)
     {
-        $active = Submission::whereBetween('stage', [2, 5])->where('sub_status', '!=', 'ditolak');
-
-        $stats = [
-            'pengajuan_baru' => (clone $active)->whereIn('sub_status', ['baru', 'perbaikan_terkirim'])->count(),
-            'verifikasi_teknis' => (clone $active)->where('stage', Submission::STAGE_TEKNIS)->count(),
-            'survey_terjadwal' => InspectionAssignment::whereIn('status', InspectionAssignment::OPEN)->count(),
-            'perlu_tindak_lanjut' => (clone $active)->where('sub_status', 'perlu_perbaikan')->count(),
-        ];
-
         $pengajuans = Submission::with('developer.developerProfile')
             ->where('stage', '>=', Submission::STAGE_ADMINISTRASI)
             ->latest('updated_at')->paginate(5);
 
         return view('admin.dashboard', [
-            'stats' => $stats,
+            'stats' => $summary->kpi(),
             'pengajuans' => $pengajuans,
             'sebaran' => $summary->sebaranKecamatan(),
             'jadwal' => $summary->jadwalTinjauan(),
         ]);
+    }
+
+    /** Kartu angka di bagian atas; dipanggil berkala oleh dashboard. */
+    public function kpi(DashboardSummary $summary)
+    {
+        return view('admin.partials.kpi', ['stats' => $summary->kpi()]);
     }
 
     /** Dua kartu ringkasan saja; dipanggil berkala oleh dashboard agar angkanya ikut berubah. */

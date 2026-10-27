@@ -15,6 +15,24 @@ class DashboardSummary
         'Tawang', 'Cihideung', 'Indihiang', 'Bungursari', 'Cipedes',
     ];
 
+    /** Angka kartu dashboard. `masuk`, `selesai`, `ditolak` dihitung untuk tahun berjalan. @return array<string, int> */
+    public function kpi(): array
+    {
+        $active = Submission::whereBetween('stage', [2, 5])->where('sub_status', '!=', 'ditolak');
+        $tahunIni = fn () => Submission::where('stage', '>=', Submission::STAGE_ADMINISTRASI)->whereYear('submitted_at', now()->year);
+
+        return [
+            'pengajuan_baru' => (clone $active)->whereIn('sub_status', ['baru', 'perbaikan_terkirim'])->count(),
+            'verifikasi_teknis' => (clone $active)->where('stage', Submission::STAGE_TEKNIS)->count(),
+            'survey_terjadwal' => InspectionAssignment::whereIn('status', InspectionAssignment::OPEN)->count(),
+            'perlu_tindak_lanjut' => (clone $active)->where('sub_status', 'perlu_perbaikan')->count(),
+            'masuk' => $tahunIni()->count(),
+            'selesai' => $tahunIni()->where('sub_status', 'selesai')->count(),
+            'ditolak' => $tahunIni()->where('sub_status', 'ditolak')->count(),
+            'tahun' => now()->year,
+        ];
+    }
+
     /**
      * shortcut: kecamatan dibaca dari teks alamat (belum ada kolom khusus), jadi alamat
      * tanpa nama kecamatan dihitung "tanpa kecamatan"; ganti dengan kolom `kecamatan` bila
