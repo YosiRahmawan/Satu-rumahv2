@@ -4,7 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:go_router/go_router.dart';
 import 'package:satu_rumah/features/notifikasi/presentation/providers/notifikasi_provider.dart';
+import 'package:satu_rumah/features/dashboard/presentation/providers/dashboard_provider.dart';
+import 'package:satu_rumah/features/pengajuan/data/repositories/pengajuan_draft_store.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
+import 'package:satu_rumah/features/pengajuan/presentation/widgets/pengajuan_draft_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_detail_screen.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_step5_review_screen.dart';
 
@@ -192,8 +196,9 @@ void main() {
       'kajian-a.pdf',
       'kajian-b.pdf',
     ]);
-    notifier.removeTechnicalOtherFile(0);
-    notifier.removeTechnicalOtherFile(0);
+    // Kajian bawaan tetap ada (wajib); yang dihapus tidak boleh ikut terkirim.
+    notifier.removeTechnicalOtherFile(1);
+    notifier.removeTechnicalOtherFile(1);
 
     final router = GoRouter(
       initialLocation: '/pengajuan/step5',
@@ -222,7 +227,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final submitted = container.read(pengajuanListProvider).first;
-    expect(submitted.uploadedDocs.containsKey('kajian_teknis'), isFalse);
+    expect(submitted.uploadedDocs['kajian_teknis'], 'kajian_teknis_tanah.pdf');
     expect(submitted.technicalFiles, isNot(contains('kajian-a.pdf')));
     expect(submitted.technicalFiles, isNot(contains('kajian-b.pdf')));
   });
@@ -313,31 +318,99 @@ void main() {
   );
 
   testWidgets(
-    'draft stays local and shows the existing session-only feedback',
+    'simpan draf sungguhan lalu pop-up menawarkan lanjut atau keluar',
     (tester) async {
+      SharedPreferences.setMockInitialValues({});
       final container = ProviderContainer();
       addTearDown(container.dispose);
       container.read(pengajuanFormProvider.notifier).fillDummyData();
 
-      final router = _reviewRouter();
+      final router = _reviewRouter(includeDashboard: true);
       addTearDown(router.dispose);
       await _pumpReview(tester, container, router);
       final before = container.read(pengajuanListProvider).length;
 
       await tester.tap(find.text('Simpan sebagai Draft'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
+      expect(find.text('Draf tersimpan'), findsOneWidget);
+      // Kedua tombol sejajar (satu baris), bukan bertumpuk.
       expect(
-        find.textContaining('Draft formulir disimpan untuk sesi ini'),
-        findsOneWidget,
+        tester.getCenter(find.text('Lanjut mengisi')).dy,
+        tester.getCenter(find.text('Ke Pengajuan')).dy,
+      );
+      expect(
+        container.read(pengajuanFormProvider.notifier).lastSavedAt.value,
+        isNotNull,
       );
       expect(container.read(pengajuanListProvider), hasLength(before));
+
+      // Lanjut mengisi: tetap di Langkah 5.
+      await tester.tap(find.text('Lanjut mengisi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Draf tersimpan'), findsNothing);
+      expect(find.text('Simpan sebagai Draft'), findsOneWidget);
+
+      // Ke Pengajuan: keluar sekali jalan ke tab Pengajuan.
+      await tester.tap(find.text('Simpan sebagai Draft'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ke Pengajuan'));
+      await tester.pumpAndSettle();
+      expect(find.text('dashboard'), findsOneWidget);
+      expect(container.read(dashboardTabProvider), 1);
       expect(
         container.read(pengajuanFormProvider).namaPerumahan,
         'Green Tasik Residence',
       );
     },
   );
+
+  testWidgets(
+    'tombol kembali sistem: konfirmasi, simpan, lalu keluar sekali jalan',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      container.read(pengajuanFormProvider.notifier).fillDummyData();
+
+      final router = _reviewRouter(includeDashboard: true, guard: true);
+      addTearDown(router.dispose);
+      await _pumpReview(tester, container, router);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Keluar dari pengajuan?'), findsOneWidget);
+
+      // Lanjut mengisi: tidak ke mana-mana.
+      await tester.tap(find.text('Lanjut mengisi'));
+      await tester.pumpAndSettle();
+      expect(find.text('Simpan sebagai Draft'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Simpan & keluar'));
+      await tester.pumpAndSettle();
+      expect(find.text('dashboard'), findsOneWidget);
+      expect(await const PengajuanDraftStore().exists('tamu'), isTrue);
+    },
+  );
+
+  testWidgets('tombol kembali sistem pada formulir kosong langsung keluar', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final router = _reviewRouter(includeDashboard: true, guard: true);
+    addTearDown(router.dispose);
+    await _pumpReview(tester, container, router);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('Keluar dari pengajuan?'), findsNothing);
+    expect(find.text('dashboard'), findsOneWidget);
+  });
 
   testWidgets(
     'local submit creates notification metadata for the submitted id',
@@ -381,12 +454,21 @@ Future<void> _pumpReview(
 GoRouter _reviewRouter({
   bool includeStepRoutes = false,
   bool includeSuccessRoute = false,
+  bool includeDashboard = false,
+  bool guard = false,
 }) {
   final routes = <RouteBase>[
     GoRoute(
       path: '/pengajuan/step5',
-      builder: (context, state) => const PengajuanStep5ReviewScreen(),
+      builder: (context, state) => guard
+          ? const PengajuanBackGuard(child: PengajuanStep5ReviewScreen())
+          : const PengajuanStep5ReviewScreen(),
     ),
+    if (includeDashboard)
+      GoRoute(
+        path: '/dashboard',
+        builder: (context, state) => const Scaffold(body: Text('dashboard')),
+      ),
   ];
   if (includeStepRoutes) {
     for (final step in [1, 2, 3, 4]) {

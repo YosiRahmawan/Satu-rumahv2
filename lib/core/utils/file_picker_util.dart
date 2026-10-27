@@ -371,6 +371,23 @@ class FilePickerUtil {
     return result.value ?? const [];
   }
 
+  /// Isi berkas yang benar-benar dipilih pengguna, atau null bila tidak
+  /// terbaca. Berbeda dengan [getPdfBytes], tidak pernah membuat PDF pengganti:
+  /// dipakai untuk mengunggah ke server.
+  static Future<Uint8List?> readBytesOrNull(String reference) async {
+    final cached = getCachedFile(reference);
+    if (cached?.bytes != null && cached!.bytes!.isNotEmpty) return cached.bytes;
+    if (kIsWeb) return null;
+    for (final path in [cached?.path, reference]) {
+      if (path == null) continue;
+      try {
+        final file = File(path);
+        if (file.existsSync()) return await file.readAsBytes();
+      } catch (_) {}
+    }
+    return null;
+  }
+
   /// Menghasilkan atau mengambil byte PDF dokumen untuk pratinjau yang valid dan sah.
   static Future<Uint8List> getPdfBytes({
     required String fileName,

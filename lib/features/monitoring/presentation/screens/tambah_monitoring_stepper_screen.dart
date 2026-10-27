@@ -3,13 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/api/api_client.dart';
+import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../data/models/kamera_context.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
 import '../widgets/dynamic_bullet_field.dart';
+import '../widgets/foto_dokumentasi_section.dart';
+import '../widgets/tab_beranda_monitoring.dart' show PerwaskimIdentity;
 
 enum _ExitChoice { save, discard }
 
@@ -47,6 +52,20 @@ class _TambahMonitoringStepperScreenState
       text: state.ditemuiJabatan,
     );
     _savedSignature = MonitoringFormNotifier.signature(state);
+    // Mode API tanpa tugas (laporan mandiri): tim = petugas yang masuk.
+    if (ref.read(apiEnabledProvider) &&
+        state.pelaksana.every((p) => p.nama.trim().isEmpty)) {
+      final me = PerwaskimIdentity.fromSession(ref.read(roleSessionProvider));
+      Future.microtask(() {
+        if (!mounted) return;
+        ref.read(monitoringFormProvider.notifier).setTimPelaksana([
+          MonitoringPerson(nama: me.nama, jabatan: me.jabatan),
+        ]);
+        _savedSignature = MonitoringFormNotifier.signature(
+          ref.read(monitoringFormProvider),
+        );
+      });
+    }
   }
 
   @override
@@ -1025,7 +1044,10 @@ class _TambahMonitoringStepperScreenState
         const SizedBox(height: 16),
         _buildPeopleSection(
           title: 'Tim Pelaksana Disperwaskim',
-          subtitle: 'Yang Melaksanakan Monitoring',
+          subtitle: ref.watch(apiEnabledProvider)
+              ? 'Ditetapkan Admin pada penugasan; tidak dapat diubah'
+              : 'Yang Melaksanakan Monitoring',
+          readOnly: ref.watch(apiEnabledProvider),
           personLabel: 'Anggota',
           icon: Icons.badge_outlined,
           people: state.pelaksana,
@@ -1106,6 +1128,7 @@ class _TambahMonitoringStepperScreenState
   Widget _buildPeopleSection({
     required String title,
     required String subtitle,
+    bool readOnly = false,
     required String personLabel,
     required IconData icon,
     required List<MonitoringPerson> people,
@@ -1120,7 +1143,7 @@ class _TambahMonitoringStepperScreenState
       children: [
         _buildSectionHeader(
           label: title,
-          badge: 'Opsional',
+          badge: readOnly ? 'Dari penugasan' : 'Opsional',
           leading: Icon(icon, size: 18, color: AppColors.enterprisePrimary),
           labelStyle: AppTextStyles.labelLarge.copyWith(
             fontFamily: AppTextStyles.enterpriseFontFamily,
@@ -1143,30 +1166,34 @@ class _TambahMonitoringStepperScreenState
               index: entry.key,
               person: entry.value,
               personLabel: personLabel,
-              canRemove: people.length > 1,
+              canRemove: !readOnly && people.length > 1,
+              readOnly: readOnly,
               onRemove: () => onRemove(entry.key),
               onChanged: onChanged,
             ),
           ),
         ),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: onAdd,
-            icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
-            label: Text(addLabel),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(48),
-              foregroundColor: AppColors.enterprisePrimary,
-              side: const BorderSide(color: AppColors.enterprisePrimary),
-              shape: const RoundedRectangleBorder(borderRadius: AppRadii.small),
-              textStyle: AppTextStyles.labelMedium.copyWith(
-                fontFamily: AppTextStyles.enterpriseFontFamily,
-                fontWeight: FontWeight.w700,
+        if (!readOnly)
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.person_add_alt_1_outlined, size: 18),
+              label: Text(addLabel),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(48),
+                foregroundColor: AppColors.enterprisePrimary,
+                side: const BorderSide(color: AppColors.enterprisePrimary),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadii.small,
+                ),
+                textStyle: AppTextStyles.labelMedium.copyWith(
+                  fontFamily: AppTextStyles.enterpriseFontFamily,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -1176,6 +1203,7 @@ class _TambahMonitoringStepperScreenState
     required MonitoringPerson person,
     required String personLabel,
     required bool canRemove,
+    bool readOnly = false,
     required VoidCallback onRemove,
     required void Function(int index, {String? nama, String? jabatan})
     onChanged,
@@ -1226,6 +1254,7 @@ class _TambahMonitoringStepperScreenState
             key: ValueKey('${person.id}-nama'),
             label: 'Nama Lengkap',
             value: person.nama,
+            readOnly: readOnly,
             onChanged: (value) => onChanged(index, nama: value),
           ),
           const SizedBox(height: 12),
@@ -1233,6 +1262,7 @@ class _TambahMonitoringStepperScreenState
             key: ValueKey('${person.id}-jabatan'),
             label: 'Jabatan',
             value: person.jabatan,
+            readOnly: readOnly,
             onChanged: (value) => onChanged(index, jabatan: value),
           ),
         ],
@@ -1244,6 +1274,7 @@ class _TambahMonitoringStepperScreenState
     required Key key,
     required String label,
     required String value,
+    bool readOnly = false,
     required ValueChanged<String> onChanged,
   }) {
     return Column(
@@ -1261,6 +1292,7 @@ class _TambahMonitoringStepperScreenState
         TextFormField(
           key: key,
           initialValue: value,
+          readOnly: readOnly,
           onChanged: onChanged,
           style: AppTextStyles.bodySmall.copyWith(
             fontFamily: AppTextStyles.enterpriseFontFamily,
@@ -1316,40 +1348,33 @@ class _TambahMonitoringStepperScreenState
           ),
         ),
         const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface,
-            border: Border.all(color: AppColors.enterpriseBorder),
-            borderRadius: AppRadii.control,
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(
-                Icons.info_outline,
-                color: AppColors.enterpriseTextMuted,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Dokumentasi foto belum tersedia. Laporan tetap dapat '
-                  'dibuat tanpa foto.',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    fontFamily: AppTextStyles.enterpriseFontFamily,
-                    color: AppColors.enterpriseTextMuted,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+        FotoDokumentasiSection(onOpenCamera: () => _openCamera(state)),
         const SizedBox(height: 16),
         _buildStep3ValidationSummary(state),
       ],
+    );
+  }
+
+  Future<void> _openCamera(MonitoringFormState state) async {
+    if (state.namaPerumahan.trim().isEmpty) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Isi nama perumahan di Langkah 1 sebelum memotret.'),
+          ),
+        );
+      return;
+    }
+    await context.push(
+      '/monitoring/kamera',
+      extra: KameraContext.formAktif(taskTitle: state.namaPerumahan),
+    );
+    if (!mounted) return;
+    // Kamera menyimpan draf setiap kali foto dipakai, jadi isian form
+    // sudah tersimpan seluruhnya saat kembali.
+    _savedSignature = MonitoringFormNotifier.signature(
+      ref.read(monitoringFormProvider),
     );
   }
 
@@ -1361,6 +1386,11 @@ class _TambahMonitoringStepperScreenState
     final checks = [
       (hasHousing, 'Nama perumahan dari Langkah 1'),
       (hasRequiredRtl, 'Rencana tindak lanjut dari Langkah 2'),
+      if (state.photos.isNotEmpty)
+        (
+          photoSubmitBlocker(state.photos) == null,
+          '${state.photos.length} foto dokumentasi siap dilampirkan',
+        ),
     ];
     return Container(
       width: double.infinity,

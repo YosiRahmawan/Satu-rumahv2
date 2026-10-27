@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/api/api_client.dart';
+import '../../../../core/auth/auth_repository.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
@@ -18,6 +20,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _rememberMe = false;
   bool _obscurePassword = true;
+  bool _submitting = false;
+
+  /// Galat login yang tampil di dalam kartu (tidak hilang seperti snackbar).
+  String? _loginError;
   AppRole _selectedRole = AppRole.developer;
 
   @override
@@ -27,9 +33,53 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
+  Future<void> _loginWithApi(String username) async {
+    setState(() {
+      _submitting = true;
+      _loginError = null;
+    });
+    try {
+      final result = await ref
+          .read(authRepositoryProvider)
+          .login(username: username, password: _passwordController.text);
+      if (!mounted) return;
+      ref
+          .read(roleSessionProvider.notifier)
+          .signIn(
+            result.user.role,
+            username: result.user.username,
+            nama: result.user.name,
+            jabatan: result.user.jabatan,
+            mustChangePassword: result.mustChangePassword,
+          );
+      context.go(
+        result.mustChangePassword ? '/ganti-sandi' : result.user.role.homeRoute,
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _loginError = _loginMessage(e));
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  static String _loginMessage(ApiException e) {
+    final until = e.lockedUntil?.toLocal();
+    if (e.code == 'ERR-021' && until != null) {
+      final hh = until.hour.toString().padLeft(2, '0');
+      final mm = until.minute.toString().padLeft(2, '0');
+      return 'Akun terkunci sementara. Coba lagi pukul $hh.$mm.';
+    }
+    return e.message;
+  }
+
+  Future<void> _login() async {
+    if (_formKey.currentState!.validate() && !_submitting) {
       final username = _usernameController.text.trim().toLowerCase();
+      if (ref.read(apiEnabledProvider)) {
+        await _loginWithApi(username);
+        return;
+      }
       final AppRole role;
       if (_selectedRole == AppRole.perwaskim &&
           RoleSessionNotifier.roleForUsername(username) == AppRole.developer) {
@@ -292,12 +342,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 end: Alignment.bottomCenter,
                 colors: [
                   AppColors.primaryDark, // #881337
-                  AppColors.primaryRed,  // #B91C1C
+                  AppColors.primaryRed, // #B91C1C
                 ],
               ),
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(28),
-              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
             ),
           ),
 
@@ -318,13 +366,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                       // Card 1: Role Selector Card (Overlaps the red header banner)
                       GestureDetector(
-                        onLongPress: _showDemoSheet,
+                        onLongPress: ref.read(apiEnabledProvider)
+                            ? null
+                            : _showDemoSheet,
                         child: Container(
                           decoration: BoxDecoration(
                             color: AppColors.cardSurface,
-                            borderRadius: const BorderRadius.all(Radius.circular(20.0)),
+                            borderRadius: const BorderRadius.all(
+                              Radius.circular(20.0),
+                            ),
                             border: Border.all(
-                              color: AppColors.borderSubtle.withValues(alpha: 0.6),
+                              color: AppColors.borderSubtle.withValues(
+                                alpha: 0.6,
+                              ),
                               width: 1.0,
                             ),
                             boxShadow: const [
@@ -392,7 +446,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                 child: Text(
                                                   'Pengembang',
                                                   style: TextStyle(
-                                                    fontFamily: AppTextStyles.fontFamily,
+                                                    fontFamily: AppTextStyles
+                                                        .fontFamily,
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w700,
                                                     color: isDeveloper
@@ -444,7 +499,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                                 child: Text(
                                                   'Pengawas Lapangan',
                                                   style: TextStyle(
-                                                    fontFamily: AppTextStyles.fontFamily,
+                                                    fontFamily: AppTextStyles
+                                                        .fontFamily,
                                                     fontSize: 13,
                                                     fontWeight: FontWeight.w700,
                                                     color: !isDeveloper
@@ -472,9 +528,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Container(
                         decoration: BoxDecoration(
                           color: AppColors.cardSurface,
-                          borderRadius: const BorderRadius.all(Radius.circular(20.0)),
+                          borderRadius: const BorderRadius.all(
+                            Radius.circular(20.0),
+                          ),
                           border: Border.all(
-                            color: AppColors.borderSubtle.withValues(alpha: 0.6),
+                            color: AppColors.borderSubtle.withValues(
+                              alpha: 0.6,
+                            ),
                             width: 1.0,
                           ),
                           boxShadow: const [
@@ -533,7 +593,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       : 'Masukkan username / NIP...',
                                   hintStyle: TextStyle(
                                     fontFamily: AppTextStyles.fontFamily,
-                                    color: AppColors.textSecondary.withValues(alpha: 0.7),
+                                    color: AppColors.textSecondary.withValues(
+                                      alpha: 0.7,
+                                    ),
                                     fontSize: 13,
                                     fontWeight: FontWeight.normal,
                                   ),
@@ -549,35 +611,49 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     size: 20,
                                   ),
                                   border: OutlineInputBorder(
-                                    borderRadius: const BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
-                                      color: AppColors.borderSubtle.withValues(alpha: 0.8),
+                                      color: AppColors.borderSubtle.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       width: 1.0,
                                     ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: const BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
-                                      color: AppColors.borderSubtle.withValues(alpha: 0.8),
+                                      color: AppColors.borderSubtle.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       width: 1.0,
                                     ),
                                   ),
                                   focusedBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
                                       color: AppColors.primaryRed,
                                       width: 1.5,
                                     ),
                                   ),
                                   errorBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
                                       color: AppColors.error,
                                       width: 1.2,
                                     ),
                                   ),
                                   focusedErrorBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
                                       color: AppColors.error,
                                       width: 1.5,
@@ -670,7 +746,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   hintText: 'Masukkan kata sandi...',
                                   hintStyle: TextStyle(
                                     fontFamily: AppTextStyles.fontFamily,
-                                    color: AppColors.textSecondary.withValues(alpha: 0.7),
+                                    color: AppColors.textSecondary.withValues(
+                                      alpha: 0.7,
+                                    ),
                                     fontSize: 13,
                                     fontWeight: FontWeight.normal,
                                   ),
@@ -699,35 +777,49 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     ),
                                   ),
                                   border: OutlineInputBorder(
-                                    borderRadius: const BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
-                                      color: AppColors.borderSubtle.withValues(alpha: 0.8),
+                                      color: AppColors.borderSubtle.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       width: 1.0,
                                     ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
-                                    borderRadius: const BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: const BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
-                                      color: AppColors.borderSubtle.withValues(alpha: 0.8),
+                                      color: AppColors.borderSubtle.withValues(
+                                        alpha: 0.8,
+                                      ),
                                       width: 1.0,
                                     ),
                                   ),
                                   focusedBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
                                       color: AppColors.primaryRed,
                                       width: 1.5,
                                     ),
                                   ),
                                   errorBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
                                       color: AppColors.error,
                                       width: 1.2,
                                     ),
                                   ),
                                   focusedErrorBorder: const OutlineInputBorder(
-                                    borderRadius: BorderRadius.all(Radius.circular(10)),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(10),
+                                    ),
                                     borderSide: BorderSide(
                                       color: AppColors.error,
                                       width: 1.5,
@@ -746,9 +838,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                               // Remember Me Checkbox
                               InkWell(
-                                onTap: () => setState(
-                                  () => _rememberMe = !_rememberMe,
-                                ),
+                                onTap: () =>
+                                    setState(() => _rememberMe = !_rememberMe),
                                 borderRadius: BorderRadius.circular(6),
                                 child: Padding(
                                   padding: const EdgeInsets.symmetric(
@@ -764,8 +855,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                           value: _rememberMe,
                                           activeColor: AppColors.primaryRed,
                                           shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(4),
+                                            borderRadius: BorderRadius.circular(
+                                              4,
+                                            ),
                                           ),
                                           side: const BorderSide(
                                             color: AppColors.slate300,
@@ -783,7 +875,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         child: Text(
                                           'Ingat saya di perangkat ini',
                                           style: TextStyle(
-                                            fontFamily: AppTextStyles.fontFamily,
+                                            fontFamily:
+                                                AppTextStyles.fontFamily,
                                             fontSize: 12.5,
                                             color: AppColors.slate700,
                                             fontWeight: FontWeight.w500,
@@ -794,6 +887,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                 ),
                               ),
+
+                              if (_loginError != null) ...[
+                                const SizedBox(height: 14),
+                                Semantics(
+                                  liveRegion: true,
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 10,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primarySurface,
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(
+                                        color: AppColors.primaryRed,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Icon(
+                                          Icons.error_outline_rounded,
+                                          size: 18,
+                                          color: AppColors.primaryRed,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            _loginError!,
+                                            style: const TextStyle(
+                                              fontFamily:
+                                                  AppTextStyles.fontFamily,
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppColors.primaryRed,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
 
                               const SizedBox(height: 18),
 
@@ -810,7 +948,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  onPressed: _login,
+                                  onPressed: _submitting ? null : _login,
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
@@ -827,7 +965,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               : 'Masuk sebagai Pengawas Lapangan',
                                           overflow: TextOverflow.ellipsis,
                                           style: const TextStyle(
-                                            fontFamily: AppTextStyles.fontFamily,
+                                            fontFamily:
+                                                AppTextStyles.fontFamily,
                                             fontSize: 14,
                                             fontWeight: FontWeight.w700,
                                             color: Colors.white,

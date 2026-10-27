@@ -28,9 +28,7 @@ Widget _testApp(GoRouter router, {ProviderContainer? container}) {
 }
 
 void main() {
-  testWidgets('Splash transitions to login after its delay', (
-    tester,
-  ) async {
+  testWidgets('Splash transitions to login after its delay', (tester) async {
     final router = _testRouter();
     addTearDown(router.dispose);
 

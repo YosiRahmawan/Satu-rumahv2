@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import '../../../../core/api/api_client.dart';
 import '../../../../core/auth/role_session.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +11,12 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
+import '../../../profil/data/developer_profile_repository.dart';
 import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../data/models/pengajuan_model.dart';
+import '../../data/repositories/pengajuan_api_repository.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/pengajuan_draft_ui.dart';
 
 /// Halaman Tinjau & Kirim Pengajuan (Langkah 5 dari 5).
 /// Redesain UI Google Stitch dengan Smart Document Accordions.
@@ -25,6 +31,10 @@ class PengajuanStep5ReviewScreen extends ConsumerStatefulWidget {
 class _PengajuanStep5ReviewScreenState
     extends ConsumerState<PengajuanStep5ReviewScreen> {
   bool _isSubmitting = false;
+  String _progress = '';
+
+  /// Kunci idempotensi satu percobaan kirim; sama pada percobaan ulang.
+  String? _draftKey;
 
   // State ekspansi accordion
   bool _ptExpanded = false;
@@ -226,14 +236,11 @@ class _PengajuanStep5ReviewScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: _summaryField('Nama PT', 'Belum tersedia'),
+                            child: _summaryField('Nama PT', _namaPt),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: _summaryField(
-                              'Nama Direktur',
-                              'Belum tersedia',
-                            ),
+                            child: _summaryField('Nama Direktur', _namaDirektur),
                           ),
                         ],
                       ),
@@ -276,9 +283,9 @@ class _PengajuanStep5ReviewScreenState
                         ],
                       ),
                     ] else ...[
-                      _summaryField('Nama PT', 'Belum tersedia'),
+                      _summaryField('Nama PT', _namaPt),
                       const SizedBox(height: 10),
-                      _summaryField('Nama Direktur', 'Belum tersedia'),
+                      _summaryField('Nama Direktur', _namaDirektur),
                       const SizedBox(height: 10),
                       _summaryField('NPWP Perusahaan', state.npwpPerusahaan),
                       const SizedBox(height: 10),
@@ -304,6 +311,10 @@ class _PengajuanStep5ReviewScreenState
       ),
     );
   }
+
+  String get _namaPt => ref.watch(developerProfileProvider).valueOrNull?.namaPt ?? '';
+  String get _namaDirektur =>
+      ref.watch(developerProfileProvider).valueOrNull?.namaDirektur ?? '';
 
   Widget _summaryField(String label, String value) {
     return Column(
@@ -716,13 +727,29 @@ class _PengajuanStep5ReviewScreenState
         padding: const EdgeInsets.symmetric(horizontal: 12),
       ),
       child: _isSubmitting
-          ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+                if (_progress.isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      _progress,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
+              ],
             )
           : const Text(
               'Kirim Pengajuan',
@@ -788,19 +815,76 @@ class _PengajuanStep5ReviewScreenState
   // ---------------------------------------------------------------------------
   // Action Handlers
   // ---------------------------------------------------------------------------
-  void _saveDraft() => ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text(
-        'Draft formulir disimpan untuk sesi ini. Perubahan aman selama aplikasi aktif.',
-      ),
-    ),
-  );
+  /// Simpan draf sungguhan (bukan sekadar pesan), lalu tawarkan lanjut atau keluar.
+  Future<void> _saveDraft() async {
+    final result = await simpanDraf(context, ref);
+    if (result == DraftSaveResult.saved && mounted) {
+      await dialogDrafTersimpan(context, ref);
+    }
+  }
 
   void _backToStep4() {
     if (context.canPop()) {
       context.pop();
     } else {
       context.go('/pengajuan/step4');
+    }
+  }
+
+  Future<void> _submitViaApi(PengajuanFormState state) async {
+    setState(() {
+      _isSubmitting = true;
+      _progress = 'Menyiapkan…';
+    });
+    _draftKey ??= newDraftKey();
+    try {
+      final item = await ref
+          .read(pengajuanRemoteProvider)
+          .submit(
+            state,
+            draftKey: _draftKey!,
+            onProgress: (message, _) {
+              if (mounted) setState(() => _progress = message);
+            },
+          );
+      if (!mounted) return;
+      ref.read(pengajuanListProvider.notifier).upsert(item);
+      ref
+          .read(notifikasiProvider.notifier)
+          .addNotification(
+            NotifikasiModel(
+              id: 'notif-${item.id}',
+              jenis: JenisNotifikasi.pengajuanBaru,
+              judul: 'Pengajuan Baru: ${item.namaPerumahan}',
+              deskripsi:
+                  'Pengajuan (${item.id}) telah diterima dan dalam verifikasi administrasi.',
+              waktu: DateTime.now(),
+              targetRoute: '/pengajuan/detail/${item.id}',
+              pengajuanId: item.id,
+              penerima: AppRole.developer,
+            ),
+          );
+      ref.read(pengajuanFormProvider.notifier).reset();
+      context.pushReplacement('/pengajuan/success', extra: item.id);
+    } catch (e) {
+      // Galat server memakai pesannya; galat tak terduga tidak boleh membuat
+      // tombol berputar selamanya.
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _progress = '';
+      });
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              e is ApiException
+                  ? e.message
+                  : 'Pengajuan belum terkirim karena kendala tak terduga. Coba lagi.',
+            ),
+          ),
+        );
     }
   }
 
@@ -811,6 +895,10 @@ class _PengajuanStep5ReviewScreenState
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(_missing(state))));
+      return;
+    }
+    if (ref.read(apiEnabledProvider)) {
+      unawaited(_submitViaApi(state));
       return;
     }
     setState(() => _isSubmitting = true);
@@ -893,7 +981,8 @@ class _PengajuanStep5ReviewScreenState
     if (!state.isStep1Valid) missing.add('data dasar Step 1');
     if (!state.isStep2Valid) missing.add('5 dokumen Step 2');
     if (!state.isStep3Valid) missing.add('dokumen wajib Step 3');
-    if (!state.isStep4Valid) missing.add('minimal 1 berkas teknis Step 4');
+    if (!state.hasSitePlan) missing.add('berkas Site Plan Step 4');
+    if (!state.hasKajianTeknis) missing.add('berkas Kajian Teknis Step 4');
     if (!state.isAgreed) missing.add('persetujuan pernyataan');
     return "Lengkapi ${missing.join(', ')} sebelum mengirim pengajuan.";
   }

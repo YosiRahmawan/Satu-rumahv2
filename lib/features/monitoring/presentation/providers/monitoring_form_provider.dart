@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:typed_data';
+
+import '../../../../core/api/api_client.dart';
 import '../../../../core/auth/role_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
@@ -8,9 +12,24 @@ import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_verifikasi_controller.dart';
 import '../../data/models/monitoring_model.dart';
+import '../../data/models/report_photo.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
+import '../../data/photo_bytes_cache.dart';
 import '../../data/repositories/monitoring_repository.dart';
+import '../../data/repositories/officer_api_repository.dart';
+import '../../../pengajuan/data/repositories/pengajuan_api_repository.dart'
+    show newDraftKey;
+import 'camera_providers.dart';
 import 'monitoring_list_provider.dart';
+
+/// Alasan foto menghalangi pengiriman laporan, atau null bila semuanya siap.
+String? photoSubmitBlocker(List<ReportPhoto> photos) {
+  final reselect = photos.where((p) => p.needsReselect).length;
+  if (reselect > 0) {
+    return '$reselect foto perlu diambil ulang karena berkasnya tidak tersimpan. Hapus lalu potret kembali.';
+  }
+  return null;
+}
 
 final monitoringRepositoryProvider = Provider<MonitoringRepository>((ref) {
   return MonitoringRepository();
@@ -98,6 +117,7 @@ class MonitoringFormState {
   final String ditemuiJabatan;
   final List<MonitoringPerson> pelaksana;
   final List<MonitoringPerson> ditemui;
+  final List<ReportPhoto> photos;
 
   final bool isSubmitting;
   final String? errorMessage;
@@ -122,6 +142,7 @@ class MonitoringFormState {
     this.ditemuiJabatan = '',
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
+    this.photos = const [],
     this.isSubmitting = false,
     this.errorMessage,
   }) : tanggalMonitoring = tanggalMonitoring ?? DateTime.now(),
@@ -148,6 +169,7 @@ class MonitoringFormState {
     String? ditemuiJabatan,
     List<MonitoringPerson>? pelaksana,
     List<MonitoringPerson>? ditemui,
+    List<ReportPhoto>? photos,
     bool? isSubmitting,
     String? errorMessage,
   }) {
@@ -171,6 +193,7 @@ class MonitoringFormState {
       ditemuiJabatan: ditemuiJabatan ?? this.ditemuiJabatan,
       pelaksana: pelaksana ?? this.pelaksana,
       ditemui: ditemui ?? this.ditemui,
+      photos: photos ?? this.photos,
       isSubmitting: isSubmitting ?? this.isSubmitting,
       errorMessage: errorMessage,
     );
@@ -182,6 +205,9 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
   final Ref _ref;
   final MonitoringBaUpload? _baUploadOverride;
   final Map<String, MonitoringModel> _successfulSubmissions = {};
+
+  /// Kunci idempotensi per draf untuk kiriman lewat server (sama saat dicoba ulang).
+  final Map<String, String> _apiDraftKeys = {};
 
   MonitoringFormNotifier(
     this._repository,
@@ -212,6 +238,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       s.statusHasilEvaluasi.name,
       people(s.pelaksana),
       people(s.ditemui),
+      s.photos.map((p) => '${p.id}:${p.needsReselect}').join(';'),
     ].join('\u0001');
   }
 
@@ -236,6 +263,21 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       state = state.copyWith(rencanaTindakLanjut: val);
   void updateStatusHasilEvaluasi(StatusHasilEvaluasi val) =>
       state = state.copyWith(statusHasilEvaluasi: val);
+
+  /// Mengisi tim pelaksana dari penugasan Admin (mode API); tidak diedit petugas.
+  void setTimPelaksana(List<MonitoringPerson> people) {
+    if (people.isEmpty) return;
+    final fresh = [
+      for (final p in people)
+        MonitoringPerson.create(nama: p.nama, jabatan: p.jabatan),
+    ];
+    state = state.copyWith(
+      pelaksana: fresh,
+      pelaksanaNama: fresh.first.nama,
+      pelaksanaJabatan: fresh.first.jabatan,
+    );
+  }
+
   void updatePelaksanaNama(String val) {
     final people = [...state.pelaksana];
     if (people.isEmpty) people.add(const MonitoringPerson());
@@ -248,20 +290,6 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
     if (people.isEmpty) people.add(const MonitoringPerson());
     people[0] = people.first.copyWith(jabatan: val);
     state = state.copyWith(pelaksanaJabatan: val, pelaksana: people);
-  }
-
-  void updateDitemuiNama(String val) {
-    final people = [...state.ditemui];
-    if (people.isEmpty) people.add(const MonitoringPerson());
-    people[0] = people.first.copyWith(nama: val);
-    state = state.copyWith(ditemuiNama: val, ditemui: people);
-  }
-
-  void updateDitemuiJabatan(String val) {
-    final people = [...state.ditemui];
-    if (people.isEmpty) people.add(const MonitoringPerson());
-    people[0] = people.first.copyWith(jabatan: val);
-    state = state.copyWith(ditemuiJabatan: val, ditemui: people);
   }
 
   void updatePelaksanaPerson(int index, {String? nama, String? jabatan}) {
@@ -327,6 +355,23 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       ditemui: people,
       ditemuiNama: people.first.nama,
       ditemuiJabatan: people.first.jabatan,
+    );
+  }
+
+  /// Menambah foto bergeotag; isinya dititipkan ke [PhotoBytesCache] dengan
+  /// id foto sebagai kunci.
+  void addPhoto(ReportPhoto photo, Uint8List bytes) {
+    PhotoBytesCache.put(photo.id, bytes);
+    state = state.copyWith(photos: [...state.photos, photo]);
+  }
+
+  void removePhoto(String photoId) {
+    PhotoBytesCache.remove(photoId);
+    state = state.copyWith(
+      photos: [
+        for (final photo in state.photos)
+          if (photo.id != photoId) photo,
+      ],
     );
   }
 
@@ -429,6 +474,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
           : ditemuiList.first.jabatan,
       pelaksana: pelaksanaList,
       ditemui: ditemuiList,
+      photos: draft.photos,
       isSubmitting: false,
       errorMessage: null,
     );
@@ -501,6 +547,7 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       ditemuiJabatan: state.ditemuiJabatan,
       pelaksana: state.pelaksana,
       ditemui: state.ditemui,
+      photos: state.photos,
       isDraft: true,
     );
   }
@@ -532,16 +579,8 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       return _failSubmit('Laporan yang sudah final tidak dapat dikirim ulang.');
     }
 
-    if (draft.namaPerumahan.trim().isEmpty) {
-      return _failSubmit('Nama Perumahan wajib diisi.');
-    }
-
-    if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
-        draft.rencanaTindakLanjut.every((item) => item.trim().isEmpty)) {
-      return _failSubmit(
-        'Untuk status "${draft.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.',
-      );
-    }
+    final blocker = _submitBlocker(draft);
+    if (blocker != null) return _failSubmit(blocker);
 
     state = state.copyWith(isSubmitting: true, errorMessage: null);
 
@@ -617,6 +656,84 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       return MonitoringSubmitResult.success(finalModel);
     } catch (error) {
       return _failSubmit('Laporan gagal dikirim: $error');
+    }
+  }
+
+  /// Alasan laporan belum boleh dikirim, atau null bila siap.
+  String? _submitBlocker(MonitoringModel draft) {
+    if (draft.namaPerumahan.trim().isEmpty)
+      return 'Nama Perumahan wajib diisi.';
+    final photoBlocker = photoSubmitBlocker(draft.photos);
+    if (photoBlocker != null) return photoBlocker;
+    if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
+        draft.rencanaTindakLanjut.every((item) => item.trim().isEmpty)) {
+      return 'Untuk status "${draft.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.';
+    }
+    return null;
+  }
+
+  /// Mode API: kirim laporan ke server (isi, foto, lalu final). Nomor BA
+  /// diterbitkan server; laporan final disimpan juga di riwayat lokal.
+  Future<MonitoringSubmitResult> submitFinalViaApi(
+    MonitoringModel draft, {
+    void Function(String message, double fraction)? onProgress,
+  }) async {
+    if (state.isSubmitting) {
+      return MonitoringSubmitResult.failure('Laporan sedang dikirim.');
+    }
+    final previous = _successfulSubmissions[draft.id];
+    if (previous != null) return MonitoringSubmitResult.duplicate(previous);
+    if (draft.id.trim().isEmpty) return _failSubmit('ID laporan tidak valid.');
+    if (!draft.isDraft) {
+      return _failSubmit('Laporan yang sudah final tidak dapat dikirim ulang.');
+    }
+    final blocker = _submitBlocker(draft);
+    if (blocker != null) return _failSubmit(blocker);
+
+    state = state.copyWith(isSubmitting: true, errorMessage: null);
+    try {
+      // Posisi saat mengirim; bila GPS tidak tersedia, pakai posisi foto terakhir
+      // (foto itu bertanda tangan geotag).
+      final fix =
+          (await _ref
+                  .read(locationServiceProvider)
+                  .currentFix(timeout: const Duration(seconds: 10)))
+              .fix;
+      final stamp = draft.photos.isEmpty ? null : draft.photos.last.stamp;
+      final lat = fix?.latitude ?? stamp?.latitude;
+      final lng = fix?.longitude ?? stamp?.longitude;
+      if (lat == null || lng == null) {
+        return _failSubmit(
+          'Lokasi tidak tersedia. Aktifkan GPS lalu kirim kembali.',
+        );
+      }
+
+      final number = await _ref
+          .read(officerRemoteProvider)
+          .submitReport(
+            draft,
+            draftKey: _apiDraftKeys.putIfAbsent(draft.id, newDraftKey),
+            latitude: lat,
+            longitude: lng,
+            onProgress: onProgress,
+          );
+
+      final finalModel = draft.copyWith(isDraft: false, nomorSuratBA: number);
+      _repository.addMonitoring(finalModel);
+      _successfulSubmissions[draft.id] = finalModel;
+      _ref.read(monitoringListProvider.notifier).refresh();
+      // Tugas yang baru diselesaikan hilang dari daftar tugas aktif.
+      unawaited(_ref.read(officerAssignmentsProvider.notifier).refresh());
+      state = state.copyWith(isSubmitting: false, errorMessage: null);
+      resetForm();
+      return MonitoringSubmitResult.success(finalModel);
+    } on ApiException catch (e) {
+      return _failSubmit(e.message);
+    } catch (_) {
+      // Galat tak terduga tidak boleh meninggalkan tombol berputar selamanya.
+      return _failSubmit(
+        'Laporan belum terkirim karena kendala tak terduga. Coba lagi.',
+      );
     }
   }
 

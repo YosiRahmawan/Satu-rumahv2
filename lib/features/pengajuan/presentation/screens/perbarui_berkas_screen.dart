@@ -16,6 +16,7 @@ import 'pengajuan_detail_screen.dart'
     show pengajuanDocTitle, pengajuanRevisionDocTitle;
 import 'status_perbaikan_berkas_screen.dart';
 import '../widgets/konfirmasi_kirim_perbaikan_dialog.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Satu dokumen yang diminta revisi, diturunkan dari `Pengajuan` aktif
 /// (`dokumenPerluRevisi`, `uploadedDocs`) plus berkas pengganti yang baru
@@ -369,13 +370,19 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen>
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.borderSubtle),
       ),
-      child: Text(
-        'Tidak ada berkas yang ditandai perlu perbaikan pada pengajuan ini.',
-        style: AppTextStyles.bodySmall.copyWith(
-          color: AppColors.slate500,
-          fontStyle: FontStyle.italic,
-          fontSize: 13,
-        ),
+      child: Column(
+        children: [
+          const AppIllustration(AppIllustration.semuaBeres, width: 180),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Tidak ada berkas yang ditandai perlu perbaikan pada pengajuan ini.',
+            textAlign: TextAlign.center,
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.slate500,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -2376,9 +2383,9 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen>
           for (final d in _revisiDocs)
             if (_updates[d.key] != null) d.key: _updates[d.key]!.fileName,
         };
-        result = ref
+        result = await ref
             .read(pengajuanVerifikasiControllerProvider.notifier)
-            .kirimRevisi(submission!.id, mapDocs);
+            .kirimRevisiAsync(submission!.id, mapDocs);
       },
     );
     _isSubmittingRevisi = false;

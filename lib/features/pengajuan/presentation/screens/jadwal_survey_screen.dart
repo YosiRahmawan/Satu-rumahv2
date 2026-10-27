@@ -7,11 +7,12 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/widgets/app_housing_loader.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
+import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
 import '../providers/pengajuan_form_controller.dart';
-import '../widgets/survey_not_found_illustration.dart';
 import 'pengajuan_detail_screen.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Provider data jadwal survey yang bersumber dari daftar pengajuan aktif pengembang.
 final jadwalSurveyListProvider = FutureProvider.autoDispose<List<Pengajuan>>((
@@ -686,86 +687,11 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
             ),
           ],
 
-          // ── Status Evaluasi (Conditional — Hanya jika ada data HasilSurveyItem riil) ──
-          if (item.riwayatSurvey.isNotEmpty &&
-              item.riwayatSurvey.any(
-                (s) =>
-                    s.statusHasilEvaluasi == 'perlu_perbaikan' ||
-                    s.statusHasilEvaluasi == 'tidak_sesuai',
-              )) ...[
-            () {
-              final surveyEval = item.riwayatSurvey.firstWhere(
-                (s) =>
-                    s.statusHasilEvaluasi == 'perlu_perbaikan' ||
-                    s.statusHasilEvaluasi == 'tidak_sesuai',
-              );
-              final String? evalDetail = surveyEval.temuanLapangan.isNotEmpty
-                  ? surveyEval.temuanLapangan.first
-                  : (surveyEval.kesimpulan.isNotEmpty
-                        ? surveyEval.kesimpulan.first
-                        : null);
-
-              return Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 7,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFFBEB), // soft amber surface
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: const Color(0xFFFDE68A), // soft amber border
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.assignment_late_outlined,
-                        size: 15,
-                        color: Color(0xFFB45309), // amber-700
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Hasil Evaluasi: ${surveyEval.statusLabel}',
-                              style: const TextStyle(
-                                fontFamily: 'Plus Jakarta Sans',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Color(0xFF92400E), // amber-800
-                              ),
-                            ),
-                            if (evalDetail != null &&
-                                evalDetail.isNotEmpty) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                evalDetail,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontFamily: 'Plus Jakarta Sans',
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xFFB45309),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }(),
-          ],
+          // ── Progres dan hasil monitoring (dari Admin dan Pengawas) ──
+          const SizedBox(height: 12),
+          _buildProgresMonitoring(item),
+          if (item.riwayatSurvey.isNotEmpty)
+            _buildHasilMonitoring(item.riwayatSurvey.first),
           const SizedBox(height: 12),
 
           // ── Divider & Footer (OPD & Action) ──
@@ -817,6 +743,211 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Progres monitoring: Dijadwalkan, Survei dilaksanakan, Hasil terbit.
+  Widget _buildProgresMonitoring(Pengajuan item) {
+    final dijadwalkan =
+        item.tanggalSurvey != null ||
+        item.statusTahap == StatusTahapPengajuan.surveyLapangan ||
+        item.riwayatSurvey.isNotEmpty;
+    final dilaksanakan = item.riwayatSurvey.any((r) => r.sudahTerlaksana);
+    final hasil = item.riwayatSurvey.any(
+      (r) => (r.nomorSuratBA ?? '').isNotEmpty,
+    );
+    final steps = [
+      ('Dijadwalkan', dijadwalkan),
+      ('Survei dilaksanakan', dilaksanakan),
+      ('Hasil terbit', hasil),
+    ];
+    // Langkah aktif = yang pertama belum selesai.
+    final activeIndex = steps.indexWhere((e) => !e.$2);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < steps.length; i++) ...[
+            Expanded(
+              child: Column(
+                children: [
+                  Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: steps[i].$2
+                          ? const Color(0xFF16A34A)
+                          : (i == activeIndex
+                                ? const Color(0xFF1D4ED8)
+                                : const Color(0xFFE2E8F0)),
+                    ),
+                    alignment: Alignment.center,
+                    child: steps[i].$2
+                        ? const Icon(Icons.check, size: 14, color: Colors.white)
+                        : Text(
+                            '${i + 1}',
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: i == activeIndex
+                                  ? Colors.white
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    steps[i].$1,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 10.5,
+                      fontWeight: i == activeIndex
+                          ? FontWeight.w700
+                          : FontWeight.w500,
+                      color: steps[i].$2 || i == activeIndex
+                          ? const Color(0xFF0F172A)
+                          : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (i < steps.length - 1)
+              Container(
+                width: 16,
+                height: 2,
+                margin: const EdgeInsets.only(bottom: 18),
+                color: steps[i].$2
+                    ? const Color(0xFF16A34A)
+                    : const Color(0xFFE2E8F0),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Ringkasan hasil monitoring terbaru; warna mengikuti status semantik design.md.
+  Widget _buildHasilMonitoring(HasilSurveyItem r) {
+    final (
+      Color fg,
+      Color bg,
+      Color border,
+      IconData icon,
+    ) = switch (r.statusHasilEvaluasi) {
+      'sesuai' => (
+        const Color(0xFF16A34A),
+        const Color(0xFFDCFCE7),
+        const Color(0xFFBBF7D0),
+        Icons.check_circle_outline_rounded,
+      ),
+      'tidak_sesuai' => (
+        const Color(0xFFB91C1C),
+        const Color(0xFFFFF1F2),
+        const Color(0xFFFECDD3),
+        Icons.error_outline_rounded,
+      ),
+      _ => (
+        const Color(0xFFB45309),
+        const Color(0xFFFEF3C7),
+        const Color(0xFFFDE68A),
+        Icons.assignment_late_outlined,
+      ),
+    };
+    final kesimpulan = r.kesimpulan.isNotEmpty
+        ? r.kesimpulan.first
+        : (r.temuanLapangan.isNotEmpty ? r.temuanLapangan.first : null);
+    final rtl = r.rencanaTindakLanjut.take(2).toList();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: border),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 16, color: fg),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Hasil Monitoring: ${r.statusLabel}',
+                    style: TextStyle(
+                      fontFamily: 'Plus Jakarta Sans',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: fg,
+                    ),
+                  ),
+                  if ((r.nomorSuratBA ?? '').isNotEmpty)
+                    Text(
+                      'BA ${r.nomorSuratBA}',
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  if (kesimpulan != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      kesimpulan,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11.5,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                  if (rtl.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Tindak lanjut:',
+                      style: TextStyle(
+                        fontFamily: 'Plus Jakarta Sans',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                    for (final t in rtl)
+                      Text(
+                        '• $t',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          fontSize: 11.5,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -896,49 +1027,10 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
           children: [
             // Illustration
             if (isFilterEmpty)
-              const SurveyNotFoundIllustration(width: 200, height: 157)
+              const AppIllustration(AppIllustration.hasilSurvey)
             else
-              // Calendar with SATU RUMAH House Accent illustration
-              Container(
-                width: 110,
-                height: 110,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFEF2F2),
-                  shape: BoxShape.circle,
-                  border: Border.fromBorderSide(
-                    BorderSide(color: Color(0xFFFEE2E2), width: 2),
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: const Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      Icons.calendar_month_outlined,
-                      size: 54,
-                      color: AppColors.primaryRed,
-                    ),
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryDark,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.all(4),
-                          child: Icon(
-                            Icons.home_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Maskot dengan kalender jadwal yang belum ditetapkan.
+              const AppIllustration(AppIllustration.jadwalSurvey),
             const SizedBox(height: 20),
 
             // Title
@@ -1072,20 +1164,7 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF1F2), // rose-50
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFFFE4E6)), // rose-100
-              ),
-              child: const Icon(
-                Icons.wifi_off_rounded,
-                color: Color(0xFFB91C1C),
-                size: 30,
-              ),
-            ),
+            const AppIllustration(AppIllustration.galat, width: 200),
             const SizedBox(height: 16),
             const Text(
               'Gagal Memuat Jadwal Survey',

@@ -16,7 +16,8 @@ String? roleRouteRedirect({required AppRole role, required String path}) {
   }
   if (requiredRole != null && role == requiredRole) return null;
 
-  final requiredLabel = requiredRole?.label ?? 'Admin Disperwaskim atau Tim Perwaskim';
+  final requiredLabel =
+      requiredRole?.label ?? 'Admin Disperwaskim atau Tim Perwaskim';
   final notice = Uri.encodeComponent(
     'Halaman ini hanya tersedia untuk $requiredLabel. Anda dialihkan ke area ${role.label}.',
   );
@@ -43,6 +44,7 @@ AppRole? _requiredRole(String path) {
   if (path.startsWith('/monitoring/lapangan')) return AppRole.perwaskim;
   if (path == '/monitoring/tambah' ||
       path == '/monitoring/success' ||
+      path == '/monitoring/kamera' ||
       path.startsWith('/monitoring/draft')) {
     return AppRole.perwaskim;
   }

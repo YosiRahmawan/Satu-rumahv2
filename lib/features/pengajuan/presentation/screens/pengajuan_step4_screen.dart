@@ -612,25 +612,35 @@ class _PengajuanStep4ScreenState extends ConsumerState<PengajuanStep4Screen> {
 
     if (_isModalShowing) return;
 
+    final form = ref.read(pengajuanFormProvider);
     final missing = [
-      const MissingValidationItem(
-        key: 'site_plan',
-        title: '1. Dokumen Perencanaan & Perancangan Site Plan *',
-        subtitle: 'Format DWG atau PDF maksimal 50 MB',
-        statusText: 'Belum diunggah',
-        icon: Icons.architecture_outlined,
-      ),
+      if (!form.hasSitePlan)
+        const MissingValidationItem(
+          key: 'site_plan',
+          title: '1. Dokumen Perencanaan & Perancangan Site Plan *',
+          subtitle: 'Format DWG atau PDF maksimal 50 MB',
+          statusText: 'Belum diunggah',
+          icon: Icons.architecture_outlined,
+        ),
+      if (!form.hasKajianTeknis)
+        const MissingValidationItem(
+          key: 'kajian_teknis',
+          title: '2. Dokumen Kajian Teknis Lainnya *',
+          subtitle: 'Format PDF maksimal 10 MB',
+          statusText: 'Belum diunggah',
+          icon: Icons.fact_check_outlined,
+        ),
     ];
 
     _isModalShowing = true;
     await showSmartValidationBottomSheet(
       context: context,
-      title: 'Berkas Teknis Belum Diunggah',
-      subtitle: 'Unggah berkas site plan teknis sebelum ke Review.',
-      completedCount: 0,
-      totalCount: 1,
-      statusBadgeText: '0 dari 1 berkas lengkap',
-      warningText: '1 berkas site plan wajib belum diunggah',
+      title: 'Berkas Teknis Belum Lengkap',
+      subtitle: 'Kedua dokumen teknis wajib diunggah sebelum ke Review.',
+      completedCount: 2 - missing.length,
+      totalCount: 2,
+      statusBadgeText: '${2 - missing.length} dari 2 berkas lengkap',
+      warningText: '${missing.length} berkas teknis wajib belum diunggah',
       sectionTitle: 'DAFTAR DOKUMEN YANG PERLU DIUNGGAH',
       missingItems: missing,
       actionButtonText: 'Lengkapi Berkas Sekarang',

@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/core/widgets/app_illustration.dart';
 import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:satu_rumah/core/theme/app_colors.dart';
 import 'package:satu_rumah/features/notifikasi/data/models/notifikasi_model.dart';
 import 'package:satu_rumah/features/notifikasi/presentation/providers/notifikasi_provider.dart';
 import 'package:satu_rumah/features/notifikasi/presentation/screens/notifikasi_list_screen.dart';
-import 'package:satu_rumah/features/pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 
 Widget _buildSubject({
   required AppRole role,
   List<NotifikasiModel>? initialNotifs,
+  Size? size,
 }) {
   return ProviderScope(
     overrides: [
@@ -26,7 +27,14 @@ Widget _buildSubject({
           return notifier;
         }),
     ],
-    child: const MaterialApp(home: NotifikasiListScreen()),
+    child: MaterialApp(
+      home: size != null
+          ? MediaQuery(
+              data: MediaQueryData(size: size),
+              child: const NotifikasiListScreen(),
+            )
+          : const NotifikasiListScreen(),
+    ),
   );
 }
 
@@ -72,7 +80,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // 1. Header elements matching minimalist prototype
-        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+        // Halaman ini tab, jadi tidak ada panah kembali yang mati.
+        expect(find.byIcon(Icons.arrow_back), findsNothing);
         expect(find.text('Notifikasi'), findsOneWidget);
         expect(
           find.text('Informasi tugas dan hasil pengawasan lapangan'),
@@ -241,17 +250,21 @@ void main() {
     });
 
     testWidgets(
-      'shows contextual empty states with SurveyNotFoundIllustration for Semua, Belum Dibaca, and Perlu Tindak Lanjut',
+      'shows contextual empty states with the notification mascot for Semua, Belum Dibaca, and Perlu Tindak Lanjut',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(390, 844));
 
         // 1. Test "Semua" with 0 notifications
         await tester.pumpWidget(
-          _buildSubject(role: AppRole.perwaskim, initialNotifs: []),
+          _buildSubject(
+            role: AppRole.perwaskim,
+            initialNotifs: [],
+            size: const Size(390, 844),
+          ),
         );
         await tester.pumpAndSettle();
 
-        expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.text('Belum ada notifikasi'), findsOneWidget);
         expect(
           find.text('Informasi penugasan dan pengawasan akan muncul di sini.'),
@@ -270,7 +283,7 @@ void main() {
         await tester.tap(find.text('Belum Dibaca (0)'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.text('Semua notifikasi sudah dibaca'), findsOneWidget);
         expect(
           find.text('Belum ada pemberitahuan baru yang perlu dibaca.'),
@@ -282,7 +295,7 @@ void main() {
         await tester.tap(find.text('Perlu Tindak Lanjut'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(SurveyNotFoundIllustration), findsOneWidget);
+        expect(find.byType(AppIllustration), findsOneWidget);
         expect(find.text('Tidak ada tindak lanjut'), findsOneWidget);
         expect(
           find.text('Belum ada tugas atau evaluasi yang memerlukan tindakan.'),
@@ -291,7 +304,7 @@ void main() {
       },
     );
 
-    for (final width in [360.0, 390.0, 412.0]) {
+    for (final width in [360.0, 390.0, 412.0, 420.0]) {
       testWidgets(
         'responsive layout on width ${width}dp with 200% text scale without overflow',
         (tester) async {
@@ -307,6 +320,31 @@ void main() {
           );
           await tester.pumpAndSettle();
 
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+
+    for (final entry in {360.0: 150.0, 390.0: 160.0, 420.0: 170.0}.entries) {
+      testWidgets(
+        'empty state illustration responsive width at ${entry.key}dp is ${entry.value}dp',
+        (tester) async {
+          await tester.binding.setSurfaceSize(Size(entry.key, 800));
+          await tester.pumpWidget(
+            _buildSubject(
+              role: AppRole.perwaskim,
+              initialNotifs: [],
+              size: Size(entry.key, 800),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final art = find.byType(AppIllustration);
+          expect(art, findsOneWidget);
+          expect(
+            tester.widget<AppIllustration>(art).width,
+            closeTo(entry.value, 0.01),
+          );
           expect(tester.takeException(), isNull);
         },
       );

@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/api/api_client.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
+import '../../data/repositories/pengajuan_api_repository.dart';
 import '../../data/repositories/pengajuan_draft_store.dart';
+import '../../../../core/api/remote_load.dart';
 
 /// One source of truth for the current Fase 3 document form.
 class PengajuanStep3DocumentConfig {
@@ -267,9 +270,17 @@ class PengajuanFormState {
   bool get isStep3Valid =>
       PengajuanStep3DocumentContract.requiredKeys.every(_hasDocument);
 
-  bool get isStep4Valid =>
+  /// Site Plan: cukup satu berkas, DWG atau PDF (boleh campur).
+  bool get hasSitePlan =>
       _hasDocument('site_plan_dwg') ||
       technicalFiles.any((file) => file.trim().isNotEmpty);
+
+  /// Kajian Teknis (PDF): wajib, sama seperti di server (slot S4-02).
+  bool get hasKajianTeknis =>
+      technicalOtherFiles.any((file) => file.trim().isNotEmpty);
+
+  /// Kedua dokumen teknis harus terisi; mengikuti aturan server.
+  bool get isStep4Valid => hasSitePlan && hasKajianTeknis;
 
   bool get isAllValid =>
       isStep1Valid && isStep2Valid && isStep3Valid && isStep4Valid && isAgreed;
@@ -614,24 +625,6 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     );
   }
 
-  void toggleCakupanGambar(String item) {
-    final current = Set<String>.from(state.selectedCakupanGambar);
-    if (current.contains(item)) {
-      current.remove(item);
-    } else {
-      current.add(item);
-    }
-    state = state.copyWith(selectedCakupanGambar: current);
-  }
-
-  void selectAllCakupanGambar(List<String> allItems) {
-    state = state.copyWith(selectedCakupanGambar: Set.from(allItems));
-  }
-
-  void clearCakupanGambar() {
-    state = state.copyWith(selectedCakupanGambar: {});
-  }
-
   /// Mengosongkan form beserta draf tersimpan (setelah kirim atau mulai baru).
   void reset() {
     state = PengajuanFormState();
@@ -678,6 +671,11 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
         'design_siteplan_layout.dwg',
         'berkas_gambar_teknis_lengkap.pdf',
       ],
+      multiUploadedDocs: {
+        PengajuanFormState.technicalOtherDocumentsKey: [
+          'kajian_teknis_tanah.pdf',
+        ],
+      },
       selectedCakupanGambar: {
         '1 Cover',
         '2 Lembar Pengesahan Rencana Tapak',
@@ -710,8 +708,10 @@ final pengajuanFormProvider =
 
 // Repository data pengajuan lokal (data contoh prototipe, bukan database server)
 class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
-  PengajuanListNotifier()
-    : super([
+  /// Dengan [remote] (mode API) daftar mulai kosong dan diisi dari server;
+  /// tanpa itu dipakai data contoh prototipe.
+  PengajuanListNotifier({this.remote})
+    : super(remote != null ? const <Pengajuan>[] : [
         Pengajuan(
           id: 'REG-2026-0142',
           namaPerumahan: 'Perumahan Green Tasik',
@@ -943,6 +943,45 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
         ),
       ]);
 
+  final PengajuanRemote? remote;
+  final Map<String, Pengajuan> _justSubmitted = {};
+
+  /// Status pemuatan dari server: layar membedakan memuat, kosong, dan gagal.
+  final ValueNotifier<RemoteLoad> load = ValueNotifier(RemoteLoad.idle);
+
+  @override
+  void dispose() {
+    load.dispose();
+    super.dispose();
+  }
+
+  /// Memuat ulang dari server. Mengembalikan galatnya (bila ada) agar layar
+  /// bisa menampilkannya; daftar lama dipertahankan saat gagal.
+  Future<ApiException?> refresh() async {
+    final source = remote;
+    if (source == null) return null;
+    load.value = RemoteLoad.loading;
+    try {
+      final items = await source.list();
+      if (!mounted) return null;
+      load.value = RemoteLoad.loaded;
+      // Hasil kirim yang belum tampil di jawaban server (balapan dengan
+      // pemuatan yang lebih dulu dimulai) tidak boleh hilang.
+      _justSubmitted.removeWhere((id, _) => items.any((i) => i.id == id));
+      state = [..._justSubmitted.values, ...items];
+      return null;
+    } on ApiException catch (e) {
+      if (mounted) load.value = RemoteLoad(LoadState.failed, e);
+      return e;
+    }
+  }
+
+  /// Memasukkan hasil kirim dari server (menggantikan yang bernomor sama).
+  void upsert(Pengajuan p) {
+    _justSubmitted[p.id] = p;
+    state = [p, ...state.where((item) => item.id != p.id)];
+  }
+
   void addPengajuan(Pengajuan p) {
     state = [p, ...state];
   }
@@ -957,14 +996,20 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
     state = state.map((item) => item.id == p.id ? p : item).toList();
   }
 
-  void updatePengajuanStatus(String id, String status) {
-    state = state
-        .map((item) => item.id == id ? item.copyWith(status: status) : item)
-        .toList();
-  }
 }
 
 final pengajuanListProvider =
     StateNotifierProvider<PengajuanListNotifier, List<Pengajuan>>((ref) {
-      return PengajuanListNotifier();
+      // Berganti akun membuat daftar baru (tidak ada data akun sebelumnya).
+      final session = ref.watch(
+        roleSessionProvider.select((s) => (s.role, s.username)),
+      );
+      final remote = ref.watch(apiEnabledProvider)
+          ? ref.watch(pengajuanRemoteProvider)
+          : null;
+      final notifier = PengajuanListNotifier(remote: remote);
+      if (remote != null && session.$1 == AppRole.developer) {
+        unawaited(notifier.refresh());
+      }
+      return notifier;
     });

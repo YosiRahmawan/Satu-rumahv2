@@ -10,8 +10,8 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
-import '../../../pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 import '../providers/monitoring_list_provider.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 class MonitoringListScreen extends ConsumerStatefulWidget {
   final bool showBottomNav;
@@ -345,6 +345,15 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
       onReset = null;
     }
 
+    // Belum ada laporan sama sekali: maskot tugas kosong; pencarian atau filter
+    // tanpa hasil: maskot yang sedang mencari.
+    final Widget illustrationWidget = AppIllustration(
+      title == 'Belum ada laporan survey'
+          ? AppIllustration.tugasLapangan
+          : AppIllustration.hasilSurvey,
+      width: 200,
+    );
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -354,7 +363,7 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SurveyNotFoundIllustration(width: 150, height: 118),
+            illustrationWidget,
             const SizedBox(height: AppSpacing.md),
             Text(
               title,

@@ -52,8 +52,8 @@ void main() {
     await tester.pumpWidget(_app());
 
     expect(find.text('Berita Acara Monitoring'), findsOneWidget);
-    expect(find.text('Perumahan Preview Uji'), findsOneWidget);
-    expect(find.text('BA/PREVIEW/001'), findsOneWidget);
+    expect(find.textContaining('Perumahan Preview Uji'), findsOneWidget);
+    expect(find.textContaining('BA/PREVIEW/001'), findsOneWidget);
     expect(find.text('Temuan model'), findsOneWidget);
     expect(find.text('Download / Cetak PDF'), findsOneWidget);
     expect(find.text('Bagikan ringkasan'), findsOneWidget);

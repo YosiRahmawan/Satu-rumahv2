@@ -2,13 +2,20 @@ import 'dart:async';
 import 'dart:convert';
 
 import '../models/monitoring_model.dart';
+import '../models/report_photo.dart';
 import '../models/status_hasil_evaluasi.dart';
+import '../photo_bytes_cache.dart';
 import 'monitoring_store.dart';
 
 class MonitoringRepository {
   /// [store] menyimpan draf dan laporan buatan pengguna di perangkat. Tanpa
   /// store, data hanya hidup selama aplikasi berjalan (perilaku tes).
-  MonitoringRepository({MonitoringStore? store}) : _store = store {
+  ///
+  /// [seed] false (mode API) membuang laporan contoh bawaan agar riwayat hanya
+  /// berisi laporan nyata.
+  MonitoringRepository({MonitoringStore? store, bool seed = true})
+    : _store = store {
+    if (!seed) _items.clear();
     _seedJson = {for (final item in _items) item.id: jsonEncode(item.toJson())};
   }
 
@@ -98,18 +105,34 @@ class MonitoringRepository {
     ),
   ];
 
-  /// Memuat draf dan laporan tersimpan dari perangkat.
+  /// Memuat draf dan laporan tersimpan, lalu memulihkan isi fotonya ke
+  /// [PhotoBytesCache]. Foto yang isinya tidak lagi tersimpan ditandai
+  /// `needsReselect` agar petugas memotret ulang sebelum mengirim laporan.
   Future<void> hydrate() async {
     final store = _store;
     if (store == null) return;
+    final storedIds = await store.storedPhotoIds();
     for (final json in await store.loadReports()) {
       final model = MonitoringModel.fromJson(json);
       if (model == null) continue;
-      final index = _items.indexWhere((e) => e.id == model.id);
+      final photos = <ReportPhoto>[];
+      for (final photo in model.photos) {
+        final bytes = storedIds.contains(photo.id)
+            ? await store.loadPhoto(photo.id)
+            : null;
+        if (bytes != null) {
+          PhotoBytesCache.put(photo.id, bytes);
+          photos.add(photo.copyWith(needsReselect: false));
+        } else {
+          photos.add(photo.copyWith(needsReselect: true));
+        }
+      }
+      final restored = model.copyWith(photos: photos);
+      final index = _items.indexWhere((e) => e.id == restored.id);
       if (index == -1) {
-        _items.insert(0, model);
+        _items.insert(0, restored);
       } else {
-        _items[index] = model;
+        _items[index] = restored;
       }
     }
   }
@@ -127,10 +150,36 @@ class MonitoringRepository {
 
   Future<void> _persistNow(MonitoringStore store) async {
     // Hanya laporan yang berbeda dari data contoh bawaan yang disimpan.
-    await store.saveReports([
+    final changed = [
       for (final item in _items)
-        if (_seedJson[item.id] != jsonEncode(item.toJson())) item.toJson(),
-    ]);
+        if (_seedJson[item.id] != jsonEncode(item.toJson())) item,
+    ];
+    final stored = await store.storedPhotoIds();
+    final needed = <String>{};
+    final reports = <Map<String, dynamic>>[];
+    for (final item in changed) {
+      final photos = <ReportPhoto>[];
+      for (final photo in item.photos) {
+        needed.add(photo.id);
+        final bytes = PhotoBytesCache.get(photo.id);
+        var keep = !photo.needsReselect;
+        if (bytes == null) {
+          keep = false;
+        } else if (!stored.contains(photo.id)) {
+          keep = await store.savePhoto(photo.id, bytes);
+        }
+        photos.add(
+          photo.needsReselect == !keep
+              ? photo
+              : photo.copyWith(needsReselect: !keep),
+        );
+      }
+      reports.add(item.copyWith(photos: photos).toJson());
+    }
+    await store.saveReports(reports);
+    for (final id in stored.difference(needed)) {
+      await store.deletePhoto(id);
+    }
   }
 
   /// Nomor BA berikutnya untuk bulan pada [tanggal].

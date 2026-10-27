@@ -6,6 +6,7 @@ import 'package:phosphoricons_flutter/phosphoricons_flutter.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../providers/pengajuan_form_controller.dart';
 
 /// Melanjutkan draf: memulihkan isian (bila form di memori masih kosong) lalu
@@ -52,6 +53,86 @@ Future<DraftSaveResult> simpanDraf(BuildContext context, WidgetRef ref) async {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
   return result;
+}
+
+/// Keluar dari formulir ke daftar Pengajuan sekali jalan (bukan mundur langkah
+/// demi langkah). Isian tetap tersimpan sebagai draf.
+void keluarKeDaftarPengajuan(BuildContext context, WidgetRef ref) {
+  ref.read(dashboardTabProvider.notifier).state = 1;
+  context.go('/dashboard');
+}
+
+/// Pop-up setelah draf berhasil disimpan: tetap mengisi, atau keluar ke daftar.
+Future<void> dialogDrafTersimpan(BuildContext context, WidgetRef ref) async {
+  final keluar = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text('Draf tersimpan'),
+      content: const Text(
+        'Isian pengajuan Anda sudah disimpan di perangkat ini. Anda dapat '
+        'melanjutkannya kapan saja dari halaman Pengajuan.',
+      ),
+      actions: [
+        _DialogButtons(
+          secondaryLabel: 'Lanjut mengisi',
+          onSecondary: () => Navigator.of(context).pop(false),
+          primaryLabel: 'Ke Pengajuan',
+          onPrimary: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    ),
+  );
+  if (keluar == true && context.mounted) keluarKeDaftarPengajuan(context, ref);
+}
+
+/// Tombol kembali sistem di formulir: formulir kosong langsung keluar; bila
+/// sudah ada isian, tanya dulu lalu simpan draf dan keluar sekali jalan.
+Future<void> keluarDenganKonfirmasi(BuildContext context, WidgetRef ref) async {
+  if (!ref.read(pengajuanFormProvider).hasContent) {
+    keluarKeDaftarPengajuan(context, ref);
+    return;
+  }
+  final keluar = await showDialog<bool>(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text('Keluar dari pengajuan?'),
+      content: const Text(
+        'Isian Anda tersimpan sebagai draf dan bisa dilanjutkan dari halaman '
+        'Pengajuan.',
+      ),
+      actions: [
+        _DialogButtons(
+          secondaryLabel: 'Lanjut mengisi',
+          onSecondary: () => Navigator.of(context).pop(false),
+          primaryLabel: 'Simpan & keluar',
+          onPrimary: () => Navigator.of(context).pop(true),
+        ),
+      ],
+    ),
+  );
+  if (keluar != true || !context.mounted) return;
+  await simpanDraf(context, ref);
+  if (context.mounted) keluarKeDaftarPengajuan(context, ref);
+}
+
+/// Membungkus langkah-langkah formulir agar tombol kembali sistem tidak
+/// mundur satu langkah, melainkan keluar dengan konfirmasi. Panah kiri atas
+/// tetap berarti langkah sebelumnya.
+class PengajuanBackGuard extends ConsumerWidget {
+  const PengajuanBackGuard({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) keluarDenganKonfirmasi(context, ref);
+      },
+      child: child,
+    );
+  }
 }
 
 /// Keterangan status simpan: waktu draf terakhir tersimpan, bukan jam karangan.
@@ -112,7 +193,9 @@ class _DraftStatusRowState extends ConsumerState<DraftStatusRow> {
   }
 
   Widget _buildButton(bool reduceMotion, bool isSaved) {
-    final fade = reduceMotion ? Duration.zero : const Duration(milliseconds: 180);
+    final fade = reduceMotion
+        ? Duration.zero
+        : const Duration(milliseconds: 180);
     final color = isSaved ? AppColors.statusSuccessText : AppColors.primaryRed;
     return AnimatedScale(
       scale: _pressed && !reduceMotion ? 0.95 : 1,
@@ -219,6 +302,74 @@ class _DraftStatusRowState extends ConsumerState<DraftStatusRow> {
 /// Pasangan tombol dialog draf: pilihan aman dan utama berupa tombol merah
 /// terisi, pilihan yang menghapus berupa teks abu tipis agar tidak terpencet
 /// tidak sengaja.
+/// Dua tombol dialog sejajar, sama lebar dan sama tinggi (tidak bertumpuk).
+class _DialogButtons extends StatelessWidget {
+  const _DialogButtons({
+    required this.secondaryLabel,
+    required this.onSecondary,
+    required this.primaryLabel,
+    required this.onPrimary,
+  });
+
+  final String secondaryLabel;
+  final VoidCallback onSecondary;
+  final String primaryLabel;
+  final VoidCallback onPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    const shape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.all(Radius.circular(10)),
+    );
+    const padding = EdgeInsets.symmetric(horizontal: 8);
+    const text = TextStyle(fontWeight: FontWeight.w700, fontSize: 14);
+    return SizedBox(
+      width: double.infinity,
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: onSecondary,
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(46),
+                padding: padding,
+                shape: shape,
+                foregroundColor: AppColors.textSecondary,
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
+              ),
+              child: Text(
+                secondaryLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: text,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: FilledButton(
+              onPressed: onPrimary,
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(46),
+                padding: padding,
+                shape: shape,
+                backgroundColor: AppColors.primaryRed,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                primaryLabel,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: text,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TombolUtama extends StatelessWidget {
   const _TombolUtama({required this.label, required this.onPressed});
 
@@ -268,13 +419,11 @@ class _DraftDialog extends StatelessWidget {
         'terakhir, atau mulai pengajuan baru. Mulai baru akan menghapus draf ini.',
       ),
       actions: [
-        _TombolTenang(
-          label: 'Mulai baru',
-          onPressed: () => Navigator.of(context).pop(false),
-        ),
-        _TombolUtama(
-          label: 'Lanjutkan',
-          onPressed: () => Navigator.of(context).pop(true),
+        _DialogButtons(
+          secondaryLabel: 'Mulai baru',
+          onSecondary: () => Navigator.of(context).pop(false),
+          primaryLabel: 'Lanjutkan',
+          onPrimary: () => Navigator.of(context).pop(true),
         ),
       ],
     );
@@ -306,13 +455,11 @@ class PengajuanDraftCard extends ConsumerWidget {
           'Isian dan berkas yang sudah dipilih pada draf ini akan dihapus.',
         ),
         actions: [
-          _TombolTenang(
-            label: 'Hapus',
-            onPressed: () => Navigator.of(context).pop(true),
-          ),
-          _TombolUtama(
-            label: 'Batal',
-            onPressed: () => Navigator.of(context).pop(false),
+          _DialogButtons(
+            secondaryLabel: 'Hapus',
+            onSecondary: () => Navigator.of(context).pop(true),
+            primaryLabel: 'Batal',
+            onPrimary: () => Navigator.of(context).pop(false),
           ),
         ],
       ),

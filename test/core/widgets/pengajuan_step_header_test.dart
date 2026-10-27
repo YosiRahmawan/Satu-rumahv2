@@ -81,10 +81,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        buildHeader(
-          size: const Size(360, 640),
-          textScale: 2.0,
-        ),
+        buildHeader(size: const Size(360, 640), textScale: 2.0),
       );
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);

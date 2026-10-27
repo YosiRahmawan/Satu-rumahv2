@@ -10,7 +10,6 @@ import '../../../../core/auth/role_session.dart';
 import '../../../../core/widgets/app_header.dart';
 import '../../../../core/widgets/route_feedback.dart';
 import '../../../../core/widgets/prototype_data_banner.dart';
-import '../../../pengajuan/presentation/widgets/survey_not_found_illustration.dart';
 import '../../../dashboard/presentation/providers/dashboard_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
@@ -19,6 +18,7 @@ import '../../data/models/notifikasi_model.dart';
 import '../providers/notifikasi_provider.dart';
 import '../widgets/developer_notification_view.dart';
 import '../../../monitoring/presentation/widgets/tab_beranda_monitoring.dart';
+import '../../../../core/widgets/app_illustration.dart';
 
 /// Rewrites a notification's local target into a route valid for the active
 /// role. A null result is an explicit unavailable outcome, never a silent
@@ -132,6 +132,12 @@ class NotifikasiListScreen extends ConsumerStatefulWidget {
 class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
   String _selectedFilter = 'Semua';
   NotifikasiFilter _developerFilter = NotifikasiFilter.semua;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() => ref.read(notifikasiProvider.notifier).refresh());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -330,41 +336,10 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Top Bar: Back button, Title & Avatar
+              // Top Bar: Title & Avatar (halaman ini adalah tab, tanpa panah kembali)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Semantics(
-                    button: true,
-                    label: 'Kembali',
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go('/monitoring/lapangan');
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(22),
-                        child: Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.16),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
                   const Expanded(
                     child: Text(
                       'Notifikasi',
@@ -404,10 +379,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
               const SizedBox(height: AppSpacing.xs),
               // Subtitle positioned below the title row
               const Padding(
-                padding: EdgeInsets.only(
-                  left: 44.0 + AppSpacing.md,
-                  right: AppSpacing.xs,
-                ),
+                padding: EdgeInsets.only(right: AppSpacing.xs),
                 child: Text(
                   'Informasi tugas dan hasil pengawasan lapangan',
                   style: TextStyle(
@@ -552,6 +524,10 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
         break;
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final illustrationWidth = (150.0 + ((screenWidth - 360.0) / 60.0 * 20.0))
+        .clamp(150.0, 170.0);
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(
@@ -562,7 +538,12 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SurveyNotFoundIllustration(width: 140, height: 110),
+            AppIllustration(
+              _selectedFilter == 'Perlu Tindak Lanjut'
+                  ? AppIllustration.semuaBeres
+                  : AppIllustration.notifikasi,
+              width: illustrationWidth,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               title,

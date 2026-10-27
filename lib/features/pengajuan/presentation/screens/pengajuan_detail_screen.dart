@@ -2066,7 +2066,7 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                           : 'Kirim Revisi Dokumen',
                       onPressed: (_isSubmittingRevision || revKeys.isEmpty)
                           ? null
-                          : () {
+                          : () async {
                               final missing = revKeys
                                   .where(
                                     (key) =>
@@ -2086,12 +2086,13 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                               }
                               setModalState(() => _isSubmittingRevision = true);
                               setState(() => _isSubmittingRevision = true);
-                              final result = ref
+                              final result = await ref
                                   .read(
                                     pengajuanVerifikasiControllerProvider
                                         .notifier,
                                   )
-                                  .kirimRevisi(item.id, localDocs);
+                                  .kirimRevisiAsync(item.id, localDocs);
+                              if (!context.mounted) return;
                               setModalState(
                                 () => _isSubmittingRevision = false,
                               );

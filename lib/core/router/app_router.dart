@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/auth/presentation/screens/ganti_sandi_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/dashboard/presentation/screens/admin_main_screen.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/monitoring/data/models/kamera_context.dart';
 import '../../features/monitoring/data/models/monitoring_model.dart';
+import '../../features/monitoring/presentation/screens/kamera_lapangan_screen.dart';
 import '../../features/monitoring/presentation/screens/laporan_preview_screen.dart';
 import '../../features/monitoring/presentation/screens/laporan_success_screen.dart';
 import '../../features/monitoring/presentation/screens/monitoring_list_screen.dart';
@@ -14,7 +17,6 @@ import '../../features/monitoring/presentation/screens/monitoring_draft_screen.d
 import '../../features/monitoring/presentation/screens/monitoring_main_screen.dart';
 import '../../features/monitoring/presentation/screens/tambah_monitoring_stepper_screen.dart';
 import '../../features/monitoring/presentation/providers/monitoring_form_provider.dart';
-import '../../features/notifikasi/presentation/screens/notifikasi_list_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_admin_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_detail_screen.dart';
 import '../../features/pengajuan/presentation/screens/pengajuan_step1_screen.dart';
@@ -33,6 +35,7 @@ import '../../features/bantuan/presentation/screens/pusat_bantuan_screen.dart';
 import '../../features/profil/presentation/screens/tentang_aplikasi_screen.dart';
 import '../auth/role_session.dart';
 import 'route_policy.dart';
+import '../../features/pengajuan/presentation/widgets/pengajuan_draft_ui.dart';
 import '../widgets/route_feedback.dart';
 
 export 'route_policy.dart';
@@ -50,10 +53,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       if (path == '/') {
         return '/splash';
       }
-      return roleRouteRedirect(
-        role: ref.read(roleSessionProvider).role,
-        path: path,
-      );
+      final session = ref.read(roleSessionProvider);
+      if (session.isAuthenticated &&
+          session.mustChangePassword &&
+          path != '/ganti-sandi') {
+        return '/ganti-sandi';
+      }
+      return roleRouteRedirect(role: session.role, path: path);
     },
     errorBuilder: (context, state) {
       final session = ref.read(roleSessionProvider);
@@ -72,6 +78,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', redirect: (_, __) => '/splash'),
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(
+        path: '/ganti-sandi',
+        builder: (_, __) => const GantiSandiScreen(),
+      ),
       GoRoute(path: '/onboarding', redirect: (_, __) => '/login'),
       GoRoute(
         path: '/dashboard',
@@ -144,11 +154,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/monitoring/lapangan/profil',
         builder: (_, state) =>
-            _withNotice(state, const MonitoringMainScreen(initialIndex: 2)),
+            _withNotice(state, const MonitoringMainScreen(initialIndex: 3)),
       ),
       GoRoute(
         path: '/monitoring/lapangan/notifikasi',
-        builder: (_, state) => _withNotice(state, const NotifikasiListScreen()),
+        builder: (_, state) =>
+            _withNotice(state, const MonitoringMainScreen(initialIndex: 2)),
       ),
       GoRoute(
         path: '/monitoring/draft',
@@ -163,7 +174,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             );
           }
           final id =
-              state.uri.queryParameters['id'] ?? (extra is String ? extra : null);
+              state.uri.queryParameters['id'] ??
+              (extra is String ? extra : null);
           if (id != null) {
             final repo = ref.read(monitoringRepositoryProvider);
             final item = repo.getMonitoringById(id);
@@ -179,6 +191,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             safeDestination: monitoringFailureDestination(role),
             destinationLabel: monitoringFailureDestinationLabel(role),
           );
+        },
+      ),
+      GoRoute(
+        path: '/monitoring/kamera',
+        builder: (_, state) {
+          final extra = state.extra;
+          final contextData = extra is KameraContext
+              ? extra
+              : (extra is Map
+                    ? KameraContext(
+                        isTaskFlow: extra['isTaskFlow'] == true,
+                        taskId: extra['taskId']?.toString(),
+                        taskTitle:
+                            extra['taskTitle']?.toString() ??
+                            'Dokumentasi Mandiri',
+                        nomorRegistrasi: extra['nomorRegistrasi']?.toString(),
+                      )
+                    : const KameraContext.mandiri());
+          return KameraLapanganScreen(contextData: contextData);
         },
       ),
       GoRoute(
@@ -234,23 +265,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/pengajuan/step1',
-        builder: (_, __) => const PengajuanStep1Screen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep1Screen()),
       ),
       GoRoute(
         path: '/pengajuan/step2',
-        builder: (_, __) => const PengajuanStep2Screen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep2Screen()),
       ),
       GoRoute(
         path: '/pengajuan/step3',
-        builder: (_, __) => const PengajuanStep3Screen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep3Screen()),
       ),
       GoRoute(
         path: '/pengajuan/step4',
-        builder: (_, __) => const PengajuanStep4Screen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep4Screen()),
       ),
       GoRoute(
         path: '/pengajuan/step5',
-        builder: (_, __) => const PengajuanStep5ReviewScreen(),
+        builder: (_, __) =>
+            const PengajuanBackGuard(child: PengajuanStep5ReviewScreen()),
       ),
       GoRoute(
         path: '/pengajuan/success',
@@ -312,8 +348,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/jadwal-survey',
-        builder: (_, state) =>
-            _withNotice(state, const JadwalSurveyScreen()),
+        builder: (_, state) => _withNotice(state, const JadwalSurveyScreen()),
       ),
       GoRoute(
         path: '/unduh-sk-ba',
@@ -324,13 +359,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/template-berkas',
-        builder: (_, state) =>
-            _withNotice(state, const TemplateBerkasScreen()),
+        builder: (_, state) => _withNotice(state, const TemplateBerkasScreen()),
       ),
       GoRoute(
         path: '/bantuan',
-        builder: (_, state) =>
-            _withNotice(state, const PusatBantuanScreen()),
+        builder: (_, state) => _withNotice(state, const PusatBantuanScreen()),
       ),
       GoRoute(
         path: '/tentang',

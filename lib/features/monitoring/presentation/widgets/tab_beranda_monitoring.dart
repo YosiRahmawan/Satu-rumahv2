@@ -5,12 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/data_state_view.dart';
-import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
-import '../providers/monitoring_form_provider.dart';
+import 'kamera_flow.dart';
 import '../providers/monitoring_list_provider.dart';
+import '../../../../core/widgets/app_illustration.dart';
+import '../../../../core/api/remote_load.dart';
+import '../../../../core/widgets/connection_banner.dart';
 
 /// Helper model for Perwaskim identity resolution
 class PerwaskimIdentity {
@@ -29,6 +31,19 @@ class PerwaskimIdentity {
   });
 
   factory PerwaskimIdentity.fromSession(RoleSessionState session) {
+    final asli = session.nama?.trim();
+    if (asli != null && asli.isNotEmpty) {
+      final jabatan = session.jabatan?.trim();
+      return PerwaskimIdentity(
+        nama: asli,
+        jabatan: jabatan == null || jabatan.isEmpty
+            ? session.role.label
+            : jabatan,
+        nip: 'NIP: Belum tersedia',
+        initials: _extractInitials(asli),
+        email: '${session.username ?? 'petugas'}@tasikmalayakota.go.id',
+      );
+    }
     final username = session.username?.trim();
     if (username != null && username.isNotEmpty) {
       if (username == 'tim_monitoring_perwaskim' ||
@@ -104,14 +119,7 @@ class TabBerandaMonitoring extends ConsumerWidget {
     Pengajuan pengajuan,
     PerwaskimIdentity identity,
   ) {
-    final notifier = ref.read(monitoringFormProvider.notifier);
-    notifier.resetForm();
-    notifier.updatePengajuanId(pengajuan.id);
-    notifier.updateNamaPerumahan(pengajuan.namaPerumahan);
-    notifier.updateNamaDeveloper(pengajuan.namaPt);
-    notifier.updateLokasi('Kota Tasikmalaya');
-    notifier.updatePelaksanaNama(identity.nama);
-    notifier.updatePelaksanaJabatan(identity.jabatan);
+    prepareFormForPengajuan(ref, pengajuan);
     context.push('/monitoring/tambah');
   }
 
@@ -131,7 +139,6 @@ class TabBerandaMonitoring extends ConsumerWidget {
     final listState = ref.watch(monitoringListAsyncProvider);
     final session = ref.watch(roleSessionProvider);
     final identity = PerwaskimIdentity.fromSession(session);
-    final unreadCount = ref.watch(unreadNotifikasiCountProvider);
 
     return Scaffold(
       backgroundColor: AppColors.enterpriseCanvas,
@@ -140,34 +147,43 @@ class TabBerandaMonitoring extends ConsumerWidget {
         error: (error, stack) => DataStateView.error(
           onAction: () => ref.invalidate(monitoringListAsyncProvider),
         ),
-        data: (list) => SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _PerwaskimHeader(
-                identity: identity,
-                unreadNotifications: unreadCount,
-                onNotificationsTap: () =>
-                    context.push('/monitoring/lapangan/notifikasi'),
-                onProfileTap: () => context.go('/monitoring/lapangan/profil'),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-                child: _DashboardContent(
-                  monitoring: list,
-                  onStartSurvey: (pengajuan) => _startSurveyForPengajuan(
-                    context,
-                    ref,
-                    pengajuan,
-                    identity,
-                  ),
-                  onOpenBeritaAcara: (item) => _openBeritaAcara(context, item),
-                  onOpenDraft: (item) => _openDraft(context, item),
-                  onOpenHistory: () =>
-                      context.go('/monitoring/lapangan/riwayat'),
+        data: (list) => RefreshIndicator(
+          onRefresh: () async {
+            final error = await ref
+                .read(officerAssignmentsProvider.notifier)
+                .refresh();
+            if (context.mounted) showRefreshError(context, error);
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _PerwaskimHeader(
+                  identity: identity,
+                  onProfileTap: () {
+                    ref.read(monitoringTabProvider.notifier).state = 3;
+                  },
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                  child: _DashboardContent(
+                    monitoring: list,
+                    onStartSurvey: (pengajuan) => _startSurveyForPengajuan(
+                      context,
+                      ref,
+                      pengajuan,
+                      identity,
+                    ),
+                    onOpenBeritaAcara: (item) =>
+                        _openBeritaAcara(context, item),
+                    onOpenDraft: (item) => _openDraft(context, item),
+                    onOpenHistory: () =>
+                        context.go('/monitoring/lapangan/riwayat'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -177,16 +193,9 @@ class TabBerandaMonitoring extends ConsumerWidget {
 
 class _PerwaskimHeader extends StatelessWidget {
   final PerwaskimIdentity identity;
-  final int unreadNotifications;
-  final VoidCallback onNotificationsTap;
   final VoidCallback onProfileTap;
 
-  const _PerwaskimHeader({
-    required this.identity,
-    required this.unreadNotifications,
-    required this.onNotificationsTap,
-    required this.onProfileTap,
-  });
+  const _PerwaskimHeader({required this.identity, required this.onProfileTap});
 
   @override
   Widget build(BuildContext context) {
@@ -246,76 +255,39 @@ class _PerwaskimHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Semantics(
-                    button: true,
-                    label: unreadNotifications > 0
-                        ? 'Buka notifikasi ($unreadNotifications belum dibaca)'
-                        : 'Buka notifikasi',
-                    child: IconButton(
-                      onPressed: onNotificationsTap,
-                      tooltip: unreadNotifications > 0
-                          ? 'Buka notifikasi ($unreadNotifications belum dibaca)'
-                          : 'Buka notifikasi',
-                      icon: Badge(
-                        isLabelVisible: unreadNotifications > 0,
-                        backgroundColor: const Color(0xFFF59E0B),
-                        textColor: Colors.white,
-                        textStyle: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
+              Semantics(
+                button: true,
+                label: 'Buka profil',
+                child: InkWell(
+                  onTap: onProfileTap,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x14000000),
+                          blurRadius: 4,
+                          offset: Offset(0, 1),
                         ),
-                        label: Text(
-                          unreadNotifications > 9
-                              ? '9+'
-                              : '$unreadNotifications',
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none_rounded,
-                          color: Colors.white,
-                          size: 24,
-                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      identity.initials,
+                      style: const TextStyle(
+                        color: AppColors.enterprisePrimaryDark,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Semantics(
-                    button: true,
-                    label: 'Buka profil',
-                    child: InkWell(
-                      onTap: onProfileTap,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Color(0x14000000),
-                              blurRadius: 4,
-                              offset: Offset(0, 1),
-                            ),
-                          ],
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          identity.initials,
-                          style: const TextStyle(
-                            color: AppColors.enterprisePrimaryDark,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ],
           ),
@@ -372,10 +344,46 @@ class _DashboardContent extends ConsumerWidget {
           ),
         ),
         const SizedBox(height: 12),
+        LoadFailedBanner(
+          load: ref.read(officerAssignmentsProvider.notifier).load,
+          hasData: assignments.isNotEmpty,
+          onRetry: () async {
+            final error = await ref
+                .read(officerAssignmentsProvider.notifier)
+                .refresh();
+            if (context.mounted) showRefreshError(context, error);
+          },
+        ),
         if (assignments.isEmpty)
-          const DataStateView.empty(
-            title: 'Tidak ada tugas survey aktif',
-            message: 'Penugasan dari Admin akan muncul di sini.',
+          // Kosong bisa berarti masih memuat atau gagal memuat, bukan "tak ada tugas".
+          ValueListenableBuilder<RemoteLoad>(
+            valueListenable: ref.read(officerAssignmentsProvider.notifier).load,
+            builder: (context, load, _) {
+              if (load.isLoading) {
+                return const DataStateView.loading(
+                  title: 'Memuat tugas survey',
+                  message: 'Mengambil penugasan terbaru dari server.',
+                );
+              }
+              if (load.isFailed) {
+                return DataStateView.error(
+                  title: loadErrorText(load.error),
+                  message:
+                      'Tugas survey belum dapat dimuat. Periksa sinyal lalu coba lagi.',
+                  onAction: () async {
+                    final error = await ref
+                        .read(officerAssignmentsProvider.notifier)
+                        .refresh();
+                    if (context.mounted) showRefreshError(context, error);
+                  },
+                );
+              }
+              return const DataStateView.empty(
+                illustration: AppIllustration(AppIllustration.tugasLapangan),
+                title: 'Tidak ada tugas survey aktif',
+                message: 'Penugasan dari Admin akan muncul di sini.',
+              );
+            },
           )
         else ...[
           _PrimaryTaskCard(
@@ -415,6 +423,7 @@ class _DashboardContent extends ConsumerWidget {
         const SizedBox(height: 12),
         if (monitoring.isEmpty)
           const DataStateView.empty(
+            illustration: AppIllustration(AppIllustration.hasilSurvey),
             title: 'Belum ada hasil survey',
             message: 'Hasil survey yang sudah dicatat akan tampil di sini.',
           )

@@ -1,3 +1,4 @@
+import '../../../../core/api/api_client.dart';
 import '../../../../core/auth/role_session.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../notifikasi/data/models/notifikasi_model.dart';
@@ -5,6 +6,7 @@ import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
+import '../../data/repositories/pengajuan_api_repository.dart';
 import 'pengajuan_form_controller.dart';
 
 /// The result of an administrative action in the local state machine.
@@ -546,6 +548,35 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
       previousStage: current.statusTahap,
       nextStage: origin,
     );
+  }
+
+  /// Mengirim berkas perbaikan. Mode API: berkas diunggah ke server lalu
+  /// pengajuan dikirim ulang; mode contoh: [kirimRevisi] lokal.
+  Future<PengajuanOperationResult> kirimRevisiAsync(
+    String pengajuanId,
+    Map<String, String> revisedDocs,
+  ) async {
+    if (!_ref.read(apiEnabledProvider)) {
+      return kirimRevisi(pengajuanId, revisedDocs);
+    }
+    final previous = _find(pengajuanId)?.statusTahap;
+    try {
+      final updated = await _ref
+          .read(pengajuanRemoteProvider)
+          .resubmit(pengajuanId, revisedDocs);
+      _ref.read(pengajuanListProvider.notifier).upsert(updated);
+      return PengajuanOperationResult.changed(
+        message: 'Revisi dokumen berhasil dikirim dan menunggu review Admin.',
+        previousStage: previous,
+        nextStage: updated.statusTahap,
+      );
+    } on ApiException catch (e) {
+      return PengajuanOperationResult.blocked(e.message);
+    } catch (_) {
+      return const PengajuanOperationResult.blocked(
+        'Revisi belum terkirim karena kendala tak terduga. Coba lagi.',
+      );
+    }
   }
 
   /// Read-only guard for the schedule action.

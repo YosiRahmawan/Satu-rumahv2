@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:satu_rumah/core/widgets/app_illustration.dart';
 import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:satu_rumah/core/theme/app_colors.dart';
 import 'package:satu_rumah/core/theme/app_theme.dart';
@@ -142,7 +142,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(container.read(unreadCountProvider), 0);
       expect(find.text('Tidak ada notifikasi belum dibaca'), findsOneWidget);
-      expect(find.byType(SvgPicture), findsOneWidget);
+      expect(find.byType(AppIllustration), findsOneWidget);
       expect(
         tester.widget<TextButton>(find.byType(TextButton).first).onPressed,
         isNull,
@@ -152,7 +152,7 @@ void main() {
       expect(find.byType(DeveloperNotificationTile), findsNWidgets(2));
       expect(find.bySemanticsLabel('Sudah dibaca'), findsNWidgets(2));
       expect(find.byKey(const ValueKey('unread-indicator')), findsNothing);
-      expect(find.byType(SvgPicture), findsNothing);
+      expect(find.byType(AppIllustration), findsNothing);
     },
   );
 
@@ -174,6 +174,8 @@ void main() {
   ) async {
     await _pump(tester, items: []);
     expect(find.text('Belum ada notifikasi'), findsOneWidget);
+    // Ilustrasi kosong dari aset, bukan ikon polos.
+    expect(find.byType(AppIllustration), findsWidgets);
     expect(find.byType(DeveloperNotificationTile), findsNothing);
     expect(
       tester.widget<TextButton>(find.byType(TextButton).first).onPressed,
