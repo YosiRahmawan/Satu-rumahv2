@@ -14,10 +14,7 @@
 <div class="kpi-grid">
     <div class="kpi"><div class="kpi-top"><span class="kpi-label">Total Pengajuan</span></div><div class="kpi-value">{{ $totals['semua'] }}</div></div>
     <div class="kpi"><div class="kpi-top"><span class="kpi-label">Aktif</span></div><div class="kpi-value">{{ $totals['aktif'] }}</div></div>
-    <div class="kpi" style="background:var(--primary-tint);border-color:var(--primary-border);">
-        <div class="kpi-top"><span class="kpi-label" style="color:var(--primary-dark);">Perlu Ditelaah</span></div>
-        <div class="kpi-value" style="color:var(--primary-dark);">{{ $totals['menunggu'] }}</div>
-    </div>
+    <div class="kpi"><div class="kpi-top"><span class="kpi-label">Perlu Ditelaah</span></div><div class="kpi-value">{{ $totals['menunggu'] }}</div></div>
     <div class="kpi"><div class="kpi-top"><span class="kpi-label">Menunggu Perbaikan</span></div><div class="kpi-value">{{ $totals['perbaikan'] }}</div></div>
 </div>
 

@@ -22,7 +22,7 @@
 @endif
 
 <div class="kpi-grid">
-    <div class="kpi is-primary">
+    <div class="kpi">
         <div class="kpi-top"><span class="kpi-label">Perlu Ditelaah</span></div>
         <div class="kpi-value">{{ $stats['pengajuan_baru'] }}<span class="kpi-unit">Berkas</span></div>
         <div class="kpi-note">Baru masuk atau perbaikan terkirim</div>

@@ -293,13 +293,22 @@ class SubmissionTest extends TestCase
         $this->assertNull($s->fresh()->number);
     }
 
-    public function test_kirim_menolak_site_plan_tanpa_dwg(): void
+    public function test_kirim_menerima_site_plan_hanya_pdf(): void
     {
         $s = $this->draft();
         $this->fillAllSlots($s, withDwg: false);
 
+        $this->postJson("/api/v1/submissions/{$s->id}/submit")->assertOk();
+    }
+
+    public function test_kirim_menolak_bila_site_plan_kosong(): void
+    {
+        $s = $this->draft();
+        $this->fillAllSlots($s);
+        $s->files()->where('slot_code', 'S4-01')->delete();
+
         $this->postJson("/api/v1/submissions/{$s->id}/submit")
-            ->assertStatus(422)->assertJsonPath('error.fields.S4-01.0', fn ($m) => str_contains($m, 'DWG'));
+            ->assertStatus(422)->assertJsonPath('error.fields.slots.0', 'S4-01');
     }
 
     public function test_kirim_menerbitkan_nomor_berurutan_dan_idempoten(): void

@@ -63,15 +63,15 @@ class SubmissionFileValidator
     }
 
     /**
-     * Kelengkapan slot S4-01 (BR-020): minimal 1 DWG dan 1 PDF.
+     * Kelengkapan slot S4-01: cukup minimal satu berkas, DWG atau PDF (keputusan pemilik produk; DWG tidak lagi wajib bersama PDF).
      *
      * @param  array<int, string>  $fileTypes  daftar tipe berkas aktif pada slot (mis. ['pdf','dwg'])
      * @return array<int, array{code: string, message: string}>
      */
     public function validateSitePlanSet(array $fileTypes): array
     {
-        if (!in_array('dwg', $fileTypes, true) || !in_array('pdf', $fileTypes, true)) {
-            return [$this->err('ERR-004', 'Site Plan wajib memuat minimal 1 berkas DWG dan 1 berkas PDF.')];
+        if (!in_array('dwg', $fileTypes, true) && !in_array('pdf', $fileTypes, true)) {
+            return [$this->err('ERR-004', 'Site Plan wajib memuat minimal 1 berkas DWG atau PDF.')];
         }
 
         return [];

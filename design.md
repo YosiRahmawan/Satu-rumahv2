@@ -225,6 +225,8 @@ Struktur layar yang ada: form laporan bertahap → preview → sukses → riwaya
 
 **CONFIRMED S01:** dokumentasi menyediakan 16 placeholder DOC01–DOC16 sesuai permintaan pengguna; README juga menyebut 16 slot. Jumlah placeholder dan nomor slot tidak menetapkan jumlah persyaratan produksi, nama dokumen, urutan prosedur, atau kewajibannya.
 
+**Pembaruan 27 Okt 2026:** dokumen *Proses Bisnis Aplikasi SATU RUMAH* memuat 18 dokumen unggahan (Step 2: 5, Step 3: 11, Step 4: 2) dengan nama dan urutan yang sama dengan katalog di bawah; **label DOC01–DOC16 tetap tidak ada** di dokumen itu, jadi kolom pasangan DOC belum diisi. Warna dokumen itu (palet "Rustic Indulgence") berbeda dari `design.md`; **`design.md` yang dipakai** (keputusan pemilik produk).
+
 **Hasil pemeriksaan sumber (26 Okt 2026):** tidak ada berkas di repo (kode, README, kontrak, seeder) yang memasangkan nomor DOC01–DOC16 dengan satu pun kode slot. Satu-satunya fakta yang terverifikasi adalah **jumlah**: dokumen Fase 2–3 berjumlah 16 (S2-01..05 = 5 dan S3-01..11 = 11) dan Fase 4 menambah 2 dokumen teknis (S4-01, S4-02), total 18 slot. Karena itu **kolom pemasangan di bawah sengaja kosong**; memasangkan berdasarkan urutan akan mengarang data. Pemasangan resmi menunggu acuan Disperwaskim (**OPEN QUESTION Q06/Q07**).
 
 Katalog slot yang **terverifikasi di kode** (`config/satu_rumah.php`, kunci Flutter dari `slot_catalog.dart`). Wajib: semua kecuali S3-10. Diperiksa pada tahap Administrasi untuk S2 dan S3, tahap Teknis untuk S4.

@@ -156,6 +156,15 @@ Status selisih:
    + S3 yang 11); pemetaan per nomor **belum ada sumbernya** dan tidak ditebak **[KEPUTUSAN Q07]**. Slot S4-01
    dan S4-02 adalah dua dokumen teknis tambahan (total 18).
 
+**Site Plan (S4-01):** cukup **satu berkas DWG atau PDF** (keputusan pemilik produk, 27 Okt 2026; sebelumnya
+diminta DWG dan PDF sekaligus).
+
+**Sumber resmi daftar dokumen:** *Proses Bisnis Aplikasi SATU RUMAH Kota Tasikmalaya* (docx dari Disperwaskim)
+memuat 18 dokumen unggahan: Step 2 (5, administrasi perusahaan), Step 3 (11, administrasi perumahan), Step 4 (2,
+teknis). Nama, urutan, dan banyak berkas sama persis dengan tabel di atas. Dokumen itu tidak memberi label DOC01–DOC16.
+Ia juga memuat 6 format surat yang bisa diunduh (permohonan, kesanggupan PSU, pernyataan keterbangunan PSU, lampiran
+SPTJM, permohonan untuk perubahan, contoh hitung KDB/KLB/KDH) dan 2 format teknis yang hanya dapat dipratinjau.
+
 Berkas disimpan dengan nama acak (`stored_name`) di disk privat, tanpa URL publik; unduhan lewat endpoint terautentikasi.
 
 ---

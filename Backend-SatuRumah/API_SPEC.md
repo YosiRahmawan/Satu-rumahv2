@@ -40,7 +40,7 @@ Format galat (semua 4xx/5xx):
 | ERR-001 | 422 | Ukuran berkas melebihi batas | sudah ada di `SubmissionFileValidator` |
 | ERR-002 | 422 | Format atau jumlah berkas pada slot tidak sesuai | sudah ada |
 | ERR-003 | 422 | Berkas tidak terbaca, rusak, atau terkunci | sudah ada |
-| ERR-004 | 422 | Site Plan wajib memuat minimal 1 DWG dan 1 PDF | sudah ada |
+| ERR-004 | 422 | Site Plan wajib memuat minimal 1 berkas DWG atau PDF (cukup salah satu) | sudah ada |
 | ERR-015 | 409 | `version` sudah usang (memuat `current_version`) | disebut di migrasi |
 | ERR-013 | 404 | Data tidak ditemukan, atau milik akun lain | baru |
 | ERR-030 | 429 | Terlalu banyak permintaan | baru |
@@ -75,7 +75,7 @@ Tombol "Masuk sebagai Pengembang/Tim Perwaskim" di Flutter hanya untuk mode demo
 | `POST /submissions/{id}/files` | Unggah satu berkas: `slot_code`, `file` | Memakai `SubmissionFileValidator`; kode slot `S2-01`…`S4-02` (Flutter memetakan dari kunci). Saat revisi, baris lama `is_current=false`, `replaced_at` terisi, `version` naik |
 | `DELETE /submissions/{id}/files/{fileId}` | Hapus berkas draf | Hanya saat `draft`; saat revisi digantikan, tidak dihapus |
 | `GET /submissions/{id}/files/{fileId}/download` | Unduh berkas | Terautentikasi, disk privat, tanpa URL publik |
-| `POST /submissions/{id}/submit` | Kirim | Server memeriksa semua slot wajib (S3-10 opsional), S4-01 memuat DWG+PDF (ERR-004), lalu menerbitkan `SR-<tahun>-<urut>`, `stage=2`, `submitted_at`, `stage_entered_at`. Gagal → ERR-010 dengan daftar slot yang kurang |
+| `POST /submissions/{id}/submit` | Kirim | Server memeriksa semua slot wajib (S3-10 opsional), S4-01 memuat minimal 1 berkas DWG atau PDF (ERR-004), lalu menerbitkan `SR-<tahun>-<urut>`, `stage=2`, `submitted_at`, `stage_entered_at`. Gagal → ERR-010 dengan daftar slot yang kurang |
 | `POST /submissions/{id}/resubmit` | Kirim perbaikan | Hanya saat `perlu_perbaikan`; semua berkas yang diminta harus sudah diganti; `sub_status=perbaikan_terkirim`; jam SLA berjalan lagi |
 | `GET /submissions/{id}/timeline` | Riwayat keputusan dan perubahan | Perlu tabel audit baru |
 
