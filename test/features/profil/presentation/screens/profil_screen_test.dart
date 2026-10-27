@@ -22,12 +22,11 @@ void main() {
   }
 
   group('ProfilScreen (Profil Pengembang) Visual & Functional Target Tests', () {
-    testWidgets('renders header merah with title and subtitle', (tester) async {
+    testWidgets('renders header merah with centered title', (tester) async {
       await tester.pumpWidget(createWidgetUnderTest());
       await tester.pumpAndSettle();
 
       expect(find.text('Profil Pengembang'), findsOneWidget);
-      expect(find.text('Kelola informasi perusahaan dan akun'), findsOneWidget);
     });
 
     testWidgets(
