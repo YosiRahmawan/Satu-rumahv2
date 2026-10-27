@@ -14,11 +14,13 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth', 'role:verifikator,administrator'])->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/ringkasan', [DashboardController::class, 'ringkasan'])->name('dashboard.ringkasan');
     Route::get('/dashboard/export', [DashboardController::class, 'exportCsv'])->name('dashboard.export');
 
     Route::get('/pengajuan', [SubmissionController::class, 'index'])->name('pengajuan.index');
     Route::get('/pengajuan/{id}', [SubmissionController::class, 'show'])->name('pengajuan.show');
     Route::get('/pengajuan/{id}/berkas/{fileId}', [SubmissionController::class, 'file'])->name('pengajuan.berkas');
+    Route::get('/pengajuan/{id}/berkas/{fileId}/lihat', [SubmissionController::class, 'lihat'])->name('pengajuan.lihat');
     Route::get('/pengajuan/{id}/foto/{photoId}', [SubmissionController::class, 'photo'])->name('pengajuan.foto');
     Route::post('/pengajuan/{id}/berkas/{fileId}/nilai', [SubmissionController::class, 'review'])->name('pengajuan.nilai');
     Route::post('/pengajuan/{id}/perbaikan', [SubmissionController::class, 'requestRevision'])->name('pengajuan.perbaikan');

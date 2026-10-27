@@ -112,6 +112,7 @@ class AdminWebTest extends TestCase
 
         // Berkas belum dinilai: belum boleh disetujui.
         $this->post("/pengajuan/{$id}/setujui-administrasi")->assertSessionHasErrors('slots');
+        $this->assertStringContainsString('NIB', session('errors')->first('slots') . implode(' ', session('errors')->get('slots')));
 
         $this->approveAllFiles();
         $this->post("/pengajuan/{$id}/setujui-administrasi")->assertSessionHas('success');
@@ -239,6 +240,36 @@ class AdminWebTest extends TestCase
 
         $this->assertFalse($second->fresh()->is_current);
         $this->assertSame(1, $this->submission->currentFiles()->where('slot_code', 'S3-05')->count());
+    }
+
+    public function test_pratinjau_pdf_tampil_di_halaman_tanpa_unduh_dan_dwg_tidak_bisa(): void
+    {
+        Storage::fake('local');
+        $id = $this->submission->id;
+        $pdf = $this->submission->files()->where('slot_code', 'S2-01')->first();
+        Storage::disk('local')->put($pdf->storage_path, "%PDF-1.4
+%%EOF
+");
+        $dwg = $this->submission->files()->create([
+            'slot_code' => 'S4-01', 'version' => 9, 'is_current' => false, 'original_name' => 'site.dwg', 'stored_name' => 'site.dwg',
+            'storage_path' => 'submissions/1/site.dwg', 'file_type' => 'dwg', 'size_bytes' => 10, 'checksum' => str_repeat('c', 64),
+            'status' => 'menunggu_telaah', 'uploaded_by' => $this->developer->id,
+        ]);
+        Storage::disk('local')->put($dwg->storage_path, 'AC1027');
+        $this->actingAs($this->admin);
+
+        // Pratinjau: tampil inline (bukan lampiran) bertipe PDF.
+        $res = $this->get("/pengajuan/{$id}/berkas/{$pdf->id}/lihat")->assertOk();
+        $this->assertSame('application/pdf', $res->headers->get('Content-Type'));
+        $this->assertStringNotContainsString('attachment', (string) $res->headers->get('Content-Disposition'));
+
+        // Unduh tetap lampiran; DWG tidak punya pratinjau.
+        $this->assertStringContainsString('attachment', (string) $this->get("/pengajuan/{$id}/berkas/{$pdf->id}")->headers->get('Content-Disposition'));
+        $this->get("/pengajuan/{$id}/berkas/{$dwg->id}/lihat")->assertNotFound();
+
+        // Tab Dokumen memuat tombol pratinjau dan jendela penilaian.
+        $this->get("/pengajuan/{$id}?tab=dokumen")->assertOk()
+            ->assertSee('data-pratinjau', false)->assertSee('Simpan Status Dokumen')->assertSee('id="pdfFrame"', false);
     }
 
     public function test_pengajuan_draf_tidak_tampil_di_antrean(): void

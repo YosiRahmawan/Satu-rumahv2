@@ -268,8 +268,14 @@ class SubmissionWorkflow
                 continue;
             }
             $files = $bySlot->get($code);
-            if (!$files || $files->contains(fn ($f) => $f->status !== 'lolos')) {
-                $notReady[] = $code;
+            $alasan = match (true) {
+                !$files => 'belum diunggah pengembang',
+                $files->contains('status', 'perlu_perbaikan') => 'ditandai perlu perbaikan',
+                $files->contains(fn ($f) => $f->status !== 'lolos') => 'belum dinilai Sesuai',
+                default => null,
+            };
+            if ($alasan) {
+                $notReady[] = "{$code} · {$slot['name']} ({$alasan})";
             }
         }
         if ($notReady) {

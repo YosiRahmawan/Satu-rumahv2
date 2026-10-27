@@ -21,7 +21,16 @@
     <div class="alert alert-danger" style="margin-bottom:16px;">
         <div>
             <div class="alert-title">Belum bisa diproses</div>
-            @foreach($errors->all() as $e) <div>{{ $e }}</div> @endforeach
+            @if($errors->has('slots'))
+                <div style="margin-bottom:6px;">Berkas wajib berikut belum berstatus Sesuai. Selesaikan dulu di tab Dokumen:</div>
+                <ul style="margin:0;padding-left:18px;">
+                    @foreach($errors->get('slots') as $e) <li>{{ $e }}</li> @endforeach
+                </ul>
+            @endif
+            @foreach($errors->getBag('default')->getMessages() as $k => $msgs)
+                @continue($k === 'slots')
+                @foreach($msgs as $e) <div>{{ $e }}</div> @endforeach
+            @endforeach
         </div>
     </div>
 @endif

@@ -24,6 +24,9 @@ return [
         'sla.warning_percent' => (int) env('SLA_WARNING_PERCENT', 80),
         'revision.deadline_days' => (int) env('REVISION_DEADLINE_DAYS', 14),
 
+        // Dashboard Admin: target pengajuan per kecamatan (usulan; menunggu penetapan Disperwaskim)
+        'dashboard.target_per_kecamatan' => (int) env('DASHBOARD_TARGET_PER_KECAMATAN', 20),
+
         // Keamanan login (usulan, menunggu keputusan Q14)
         'auth.max_attempts' => (int) env('AUTH_MAX_ATTEMPTS', 5),
         'auth.lock_minutes' => (int) env('AUTH_LOCK_MINUTES', 15),

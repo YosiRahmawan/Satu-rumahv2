@@ -25,7 +25,8 @@ class SettingsSeeder extends Seeder
             'upload.dwg_max_mb' => [50, 'Ukuran maksimal berkas DWG (MB)'],
             'upload.max_files_per_slot' => [10, 'Jumlah maksimal berkas pada slot banyak-berkas'],
             'upload.photo_max_mb' => [10, 'Ukuran maksimal foto lapangan (MB)'],
-            'upload.photo_max_count' => [15, 'Jumlah maksimal foto per laporan'],
+            'upload.photo_max_count' => [10, 'Jumlah maksimal foto per laporan'],
+            'dashboard.target_per_kecamatan' => [20, 'Target pengajuan per kecamatan untuk batang di dashboard Admin - usulan awal'],
         ];
 
         foreach ($rows as $key => [$value, $description]) {

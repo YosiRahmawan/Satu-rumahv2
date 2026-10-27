@@ -58,4 +58,34 @@
         <a href="{{ route('pengajuan.index') }}" class="btn btn-soft btn-sm">Lihat semua antrean</a>
     </div>
 </div>
+<div id="ringkasan" data-url="{{ route('dashboard.ringkasan') }}">
+    @include('admin.partials.ringkasan')
+</div>
+@endsection
+
+@section('scripts')
+<script>
+// Kartu ringkasan dimuat ulang tiap 5 detik (berhenti saat tab tersembunyi); batang bergeser halus ke nilai baru.
+(function () {
+    const box = document.getElementById('ringkasan');
+    if (!box) return;
+    async function segarkan() {
+        if (document.hidden) return;
+        try {
+            const res = await fetch(box.dataset.url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+            if (!res.ok) return;
+            const lama = {};
+            box.querySelectorAll('.progress-bar[data-kec]').forEach(b => lama[b.dataset.kec] = b.style.width);
+            box.innerHTML = await res.text();
+            box.querySelectorAll('.progress-bar[data-kec]').forEach(b => {
+                const baru = b.dataset.lebar + '%';
+                b.style.width = lama[b.dataset.kec] ?? '0%';
+                requestAnimationFrame(() => requestAnimationFrame(() => b.style.width = baru));
+            });
+        } catch (e) { /* jaringan putus: biarkan data terakhir tampil */ }
+    }
+    setInterval(segarkan, 5000);
+    document.addEventListener('visibilitychange', segarkan);
+})();
+</script>
 @endsection

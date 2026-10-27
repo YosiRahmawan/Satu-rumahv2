@@ -32,7 +32,7 @@
                 <p style="font-size:14px;">Menunggu pengembang mengirim perbaikan berkas. Tindakan lain dibuka setelah perbaikan diterima.</p>
             @elseif($s->stage === \App\Models\Submission::STAGE_ADMINISTRASI)
                 <p style="font-size:14px;margin-bottom:14px;">Nilai berkas di tab Dokumen. Setelah semua berkas administrasi sesuai, setujui untuk lanjut ke verifikasi teknis.</p>
-                <form method="POST" action="{{ route('pengajuan.setujui_administrasi', $s->id) }}" onsubmit="return confirm('Setujui verifikasi administrasi?')">
+                <form method="POST" action="{{ route('pengajuan.setujui_administrasi', $s->id) }}" data-konfirmasi="Semua berkas administrasi sudah sesuai. Pengajuan akan lanjut ke verifikasi teknis dan pengembang diberi tahu." data-konfirmasi-judul="Setujui Verifikasi Administrasi" data-konfirmasi-tombol="Ya, setujui">
                     @csrf <button class="btn btn-primary btn-block">Setujui Verifikasi Administrasi</button>
                 </form>
             @elseif($s->stage === \App\Models\Submission::STAGE_TEKNIS)
@@ -40,7 +40,7 @@
             @elseif($s->stage === \App\Models\Submission::STAGE_SURVEI)
                 <p style="font-size:14px;">Survei berjalan. Terima laporan petugas di tab Survei &amp; Monitoring.</p>
             @elseif($s->stage === \App\Models\Submission::STAGE_PERSETUJUAN)
-                <form method="POST" action="{{ route('pengajuan.keputusan', $s->id) }}" class="form-group" style="display:grid;gap:10px;">
+                <form method="POST" action="{{ route('pengajuan.keputusan', $s->id) }}" class="form-group" style="display:grid;gap:10px;" data-konfirmasi="Keputusan akhir tidak dapat diubah setelah disimpan." data-konfirmasi-judul="Simpan Keputusan Akhir" data-konfirmasi-tombol="Ya, simpan">
                     @csrf
                     <label class="form-label">Keputusan</label>
                     <select name="keputusan" class="form-select">
@@ -53,7 +53,7 @@
                     <input class="form-input" type="date" name="tanggal" value="{{ old('tanggal', now()->toDateString()) }}">
                     <label class="form-label">Alasan (wajib bila ditolak)</label>
                     <textarea class="form-textarea" name="catatan" rows="3">{{ old('catatan') }}</textarea>
-                    <button class="btn btn-primary btn-block" onclick="return confirm('Simpan keputusan akhir? Tindakan ini tidak dapat diubah.')">Simpan Keputusan</button>
+                    <button class="btn btn-primary btn-block">Simpan Keputusan</button>
                 </form>
             @else
                 <p style="font-size:14px;">Proses selesai: {{ $s->statusLabel() }}.</p>

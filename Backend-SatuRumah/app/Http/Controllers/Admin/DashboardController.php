@@ -5,11 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\InspectionAssignment;
 use App\Models\Submission;
+use App\Services\DashboardSummary;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(DashboardSummary $summary)
     {
         $active = Submission::whereBetween('stage', [2, 5])->where('sub_status', '!=', 'ditolak');
 
@@ -24,7 +25,21 @@ class DashboardController extends Controller
             ->where('stage', '>=', Submission::STAGE_ADMINISTRASI)
             ->latest('updated_at')->paginate(5);
 
-        return view('admin.dashboard', compact('stats', 'pengajuans'));
+        return view('admin.dashboard', [
+            'stats' => $stats,
+            'pengajuans' => $pengajuans,
+            'sebaran' => $summary->sebaranKecamatan(),
+            'jadwal' => $summary->jadwalTinjauan(),
+        ]);
+    }
+
+    /** Dua kartu ringkasan saja; dipanggil berkala oleh dashboard agar angkanya ikut berubah. */
+    public function ringkasan(DashboardSummary $summary)
+    {
+        return view('admin.partials.ringkasan', [
+            'sebaran' => $summary->sebaranKecamatan(),
+            'jadwal' => $summary->jadwalTinjauan(),
+        ]);
     }
 
     public function exportCsv(): StreamedResponse

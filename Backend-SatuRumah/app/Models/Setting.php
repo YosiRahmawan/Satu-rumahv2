@@ -25,7 +25,8 @@ class Setting extends Model
             return static::$cache[$key];
         }
 
-        return config('satu_rumah.defaults.' . $key, $default);
+        // Kunci bernama titik (mis. sla.t2_days) tidak terbaca config() bertitik; Arr::get memeriksa kunci apa adanya lebih dulu.
+        return \Illuminate\Support\Arr::get(config('satu_rumah.defaults', []), $key, $default);
     }
 
     public static function getInt(string $key, int $default = 0): int

@@ -104,6 +104,47 @@
         </div>
     </div>
 
+    <div id="konfirmModal" class="modal-backdrop" style="display:none;z-index:120;" role="alertdialog" aria-modal="true" aria-labelledby="konfirmJudul">
+        <div class="modal" style="max-width:440px;">
+            <div class="modal-head">
+                <h3 class="modal-title" id="konfirmJudul">Konfirmasi</h3>
+            </div>
+            <div class="modal-body"><p id="konfirmIsi" style="margin:0;font-size:14px;"></p></div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-outline" id="konfirmBatal">Batal</button>
+                <button type="button" class="btn btn-primary" id="konfirmYa">Ya</button>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function () {
+        const m = document.getElementById('konfirmModal');
+        let form = null;
+        const tutup = () => { m.style.display = 'none'; form = null; };
+        document.addEventListener('submit', (e) => {
+            const f = e.target;
+            if (!f.dataset || !f.dataset.konfirmasi || f.dataset.sudah) return;
+            e.preventDefault();
+            form = f;
+            document.getElementById('konfirmJudul').textContent = f.dataset.konfirmasiJudul || 'Konfirmasi';
+            document.getElementById('konfirmIsi').textContent = f.dataset.konfirmasi;
+            document.getElementById('konfirmYa').textContent = f.dataset.konfirmasiTombol || 'Ya, lanjutkan';
+            m.style.display = 'flex';
+            document.getElementById('konfirmYa').focus();
+        }, true);
+        document.getElementById('konfirmYa').addEventListener('click', () => {
+            const f = form;
+            tutup();
+            if (!f) return;
+            f.dataset.sudah = '1'; // lewati penjaga pada pengiriman berikutnya
+            f.requestSubmit();
+        });
+        document.getElementById('konfirmBatal').addEventListener('click', tutup);
+        m.addEventListener('click', (e) => { if (e.target === m) tutup(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && m.style.display !== 'none') tutup(); });
+    })();
+    </script>
+
     @yield('scripts')
 </body>
 </html>

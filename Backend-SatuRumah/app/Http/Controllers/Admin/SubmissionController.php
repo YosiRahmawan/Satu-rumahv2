@@ -66,6 +66,18 @@ class SubmissionController extends Controller
         return Storage::disk('local')->download($file->storage_path, $file->original_name);
     }
 
+    /** Menampilkan PDF di dalam halaman (pratinjau), tanpa memaksa unduh. */
+    public function lihat(int $id, int $fileId)
+    {
+        $file = Submission::findOrFail($id)->files()->findOrFail($fileId);
+        abort_unless($file->file_type === 'pdf' && Storage::disk('local')->exists($file->storage_path), 404);
+
+        return Storage::disk('local')->response($file->storage_path, $file->original_name, [
+            'Content-Type' => 'application/pdf',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
     public function photo(int $id, int $photoId)
     {
         $photo = InspectionReportPhoto::whereHas('report', fn ($q) => $q->where('submission_id', $id))->findOrFail($photoId);
