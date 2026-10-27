@@ -354,6 +354,7 @@ class PengajuanTerakhirCard extends StatelessWidget {
   (Color, Color, Color) get _statusColors {
     switch (statusLabel) {
       case 'Perlu Perbaikan':
+      case 'Ditolak':
         return (
           AppColors.statusUrgentSurface,
           AppColors.statusUrgentText,

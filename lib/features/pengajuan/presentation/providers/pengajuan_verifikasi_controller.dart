@@ -293,6 +293,10 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
         return const PengajuanOperationResult.blocked(
           'Pengajuan masih menunggu perbaikan dokumen.',
         );
+      case StatusTahapPengajuan.ditolak:
+        return const PengajuanOperationResult.blocked(
+          'Pengajuan sudah ditolak; tidak ada transisi lanjutan.',
+        );
     }
   }
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -20,6 +21,7 @@ import '../../data/models/status_tahap_pengajuan.dart';
 import '../providers/pengajuan_form_controller.dart';
 import '../providers/pengajuan_verifikasi_controller.dart';
 import '../widgets/pengajuan_list_card.dart';
+import '../widgets/riwayat_aktivitas_card.dart';
 
 /// Returns a real linked final monitoring record with an available BA path.
 /// A developer detail must never synthesize a report for export.
@@ -291,6 +293,11 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                   _buildInfoCard(item),
                   const SizedBox(height: AppSpacing.md),
 
+                  if (item.statusTahap == StatusTahapPengajuan.ditolak) ...[
+                    AlasanPenolakanCard(number: item.id),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+
                   if (isPerluPerbaikan) ...[
                     // 3. Persentase Verifikasi Berkas
                     _buildPersentaseCard(item),
@@ -330,8 +337,11 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     _buildDynamicTimelineCard(item),
-                    const SizedBox(height: AppSpacing.xl),
+                    const SizedBox(height: AppSpacing.md),
                   ],
+                  if (ref.watch(apiEnabledProvider))
+                    RiwayatAktivitasCard(number: item.id),
+                  const SizedBox(height: AppSpacing.xl),
                 ],
               ),
             ),

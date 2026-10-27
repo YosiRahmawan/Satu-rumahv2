@@ -426,6 +426,49 @@ void main() {
     });
   });
 
+  group('ditolak dan riwayat', () {
+    test('status_tahap ditolak tampil sebagai Ditolak, bukan administrasi', () async {
+      final repo = build();
+      adapter.reply(200, {
+        'data': [_submission(statusTahap: 'ditolak', number: 'SR-2026-0009')],
+        'meta': {'page': 1, 'per_page': 50, 'total': 1},
+      });
+
+      final p = (await repo.list()).single;
+      expect(p.statusTahap, StatusTahapPengajuan.ditolak);
+      expect(p.status, 'Ditolak');
+    });
+
+    test('timeline memuat peristiwa dan mengenali penolakan', () async {
+      final repo = build();
+      adapter.reply(200, {
+        'data': [_submission(statusTahap: 'ditolak', number: 'SR-2026-0009')],
+        'meta': {'page': 1, 'per_page': 50, 'total': 1},
+      });
+      await repo.list();
+      adapter.reply(200, {
+        'data': [
+          {
+            'id': 2,
+            'type': 'decided',
+            'title': 'Pengajuan ditolak',
+            'description': 'Lahan tidak sesuai tata ruang.',
+            'actor': 'Verifikator',
+            'created_at': '2026-10-27T05:00:00+00:00',
+          },
+          {'id': 1, 'type': 'submitted', 'title': 'Pengajuan dikirim'},
+        ],
+      });
+
+      final items = await repo.timeline('SR-2026-0009');
+      expect(items, hasLength(2));
+      expect(items.first.ditolak, isTrue);
+      expect(items.first.description, 'Lahan tidak sesuai tata ruang.');
+      expect(items.last.ditolak, isFalse);
+      expect(adapter.requests.last.path, contains('submissions/5/timeline'));
+    });
+  });
+
   group('resubmit', () {
     Map<String, dynamic> flagged(int id, String slot) => {
       'id': id,
