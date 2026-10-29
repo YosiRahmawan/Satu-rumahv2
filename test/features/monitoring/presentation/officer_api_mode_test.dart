@@ -62,11 +62,24 @@ OfficerAssignment _task(int id, String nama) => OfficerAssignment(
   namaPt: 'PT Uji',
 );
 
+ReportPhoto photo(String id, {double lat = -7.3, double lng = 108.2}) {
+  PhotoBytesCache.put(id, Uint8List.fromList([1, 2, 3]));
+  return ReportPhoto(
+    id: id,
+    source: PhotoSource.camera,
+    stamp: GeoStamp(
+      latitude: lat,
+      longitude: lng,
+      capturedAt: DateTime.utc(2026, 10, 26),
+    ),
+  );
+}
+
 MonitoringModel _draft({
   String id = 'draf-1',
   StatusHasilEvaluasi status = StatusHasilEvaluasi.sesuaiSiteplan,
   List<String> rtl = const [],
-  List<ReportPhoto> photos = const [],
+  List<ReportPhoto>? photos,
 }) => MonitoringModel(
   id: id,
   pengajuanId: 'SR-2026-0001',
@@ -74,7 +87,7 @@ MonitoringModel _draft({
   namaPerumahan: 'Griya Mangkubumi',
   statusHasilEvaluasi: status,
   rencanaTindakLanjut: rtl,
-  photos: photos,
+  photos: photos ?? [photo('p-default', lat: -7.3274, lng: 108.2207)],
   isDraft: true,
 );
 
@@ -164,19 +177,6 @@ void main() {
   });
 
   group('kirim laporan lewat server', () {
-    ReportPhoto photo(String id, {double lat = -7.3}) {
-      PhotoBytesCache.put(id, Uint8List.fromList([1, 2, 3]));
-      return ReportPhoto(
-        id: id,
-        source: PhotoSource.camera,
-        stamp: GeoStamp(
-          latitude: lat,
-          longitude: 108.2,
-          capturedAt: DateTime.utc(2026, 10, 26),
-        ),
-      );
-    }
-
     test(
       'galat tak terduga: gagal dengan pesan, tombol tidak terkunci',
       () async {
@@ -247,7 +247,7 @@ void main() {
     );
 
     test(
-      'GPS tidak tersedia: memakai posisi foto terakhir; tanpa keduanya gagal',
+      'GPS tidak tersedia: memakai posisi foto terakhir; jika 0 foto ditolak validasi',
       () async {
         final noGps = FakeLocationService(
           const LocationResult.failure(LocationFailure.timeout),
@@ -267,21 +267,32 @@ void main() {
         c = _container(remote2, location: noGps);
         result = await c
             .read(monitoringFormProvider.notifier)
-            .submitFinalViaApi(_draft());
+            .submitFinalViaApi(_draft(photos: const []));
         expect(result.isFailure, isTrue);
-        expect(result.errorMessage, contains('Lokasi tidak tersedia'));
+        expect(
+          result.errorMessage,
+          'Laporan wajib memiliki minimal 1 foto dokumentasi sebelum submit.',
+        );
         expect(remote2.keys, isEmpty);
       },
     );
 
     test(
-      'validasi lokal tetap berlaku (RTL wajib, foto perlu diambil ulang)',
+      'validasi lokal tetap berlaku (minimal 1 foto, RTL wajib, foto perlu diambil ulang)',
       () async {
         final remote = FakeOfficerRemote();
         final c = _container(remote);
         final notifier = c.read(monitoringFormProvider.notifier);
 
         var result = await notifier.submitFinalViaApi(
+          _draft(photos: const []),
+        );
+        expect(
+          result.errorMessage,
+          'Laporan wajib memiliki minimal 1 foto dokumentasi sebelum submit.',
+        );
+
+        result = await notifier.submitFinalViaApi(
           _draft(status: StatusHasilEvaluasi.tidakSesuaiSiteplan),
         );
         expect(result.errorMessage, contains('Rencana Tindak Lanjut'));

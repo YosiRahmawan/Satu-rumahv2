@@ -7,14 +7,28 @@ import 'package:satu_rumah/features/monitoring/data/repositories/monitoring_repo
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_form_provider.dart';
 import 'package:satu_rumah/features/notifikasi/presentation/providers/notifikasi_provider.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/status_tahap_pengajuan.dart';
+import 'package:satu_rumah/features/monitoring/data/models/geo_stamp.dart';
+import 'package:satu_rumah/features/monitoring/data/models/report_photo.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_verifikasi_controller.dart';
+
+ReportPhoto _testPhoto(String id, {bool needsReselect = false}) => ReportPhoto(
+  id: id,
+  source: PhotoSource.camera,
+  needsReselect: needsReselect,
+  stamp: GeoStamp(
+    latitude: -7.3274,
+    longitude: 108.2207,
+    capturedAt: DateTime(2025, 5, 22),
+  ),
+);
 
 MonitoringModel _draft({
   String id = 'monitoring-submit-1',
   String? pengajuanId = 'SR-2025-0148',
   StatusHasilEvaluasi status = StatusHasilEvaluasi.sesuaiSiteplan,
   List<String> rtl = const [],
+  List<ReportPhoto>? photos,
 }) {
   return MonitoringModel(
     id: id,
@@ -25,6 +39,7 @@ MonitoringModel _draft({
     lokasiPerumahan: 'Kec. Mangkubumi, Kota Tasikmalaya',
     statusHasilEvaluasi: status,
     rencanaTindakLanjut: rtl,
+    photos: photos ?? [_testPhoto('photo-default')],
     isDraft: true,
   );
 }
@@ -314,5 +329,153 @@ void main() {
       container.read(adminDashboardMetricsProvider).monitoringTerbaru.length,
       before + 1,
     );
+  });
+
+  group('validasi foto dokumentasi', () {
+    test('submitFinal gagal jika jumlah foto 0 dan mempertahankan draf', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(monitoringFormProvider.notifier);
+      final draft = _draft(id: 'monitoring-0-foto', photos: const []);
+      final result = notifier.submitFinal(draft);
+
+      expect(result.status, MonitoringSubmitStatus.failure);
+      expect(
+        result.errorMessage,
+        'Laporan wajib memiliki minimal 1 foto dokumentasi sebelum submit.',
+      );
+      expect(
+        container.read(monitoringFormProvider).errorMessage,
+        'Laporan wajib memiliki minimal 1 foto dokumentasi sebelum submit.',
+      );
+      expect(
+        repository.getAllMonitoring().where((e) => e.id == 'monitoring-0-foto'),
+        isEmpty,
+      );
+    });
+
+    test('submitFinal berhasil jika memiliki 1 foto dokumentasi', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(monitoringFormProvider.notifier);
+      final draft = _draft(
+        id: 'monitoring-1-foto',
+        photos: [_testPhoto('photo-1')],
+      );
+      final result = notifier.submitFinal(draft);
+
+      expect(result.status, MonitoringSubmitStatus.success);
+      expect(result.model?.photos, hasLength(1));
+    });
+
+    test('submitFinal berhasil jika memiliki 10 foto dokumentasi (batas maksimal)', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(monitoringFormProvider.notifier);
+      final tenPhotos = List.generate(
+        10,
+        (i) => _testPhoto('photo-$i'),
+      );
+      final draft = _draft(
+        id: 'monitoring-10-foto',
+        photos: tenPhotos,
+      );
+      final result = notifier.submitFinal(draft);
+
+      expect(result.status, MonitoringSubmitStatus.success);
+      expect(result.model?.photos, hasLength(10));
+    });
+
+    test('submitFinal gagal jika foto melebihi batas maksimal (11 foto)', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(monitoringFormProvider.notifier);
+      final elevenPhotos = List.generate(
+        11,
+        (i) => _testPhoto('photo-$i'),
+      );
+      final draft = _draft(
+        id: 'monitoring-11-foto',
+        photos: elevenPhotos,
+      );
+      final result = notifier.submitFinal(draft);
+
+      expect(result.status, MonitoringSubmitStatus.failure);
+      expect(result.errorMessage, 'Maksimal 10 foto per laporan.');
+    });
+
+    test('submitFinal gagal jika ada foto yang perlu dipilih ulang (needsReselect)', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(monitoringFormProvider.notifier);
+      final draft = _draft(
+        id: 'monitoring-reselect',
+        photos: [
+          _testPhoto('p1'),
+          _testPhoto('p2', needsReselect: true),
+        ],
+      );
+      final result = notifier.submitFinal(draft);
+
+      expect(result.status, MonitoringSubmitStatus.failure);
+      expect(
+        result.errorMessage,
+        '1 foto perlu diambil ulang karena berkasnya tidak tersimpan. Hapus lalu potret kembali.',
+      );
+    });
+
+    test('buildPreviewModel menolak form dengan 0 foto dan menyimpan pesan galat', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(monitoringFormProvider.notifier);
+      notifier.updateNamaPerumahan('Griya Test');
+
+      final preview = notifier.buildPreviewModel();
+      expect(preview, isNull);
+      expect(
+        container.read(monitoringFormProvider).errorMessage,
+        'Laporan wajib memiliki minimal 1 foto dokumentasi sebelum submit.',
+      );
+      // Data form tetap utuh
+      expect(container.read(monitoringFormProvider).namaPerumahan, 'Griya Test');
+    });
+
+    test('saveDraft tetap berhasil tanpa foto untuk mendukung pengisian bertahap', () {
+      final repository = MonitoringRepository();
+      final container = ProviderContainer(
+        overrides: [monitoringRepositoryProvider.overrideWithValue(repository)],
+      );
+      addTearDown(container.dispose);
+
+      final notifier = container.read(monitoringFormProvider.notifier);
+      notifier.updateNamaPerumahan('Griya Draft Bertahap');
+
+      final draft = notifier.saveDraft();
+      expect(draft, isNotNull);
+      expect(draft!.photos, isEmpty);
+      expect(repository.getMonitoringById(draft.id), isNotNull);
+      expect(container.read(monitoringFormProvider).errorMessage, isNull);
+    });
   });
 }
