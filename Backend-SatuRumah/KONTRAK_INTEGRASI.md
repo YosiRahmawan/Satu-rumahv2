@@ -255,8 +255,10 @@ server; penugasan dan laporan BA dengan foto geotag (maks 10, tanpa kompresi ula
 Web Admin pada tabel baru (nilai berkas, permintaan perbaikan, setujui administrasi, jadwal/alihkan survei, terima
 laporan, keputusan akhir); riwayat, notifikasi dalam aplikasi, kirim revisi dari Flutter.
 
-**Belum ada:** PDF dan QR dari server (Fase E, menunggu Q09). Admin sudah bisa membatalkan penugasan survei (status `dibatalkan`, alasan wajib) dan menerbitkan BA (`published_at`). Tabel lama sudah punya migrasi pembuangan (`2026_10_26_140000`) tetapi baru hilang setelah `migrate` dijalankan;
-push notification; layar timeline di Flutter; SLA hari kerja dan hari libur; unggah berkas keputusan oleh Admin;
+**Sudah ada (belum resmi):** persetujuan elektronik BA oleh Ketua Pengawas dan Admin (gambar langsung atau unggah), PDF final dari server dengan template sementara, dan QR ke `/verifikasi/{token}` (lihat API_SPEC.md bagian 15). Ini bukan TTE tersertifikasi; template resmi dan jenis TTE masih menunggu Disperwaskim.
+
+**Belum ada:** TTE tersertifikasi dan template BA resmi (menunggu Q09). Admin sudah bisa membatalkan penugasan survei (status `dibatalkan`, alasan wajib) dan menerbitkan BA (`published_at`). Tabel lama sudah punya migrasi pembuangan (`2026_10_26_140000`) tetapi baru hilang setelah `migrate` dijalankan;
+push notification; layar timeline di Flutter; hari libur nasional pada SLA (SLA hari kerja Senin-Jumat sudah dihitung dan diingatkan oleh `pengajuan:ingatkan-tenggat`; angka diatur di halaman Pengaturan); unggah berkas keputusan oleh Admin;
 pemisahan hak admin (bila Disperwaskim meminta dua role).
 
 **Keputusan Disperwaskim yang terbuka.** Kolom kanan adalah asumsi sementara di kode, **bukan keputusan resmi**:
@@ -267,7 +269,7 @@ pemisahan hak admin (bila Disperwaskim meminta dua role).
 | Q05 | Nilai `decision_type`; apakah revisi wajib diperiksa ulang per berkas | `revisi`; berkas pengganti kembali `menunggu_telaah` dan dinilai ulang |
 | Q06/Q07 | Slot mana yang wajib; hubungan 18 slot dengan DOC01–DOC16 | Semua wajib kecuali S3-10; pemetaan DOC belum dibuat |
 | Q08 | Satu petugas atau tim; pengalihan dan pembatalan tugas | Satu petugas utama dengan anggota tim; pengalihan lewat jadwal ulang; pembatalan oleh Admin dengan alasan |
-| Q09 | Penandatangan BA, arti final, siapa membuat PDF resmi | Usulan tim (menunggu konfirmasi Disperwaskim): petugas mengisi dan memvalidasi, ketua tim memeriksa bila ada, pejabat Disperwaskim mengesahkan; status Draf, Dikirim (`final`), Diverifikasi (laporan diterima admin), Diterbitkan (`published_at`); PDF resmi dan QR dibuat server setelah pengesahan, PDF di HP hanya pratinjau. Pejabat, metode tanda tangan, dan format resmi belum dikonfirmasi |
+| Q09 | Penandatangan BA, arti final, siapa membuat PDF resmi | **Jawaban Disperwaskim (29 Okt 2026, lisan):** BA ditandatangani dua pihak: ketua pengawas lapangan (= petugas utama yang dipilih admin saat penjadwalan) dan tim verifikator (Admin); metode tanda tangan elektronik (TTE); ketua menandatangani lebih dulu, baru Admin merilis. Usulan tim: status Draf, Dikirim (`final`), Diverifikasi, Diterbitkan (`published_at`); PDF resmi dan QR dibuat server. **Belum jelas:** TTE tersertifikasi (mis. BSrE, ditandatangani pada PDF) atau persetujuan elektronik di dalam aplikasi; contoh format BA resmi belum diterima |
 | Q10 | Matriks hak Administrator vs Verifikator | Digabung menjadi satu role `admin`; semua tindakan tercatat dengan nama pelakunya di Riwayat |
 | Q16 | Waktu penghentian layar Admin di Flutter | Dalam mode API, role web tidak bisa masuk lewat aplikasi dan layar Admin tidak terjangkau; kode prototipe masih ada untuk mode lokal |
 

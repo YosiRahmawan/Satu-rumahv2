@@ -282,3 +282,31 @@ Asumsi sementara terkait Q08: satu tim per penugasan, tanpa fitur "anggota tidak
 
 Asumsi sementara: Pengembang boleh melihat ringkasan hasil survei (tanpa foto dan tanpa PDF BA); apakah Pengembang
 berhak atas BA penuh adalah keputusan Disperwaskim (Q03/Q09).
+
+## 15. Persetujuan elektronik BA (Ketua Pengawas dan Admin) — usulan, menunggu konfirmasi Disperwaskim
+
+Disperwaskim menyatakan BA ditandatangani dua pihak (ketua pengawas lapangan, lalu tim verifikator/Admin) dengan TTE.
+Jenis TTE dan template BA resmi belum ditetapkan. Yang dibangun adalah **persetujuan elektronik berbasis akun**
+dengan gambar tanda tangan; **bukan TTE tersertifikasi**. Tabel `report_signatures` menyimpan `provider`
+(`gambar`) dan `provider_ref` agar penyedia TTE tersertifikasi (mis. BSrE) dapat dipasang tanpa mengubah tabel.
+
+Urutan: BA `final` (dikirim petugas) → Ketua menyetujui → Admin menerima laporan dan menyetujui → **Terbitkan BA**
+(terkunci sampai kedua persetujuan sah). Status `final` dan alur lama tidak berubah; "Terima Laporan" tidak digembok.
+
+Endpoint baru (aditif, role `tim_lapangan`, pemilik laporan = Ketua = petugas utama penugasan):
+
+| Endpoint | Isi |
+|---|---|
+| `POST /officer/reports/{id}/sign` | multipart: `method` (`draw`/`upload`), `signature` (PNG/JPEG, maks 2 MB; atau `signature_data` data URL), `password` (konfirmasi ulang), `version` (versi BA yang dilihat). Header `Idempotency-Key` (UUID) wajib. Throttle 10/menit per akun. 403 bila bukan Ketua, 409 bila isi/versi BA berubah atau BA belum final/sudah terbit, 422 bila sandi salah atau gambar tidak valid. Idempoten per laporan, peran, dan versi. |
+| `GET /officer/reports/{id}` | ditambah `signatures` `{ketua{signed,signed_at,method,signer}, admin{...}, provider, ready_to_publish}` (tanpa gambar atau hash) |
+| `GET /officer/reports/{id}/pdf` | PDF final BA yang sudah diterbitkan, hanya pemilik laporan |
+
+Web Admin: `POST /pengajuan/{id}/laporan/{reportId}/tanda-tangan` (gambar langsung atau unggah, konfirmasi sandi),
+`POST .../terbitkan` (butuh kedua persetujuan sah, membuat PDF final), `GET .../pdf`. Publik: `GET /verifikasi/{token}`
+(tujuan QR; hanya nomor BA, nama perumahan, status, tanggal terbit, dan waktu persetujuan per peran, tanpa nama orang atau isi BA).
+
+Keamanan: gambar tanda tangan divalidasi (tipe asli PNG/JPEG, 80x40 sampai 4000x4000 px), dienkode ulang menjadi PNG
+(metadata dibuang), diperkecil, dan disimpan di penyimpanan privat. Server mencatat penanda tangan, waktu, versi, metode,
+dan hash isi BA (SHA-256 atas isian, tim, versi, dan checksum foto). Tanda tangan tidak berlaku bila isi atau versi BA berubah.
+Peran, waktu, dan hash tidak pernah diambil dari klien. PDF memakai **template sementara** yang ditandai "belum format
+resmi" selama `BA_TEMPLATE_RESMI=false`.

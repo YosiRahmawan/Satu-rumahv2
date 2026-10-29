@@ -61,6 +61,11 @@ class InspectionReport extends Model
         return $this->hasMany(InspectionReportPhoto::class, 'report_id')->orderBy('position')->orderBy('id');
     }
 
+    public function signatures(): HasMany
+    {
+        return $this->hasMany(ReportSignature::class, 'report_id');
+    }
+
     public function isDraft(): bool
     {
         return $this->status === 'draft';

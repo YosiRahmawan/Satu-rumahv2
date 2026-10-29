@@ -25,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
         // Login: 5 percobaan per menit untuk pasangan IP + username.
         RateLimiter::for('api-login', fn (Request $request) => Limit::perMinute(5)
             ->by($request->ip() . '|' . mb_strtolower((string) $request->input('username'))));
+        // Tanda tangan BA: sandi diperiksa ulang, jadi dibatasi per akun.
+        RateLimiter::for('signature', fn (Request $request) => Limit::perMinute(10)->by((string) ($request->user()?->id ?? $request->ip())));
         RateLimiter::for('api', fn (Request $request) => Limit::perMinute(120)
             ->by($request->user()?->currentAccessToken()?->getKey() ?? $request->ip()));
 

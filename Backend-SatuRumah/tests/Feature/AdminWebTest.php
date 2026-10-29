@@ -132,6 +132,22 @@ class AdminWebTest extends TestCase
 
         $this->post("/pengajuan/{$id}/terima-laporan");
         $this->get("/pengajuan/{$id}?tab=monitoring")->assertOk()->assertSee('Diverifikasi')->assertSee('Terbitkan BA');
+
+        // Terbit hanya setelah Ketua dan Admin menyetujui (alur tanda tangan diuji rinci di BaSignatureTest).
+        $this->post("/pengajuan/{$id}/laporan/{$r->id}/terbitkan")->assertSessionHas('warning');
+        Storage::fake('local');
+        $im = imagecreatetruecolor(300, 120);
+        imagefill($im, 0, 0, imagecolorallocate($im, 255, 255, 255));
+        imageline($im, 10, 100, 290, 15, imagecolorallocate($im, 0, 0, 0));
+        ob_start();
+        imagepng($im);
+        $png = (string) ob_get_clean();
+        $svc = app(\App\Services\SignatureService::class);
+        $this->officer->forceFill(['password' => 'Sandi-Uji-2026'])->save();
+        $this->admin->forceFill(['password' => 'Sandi-Uji-2026'])->save();
+        $r->forceFill(['officer_id' => $this->officer->id])->save();
+        $svc->sign($r->fresh(), $this->officer, 'ketua', 'draw', $png, 'Sandi-Uji-2026', 2);
+        $svc->sign($r->fresh(), $this->admin, 'admin', 'draw', $png, 'Sandi-Uji-2026', 2);
         $this->post("/pengajuan/{$id}/laporan/{$r->id}/terbitkan")->assertSessionHas('success');
         $this->assertNotNull($r->fresh()->published_at);
         $this->assertSame('final', $r->fresh()->status);

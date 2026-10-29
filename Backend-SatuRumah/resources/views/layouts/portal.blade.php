@@ -50,6 +50,12 @@
                     </svg>
                     Akun
                 </a>
+                <a href="{{ route('pengaturan.index') }}" class="nav-link {{ request()->routeIs('pengaturan.*') ? 'active' : '' }}">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.3 4.3a1.7 1.7 0 013.4 0 1.7 1.7 0 002.5 1l.2-.1a1.7 1.7 0 012.3 2.3l-.1.2a1.7 1.7 0 001 2.5 1.7 1.7 0 010 3.4 1.7 1.7 0 00-1 2.5l.1.2a1.7 1.7 0 01-2.3 2.3l-.2-.1a1.7 1.7 0 00-2.5 1 1.7 1.7 0 01-3.4 0 1.7 1.7 0 00-2.5-1l-.2.1a1.7 1.7 0 01-2.3-2.3l.1-.2a1.7 1.7 0 00-1-2.5 1.7 1.7 0 010-3.4 1.7 1.7 0 001-2.5l-.1-.2a1.7 1.7 0 012.3-2.3l.2.1a1.7 1.7 0 002.5-1zM12 15a3 3 0 100-6 3 3 0 000 6z"></path>
+                    </svg>
+                    Pengaturan
+                </a>
             </nav>
 
             <div class="sidebar-user">

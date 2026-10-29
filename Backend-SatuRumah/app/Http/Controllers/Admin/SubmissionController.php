@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\InspectionAssignment;
 use App\Models\InspectionReport;
 use App\Models\InspectionReportPhoto;
+use App\Models\ReportSignature;
+use App\Services\SignatureService;
 use App\Models\Submission;
 use App\Models\User;
 use App\Services\SubmissionWorkflow;
@@ -145,6 +147,33 @@ class SubmissionController extends Controller
         $r = InspectionReport::where('submission_id', $id)->findOrFail($reportId);
 
         return $this->run($s, fn () => $this->workflow->publishReport($s, $r, $request->user()), 'BA diterbitkan.', 'monitoring');
+    }
+
+    public function signReport(Request $request, int $id, int $reportId, SignatureService $signatures)
+    {
+        $data = $request->validate([
+            'method' => 'required|in:draw,upload',
+            'password' => 'required|string',
+            'version' => 'required|integer',
+        ]);
+        $s = Submission::findOrFail($id);
+        $r = InspectionReport::where('submission_id', $id)->findOrFail($reportId);
+
+        try {
+            $bytes = $signatures->bytesFrom($request);
+        } catch (ValidationException $e) {
+            return redirect()->route('pengajuan.show', ['id' => $id, 'tab' => 'monitoring'])->withErrors($e->errors());
+        }
+
+        return $this->run($s, fn () => $signatures->sign($r, $request->user(), ReportSignature::ADMIN, $data['method'], $bytes, $data['password'], (int) $data['version'], $request->ip()), 'Tanda tangan Admin tersimpan.', 'monitoring');
+    }
+
+    public function reportPdf(int $id, int $reportId)
+    {
+        $r = InspectionReport::where('submission_id', $id)->findOrFail($reportId);
+        abort_unless($r->published_at && $r->pdf_path && Storage::disk('local')->exists($r->pdf_path), 404);
+
+        return Storage::disk('local')->download($r->pdf_path, 'BA-' . str_replace('/', '-', (string) $r->report_number) . '.pdf');
     }
 
     public function acceptReports(Request $request, int $id)

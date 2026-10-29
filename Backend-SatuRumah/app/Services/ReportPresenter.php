@@ -77,6 +77,8 @@ class ReportPresenter
             'submit_latitude' => $r->submit_latitude,
             'submit_longitude' => $r->submit_longitude,
             'photos' => $r->photos->map(fn (InspectionReportPhoto $p) => $this->photo($p))->values()->all(),
+            // Status persetujuan Ketua dan Admin (tanpa gambar atau hash); hanya bermakna setelah BA dikirim.
+            'signatures' => $r->status === 'final' ? app(SignatureService::class)->status($r) : null,
         ];
     }
 
