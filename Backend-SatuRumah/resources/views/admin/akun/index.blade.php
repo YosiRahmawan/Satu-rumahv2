@@ -39,11 +39,12 @@
     </div>
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Nama</th><th>Email / Username</th><th>Role</th><th>Status</th><th class="col-actions">Aksi</th></tr></thead>
+            <thead><tr><th>Nama</th><th>NIP</th><th>Email / Username</th><th>Role</th><th>Status</th><th class="col-actions">Aksi</th></tr></thead>
             <tbody>
                 @forelse($users as $u)
                     <tr>
                         <td class="col-strong">{{ $u->name }}@if($u->jabatan)<div class="text-muted" style="font-size:12px;font-weight:400;">{{ $u->jabatan }}</div>@endif</td>
+                        <td class="mono" style="font-size:12px;">{{ $u->nip ?: '-' }}</td>
                         <td>{{ $u->email }}<div class="text-muted" style="font-size:12px;">{{ $u->username }}</div></td>
                         <td>{{ $roles[$u->role] ?? $u->role }}</td>
                         <td>
@@ -51,22 +52,23 @@
                             @if($u->must_change_password)<div class="text-muted" style="font-size:12px;margin-top:4px;">Sandi sementara</div>@endif
                         </td>
                         <td class="col-actions">
+                            <div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                                <button type="button" class="btn btn-outline btn-sm" data-ubah="{{ route('akun.update', $u->id) }}" data-nama="{{ $u->name }}" data-jabatan="{{ $u->jabatan }}" data-nip="{{ $u->nip }}">Ubah</button>
                             @if($u->id === auth()->id())
-                                <span class="text-muted" style="font-size:12px;">Akun Anda</span>
+                                <span class="text-muted" style="font-size:12px;align-self:center;">Akun Anda</span>
                             @else
-                                <div style="display:inline-flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
                                     <form method="POST" action="{{ route('akun.reset', $u->id) }}" data-konfirmasi="Sandi {{ $u->name }} akan diganti sandi sementara dan semua sesi aplikasinya keluar. Lanjutkan?" data-konfirmasi-judul="Reset Sandi" data-konfirmasi-tombol="Ya, reset">
                                         @csrf <button class="btn btn-outline btn-sm">Reset sandi</button>
                                     </form>
                                     <form method="POST" action="{{ route('akun.status', $u->id) }}" data-konfirmasi="{{ $u->is_active ? $u->name . ' tidak akan bisa masuk sampai diaktifkan lagi.' : $u->name . ' akan bisa masuk kembali.' }}" data-konfirmasi-judul="{{ $u->is_active ? 'Nonaktifkan Akun' : 'Aktifkan Akun' }}" data-konfirmasi-tombol="{{ $u->is_active ? 'Ya, nonaktifkan' : 'Ya, aktifkan' }}">
                                         @csrf <button class="btn btn-outline btn-sm">{{ $u->is_active ? 'Nonaktifkan' : 'Aktifkan' }}</button>
                                     </form>
-                                </div>
                             @endif
+                            </div>
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">Tidak ada akun.</td></tr>
+                    <tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">Tidak ada akun.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -98,10 +100,31 @@
                     </div>
                     <div><label class="form-label">Jabatan (opsional)</label><input class="form-input" name="jabatan" value="{{ old('jabatan') }}"></div>
                 </div>
+                <div><label class="form-label">NIP (opsional)</label><input class="form-input mono" name="nip" value="{{ old('nip') }}" inputmode="numeric" maxlength="30"><div class="text-muted" style="font-size:12px;margin-top:4px;">Tercetak di blok tanda tangan BA.</div></div>
             </div>
             <div class="modal-foot">
                 <button type="button" class="btn btn-outline" id="akunBatal">Batal</button>
                 <button type="submit" class="btn btn-primary">Buat Akun</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div id="ubahModal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="ubahJudul">
+    <div class="modal" style="max-width:480px;">
+        <div class="modal-head">
+            <h3 class="modal-title" id="ubahJudul">Ubah Data Akun</h3>
+            <button type="button" class="modal-close" id="ubahTutup" aria-label="Tutup" style="font-size:24px;">&times;</button>
+        </div>
+        <form method="POST" id="ubahForm" action="#">
+            @csrf
+            <div class="modal-body" style="display:grid;gap:14px;">
+                <div><label class="form-label">Nama lengkap</label><input class="form-input" name="name" id="ubahNama" required></div>
+                <div><label class="form-label">Jabatan</label><input class="form-input" name="jabatan" id="ubahJabatan"></div>
+                <div><label class="form-label">NIP (boleh kosong)</label><input class="form-input mono" name="nip" id="ubahNip" inputmode="numeric" maxlength="30"></div>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-outline" id="ubahBatal">Batal</button>
+                <button type="submit" class="btn btn-primary">Simpan</button>
             </div>
         </form>
     </div>
@@ -117,6 +140,18 @@
     document.getElementById('akunTutup').addEventListener('click', tutup);
     document.getElementById('akunBatal').addEventListener('click', tutup);
     m.addEventListener('click', (e) => { if (e.target === m) tutup(); });
+    const u = document.getElementById('ubahModal');
+    const tutupUbah = () => { u.style.display = 'none'; };
+    document.querySelectorAll('[data-ubah]').forEach(b => b.addEventListener('click', () => {
+        document.getElementById('ubahForm').action = b.dataset.ubah;
+        document.getElementById('ubahNama').value = b.dataset.nama || '';
+        document.getElementById('ubahJabatan').value = b.dataset.jabatan || '';
+        document.getElementById('ubahNip').value = b.dataset.nip || '';
+        u.style.display = 'flex';
+    }));
+    document.getElementById('ubahTutup').addEventListener('click', tutupUbah);
+    document.getElementById('ubahBatal').addEventListener('click', tutupUbah);
+    u.addEventListener('click', (e) => { if (e.target === u) tutupUbah(); });
     const salin = document.getElementById('sandiSalin');
     if (salin) salin.addEventListener('click', async () => {
         try { await navigator.clipboard.writeText(document.getElementById('sandiSementara').textContent.trim()); salin.textContent = 'Tersalin'; } catch (e) { /* salin manual */ }
