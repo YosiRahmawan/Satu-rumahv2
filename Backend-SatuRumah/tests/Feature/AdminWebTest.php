@@ -27,7 +27,7 @@ class AdminWebTest extends TestCase
     {
         parent::setUp();
 
-        $this->admin = $this->makeUser('verif1', 'verifikator');
+        $this->admin = $this->makeUser('admin1', 'admin');
         $this->developer = $this->makeUser('dev1', 'pengembang');
         $this->officer = $this->makeUser('petugas1', 'tim_lapangan');
 
@@ -62,7 +62,7 @@ class AdminWebTest extends TestCase
         $this->submission->files()->update(['status' => 'lolos']);
     }
 
-    public function test_halaman_admin_terbuka_untuk_verifikator(): void
+    public function test_halaman_admin_terbuka_untuk_admin(): void
     {
         $this->actingAs($this->admin);
 
@@ -85,6 +85,48 @@ class AdminWebTest extends TestCase
         $this->get('/notifikasi')->assertOk()
             ->assertSee('Belum dibaca')->assertSee('Sudah dibaca')
             ->assertSee('Pengajuan Baru')->assertSee('Laporan Survei');
+    }
+
+    public function test_login_web_dibatasi_lima_percobaan_per_menit(): void
+    {
+        for ($i = 0; $i < 5; $i++) {
+            $this->post('/login', ['email' => $this->admin->email, 'password' => 'salah'])
+                ->assertSessionHasErrors('email');
+        }
+
+        // Percobaan ke-6 ditolak walau sandinya benar.
+        $this->post('/login', ['email' => $this->admin->email, 'password' => 'Sandi-Uji-2026'])
+            ->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
+    public function test_login_web_menolak_akun_nonaktif(): void
+    {
+        $this->admin->forceFill(['is_active' => false])->save();
+
+        $this->post('/login', ['email' => $this->admin->email, 'password' => 'Sandi-Uji-2026'])
+            ->assertSessionHasErrors('email');
+        $this->assertGuest();
+    }
+
+    public function test_sandi_sementara_memaksa_ganti_sandi_lalu_portal_terbuka(): void
+    {
+        $this->admin->forceFill(['must_change_password' => true])->save();
+        $this->actingAs($this->admin);
+
+        $this->get('/dashboard')->assertRedirect('/ganti-sandi');
+        $this->get('/ganti-sandi')->assertOk();
+
+        $this->post('/ganti-sandi', ['current_password' => 'salah', 'new_password' => 'SandiBaru2026x', 'new_password_confirmation' => 'SandiBaru2026x'])
+            ->assertSessionHasErrors('current_password');
+        $this->post('/ganti-sandi', ['current_password' => 'Sandi-Uji-2026', 'new_password' => 'lemah', 'new_password_confirmation' => 'lemah'])
+            ->assertSessionHasErrors('new_password');
+
+        $this->post('/ganti-sandi', ['current_password' => 'Sandi-Uji-2026', 'new_password' => 'SandiBaru2026x', 'new_password_confirmation' => 'SandiBaru2026x'])
+            ->assertRedirect('/dashboard');
+
+        $this->assertFalse($this->admin->fresh()->must_change_password);
+        $this->get('/dashboard')->assertOk();
     }
 
     public function test_pengembang_tidak_bisa_membuka_web_admin(): void

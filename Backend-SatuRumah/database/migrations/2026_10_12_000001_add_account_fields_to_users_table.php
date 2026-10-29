@@ -8,7 +8,7 @@ return new class extends Migration {
     /**
      * Menambah kolom akun tertutup (whitelisting) pada tabel users.
      * Kolom lama (name, email, password, role, avatar_initials) tidak diubah.
-     * Nilai role yang dipakai: administrator, verifikator, pengembang, tim_lapangan.
+     * Nilai role yang dipakai: admin, pengembang, tim_lapangan (administrator dan verifikator lama digabung menjadi admin).
      */
     public function up(): void
     {

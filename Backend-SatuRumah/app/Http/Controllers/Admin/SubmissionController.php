@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
-/** Antrean dan tindakan verifikator. Semua perpindahan tahap lewat SubmissionWorkflow. */
+/** Antrean dan tindakan admin. Semua perpindahan tahap lewat SubmissionWorkflow. */
 class SubmissionController extends Controller
 {
     public function __construct(private readonly SubmissionWorkflow $workflow)

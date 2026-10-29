@@ -118,7 +118,7 @@ Matriks final **[KEPUTUSAN Q10]**.
 
 ## 6. Pekerjaan di Laravel (berurutan) — historis, butir 1–5 dan 7–8 sudah selesai; butir 6 (PDF/QR) dan penghapusan tabel lama di Fase E
 
-1. Tambah Sanctum; `routes/api.php`; middleware peran (`administrator`, `verifikator`, `pengembang`, `tim_lapangan`).
+1. Tambah Sanctum; `routes/api.php`; middleware peran (`admin`, `pengembang`, `tim_lapangan`).
 2. Model dan relasi untuk tabel baru: `DeveloperProfile`, `Submission`, `SubmissionFile`, `InspectionAssignment`, `InspectionReport`, plus foto.
 3. Migrasi tambahan: `inspection_report_photos`; kolom `maksud_tujuan` dan `status_hasil_evaluasi` pada `inspection_reports`; tabel audit; tabel notifikasi baru; atribut `required` pada katalog slot.
 4. Service tunggal alur status (`SubmissionWorkflow`) dan penomor (`number_sequences` dengan kunci baris `lockForUpdate`).
@@ -162,7 +162,7 @@ Akun seed (hanya `local`/`testing`; di lingkungan lain wajib mengisi `SEED_DEFAU
 |---|---|---|
 | `pengembang` | pengembang | `SatuRumah#2026` (wajib diganti saat masuk pertama) |
 | `tim_lapangan` | tim_lapangan | sama |
-| `verifikator`, `administrator` | Web Admin (ditolak oleh API mobile) | sama |
+| `admin` | Web Admin (ditolak oleh API mobile) | sama |
 
 Menjalankan untuk uji di HP (laptop dan HP satu Wi-Fi):
 
@@ -226,7 +226,7 @@ satu tugas contoh untuk `tim_lapangan` di lingkungan local).
 
 ## 12. Status Fase D (Web Admin pada tabel baru, perbaikan, notifikasi): sudah dikerjakan
 
-Web Admin (sesi Laravel, role `verifikator`/`administrator`) kini membaca dan menulis tabel baru
+Web Admin (sesi Laravel, role `admin`) kini membaca dan menulis tabel baru
 (`submissions`, `submission_files`, `inspection_assignments`, `inspection_reports`, foto). Controller dan model demo
 lama (`Pengajuan`, `DokumenPengajuan`, `SurveyPengajuan`, `MonitoringPengajuan`, `RiwayatPengajuan`, `Notifikasi`)
 sudah dihapus; tabelnya baru dibuang di Fase E. Semua perpindahan tahap lewat `SubmissionWorkflow` (satu aturan untuk

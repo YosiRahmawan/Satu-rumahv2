@@ -62,10 +62,10 @@
                         <div class="input-icon">
                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    d="M3 8l9 6 9-6M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z" />
                             </svg>
                             <input type="email" name="email" class="input" required autofocus
-                                placeholder="verifikator@saturumah.go.id">
+                                placeholder="admin@saturumah.go.id">
                         </div>
                     </div>
 
@@ -74,12 +74,12 @@
                         <div class="input-icon">
                             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 11c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-2a6 6 0 10-10.472 4H4v3h2v3h3v-3h2.528A6 6 0 0018 9z" />
+                                    d="M7 11V8a5 5 0 0110 0v3M6 11h12a1 1 0 011 1v8a1 1 0 01-1 1H6a1 1 0 01-1-1v-8a1 1 0 011-1z" />
                             </svg>
                             <input type="password" name="password" id="password" class="input" required
                                 placeholder="••••••••">
-                            <button type="button" class="toggle-visibility" onclick="togglePw()">
-                                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button type="button" class="toggle-visibility" onclick="togglePw()" aria-label="Tampilkan atau sembunyikan sandi">
+                                <svg id="pwIkon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -94,26 +94,49 @@
                             <input type="checkbox" name="remember" checked>
                             Ingat sesi login ini
                         </label>
-                        <a href="#">Bantuan Akses?</a>
+                        <a href="#" id="bantuanBuka">Bantuan Akses?</a>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-block">
-                        Masuk ke Portal Verifikator
-                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                    </button>
+                    <button type="submit" class="btn btn-primary btn-block">Masuk</button>
                 </form>
             </div>
         </div>
     </div>
 
+    <div id="bantuanModal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="bantuanJudul">
+        <div class="modal" style="max-width:460px;">
+            <div class="modal-head">
+                <h3 class="modal-title" id="bantuanJudul">Bantuan Akses</h3>
+                <button type="button" class="modal-close" id="bantuanTutup" aria-label="Tutup" style="font-size:24px;">&times;</button>
+            </div>
+            <div class="modal-body" style="display:grid;gap:14px;font-size:14px;">
+                <div><strong>Lupa sandi</strong><br>Minta admin lain membuka menu Akun lalu memilih Reset sandi untuk akun Anda. Anda akan menerima sandi sementara dan diminta membuat sandi baru saat masuk. Bila tidak ada admin lain yang bisa masuk, minta petugas IT menjalankan perintah darurat <code>akun:reset-sandi</code> di server.</div>
+                <div><strong>Muncul "Terlalu banyak percobaan masuk"</strong><br>Akun dikunci sementara demi keamanan. Tunggu satu menit, lalu coba lagi.</div>
+                <div><strong>Belum punya akun</strong><br>Akun dibuat oleh admin lewat menu Akun, tidak ada pendaftaran mandiri.</div>
+                <div><strong>Pengembang dan petugas lapangan</strong><br>Portal ini hanya untuk admin Disperwaskim. Gunakan aplikasi SATU RUMAH di HP.</div>
+            </div>
+            <div class="modal-foot"><button type="button" class="btn btn-primary" id="bantuanOk">Mengerti</button></div>
+        </div>
+    </div>
+
     <script>
+        const EYE = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+        const EYE_OFF = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3l18 18M10.6 10.6a3 3 0 004.2 4.2M9.9 5.1A9.8 9.8 0 0112 5c4.5 0 8.3 2.9 9.5 7a10 10 0 01-2.6 4.2M6.2 6.2A10 10 0 002.5 12c1.2 4.1 5 7 9.5 7a9.700 9.700 0 003.8-.8"/>';
         function togglePw() {
             const input = document.getElementById('password');
-            input.type = input.type === 'password' ? 'text' : 'password';
+            const tampil = input.type === 'password';
+            input.type = tampil ? 'text' : 'password';
+            document.getElementById('pwIkon').innerHTML = tampil ? EYE_OFF : EYE;
         }
+        (function () {
+            const m = document.getElementById('bantuanModal');
+            const tutup = () => { m.style.display = 'none'; };
+            document.getElementById('bantuanBuka').addEventListener('click', (e) => { e.preventDefault(); m.style.display = 'flex'; });
+            document.getElementById('bantuanTutup').addEventListener('click', tutup);
+            document.getElementById('bantuanOk').addEventListener('click', tutup);
+            m.addEventListener('click', (e) => { if (e.target === m) tutup(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') tutup(); });
+        })();
     </script>
 </body>
 

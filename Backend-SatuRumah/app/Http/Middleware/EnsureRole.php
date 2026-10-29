@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Membatasi route menurut role akun: `role:verifikator,administrator`.
+ * Membatasi route menurut role akun: `role:admin`.
  * Permintaan API mendapat galat JSON; permintaan web dialihkan ke login.
  */
 class EnsureRole
@@ -16,7 +16,7 @@ class EnsureRole
     {
         $user = $request->user();
 
-        if ($user && in_array($user->role, $roles, true)) {
+        if ($user && $user->is_active && in_array($user->role, $roles, true)) {
             return $next($request);
         }
 

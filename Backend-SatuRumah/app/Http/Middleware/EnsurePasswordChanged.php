@@ -12,6 +12,10 @@ class EnsurePasswordChanged
     public function handle(Request $request, Closure $next): Response
     {
         if ($request->user()?->must_change_password) {
+            if (!$request->is('api/*') && !$request->expectsJson()) {
+                return redirect()->route('sandi.ubah')->with('warning', 'Ganti sandi sementara Anda terlebih dahulu.');
+            }
+
             return response()->json([
                 'error' => ['code' => 'ERR-022', 'message' => 'Ganti kata sandi sementara Anda terlebih dahulu.'],
             ], 403);

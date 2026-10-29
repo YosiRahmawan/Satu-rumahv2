@@ -24,7 +24,7 @@ class DashboardRingkasanTest extends TestCase
         $mk = fn (string $u, string $r) => User::factory()->create([
             'username' => $u, 'role' => $r, 'password' => 'Sandi-Uji-2026', 'is_active' => true, 'must_change_password' => false,
         ]);
-        $this->admin = $mk('verif1', 'verifikator');
+        $this->admin = $mk('admin1', 'admin');
         $this->developer = $mk('dev1', 'pengembang');
         $this->officer = $mk('petugas1', 'tim_lapangan');
     }
@@ -125,7 +125,7 @@ class DashboardRingkasanTest extends TestCase
         $this->get('/dashboard')->assertOk()->assertSee('id="kpi"', false)->assertSee('Disetujui');
     }
 
-    public function test_ringkasan_hanya_untuk_verifikator_dan_administrator(): void
+    public function test_ringkasan_hanya_untuk_admin(): void
     {
         $this->actingAs($this->developer)->get('/dashboard/ringkasan')->assertRedirect('/login');
     }

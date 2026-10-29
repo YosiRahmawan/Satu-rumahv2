@@ -65,7 +65,7 @@
                                 <div class="text-muted" style="font-size:13px;">{{ $e->description }}</div>
                             @endif
                         @endif
-                        <div class="tl-by">{{ $e->actor ? 'Dilakukan oleh ' : 'Sistem' }}<strong>{{ $e->actor?->name }}</strong>@if($e->actor) &middot; {{ ['verifikator' => 'Verifikator', 'administrator' => 'Administrator', 'pengembang' => 'Pengembang', 'tim_lapangan' => 'Petugas lapangan'][$e->actor->role] ?? $e->actor->role }}@endif</div>
+                        <div class="tl-by">{{ $e->actor ? 'Dilakukan oleh ' : 'Sistem' }}<strong>{{ $e->actor?->name }}</strong>@if($e->actor) &middot; {{ ['admin' => 'Admin', 'pengembang' => 'Pengembang', 'tim_lapangan' => 'Petugas lapangan'][$e->actor->role] ?? $e->actor->role }}@endif</div>
                     </div>
                 </div>
             @empty

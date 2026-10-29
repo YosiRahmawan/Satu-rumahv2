@@ -36,8 +36,8 @@ class AuthResult {
   const AuthResult(this.user, this.mustChangePassword);
 }
 
-/// Nilai `users.role` di server → role aplikasi. Role web (verifikator,
-/// administrator) tidak boleh masuk lewat aplikasi sehingga menjadi `guest`.
+/// Nilai `users.role` di server → role aplikasi. Role web (admin) tidak boleh
+/// masuk lewat aplikasi sehingga menjadi `guest`.
 AppRole appRoleFromApi(String role) => switch (role) {
   'pengembang' => AppRole.developer,
   'tim_lapangan' => AppRole.perwaskim,

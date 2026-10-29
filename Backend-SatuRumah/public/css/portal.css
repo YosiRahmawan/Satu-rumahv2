@@ -1619,3 +1619,9 @@ table {
 .notif-icon.is-ok { background: var(--success-bg); color: var(--success-text); }
 .notif-icon.is-muted { background: #f1f5f9; color: var(--text-muted); }
 .notif.read .notif-icon { opacity: .7; }
+
+/* Kolom sandi dengan tombol mata */
+.pw-wrap { position: relative; }
+.pw-wrap .form-input { padding-right: 44px; }
+.pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: flex; background: none; border: 0; color: var(--text-light); cursor: pointer; }
+.pw-toggle:hover { color: var(--text); }

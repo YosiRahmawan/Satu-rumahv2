@@ -45,10 +45,10 @@ class Notifier
         return $this->toUser($s->developer_id, $s, $type, $title, $body, $data);
     }
 
-    /** Semua akun Web Admin aktif (verifikator dan administrator). @param array<string, mixed> $data */
+    /** Semua akun Web Admin aktif. @param array<string, mixed> $data */
     public function toVerifiers(Submission $s, string $type, string $title, ?string $body = null, array $data = []): void
     {
-        User::whereIn('role', ['verifikator', 'administrator'])
+        User::where('role', 'admin')
             ->where('is_active', true)
             ->pluck('id')
             ->each(fn (int $id) => $this->toUser($id, $s, $type, $title, $body, $data));

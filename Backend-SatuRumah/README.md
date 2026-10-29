@@ -68,8 +68,7 @@ Gunakan kredensial berikut untuk masuk ke portal:
 
 | Role | Email | Password |
 | :--- | :--- | :--- |
-| **Verifikator Utama** | `admin@saturumah.go.id` | `password` |
-| **Verifikator Teknis** | `verifikator@saturumah.go.id` | `password` |
+| **Admin** | `admin@saturumah.go.id` | `SatuRumah#2026` (sementara, wajib diganti saat masuk pertama) |
 | **Surveyor / Perwaskim** | `rahmat@saturumah.go.id` | `password` |
 
 ---

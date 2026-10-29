@@ -44,6 +44,12 @@
                         <span class="nav-count">{{ $antreanCount }}</span>
                     @endif
                 </a>
+                <a href="{{ route('akun.index') }}" class="nav-link {{ request()->routeIs('akun.*') ? 'active' : '' }}">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a4 4 0 00-3-3.9M9 11a4 4 0 100-8 4 4 0 000 8zM2 20v-1a5 5 0 015-5h4a5 5 0 015 5v1M16 3.1a4 4 0 010 7.8"></path>
+                    </svg>
+                    Akun
+                </a>
             </nav>
 
             <div class="sidebar-user">
@@ -52,6 +58,9 @@
                     <div class="sidebar-user-name">{{ auth()->user()->name ?? 'Verifikator Disperwaskim' }}</div>
                     <div class="sidebar-user-role">{{ ucfirst(auth()->user()->role) }}</div>
                 </div>
+                <a href="{{ route('sandi.ubah') }}" class="logout-btn" title="Ganti sandi" style="display:flex;align-items:center;">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a4 4 0 11-3.9 4.9L4 19v2h3v-2h2v-2h2l1.6-1.6A4 4 0 0115 7z"></path></svg>
+                </a>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="logout-btn" title="Keluar">

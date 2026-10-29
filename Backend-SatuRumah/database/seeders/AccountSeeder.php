@@ -24,8 +24,7 @@ class AccountSeeder extends Seeder
         }
 
         $accounts = [
-            ['username' => 'administrator', 'name' => 'Administrator Sistem', 'role' => 'administrator', 'jabatan' => 'Administrator', 'email' => 'administrator@saturumah.go.id'],
-            ['username' => 'verifikator', 'name' => 'Verifikator Disperwaskim', 'role' => 'verifikator', 'jabatan' => 'Verifikator', 'email' => 'verifikator.akun@saturumah.go.id'],
+            ['username' => 'admin', 'name' => 'Admin Disperwaskim', 'role' => 'admin', 'jabatan' => 'Admin', 'email' => 'admin@saturumah.go.id'],
             ['username' => 'pengembang', 'name' => 'PT Pengembang Contoh', 'role' => 'pengembang', 'jabatan' => 'Direktur', 'email' => 'pengembang@saturumah.go.id'],
             ['username' => 'tim_lapangan', 'name' => 'Petugas Lapangan Contoh', 'role' => 'tim_lapangan', 'jabatan' => 'Tim Perwaskim', 'email' => 'lapangan@saturumah.go.id'],
         ];

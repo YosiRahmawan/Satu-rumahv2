@@ -40,14 +40,12 @@ tabel ini lagi. **Tabelnya sendiri masih ada di database**; pembuangannya (migra
 | Konsep | Flutter (`AppRole`) | Laravel (`users.role`, saat ini) | Nilai yang disepakati |
 |---|---|---|---|
 | Pengembang | `developer` | (tidak ada di seeder) | `pengembang` |
-| Admin / Verifikator | `admin` | `verifikator` (seeder), `admin_dpkp` (default kolom) | `verifikator` |
-| Administrator sistem | (tidak ada) | `administrator` (hanya di config) | `administrator` |
+| Admin (Verifikator dan Administrator digabung) | `admin` | `admin` (sebelumnya `verifikator`/`administrator`, digabung 29 Okt 2026) | `admin` |
 | Pengawas / Perwaskim | `perwaskim` | `perwaskim` (seeder) | `tim_lapangan` |
 
-Status: `AccountSeeder` membuat akun `administrator`, `verifikator`, `pengembang`, `tim_lapangan` (Fase A); login dan
-peran berasal dari backend. Flutter memetakan `pengembang→developer`, `tim_lapangan→perwaskim`. Role `verifikator`
-dan `administrator` masuk lewat Web Admin; keduanya sama-sama punya akses Web Admin saat ini (pemisahan hak
-Administrator vs Verifikator belum dibedakan, **[KEPUTUSAN Q10]**). `AppRole.admin` di Flutter masih ada untuk layar
+Status: `AccountSeeder` membuat akun `admin`, `pengembang`, `tim_lapangan` (Fase A); login dan
+peran berasal dari backend. Flutter memetakan `pengembang→developer`, `tim_lapangan→perwaskim`. Role `admin`
+masuk lewat Web Admin (satu role untuk semua pekerjaan admin, **[KEPUTUSAN Q10: keputusan tim, belum dikonfirmasi Disperwaskim]**). `AppRole.admin` di Flutter masih ada untuk layar
 Admin prototipe (bagian 9).
 
 ---
@@ -259,7 +257,7 @@ laporan, keputusan akhir); riwayat, notifikasi dalam aplikasi, kirim revisi dari
 
 **Belum ada:** PDF dan QR dari server, tindakan `diterbitkan` dan `dibatalkan` (Fase E, menunggu Q09). Tabel lama sudah punya migrasi pembuangan (`2026_10_26_140000`) tetapi baru hilang setelah `migrate` dijalankan;
 push notification; layar timeline di Flutter; SLA hari kerja dan hari libur; unggah berkas keputusan oleh Admin;
-pemisahan hak Administrator vs Verifikator.
+pemisahan hak admin (bila Disperwaskim meminta dua role).
 
 **Keputusan Disperwaskim yang terbuka.** Kolom kanan adalah asumsi sementara di kode, **bukan keputusan resmi**:
 
@@ -270,7 +268,7 @@ pemisahan hak Administrator vs Verifikator.
 | Q06/Q07 | Slot mana yang wajib; hubungan 18 slot dengan DOC01–DOC16 | Semua wajib kecuali S3-10; pemetaan DOC belum dibuat |
 | Q08 | Satu petugas atau tim; pengalihan dan pembatalan tugas | Satu petugas; pengalihan lewat jadwal ulang |
 | Q09 | Penandatangan BA, arti final, siapa membuat PDF resmi | `final` = terkirim petugas; belum ada PDF server |
-| Q10 | Matriks hak Administrator vs Verifikator | Keduanya akses Web Admin penuh |
+| Q10 | Matriks hak Administrator vs Verifikator | Digabung menjadi satu role `admin`; semua tindakan tercatat dengan nama pelakunya di Riwayat |
 | Q16 | Waktu penghentian layar Admin di Flutter | Layar Admin prototipe masih ada |
 
 **Keputusan bahwa persetujuan akhir sah** (setuju/tolak, nomor dan tanggal SK) saat ini dicatat oleh verifikator di

@@ -18,7 +18,7 @@ class DemoAssignmentSeeder extends Seeder
     {
         $developer = User::where('username', 'pengembang')->first();
         $officer = User::where('username', 'tim_lapangan')->first();
-        $admin = User::where('username', 'verifikator')->first();
+        $admin = User::where('role', 'admin')->first();
         if (!$developer || !$officer || !$admin) {
             return;
         }

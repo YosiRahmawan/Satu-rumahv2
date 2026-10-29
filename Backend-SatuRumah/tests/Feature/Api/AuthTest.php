@@ -93,9 +93,9 @@ class AuthTest extends TestCase
 
     public function test_akun_web_admin_tidak_bisa_masuk_lewat_api(): void
     {
-        $this->makeUser(['username' => 'verif1', 'role' => 'verifikator']);
+        $this->makeUser(['username' => 'admin1', 'role' => 'admin']);
 
-        $this->login('verif1')->assertStatus(403)->assertJsonPath('error.code', 'ERR-022');
+        $this->login('admin1')->assertStatus(403)->assertJsonPath('error.code', 'ERR-022');
     }
 
     public function test_isian_login_kosong_memakai_format_galat_baku(): void
