@@ -17,7 +17,6 @@
     .tbl th, .tbl td { border: 1px solid #555; padding: 3px 5px; text-align: left; }
     .ttd { margin-top: 18px; }
     .ttd td { width: 50%; text-align: center; vertical-align: top; padding: 0 8px; }
-    .ttd img { height: 60px; max-width: 200px; }
     .ttd .belum { height: 60px; color: #888; padding-top: 22px; }
     .foto td { width: 33%; padding: 3px; vertical-align: top; font-size: 9px; }
     .foto img { width: 100%; }
@@ -88,11 +87,11 @@
     <table class="ttd">
         <tr>
             <td>Ketua Pengawas Lapangan<br>
-                @if($ketua)<img src="{{ $ketua['img'] }}"><br><strong>{{ $ketua['sig']->signer?->name }}</strong><br>{{ $ketua['sig']->signer?->jabatan }}<br>{{ $ketua['sig']->signed_at->translatedFormat('d F Y, H.i') }} WIB
+                @if($ketua)<img src="{{ $ketua['img'] }}" width="{{ $ketua['w'] }}" height="{{ $ketua['h'] }}"><br><strong>{{ $ketua['sig']->signer?->name }}</strong><br>{{ $ketua['sig']->signer?->jabatan }}<br>@if($ketua['sig']->signer?->nip)NIP {{ $ketua['sig']->signer->nip }}<br>@endif{{ $ketua['sig']->signed_at->translatedFormat('d F Y, H.i') }} WIB
                 @else<div class="belum">(belum ditandatangani)</div>@endif
             </td>
             <td>Tim Verifikator Disperwaskim<br>
-                @if($admin)<img src="{{ $admin['img'] }}"><br><strong>{{ $admin['sig']->signer?->name }}</strong><br>{{ $admin['sig']->signer?->jabatan }}<br>{{ $admin['sig']->signed_at->translatedFormat('d F Y, H.i') }} WIB
+                @if($admin)<img src="{{ $admin['img'] }}" width="{{ $admin['w'] }}" height="{{ $admin['h'] }}"><br><strong>{{ $admin['sig']->signer?->name }}</strong><br>{{ $admin['sig']->signer?->jabatan }}<br>@if($admin['sig']->signer?->nip)NIP {{ $admin['sig']->signer->nip }}<br>@endif{{ $admin['sig']->signed_at->translatedFormat('d F Y, H.i') }} WIB
                 @else<div class="belum">(belum ditandatangani)</div>@endif
             </td>
         </tr>

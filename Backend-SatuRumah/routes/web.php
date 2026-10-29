@@ -48,6 +48,7 @@ Route::middleware(['auth', 'role:admin', 'password.changed'])->group(function ()
 
     Route::get('/akun', [AccountController::class, 'index'])->name('akun.index');
     Route::post('/akun', [AccountController::class, 'store'])->name('akun.store');
+    Route::post('/akun/{id}', [AccountController::class, 'update'])->name('akun.update');
     Route::post('/akun/{id}/reset-sandi', [AccountController::class, 'resetPassword'])->name('akun.reset');
     Route::post('/akun/{id}/status', [AccountController::class, 'toggleActive'])->name('akun.status');
 

@@ -69,6 +69,32 @@ class AccountManagementTest extends TestCase
         $this->assertTrue($this->admin->fresh()->is_active);
     }
 
+    public function test_nip_disimpan_diubah_unik_dan_harus_18_digit(): void
+    {
+        $this->actingAs($this->admin)->post('/akun', [
+            'name' => 'Petugas Bernip', 'username' => 'petugas_nip', 'email' => 'nip@saturumah.go.id', 'role' => 'tim_lapangan', 'nip' => '1980 0101 2005 01 1001',
+        ])->assertSessionHas('success');
+        $this->assertSame('198001012005011001', User::where('username', 'petugas_nip')->value('nip'));
+
+        // Salah format dan duplikat ditolak.
+        $this->post('/akun', ['name' => 'X', 'username' => 'x1', 'email' => 'x1@saturumah.go.id', 'role' => 'admin', 'nip' => '123'])->assertSessionHasErrors('nip');
+        // NIP lama (9 digit) atau tanpa NIP juga diterima.
+        $this->post('/akun', ['name' => 'Lama', 'username' => 'lama1', 'email' => 'lama1@saturumah.go.id', 'role' => 'admin', 'nip' => '196512345'])->assertSessionHas('success');
+        $this->post('/akun', ['name' => 'Tanpa', 'username' => 'tanpa1', 'email' => 'tanpa1@saturumah.go.id', 'role' => 'admin'])->assertSessionHas('success');
+        $this->post('/akun', ['name' => 'Y', 'username' => 'y1', 'email' => 'y1@saturumah.go.id', 'role' => 'admin', 'nip' => '198001012005011001'])->assertSessionHasErrors('nip');
+
+        // Ubah data akun yang ada: pasang NIP, ubah jabatan, lalu kosongkan NIP.
+        $petugas = $this->akun('petugas1', 'tim_lapangan');
+        $this->post("/akun/{$petugas->id}", ['name' => 'Petugas Satu', 'jabatan' => 'Ketua Tim', 'nip' => '199001012015011002'])->assertSessionHas('success');
+        $petugas->refresh();
+        $this->assertSame(['Petugas Satu', 'Ketua Tim', '199001012015011002'], [$petugas->name, $petugas->jabatan, $petugas->nip]);
+        $this->post("/akun/{$petugas->id}", ['name' => 'Petugas Satu', 'nip' => ''])->assertSessionHas('success');
+        $this->assertNull($petugas->fresh()->nip);
+
+        $this->get('/akun')->assertOk()->assertSee('198001012005011001');
+        $this->assertSame('tim_lapangan', $petugas->fresh()->role); // role tidak ikut berubah
+    }
+
     public function test_akun_nonaktif_tidak_bisa_masuk_dan_sesinya_ditolak(): void
     {
         $petugas = $this->akun('petugas1', 'tim_lapangan');

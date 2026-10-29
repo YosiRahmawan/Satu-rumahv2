@@ -28,6 +28,7 @@ class User extends Authenticatable
         'avatar_initials',
         'username',
         'jabatan',
+        'nip',
         'phone',
         'is_active',
         'must_change_password',

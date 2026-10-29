@@ -20,7 +20,7 @@ use Illuminate\Validation\ValidationException;
 class SignatureService
 {
     public const DISK = 'local';
-    public const MAX_BYTES = 2 * 1024 * 1024;
+    public const MAX_BYTES = 4 * 1024 * 1024;
 
     public function __construct(private readonly Notifier $notifier)
     {
@@ -85,7 +85,7 @@ class SignatureService
         if ($request->hasFile('signature')) {
             $file = $request->file('signature');
             if (!$file->isValid() || $file->getSize() > self::MAX_BYTES) {
-                throw ValidationException::withMessages(['signature' => ['Berkas tanda tangan tidak valid atau lebih dari 2 MB.']]);
+                throw ValidationException::withMessages(['signature' => ['Berkas tanda tangan tidak valid atau lebih dari 4 MB.']]);
             }
 
             return (string) file_get_contents($file->getRealPath());
@@ -97,25 +97,29 @@ class SignatureService
         }
         $bytes = base64_decode($m[2], true);
         if ($bytes === false || strlen($bytes) > self::MAX_BYTES) {
-            throw ValidationException::withMessages(['signature' => ['Gambar tanda tangan rusak atau lebih dari 2 MB.']]);
+            throw ValidationException::withMessages(['signature' => ['Gambar tanda tangan rusak atau lebih dari 4 MB.']]);
         }
 
         return $bytes;
     }
 
     /**
-     * Validasi isi gambar lalu normalkan: hanya PNG/JPEG asli, 80..4000 px, dienkode ulang menjadi PNG
-     * (metadata dan muatan tersembunyi hilang), diperkecil maks 600x250, putih menjadi transparan.
+     * Validasi isi gambar lalu normalkan: hanya PNG/JPEG asli, dienkode ulang menjadi PNG (metadata dan muatan
+     * tersembunyi hilang). Coretan (`draw`) diperkecil maks 600x250 dan latar putihnya dibuat transparan.
+     * Unggahan (`upload`, mis. visualisasi TTE dari Suresman) dipertahankan apa adanya dan hanya diperkecil bila
+     * melebihi 1600x1000 piksel, agar kode QR di dalamnya tetap terbaca; PDF menyesuaikan ukuran tampil.
      */
-    public function normalize(string $bytes): string
+    public function normalize(string $bytes, string $method = 'draw'): string
     {
+        $upload = $method === 'upload';
         $info = strlen($bytes) > 0 ? @getimagesizefromstring($bytes) : false;
         if (!$info || !in_array($info[2], [IMAGETYPE_PNG, IMAGETYPE_JPEG], true)) {
             throw ValidationException::withMessages(['signature' => ['Tanda tangan harus berupa gambar PNG atau JPEG yang valid.']]);
         }
         [$w, $h] = $info;
-        if ($w < 80 || $h < 40 || $w > 4000 || $h > 4000) {
-            throw ValidationException::withMessages(['signature' => ['Ukuran gambar harus antara 80x40 dan 4000x4000 piksel.']]);
+        $min = $upload ? [40, 20] : [80, 40];
+        if ($w < $min[0] || $h < $min[1] || $w > 5000 || $h > 5000) {
+            throw ValidationException::withMessages(['signature' => ["Ukuran gambar harus antara {$min[0]}x{$min[1]} dan 5000x5000 piksel."]]);
         }
 
         $src = @imagecreatefromstring($bytes);
@@ -123,7 +127,8 @@ class SignatureService
             throw ValidationException::withMessages(['signature' => ['Gambar tanda tangan rusak.']]);
         }
 
-        $scale = min(1, 600 / $w, 250 / $h);
+        [$maxW, $maxH] = $upload ? [1600, 1000] : [600, 250];
+        $scale = min(1, $maxW / $w, $maxH / $h);
         $nw = max(1, (int) round($w * $scale));
         $nh = max(1, (int) round($h * $scale));
         $dst = imagecreatetruecolor($nw, $nh);
@@ -134,9 +139,17 @@ class SignatureService
         imagedestroy($src);
 
         $tinta = 0;
+        $dasar = imagecolorat($dst, 0, 0);
         for ($y = 0; $y < $nh; $y++) {
             for ($x = 0; $x < $nw; $x++) {
                 $c = imagecolorat($dst, $x, $y);
+                if ($upload) {
+                    // Unggahan: hanya tolak gambar polos (semua piksel sama); warna tidak diubah.
+                    if ($c !== $dasar) {
+                        $tinta++;
+                    }
+                    continue;
+                }
                 $a = ($c >> 24) & 0x7F;
                 $r = ($c >> 16) & 0xFF; $g = ($c >> 8) & 0xFF; $b = $c & 0xFF;
                 if ($a < 127 && $r >= 235 && $g >= 235 && $b >= 235) {
@@ -148,7 +161,7 @@ class SignatureService
         }
         if ($tinta < max(20, (int) ($nw * $nh * 0.001))) {
             imagedestroy($dst);
-            throw ValidationException::withMessages(['signature' => ['Tanda tangan kosong. Gambar tanda tangan Anda terlebih dahulu.']]);
+            throw ValidationException::withMessages(['signature' => ['Gambar tanda tangan kosong atau polos. Pilih gambar yang benar.']]);
         }
 
         ob_start();
@@ -182,7 +195,7 @@ class SignatureService
             throw new \DomainException('Isi BA telah berubah. Muat ulang BA lalu periksa kembali sebelum menandatangani.');
         }
 
-        $png = $this->normalize($imageBytes);
+        $png = $this->normalize($imageBytes, $method);
 
         return DB::transaction(function () use ($r, $user, $role, $method, $png, $version, $ip) {
             $r = InspectionReport::lockForUpdate()->findOrFail($r->id);

@@ -26,12 +26,14 @@ class AccountController extends Controller
 
     public function store(Request $request)
     {
+        $this->bersihkanNip($request);
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'username' => ['required', 'alpha_dash', 'max:50', 'unique:users,username'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'role' => ['required', Rule::in(array_keys(self::ROLES))],
             'jabatan' => ['nullable', 'string', 'max:100'],
+            'nip' => ['nullable', 'digits_between:8,25', 'unique:users,nip'],
         ]);
 
         $sandi = User::sandiSementara();
@@ -42,6 +44,29 @@ class AccountController extends Controller
 
         return back()->with('success', "Akun {$data['name']} dibuat.")
             ->with('sandi_sementara', ['nama' => $data['name'], 'email' => $data['email'], 'sandi' => $sandi]);
+    }
+
+    /** Mengubah nama, jabatan, dan NIP. Email, username, dan role tidak diubah dari sini. */
+    public function update(Request $request, int $id)
+    {
+        $user = User::findOrFail($id);
+        $this->bersihkanNip($request);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'jabatan' => ['nullable', 'string', 'max:100'],
+            'nip' => ['nullable', 'digits_between:8,25', Rule::unique('users', 'nip')->ignore($user->id)],
+        ]);
+        $user->forceFill($data + ['nip' => null])->save(); // NIP kosong disimpan sebagai null
+
+        return back()->with('success', "Data {$user->name} diperbarui.");
+    }
+
+    /** NIP sering ditulis dengan spasi atau titik; hanya angkanya yang disimpan. */
+    private function bersihkanNip(Request $request): void
+    {
+        if ($request->filled('nip')) {
+            $request->merge(['nip' => preg_replace('/\D+/', '', (string) $request->input('nip'))]);
+        }
     }
 
     public function resetPassword(Request $request, int $id)

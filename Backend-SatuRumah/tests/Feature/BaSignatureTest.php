@@ -107,9 +107,9 @@ class BaSignatureTest extends TestCase
         // File privat berupa PNG hasil enkode ulang, bukan gambar mentah dari klien.
         $png = Storage::disk('local')->get($sig->signature_path);
         $this->assertSame(IMAGETYPE_PNG, getimagesizefromstring($png)[2]);
-        // Latar putih menjadi transparan.
+        // Unggahan (mis. visualisasi TTE) dipertahankan apa adanya: latar tidak diubah menjadi transparan.
         $im = imagecreatefromstring($png);
-        $this->assertSame(127, (imagecolorat($im, 2, 2) >> 24) & 0x7F);
+        $this->assertSame(0, (imagecolorat($im, 2, 2) >> 24) & 0x7F);
     }
 
     public function test_ketua_menandatangani_dengan_gambar_langsung_data_url_dan_jpeg(): void
@@ -149,14 +149,44 @@ class BaSignatureTest extends TestCase
         $this->apiSign($this->ketua, bytes: 'bukan gambar')->assertStatus(422);
         $this->apiSign($this->ketua, bytes: "<?php echo 'x';")->assertStatus(422);
         $this->apiSign($this->ketua, bytes: $this->gambar(false))->assertStatus(422); // kosong
-        $this->apiSign($this->ketua, bytes: $this->gambar(true, 40, 20))->assertStatus(422); // terlalu kecil
-        $this->apiSign($this->ketua, bytes: $this->gambar(true, 4100, 100))->assertStatus(422); // terlalu lebar
-        $this->apiSign($this->ketua, bytes: str_repeat("\0", 2 * 1024 * 1024 + 10))->assertStatus(422); // lebih dari 2 MB
+        $this->apiSign($this->ketua, bytes: $this->gambar(true, 30, 15))->assertStatus(422); // terlalu kecil
+        $this->apiSign($this->ketua, bytes: $this->gambar(true, 5100, 100))->assertStatus(422); // terlalu lebar
+        $this->apiSign($this->ketua, bytes: str_repeat("\0", 4 * 1024 * 1024 + 10))->assertStatus(422); // lebih dari 4 MB
         $gif = imagecreatetruecolor(120, 60);
         ob_start();
         imagegif($gif);
         $this->apiSign($this->ketua, bytes: (string) ob_get_clean())->assertStatus(422); // GIF tidak diizinkan
         $this->assertNull($this->signature('ketua'));
+    }
+
+    public function test_unggahan_visualisasi_dipertahankan_besar_dan_berwarna_sedangkan_coretan_diperkecil_dan_transparan(): void
+    {
+        $svc = app(SignatureService::class);
+        // Gambar berwarna (mirip visualisasi TTE dengan kotak QR) 1000x400: ukuran dan warna terjaga saat unggah.
+        $im = imagecreatetruecolor(1000, 400);
+        imagefill($im, 0, 0, imagecolorallocate($im, 255, 255, 255));
+        imagefilledrectangle($im, 20, 20, 200, 200, imagecolorallocate($im, 30, 60, 160));
+        ob_start();
+        imagepng($im);
+        $png = (string) ob_get_clean();
+
+        $up = imagecreatefromstring($svc->normalize($png, 'upload'));
+        $this->assertSame([1000, 400], [imagesx($up), imagesy($up)]);
+        $this->assertSame(0, (imagecolorat($up, 2, 2) >> 24) & 0x7F); // latar putih tidak dibuat transparan
+        $this->assertSame(0x1E3CA0, imagecolorat($up, 100, 100) & 0xFFFFFF);
+
+        $draw = imagecreatefromstring($svc->normalize($png, 'draw'));
+        $this->assertLessThanOrEqual(600, imagesx($draw));
+        $this->assertSame(127, (imagecolorat($draw, 1, 1) >> 24) & 0x7F);
+
+        // Terlalu besar diperkecil menjadi maks 1600x1000; gambar polos tetap ditolak.
+        $besar = imagecreatetruecolor(3200, 800);
+        imagefilledrectangle($besar, 100, 100, 600, 600, imagecolorallocate($besar, 200, 0, 0));
+        ob_start();
+        imagepng($besar);
+        $this->assertSame(1600, imagesx(imagecreatefromstring($svc->normalize((string) ob_get_clean(), 'upload'))));
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+        $svc->normalize($this->gambar(false), 'upload');
     }
 
     public function test_permintaan_berulang_idempoten_dan_versi_usang_ditolak(): void

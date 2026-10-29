@@ -47,8 +47,8 @@ class BaPdfService
             'resmi' => self::resmi(),
             'qr' => $this->qr($this->verificationUrl($r)),
             'verifyUrl' => $this->verificationUrl($r),
-            'ketua' => $ketua ? ['sig' => $ketua, 'img' => $this->dataUri($disk->get($ketua->signature_path), 'image/png')] : null,
-            'admin' => $admin ? ['sig' => $admin, 'img' => $this->dataUri($disk->get($admin->signature_path), 'image/png')] : null,
+            'ketua' => $ketua ? ['sig' => $ketua] + $this->tandaTangan($disk->get($ketua->signature_path)) : null,
+            'admin' => $admin ? ['sig' => $admin] + $this->tandaTangan($disk->get($admin->signature_path)) : null,
             'foto' => $r->photos->map(fn ($p) => ['posisi' => $p->position, 'catatan' => $p->note, 'uri' => $this->fotoUri($p->storage_path)])->all(),
             'hash' => $this->signatures->documentHash($r),
         ])->render();
@@ -67,6 +67,15 @@ class BaPdfService
         $r->forceFill(['pdf_path' => $path, 'pdf_hash' => hash('sha256', $pdf)])->save();
 
         return $path;
+    }
+
+    /** Gambar tanda tangan sebagai data URI beserta ukuran tampil yang muat di kotak 235x100 titik (rasio terjaga). */
+    private function tandaTangan(string $png): array
+    {
+        [$w, $h] = getimagesizefromstring($png) ?: [235, 100];
+        $skala = min(235 / $w, 100 / $h);
+
+        return ['img' => $this->dataUri($png, 'image/png'), 'w' => max(1, (int) round($w * $skala)), 'h' => max(1, (int) round($h * $skala))];
     }
 
     private function qr(string $url): string

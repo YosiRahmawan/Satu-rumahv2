@@ -293,7 +293,7 @@
 
                 <div id="ttdUpload" style="display:none;">
                     <input type="file" id="ttdBerkas" accept="image/png,image/jpeg" class="form-input">
-                    <div class="text-muted" style="font-size:12px;margin-top:4px;">PNG atau JPEG, maksimal 2 MB. Latar putih otomatis dibuat transparan.</div>
+                    <div class="text-muted" style="font-size:12px;margin-top:4px;">Gambar visualisasi TTE (unduh dari suresman.tasikmalayakota.go.id/visualcustom dengan NIP Anda) atau gambar tanda tangan. PNG atau JPEG, maksimal 4 MB; ukuran menyesuaikan di PDF.</div>
                     <button type="button" class="btn btn-outline btn-sm" id="ttdGanti" style="display:none;margin-top:6px;">Hapus gambar</button>
                 </div>
 
@@ -370,7 +370,7 @@
     $('ttdBerkas').addEventListener('change', (e) => {
         const f = e.target.files[0];
         if (!f) return reset();
-        if (!['image/png', 'image/jpeg'].includes(f.type) || f.size > 2 * 1024 * 1024) { alert('Pilih gambar PNG atau JPEG maksimal 2 MB.'); return reset(); }
+        if (!['image/png', 'image/jpeg'].includes(f.type) || f.size > 4 * 1024 * 1024) { alert('Pilih gambar PNG atau JPEG maksimal 4 MB.'); return reset(); }
         pratinjau(URL.createObjectURL(f));
         $('ttdGanti').style.display = '';
     });
