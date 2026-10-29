@@ -143,11 +143,11 @@ class AdminWebTest extends TestCase
         imagepng($im);
         $png = (string) ob_get_clean();
         $svc = app(\App\Services\SignatureService::class);
-        $this->officer->forceFill(['password' => 'Sandi-Uji-2026'])->save();
-        $this->admin->forceFill(['password' => 'Sandi-Uji-2026'])->save();
+        $this->officer->forceFill(['password' => 'Sandi-Uji-2026', 'nip' => '198001012005011001'])->save();
+        $this->admin->forceFill(['password' => 'Sandi-Uji-2026', 'nip' => '198501012010011002'])->save();
         $r->forceFill(['officer_id' => $this->officer->id])->save();
-        $svc->sign($r->fresh(), $this->officer, 'ketua', 'draw', $png, 'Sandi-Uji-2026', 2);
-        $svc->sign($r->fresh(), $this->admin, 'admin', 'draw', $png, 'Sandi-Uji-2026', 2);
+        $svc->sign($r->fresh(), $this->officer, 'ketua', $png, 'Sandi-Uji-2026', 2);
+        $svc->sign($r->fresh(), $this->admin, 'admin', $png, 'Sandi-Uji-2026', 2);
         $this->post("/pengajuan/{$id}/laporan/{$r->id}/terbitkan")->assertSessionHas('success');
         $this->assertNotNull($r->fresh()->published_at);
         $this->assertSame('final', $r->fresh()->status);
