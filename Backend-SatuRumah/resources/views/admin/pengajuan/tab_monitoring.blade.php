@@ -61,7 +61,7 @@
     <div class="card-head bordered"><div><div class="card-title" style="font-size:16px;">Penugasan</div><div class="card-sub">Riwayat penugasan survei untuk pengajuan ini beserta statusnya.</div></div></div>
     <div class="table-wrap">
         <table class="table">
-            <thead><tr><th>Petugas / Tim</th><th>Tanggal</th><th>Status</th><th>Catatan</th></tr></thead>
+            <thead><tr><th>Petugas / Tim</th><th>Tanggal</th><th>Status</th><th>Catatan</th><th class="col-actions">Aksi</th></tr></thead>
             <tbody>
                 @forelse($s->assignments as $a)
                     <tr>
@@ -69,9 +69,14 @@
                         <td>{{ $a->scheduled_date?->translatedFormat('d M Y') }}</td>
                         <td><span class="badge {{ $a->status === 'selesai' ? 'badge-success' : ($a->isOpen() ? 'badge-info' : '') }} badge-dot">{{ ucfirst($a->status) }}</span></td>
                         <td class="text-muted">{{ $a->reassign_reason ?? $a->note }}</td>
+                        <td class="col-actions">
+                            @if($a->isOpen() && !$s->isInRevision())
+                                <button type="button" class="btn btn-outline btn-sm" data-batal="{{ route('pengajuan.batal_jadwal', [$s->id, $a->id]) }}" data-batal-nama="{{ collect($a->team())->pluck('nama')->implode(', ') }}">Batalkan</button>
+                            @endif
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">Belum ada penugasan survei.</td></tr>
+                    <tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">Belum ada penugasan survei.</td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -90,7 +95,25 @@
     <div class="card-body">
         @forelse($s->reports->where('status', 'final') as $r)
             <div style="margin-bottom:22px;">
-                <div class="fw-700">{{ $r->report_number }} &middot; {{ $r->officer?->name }}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <div class="fw-700">{{ $r->report_number }} &middot; {{ $r->officer?->name }}</div>
+                    @php
+                        $diverifikasi = $s->stage >= \App\Models\Submission::STAGE_PERSETUJUAN;
+                    @endphp
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        @if($r->published_at)
+                            <span class="badge badge-success badge-dot">Diterbitkan {{ $r->published_at->translatedFormat('d M Y') }}</span>
+                        @elseif($diverifikasi)
+                            <span class="badge badge-info badge-dot">Diverifikasi</span>
+                            <form method="POST" action="{{ route('pengajuan.terbitkan_ba', [$s->id, $r->id]) }}" data-konfirmasi="BA {{ $r->report_number }} akan ditandai resmi dan petugas serta pengembang diberi tahu." data-konfirmasi-judul="Terbitkan BA" data-konfirmasi-tombol="Ya, terbitkan">
+                                @csrf <button class="btn btn-primary btn-sm">Terbitkan BA</button>
+                            </form>
+                        @else
+                            <span class="badge badge-warning badge-dot">Dikirim</span>
+                            <span class="text-muted" style="font-size:12px;">Terima laporan untuk memverifikasi</span>
+                        @endif
+                    </div>
+                </div>
                 <div class="text-muted" style="font-size:12px;margin-bottom:8px;">
                     Dikirim {{ $r->submitted_at?->translatedFormat('d M Y, H.i') }} &middot; Hasil: {{ $r->status_hasil_evaluasi }}
                 </div>
@@ -188,5 +211,44 @@
         if (e.key === 'ArrowLeft') tampil(i - 1);
         if (e.key === 'ArrowRight') tampil(i + 1);
     });
+})();
+</script>
+
+<div id="batalModal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="batalJudul">
+    <div class="modal" style="max-width:460px;">
+        <div class="modal-head">
+            <div>
+                <h3 class="modal-title" id="batalJudul">Batalkan Penugasan</h3>
+                <div class="modal-sub" id="batalNama"></div>
+            </div>
+            <button type="button" class="modal-close" id="batalTutup" aria-label="Tutup" style="font-size:24px;">&times;</button>
+        </div>
+        <form method="POST" id="batalForm" action="#">
+            @csrf
+            <div class="modal-body" style="display:grid;gap:12px;">
+                <p style="margin:0;font-size:14px;">Petugas dan pengembang akan diberi tahu. Setelah dibatalkan, jadwalkan ulang survei dari kartu di atas.</p>
+                <div><label class="form-label" for="batalAlasan">Alasan pembatalan</label><textarea class="form-textarea" name="alasan" id="batalAlasan" rows="3" maxlength="300" required></textarea></div>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-outline" id="batalBatal">Kembali</button>
+                <button type="submit" class="btn btn-primary">Batalkan Penugasan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    const m = document.getElementById('batalModal');
+    const tutup = () => { m.style.display = 'none'; };
+    document.querySelectorAll('[data-batal]').forEach(b => b.addEventListener('click', () => {
+        document.getElementById('batalForm').action = b.dataset.batal;
+        document.getElementById('batalNama').textContent = b.dataset.batalNama;
+        document.getElementById('batalAlasan').value = '';
+        m.style.display = 'flex';
+    }));
+    document.getElementById('batalTutup').addEventListener('click', tutup);
+    document.getElementById('batalBatal').addEventListener('click', tutup);
+    m.addEventListener('click', (e) => { if (e.target === m) tutup(); });
 })();
 </script>

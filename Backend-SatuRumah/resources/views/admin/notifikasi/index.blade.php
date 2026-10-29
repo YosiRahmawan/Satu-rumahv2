@@ -27,6 +27,8 @@
         'survey_scheduled' => ['Jadwal Survei', 'info', 'M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z'],
         'stage_advanced' => ['Tahap Lanjut', 'ok', 'M13 5l7 7-7 7M5 12h14'],
         'decided' => ['Keputusan', 'ok', 'M5 13l4 4L19 7'],
+        'assignment_cancelled' => ['Survei Dibatalkan', 'warn', 'M6 6l12 12M18 6L6 18'],
+        'report_published' => ['BA Diterbitkan', 'ok', 'M5 13l4 4L19 7'],
     ];
 @endphp
 

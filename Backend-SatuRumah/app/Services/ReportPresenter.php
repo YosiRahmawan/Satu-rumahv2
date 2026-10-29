@@ -56,6 +56,7 @@ class ReportPresenter
             'status_hasil_evaluasi' => $r->status_hasil_evaluasi,
             'photo_count' => $r->relationLoaded('photos') ? $r->photos->count() : $r->photos()->count(),
             'submitted_at' => $r->submitted_at?->toIso8601String(),
+            'published_at' => $r->published_at?->toIso8601String(),
         ];
     }
 

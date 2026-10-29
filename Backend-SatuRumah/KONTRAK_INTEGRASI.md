@@ -210,7 +210,7 @@ Berkas disimpan dengan nama acak (`stored_name`) di disk privat, tanpa URL publi
 | `statusHasilEvaluasi` (`sesuaiSiteplan`, `tidakSesuaiSiteplan`, `perluEvaluasiLanjutan`) | `status_hasil_evaluasi` | Ditambah di Fase C; nilai string yang sama |
 | `pelaksana` | `tim_pelaksana` (json `[{nama, jabatan}]`, maks 10) | |
 | `ditemui` | `pihak_ditemui` (json) | |
-| `isDraft` | `status` | `draft` → `final` (dikirim, `submitted_at`). `diterbitkan` (`published_at`, Admin) **belum ada tindakannya** (Fase E / Q09) |
+| `isDraft` | `status` | `draft` → `final` (dikirim, `submitted_at`). `published_at` diisi Admin lewat tombol "Terbitkan BA" (setelah laporan diterima); `status` tetap `final`. Arti resmi dan penandatangan: **[KEPUTUSAN Q09]** |
 | `photos` | `inspection_report_photos` | lihat di bawah |
 | (tidak ada) | `submit_latitude`, `submit_longitude` | Flutter kirim koordinat saat submit |
 | (tidak ada) | `pdf_path`, `docx_path`, `verification_token` | dihasilkan server (bagian 8) |
@@ -255,7 +255,7 @@ server; penugasan dan laporan BA dengan foto geotag (maks 10, tanpa kompresi ula
 Web Admin pada tabel baru (nilai berkas, permintaan perbaikan, setujui administrasi, jadwal/alihkan survei, terima
 laporan, keputusan akhir); riwayat, notifikasi dalam aplikasi, kirim revisi dari Flutter.
 
-**Belum ada:** PDF dan QR dari server, tindakan `diterbitkan` dan `dibatalkan` (Fase E, menunggu Q09). Tabel lama sudah punya migrasi pembuangan (`2026_10_26_140000`) tetapi baru hilang setelah `migrate` dijalankan;
+**Belum ada:** PDF dan QR dari server (Fase E, menunggu Q09). Admin sudah bisa membatalkan penugasan survei (status `dibatalkan`, alasan wajib) dan menerbitkan BA (`published_at`). Tabel lama sudah punya migrasi pembuangan (`2026_10_26_140000`) tetapi baru hilang setelah `migrate` dijalankan;
 push notification; layar timeline di Flutter; SLA hari kerja dan hari libur; unggah berkas keputusan oleh Admin;
 pemisahan hak admin (bila Disperwaskim meminta dua role).
 
@@ -266,8 +266,8 @@ pemisahan hak admin (bila Disperwaskim meminta dua role).
 | Q04 | Nomor tahap 1 dan 6; `ditolak` final atau boleh diajukan ulang; arti `selesai` | Tahap 1 draf, 6 selesai; `ditolak` tidak final: pengembang boleh mengajukan ulang sebagai pengajuan baru (data disalin, berkas diunggah lagi) |
 | Q05 | Nilai `decision_type`; apakah revisi wajib diperiksa ulang per berkas | `revisi`; berkas pengganti kembali `menunggu_telaah` dan dinilai ulang |
 | Q06/Q07 | Slot mana yang wajib; hubungan 18 slot dengan DOC01–DOC16 | Semua wajib kecuali S3-10; pemetaan DOC belum dibuat |
-| Q08 | Satu petugas atau tim; pengalihan dan pembatalan tugas | Satu petugas; pengalihan lewat jadwal ulang |
-| Q09 | Penandatangan BA, arti final, siapa membuat PDF resmi | `final` = terkirim petugas; belum ada PDF server |
+| Q08 | Satu petugas atau tim; pengalihan dan pembatalan tugas | Satu petugas utama dengan anggota tim; pengalihan lewat jadwal ulang; pembatalan oleh Admin dengan alasan |
+| Q09 | Penandatangan BA, arti final, siapa membuat PDF resmi | Usulan tim (menunggu konfirmasi Disperwaskim): petugas mengisi dan memvalidasi, ketua tim memeriksa bila ada, pejabat Disperwaskim mengesahkan; status Draf, Dikirim (`final`), Diverifikasi (laporan diterima admin), Diterbitkan (`published_at`); PDF resmi dan QR dibuat server setelah pengesahan, PDF di HP hanya pratinjau. Pejabat, metode tanda tangan, dan format resmi belum dikonfirmasi |
 | Q10 | Matriks hak Administrator vs Verifikator | Digabung menjadi satu role `admin`; semua tindakan tercatat dengan nama pelakunya di Riwayat |
 | Q16 | Waktu penghentian layar Admin di Flutter | Dalam mode API, role web tidak bisa masuk lewat aplikasi dan layar Admin tidak terjangkau; kode prototipe masih ada untuk mode lokal |
 

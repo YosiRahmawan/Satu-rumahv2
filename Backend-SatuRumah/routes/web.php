@@ -34,6 +34,8 @@ Route::middleware(['auth', 'role:admin', 'password.changed'])->group(function ()
     Route::post('/pengajuan/{id}/perbaikan', [SubmissionController::class, 'requestRevision'])->name('pengajuan.perbaikan');
     Route::post('/pengajuan/{id}/setujui-administrasi', [SubmissionController::class, 'approve'])->name('pengajuan.setujui_administrasi');
     Route::post('/pengajuan/{id}/jadwal', [SubmissionController::class, 'schedule'])->name('pengajuan.jadwal');
+    Route::post('/pengajuan/{id}/jadwal/{assignmentId}/batal', [SubmissionController::class, 'cancelAssignment'])->name('pengajuan.batal_jadwal');
+    Route::post('/pengajuan/{id}/laporan/{reportId}/terbitkan', [SubmissionController::class, 'publishReport'])->name('pengajuan.terbitkan_ba');
     Route::post('/pengajuan/{id}/terima-laporan', [SubmissionController::class, 'acceptReports'])->name('pengajuan.terima_laporan');
     Route::post('/pengajuan/{id}/keputusan', [SubmissionController::class, 'decide'])->name('pengajuan.keputusan');
 

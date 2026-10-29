@@ -348,6 +348,60 @@ class SubmissionWorkflow
         });
     }
 
+    /**
+     * Membatalkan penugasan survei yang masih terbuka. Pengajuan tetap di tahap Survei
+     * (tanpa jadwal) sampai admin menjadwalkan ulang.
+     */
+    public function cancelAssignment(Submission $s, InspectionAssignment $assignment, User $by, string $reason): InspectionAssignment
+    {
+        $this->ensureWorkable($s);
+        if ($assignment->submission_id !== $s->id || !$assignment->isOpen()) {
+            throw new \DomainException('Hanya penugasan yang masih terbuka yang dapat dibatalkan.');
+        }
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw ValidationException::withMessages(['alasan' => ['Alasan pembatalan wajib diisi.']]);
+        }
+
+        return DB::transaction(function () use ($s, $assignment, $by, $reason) {
+            $assignment->forceFill(['status' => 'dibatalkan', 'reassign_reason' => $reason])->save();
+            if (!InspectionAssignment::where('submission_id', $s->id)->whereIn('status', InspectionAssignment::OPEN)->exists()) {
+                $s->forceFill(['sub_status' => 'dalam_telaah', 'version' => $s->version + 1])->save();
+            }
+
+            $name = $s->nama_perumahan ?? 'pengajuan';
+            $this->notifier->event($s, $by, 'survey_cancelled', 'Penugasan survei dibatalkan', $reason, ['assignment_id' => $assignment->id]);
+            $this->notifier->toUser($assignment->officer_id, $s, 'assignment_cancelled', 'Tugas survei dibatalkan', "{$name} · {$reason}", ['assignment_id' => $assignment->id]);
+            $this->notifier->toDeveloper($s, 'survey_cancelled', 'Jadwal survei dibatalkan', "{$s->number}: jadwal survei dibatalkan, jadwal baru menyusul.");
+
+            return $assignment;
+        });
+    }
+
+    /** Admin menerbitkan BA final yang sudah diterima (menandai resmi). Status `final` tidak berubah. */
+    public function publishReport(Submission $s, InspectionReport $report, User $by): InspectionReport
+    {
+        $this->ensureWorkable($s);
+        if ($report->submission_id !== $s->id || $report->status !== 'final') {
+            throw new \DomainException('Hanya BA final milik pengajuan ini yang dapat diterbitkan.');
+        }
+        if ($report->published_at) {
+            throw new \DomainException('BA ini sudah diterbitkan.');
+        }
+        if ($s->stage < Submission::STAGE_PERSETUJUAN) {
+            throw new \DomainException('Terima laporan survei lebih dulu sebelum menerbitkan BA.');
+        }
+
+        return DB::transaction(function () use ($s, $report, $by) {
+            $report->forceFill(['published_at' => now()])->save();
+            $this->notifier->event($s, $by, 'report_published', 'BA diterbitkan', "BA {$report->report_number} diterbitkan.", ['report_id' => $report->id]);
+            $this->notifier->toUser($report->officer_id, $s, 'report_published', 'BA diterbitkan', "{$report->report_number} · {$s->nama_perumahan}", ['report_id' => $report->id]);
+            $this->notifier->toDeveloper($s, 'report_published', 'BA diterbitkan', "{$s->number}: BA {$report->report_number} diterbitkan.");
+
+            return $report;
+        });
+    }
+
     /** Laporan survei final diterima → Persetujuan. */
     public function acceptReports(Submission $s, User $reviewer): Submission
     {

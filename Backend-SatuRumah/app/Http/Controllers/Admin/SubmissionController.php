@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\InspectionAssignment;
+use App\Models\InspectionReport;
 use App\Models\InspectionReportPhoto;
 use App\Models\Submission;
 use App\Models\User;
@@ -126,6 +128,23 @@ class SubmissionController extends Controller
         return $this->run($s, fn () => $this->workflow->scheduleSurvey(
             $s, $officer, $data['tanggal'], $data['catatan'] ?? null, $request->user(), $data['alasan'] ?? null, $data['anggota'] ?? []
         ), 'Jadwal survei disimpan dan petugas diberi tahu.', 'monitoring');
+    }
+
+    public function cancelAssignment(Request $request, int $id, int $assignmentId)
+    {
+        $data = $request->validate(['alasan' => 'required|string|max:300']);
+        $s = Submission::findOrFail($id);
+        $a = InspectionAssignment::where('submission_id', $id)->findOrFail($assignmentId);
+
+        return $this->run($s, fn () => $this->workflow->cancelAssignment($s, $a, $request->user(), $data['alasan']), 'Penugasan dibatalkan dan petugas diberi tahu.', 'monitoring');
+    }
+
+    public function publishReport(Request $request, int $id, int $reportId)
+    {
+        $s = Submission::findOrFail($id);
+        $r = InspectionReport::where('submission_id', $id)->findOrFail($reportId);
+
+        return $this->run($s, fn () => $this->workflow->publishReport($s, $r, $request->user()), 'BA diterbitkan.', 'monitoring');
     }
 
     public function acceptReports(Request $request, int $id)

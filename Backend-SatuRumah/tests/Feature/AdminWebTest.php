@@ -87,6 +87,61 @@ class AdminWebTest extends TestCase
             ->assertSee('Pengajuan Baru')->assertSee('Laporan Survei');
     }
 
+    public function test_batalkan_penugasan_survei_memberi_tahu_dan_bisa_dijadwalkan_ulang(): void
+    {
+        $this->actingAs($this->admin);
+        $id = $this->submission->id;
+        $this->approveAllFiles();
+        $this->post("/pengajuan/{$id}/setujui-administrasi");
+        $this->post("/pengajuan/{$id}/jadwal", ['petugas_id' => $this->officer->id, 'tanggal' => now()->addDay()->toDateString()]);
+        $a = InspectionAssignment::where('submission_id', $id)->first();
+
+        // Alasan wajib.
+        $this->post("/pengajuan/{$id}/jadwal/{$a->id}/batal", ['alasan' => ''])->assertSessionHasErrors('alasan');
+
+        $this->post("/pengajuan/{$id}/jadwal/{$a->id}/batal", ['alasan' => 'Petugas sakit'])->assertSessionHas('success');
+        $this->assertSame('dibatalkan', $a->fresh()->status);
+        $this->assertSame('Petugas sakit', $a->fresh()->reassign_reason);
+        $this->assertSame(4, $this->submission->fresh()->stage);
+        $this->assertSame('dalam_telaah', $this->submission->fresh()->sub_status);
+        $this->assertSame(1, AppNotification::where('user_id', $this->officer->id)->where('type', 'assignment_cancelled')->count());
+        $this->assertSame(1, AppNotification::where('user_id', $this->developer->id)->where('type', 'survey_cancelled')->count());
+
+        // Penugasan yang sudah tidak terbuka tidak bisa dibatalkan lagi; jadwal ulang tetap bisa.
+        $this->post("/pengajuan/{$id}/jadwal/{$a->id}/batal", ['alasan' => 'lagi'])->assertSessionHas('warning');
+        $this->post("/pengajuan/{$id}/jadwal", ['petugas_id' => $this->officer->id, 'tanggal' => now()->addDays(2)->toDateString()])->assertSessionHas('success');
+        $this->get("/pengajuan/{$id}?tab=monitoring")->assertOk()->assertSee('Petugas sakit');
+    }
+
+    public function test_terbitkan_ba_hanya_setelah_laporan_diterima_dan_sekali_saja(): void
+    {
+        $this->actingAs($this->admin);
+        $id = $this->submission->id;
+        $this->approveAllFiles();
+        $this->post("/pengajuan/{$id}/setujui-administrasi");
+        $this->post("/pengajuan/{$id}/jadwal", ['petugas_id' => $this->officer->id, 'tanggal' => now()->addDay()->toDateString()]);
+        $r = InspectionReport::create([
+            'submission_id' => $id, 'officer_id' => $this->officer->id, 'status' => 'final', 'report_number' => '600.2.5/BA-MON/X/2026/009',
+            'nama_perumahan' => 'Griya Mangkubumi', 'monitoring_date' => now()->toDateString(), 'submitted_at' => now(), 'version' => 2,
+        ]);
+
+        // Sebelum laporan diterima (masih tahap survei): ditolak, berstatus Dikirim.
+        $this->get("/pengajuan/{$id}?tab=monitoring")->assertOk()->assertSee('Dikirim');
+        $this->post("/pengajuan/{$id}/laporan/{$r->id}/terbitkan")->assertSessionHas('warning');
+        $this->assertNull($r->fresh()->published_at);
+
+        $this->post("/pengajuan/{$id}/terima-laporan");
+        $this->get("/pengajuan/{$id}?tab=monitoring")->assertOk()->assertSee('Diverifikasi')->assertSee('Terbitkan BA');
+        $this->post("/pengajuan/{$id}/laporan/{$r->id}/terbitkan")->assertSessionHas('success');
+        $this->assertNotNull($r->fresh()->published_at);
+        $this->assertSame('final', $r->fresh()->status);
+        $this->assertSame(1, AppNotification::where('user_id', $this->officer->id)->where('type', 'report_published')->count());
+
+        $this->post("/pengajuan/{$id}/laporan/{$r->id}/terbitkan")->assertSessionHas('warning'); // sudah terbit
+        $this->get("/pengajuan/{$id}?tab=monitoring")->assertOk()->assertSee('Diterbitkan');
+        $this->get("/pengajuan/{$id}?tab=riwayat")->assertOk()->assertSee('BA Diterbitkan');
+    }
+
     public function test_login_web_dibatasi_lima_percobaan_per_menit(): void
     {
         for ($i = 0; $i < 5; $i++) {
