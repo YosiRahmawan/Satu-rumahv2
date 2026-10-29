@@ -608,6 +608,27 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           const Color(0xFFFEF3C7),
           const Color(0xFF92400E),
         );
+      case JenisNotifikasi.dibatalkan:
+        return (
+          'SURVEI DIBATALKAN',
+          const Color(0xFFFEF3C7),
+          const Color(0xFF92400E),
+        );
+      case JenisNotifikasi.baTerbit:
+        return (
+          'BA DITERBITKAN',
+          const Color(0xFFECFDF5),
+          const Color(0xFF065F46),
+        );
+      case JenisNotifikasi.tahapLanjut:
+      case JenisNotifikasi.disetujui:
+      case JenisNotifikasi.ditolak:
+      case JenisNotifikasi.batasPerbaikan:
+        return (
+          'INFORMASI',
+          const Color(0xFFF1F5F9),
+          const Color(0xFF475569),
+        );
     }
   }
 

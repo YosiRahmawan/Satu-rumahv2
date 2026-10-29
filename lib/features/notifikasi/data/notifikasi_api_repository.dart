@@ -56,10 +56,23 @@ final notifikasiRemoteProvider = Provider<NotifikasiRemote>(
   (ref) => NotifikasiApiRepository(ref.watch(apiDioProvider)),
 );
 
-JenisNotifikasi _jenisFromApi(String? type) => switch (type) {
+/// Jenis notifikasi dari server. Keputusan dibedakan lewat judul ("ditolak" atau disetujui).
+JenisNotifikasi jenisFromApi(String? type, [String? title]) => switch (type) {
   'revision_requested' => JenisNotifikasi.perluRevisi,
-  'assignment' || 'survey_scheduled' => JenisNotifikasi.reminderSurvey,
+  'assignment' ||
+  'assignment_rescheduled' ||
+  'survey_scheduled' => JenisNotifikasi.reminderSurvey,
   'resubmitted' || 'report_submitted' => JenisNotifikasi.dokumenDiunggahUlang,
+  'stage_advanced' => JenisNotifikasi.tahapLanjut,
+  'decided' =>
+    (title ?? '').toLowerCase().contains('ditolak')
+        ? JenisNotifikasi.ditolak
+        : JenisNotifikasi.disetujui,
+  'survey_cancelled' ||
+  'assignment_cancelled' ||
+  'assignment_reassigned' => JenisNotifikasi.dibatalkan,
+  'report_published' => JenisNotifikasi.baTerbit,
+  'deadline_reminder' || 'deadline_overdue' => JenisNotifikasi.batasPerbaikan,
   _ => JenisNotifikasi.pengajuanBaru,
 };
 
@@ -68,7 +81,7 @@ NotifikasiModel notifikasiFromApi(Map<String, dynamic> json, AppRole role) {
   final number = json['submission_number'] as String?;
   return NotifikasiModel(
     id: '$serverNotifPrefix${json['id']}',
-    jenis: _jenisFromApi(json['type'] as String?),
+    jenis: jenisFromApi(json['type'] as String?, json['title'] as String?),
     judul: '${json['title'] ?? ''}',
     deskripsi: '${json['body'] ?? ''}',
     waktu:

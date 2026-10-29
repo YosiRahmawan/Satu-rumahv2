@@ -972,11 +972,12 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
   }
 
   /// Memuat ulang dari server. Mengembalikan galatnya (bila ada) agar layar
-  /// bisa menampilkannya; daftar lama dipertahankan saat gagal.
-  Future<ApiException?> refresh() async {
+  /// bisa menampilkannya; daftar lama dipertahankan saat gagal. [silent] untuk penyegaran
+  /// latar belakang: tanpa indikator memuat dan tanpa menandai gagal.
+  Future<ApiException?> refresh({bool silent = false}) async {
     final source = remote;
     if (source == null) return null;
-    load.value = RemoteLoad.loading;
+    if (!silent) load.value = RemoteLoad.loading;
     try {
       final items = await source.list();
       if (!mounted) return null;
@@ -987,7 +988,7 @@ class PengajuanListNotifier extends StateNotifier<List<Pengajuan>> {
       state = [..._justSubmitted.values, ...items];
       return null;
     } on ApiException catch (e) {
-      if (mounted) load.value = RemoteLoad(LoadState.failed, e);
+      if (mounted && !silent) load.value = RemoteLoad(LoadState.failed, e);
       return e;
     }
   }

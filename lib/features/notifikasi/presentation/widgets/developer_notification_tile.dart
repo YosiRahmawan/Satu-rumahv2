@@ -27,6 +27,12 @@ class DeveloperNotificationTile extends StatelessWidget {
     JenisNotifikasi.dokumenDiunggahUlang => 'DOKUMEN',
     JenisNotifikasi.perluRevisi =>
       actionRequired ? 'TINDAKAN DIPERLUKAN' : 'REVISI',
+    JenisNotifikasi.tahapLanjut => 'TAHAP LANJUT',
+    JenisNotifikasi.disetujui => 'DISETUJUI',
+    JenisNotifikasi.ditolak => 'DITOLAK',
+    JenisNotifikasi.dibatalkan => 'JADWAL SURVEY',
+    JenisNotifikasi.baTerbit => 'BERITA ACARA',
+    JenisNotifikasi.batasPerbaikan => 'BATAS PERBAIKAN',
   };
 
   @override
@@ -41,9 +47,23 @@ class DeveloperNotificationTile extends StatelessWidget {
         AppColors.statusWarningText,
         AppColors.statusWarningSurface,
       ),
-      JenisNotifikasi.deadlineVerifikasi => (
+      JenisNotifikasi.deadlineVerifikasi ||
+      JenisNotifikasi.ditolak => (
         AppColors.statusUrgentText,
         AppColors.statusUrgentSurface,
+      ),
+      JenisNotifikasi.disetujui || JenisNotifikasi.baTerbit => (
+        AppColors.statusSuccessText,
+        AppColors.statusSuccessSurface,
+      ),
+      JenisNotifikasi.tahapLanjut => (
+        AppColors.statusSurveyText,
+        AppColors.statusSurveySurface,
+      ),
+      JenisNotifikasi.dibatalkan ||
+      JenisNotifikasi.batasPerbaikan => (
+        AppColors.statusWarningText,
+        AppColors.statusWarningSurface,
       ),
       JenisNotifikasi.perluRevisi =>
         actionRequired

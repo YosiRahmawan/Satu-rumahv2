@@ -79,10 +79,11 @@ class OfficerAssignmentsNotifier
   }
 
   /// Memuat ulang; mengembalikan galatnya (bila ada) dan mempertahankan daftar lama.
-  Future<ApiException?> refresh() async {
+  /// [silent] untuk penyegaran latar belakang: tanpa indikator memuat dan tanpa menandai gagal.
+  Future<ApiException?> refresh({bool silent = false}) async {
     final source = remote;
     if (source == null) return null;
-    load.value = RemoteLoad.loading;
+    if (!silent) load.value = RemoteLoad.loading;
     try {
       final items = await source.assignments();
       if (mounted) {
@@ -91,7 +92,7 @@ class OfficerAssignmentsNotifier
       }
       return null;
     } on ApiException catch (e) {
-      if (mounted) load.value = RemoteLoad(LoadState.failed, e);
+      if (mounted && !silent) load.value = RemoteLoad(LoadState.failed, e);
       return e;
     }
   }

@@ -12,6 +12,15 @@ enum JenisNotifikasi {
   /// [dokumenDiunggahUlang], yang dipakai untuk kabar unggahan berkas
   /// (revisi Pengembang atau berita acara survey) kepada Admin.
   perluRevisi,
+
+  /// Dari server: tahap pengajuan lanjut, keputusan, jadwal dibatalkan atau dialihkan,
+  /// BA diterbitkan, dan pengingat batas waktu perbaikan.
+  tahapLanjut,
+  disetujui,
+  ditolak,
+  dibatalkan,
+  baTerbit,
+  batasPerbaikan,
 }
 
 extension JenisNotifikasiX on JenisNotifikasi {
@@ -27,6 +36,18 @@ extension JenisNotifikasiX on JenisNotifikasi {
         return 'Deadline Verifikasi';
       case JenisNotifikasi.perluRevisi:
         return 'Perlu Revisi';
+      case JenisNotifikasi.tahapLanjut:
+        return 'Tahap Lanjut';
+      case JenisNotifikasi.disetujui:
+        return 'Disetujui';
+      case JenisNotifikasi.ditolak:
+        return 'Ditolak';
+      case JenisNotifikasi.dibatalkan:
+        return 'Survei Dibatalkan';
+      case JenisNotifikasi.baTerbit:
+        return 'BA Diterbitkan';
+      case JenisNotifikasi.batasPerbaikan:
+        return 'Batas Perbaikan';
     }
   }
 
@@ -42,6 +63,18 @@ extension JenisNotifikasiX on JenisNotifikasi {
         return Icons.timer_outlined;
       case JenisNotifikasi.perluRevisi:
         return Icons.sync_problem_outlined;
+      case JenisNotifikasi.tahapLanjut:
+        return Icons.arrow_forward_rounded;
+      case JenisNotifikasi.disetujui:
+        return Icons.verified_outlined;
+      case JenisNotifikasi.ditolak:
+        return Icons.cancel_outlined;
+      case JenisNotifikasi.dibatalkan:
+        return Icons.event_busy_outlined;
+      case JenisNotifikasi.baTerbit:
+        return Icons.description_outlined;
+      case JenisNotifikasi.batasPerbaikan:
+        return Icons.hourglass_bottom_outlined;
     }
   }
 
@@ -56,6 +89,16 @@ extension JenisNotifikasiX on JenisNotifikasi {
       case JenisNotifikasi.deadlineVerifikasi:
         return AppColors.primaryRed;
       case JenisNotifikasi.perluRevisi:
+        return const Color(0xFFE65100);
+      case JenisNotifikasi.tahapLanjut:
+        return AppColors.info;
+      case JenisNotifikasi.disetujui:
+      case JenisNotifikasi.baTerbit:
+        return const Color(0xFF2E7D32);
+      case JenisNotifikasi.ditolak:
+        return AppColors.primaryRed;
+      case JenisNotifikasi.dibatalkan:
+      case JenisNotifikasi.batasPerbaikan:
         return const Color(0xFFE65100);
     }
   }
