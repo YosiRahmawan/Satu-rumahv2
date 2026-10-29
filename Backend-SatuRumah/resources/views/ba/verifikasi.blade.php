@@ -25,7 +25,7 @@
                 <div class="kv-row"><dt>Tim Verifikator</dt><dd>{{ $admin ? 'Menyetujui ' . $admin->translatedFormat('d F Y, H.i') . ' WIB' : 'Belum' }}</dd></div>
             </dl>
             @unless($resmi)
-                <div class="callout">Format BA ini masih template sementara dan belum ditetapkan resmi oleh Disperwaskim. Persetujuan berupa persetujuan elektronik berbasis akun, bukan tanda tangan elektronik tersertifikasi.</div>
+                <div class="callout">Format BA ini masih template sementara dan belum ditetapkan resmi oleh Disperwaskim. Tanda tangan berupa visualisasi TTE dari Suresman.</div>
             @endunless
         @endif
     </div></div>

@@ -152,7 +152,6 @@ class SubmissionController extends Controller
     public function signReport(Request $request, int $id, int $reportId, SignatureService $signatures)
     {
         $data = $request->validate([
-            'method' => 'required|in:draw,upload',
             'password' => 'required|string',
             'version' => 'required|integer',
         ]);
@@ -165,7 +164,7 @@ class SubmissionController extends Controller
             return redirect()->route('pengajuan.show', ['id' => $id, 'tab' => 'monitoring'])->withErrors($e->errors());
         }
 
-        return $this->run($s, fn () => $signatures->sign($r, $request->user(), ReportSignature::ADMIN, $data['method'], $bytes, $data['password'], (int) $data['version'], $request->ip()), 'Tanda tangan Admin tersimpan.', 'monitoring');
+        return $this->run($s, fn () => $signatures->sign($r, $request->user(), ReportSignature::ADMIN, $bytes, $data['password'], (int) $data['version'], $request->ip()), 'Tanda tangan Admin tersimpan.', 'monitoring');
     }
 
     public function reportPdf(int $id, int $reportId)

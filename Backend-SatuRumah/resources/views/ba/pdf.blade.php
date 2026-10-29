@@ -33,7 +33,7 @@
     </div>
 
     @unless($resmi)
-        <div class="tandai">TEMPLATE SEMENTARA &mdash; BELUM FORMAT RESMI DISPERWASKIM. Persetujuan elektronik berbasis akun, bukan TTE tersertifikasi.</div>
+        <div class="tandai">TEMPLATE SEMENTARA &mdash; BELUM FORMAT RESMI DISPERWASKIM.</div>
     @endunless
 
     <h1>BERITA ACARA MONITORING / SURVEI LAPANGAN</h1>

@@ -36,9 +36,9 @@ class BaSignatureTest extends TestCase
             'username' => $u, 'email' => "{$u}@saturumah.go.id", 'role' => $r, 'password' => self::SANDI,
             'is_active' => true, 'must_change_password' => false,
         ]);
-        $this->admin = $mk('admin1', 'admin', ['name' => 'Admin Uji', 'jabatan' => 'Verifikator']);
+        $this->admin = $mk('admin1', 'admin', ['name' => 'Admin Uji', 'jabatan' => 'Verifikator', 'nip' => '198501012010011002']);
         $this->developer = $mk('dev1', 'pengembang');
-        $this->ketua = $mk('ketua1', 'tim_lapangan', ['name' => 'Ketua Uji', 'jabatan' => 'Ketua Tim Perwaskim']);
+        $this->ketua = $mk('ketua1', 'tim_lapangan', ['name' => 'Ketua Uji', 'jabatan' => 'Ketua Tim Perwaskim', 'nip' => '198001012005011001']);
         $this->lain = $mk('petugas2', 'tim_lapangan');
 
         $this->submission = Submission::create([
@@ -75,7 +75,7 @@ class BaSignatureTest extends TestCase
         Sanctum::actingAs($user, ['*']);
 
         return $this->post("/api/v1/officer/reports/{$this->report->id}/sign", $extra + [
-            'method' => 'upload', 'password' => self::SANDI, 'version' => $version ?? $this->report->fresh()->version,
+            'password' => self::SANDI, 'version' => $version ?? $this->report->fresh()->version,
             'signature' => UploadedFile::fake()->createWithContent('ttd.png', $bytes ?? $this->gambar()),
         ], ['Idempotency-Key' => $key ?? (string) Str::uuid(), 'Accept' => 'application/json']);
     }
@@ -83,8 +83,8 @@ class BaSignatureTest extends TestCase
     private function webSign(array $extra = [], ?string $bytes = null)
     {
         return $this->actingAs($this->admin)->post("/pengajuan/{$this->submission->id}/laporan/{$this->report->id}/tanda-tangan", $extra + [
-            'method' => 'draw', 'password' => self::SANDI, 'version' => $this->report->fresh()->version,
-            'signature_data' => 'data:image/png;base64,' . base64_encode($bytes ?? $this->gambar()),
+            'password' => self::SANDI, 'version' => $this->report->fresh()->version,
+            'signature' => UploadedFile::fake()->createWithContent('ttd.png', $bytes ?? $this->gambar()),
         ]);
     }
 
@@ -97,7 +97,7 @@ class BaSignatureTest extends TestCase
     {
         $this->apiSign($this->ketua)->assertOk()
             ->assertJsonPath('data.signatures.ketua.signed', true)->assertJsonPath('data.signatures.admin.signed', false)
-            ->assertJsonPath('data.signatures.provider', 'gambar');
+            ->assertJsonPath('data.signatures.provider', 'visualisasi_tte');
 
         $sig = $this->signature('ketua');
         $this->assertSame($this->ketua->id, $sig->user_id);
@@ -112,18 +112,32 @@ class BaSignatureTest extends TestCase
         $this->assertSame(0, (imagecolorat($im, 2, 2) >> 24) & 0x7F);
     }
 
-    public function test_ketua_menandatangani_dengan_gambar_langsung_data_url_dan_jpeg(): void
+    public function test_jpeg_diterima_dan_dinormalkan_menjadi_png_sedangkan_data_url_dan_metode_coretan_tidak_lagi_dipakai(): void
     {
-        Sanctum::actingAs($this->ketua, ['*']);
-        $this->post("/api/v1/officer/reports/{$this->report->id}/sign", [
-            'method' => 'draw', 'password' => self::SANDI, 'version' => 2,
-            'signature_data' => 'data:image/png;base64,' . base64_encode($this->gambar()),
-        ], ['Idempotency-Key' => (string) Str::uuid(), 'Accept' => 'application/json'])->assertOk();
-        $this->assertSame('draw', $this->signature('ketua')->method);
-
-        // JPEG juga diterima dan dinormalkan menjadi PNG.
         $svc = app(SignatureService::class);
         $this->assertSame(IMAGETYPE_PNG, getimagesizefromstring($svc->normalize($this->gambar(true, 300, 120, 'jpeg')))[2]);
+
+        // Kiriman data URL (mode coretan lama) tidak diterima: hanya berkas unggahan.
+        Sanctum::actingAs($this->ketua, ['*']);
+        $this->post("/api/v1/officer/reports/{$this->report->id}/sign", [
+            'password' => self::SANDI, 'version' => 2,
+            'signature_data' => 'data:image/png;base64,' . base64_encode($this->gambar()),
+        ], ['Idempotency-Key' => (string) Str::uuid(), 'Accept' => 'application/json'])->assertStatus(422);
+        $this->assertNull($this->signature('ketua'));
+    }
+
+    public function test_akun_tanpa_nip_tidak_bisa_menandatangani(): void
+    {
+        $this->ketua->forceFill(['nip' => null])->save();
+        $this->apiSign($this->ketua)->assertStatus(422)->assertJsonPath('error.fields.nip.0', 'NIP akun Anda belum diisi. Minta admin melengkapinya di menu Akun.');
+
+        $this->ketua->forceFill(['nip' => '198001012005011001'])->save();
+        $this->apiSign($this->ketua)->assertOk();
+
+        $this->app['auth']->shouldUse('web');
+        $this->admin->forceFill(['nip' => null])->save();
+        $this->webSign()->assertSessionHasErrors('nip');
+        $this->assertNull($this->signature('admin'));
     }
 
     public function test_petugas_lain_pengembang_dan_tanpa_idempotency_key_ditolak(): void
@@ -133,14 +147,13 @@ class BaSignatureTest extends TestCase
         $this->assertNull($this->signature('ketua'));
 
         Sanctum::actingAs($this->ketua, ['*']);
-        $this->post("/api/v1/officer/reports/{$this->report->id}/sign", ['method' => 'upload', 'password' => self::SANDI, 'version' => 2], ['Accept' => 'application/json'])
+        $this->post("/api/v1/officer/reports/{$this->report->id}/sign", ['password' => self::SANDI, 'version' => 2], ['Accept' => 'application/json'])
             ->assertStatus(422)->assertJsonPath('error.code', 'ERR-010');
     }
 
     public function test_sandi_salah_dan_metode_tidak_dikenal_ditolak(): void
     {
         $this->apiSign($this->ketua, extra: ['password' => 'salah'])->assertStatus(422)->assertJsonPath('error.fields.password.0', 'Sandi salah.');
-        $this->apiSign($this->ketua, extra: ['method' => 'ttd'])->assertStatus(422);
         $this->assertNull($this->signature('ketua'));
     }
 
@@ -159,10 +172,10 @@ class BaSignatureTest extends TestCase
         $this->assertNull($this->signature('ketua'));
     }
 
-    public function test_unggahan_visualisasi_dipertahankan_besar_dan_berwarna_sedangkan_coretan_diperkecil_dan_transparan(): void
+    public function test_visualisasi_dipertahankan_besar_dan_berwarna_dan_hanya_diperkecil_bila_melebihi_batas(): void
     {
         $svc = app(SignatureService::class);
-        // Gambar berwarna (mirip visualisasi TTE dengan kotak QR) 1000x400: ukuran dan warna terjaga saat unggah.
+        // Gambar berwarna (mirip visualisasi TTE dengan kotak QR) 1000x400: ukuran dan warna terjaga.
         $im = imagecreatetruecolor(1000, 400);
         imagefill($im, 0, 0, imagecolorallocate($im, 255, 255, 255));
         imagefilledrectangle($im, 20, 20, 200, 200, imagecolorallocate($im, 30, 60, 160));
@@ -170,23 +183,19 @@ class BaSignatureTest extends TestCase
         imagepng($im);
         $png = (string) ob_get_clean();
 
-        $up = imagecreatefromstring($svc->normalize($png, 'upload'));
+        $up = imagecreatefromstring($svc->normalize($png));
         $this->assertSame([1000, 400], [imagesx($up), imagesy($up)]);
         $this->assertSame(0, (imagecolorat($up, 2, 2) >> 24) & 0x7F); // latar putih tidak dibuat transparan
         $this->assertSame(0x1E3CA0, imagecolorat($up, 100, 100) & 0xFFFFFF);
-
-        $draw = imagecreatefromstring($svc->normalize($png, 'draw'));
-        $this->assertLessThanOrEqual(600, imagesx($draw));
-        $this->assertSame(127, (imagecolorat($draw, 1, 1) >> 24) & 0x7F);
 
         // Terlalu besar diperkecil menjadi maks 1600x1000; gambar polos tetap ditolak.
         $besar = imagecreatetruecolor(3200, 800);
         imagefilledrectangle($besar, 100, 100, 600, 600, imagecolorallocate($besar, 200, 0, 0));
         ob_start();
         imagepng($besar);
-        $this->assertSame(1600, imagesx(imagecreatefromstring($svc->normalize((string) ob_get_clean(), 'upload'))));
+        $this->assertSame(1600, imagesx(imagecreatefromstring($svc->normalize((string) ob_get_clean()))));
         $this->expectException(\Illuminate\Validation\ValidationException::class);
-        $svc->normalize($this->gambar(false), 'upload');
+        $svc->normalize($this->gambar(false));
     }
 
     public function test_permintaan_berulang_idempoten_dan_versi_usang_ditolak(): void
@@ -216,11 +225,11 @@ class BaSignatureTest extends TestCase
         $this->apiSign($this->ketua)->assertOk();
         $this->app['auth']->shouldUse('web'); // kembali ke sesi web setelah panggilan API
         $this->actingAs($this->ketua)->post("/pengajuan/{$this->submission->id}/laporan/{$this->report->id}/tanda-tangan", [
-            'method' => 'draw', 'password' => self::SANDI, 'version' => 2, 'signature_data' => 'data:image/png;base64,' . base64_encode($this->gambar()),
+            'password' => self::SANDI, 'version' => 2, 'signature' => UploadedFile::fake()->createWithContent('ttd.png', $this->gambar()),
         ])->assertRedirect('/login'); // petugas tidak boleh masuk Web Admin
 
         $this->webSign()->assertSessionHas('success');
-        $this->assertSame('draw', $this->signature('admin')->method);
+        $this->assertSame('upload', $this->signature('admin')->method);
         $this->assertSame($this->admin->id, $this->signature('admin')->user_id);
     }
 

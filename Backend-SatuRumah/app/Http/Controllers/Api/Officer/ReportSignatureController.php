@@ -30,7 +30,6 @@ class ReportSignatureController extends Controller
             return $this->error('ERR-010', 'Header Idempotency-Key (UUID) wajib diisi.', 422, ['fields' => ['idempotency_key' => ['Wajib berupa UUID.']]]);
         }
         $data = $request->validate([
-            'method' => ['required', 'in:draw,upload'],
             'password' => ['required', 'string'],
             'version' => ['required', 'integer'],
         ]);
@@ -38,7 +37,7 @@ class ReportSignatureController extends Controller
 
         try {
             $this->signatures->sign(
-                $report, $request->user(), ReportSignature::KETUA, $data['method'],
+                $report, $request->user(), ReportSignature::KETUA,
                 $this->signatures->bytesFrom($request), $data['password'], (int) $data['version'], $request->ip(),
             );
         } catch (AuthorizationException $e) {

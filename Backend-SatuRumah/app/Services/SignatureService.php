@@ -13,9 +13,10 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Persetujuan elektronik BA (Ketua Pengawas lalu Admin). Gambar tanda tangan hanya penanda visual di PDF;
- * keabsahannya bertumpu pada akun yang masuk, konfirmasi sandi, dan hash isi BA yang dicatat server.
- * Ini BUKAN tanda tangan elektronik tersertifikasi (TTE).
+ * Tanda tangan BA oleh Ketua Pengawas lalu Admin. Keduanya mengunggah visualisasi TTE dari Suresman
+ * (suresman.tasikmalayakota.go.id/visualcustom, dibuat dari NIP masing-masing); gambar itu ditempel di PDF
+ * final. Server memastikan akun berwenang dan ber-NIP, konfirmasi sandi, dan mengunci isi BA dengan hash.
+ * Keputusan Disperwaskim (29 Okt 2026): PDF dengan visualisasi TTE ini sah, tanpa penandatanganan ulang BSrE.
  */
 class SignatureService
 {
@@ -66,7 +67,7 @@ class SignatureService
         $one = function (string $role) use ($r) {
             $sig = $this->validSignature($r, $role);
 
-            return ['signed' => (bool) $sig, 'signed_at' => $sig?->signed_at?->toIso8601String(), 'method' => $sig?->method, 'signer' => $sig?->signer?->name];
+            return ['signed' => (bool) $sig, 'signed_at' => $sig?->signed_at?->toIso8601String(), 'signer' => $sig?->signer?->name];
         };
 
         $ketua = $one(ReportSignature::KETUA);
@@ -74,52 +75,36 @@ class SignatureService
 
         return [
             'ketua' => $ketua, 'admin' => $admin,
-            'provider' => 'gambar', // persetujuan elektronik berbasis akun; bukan TTE tersertifikasi
+            'provider' => 'visualisasi_tte', // unggahan visualisasi TTE Suresman; titik sambung bila API penyedia tersedia
             'ready_to_publish' => $ketua['signed'] && $admin['signed'],
         ];
     }
 
-    /** Menyatukan gambar dari berkas unggahan (`signature`) atau data URL kanvas (`signature_data`). */
+    /** Berkas visualisasi TTE yang diunggah (`signature`); maksimal 4 MB. */
     public function bytesFrom(Request $request): string
     {
-        if ($request->hasFile('signature')) {
-            $file = $request->file('signature');
-            if (!$file->isValid() || $file->getSize() > self::MAX_BYTES) {
-                throw ValidationException::withMessages(['signature' => ['Berkas tanda tangan tidak valid atau lebih dari 4 MB.']]);
-            }
-
-            return (string) file_get_contents($file->getRealPath());
+        $file = $request->file('signature');
+        if (!$file || !$file->isValid() || $file->getSize() > self::MAX_BYTES) {
+            throw ValidationException::withMessages(['signature' => ['Pilih gambar visualisasi TTE (PNG atau JPEG, maksimal 4 MB).']]);
         }
 
-        $data = (string) $request->input('signature_data', '');
-        if (!preg_match('#^data:image/(png|jpeg);base64,([A-Za-z0-9+/=\\s]+)$#', $data, $m)) {
-            throw ValidationException::withMessages(['signature' => ['Tanda tangan wajib berupa gambar PNG atau JPEG.']]);
-        }
-        $bytes = base64_decode($m[2], true);
-        if ($bytes === false || strlen($bytes) > self::MAX_BYTES) {
-            throw ValidationException::withMessages(['signature' => ['Gambar tanda tangan rusak atau lebih dari 4 MB.']]);
-        }
-
-        return $bytes;
+        return (string) file_get_contents($file->getRealPath());
     }
 
     /**
-     * Validasi isi gambar lalu normalkan: hanya PNG/JPEG asli, dienkode ulang menjadi PNG (metadata dan muatan
-     * tersembunyi hilang). Coretan (`draw`) diperkecil maks 600x250 dan latar putihnya dibuat transparan.
-     * Unggahan (`upload`, mis. visualisasi TTE dari Suresman) dipertahankan apa adanya dan hanya diperkecil bila
-     * melebihi 1600x1000 piksel, agar kode QR di dalamnya tetap terbaca; PDF menyesuaikan ukuran tampil.
+     * Validasi isi gambar lalu normalkan: hanya PNG/JPEG asli, 40x20 sampai 5000x5000 piksel, dienkode ulang
+     * menjadi PNG (metadata dan muatan tersembunyi hilang). Isi dipertahankan apa adanya (warna dan latar tidak
+     * diubah) agar QR visualisasi tetap terbaca; hanya diperkecil bila melebihi 1600x1000. PDF menyesuaikan ukuran tampil.
      */
-    public function normalize(string $bytes, string $method = 'draw'): string
+    public function normalize(string $bytes): string
     {
-        $upload = $method === 'upload';
         $info = strlen($bytes) > 0 ? @getimagesizefromstring($bytes) : false;
         if (!$info || !in_array($info[2], [IMAGETYPE_PNG, IMAGETYPE_JPEG], true)) {
             throw ValidationException::withMessages(['signature' => ['Tanda tangan harus berupa gambar PNG atau JPEG yang valid.']]);
         }
         [$w, $h] = $info;
-        $min = $upload ? [40, 20] : [80, 40];
-        if ($w < $min[0] || $h < $min[1] || $w > 5000 || $h > 5000) {
-            throw ValidationException::withMessages(['signature' => ["Ukuran gambar harus antara {$min[0]}x{$min[1]} dan 5000x5000 piksel."]]);
+        if ($w < 40 || $h < 20 || $w > 5000 || $h > 5000) {
+            throw ValidationException::withMessages(['signature' => ['Ukuran gambar harus antara 40x20 dan 5000x5000 piksel.']]);
         }
 
         $src = @imagecreatefromstring($bytes);
@@ -127,8 +112,7 @@ class SignatureService
             throw ValidationException::withMessages(['signature' => ['Gambar tanda tangan rusak.']]);
         }
 
-        [$maxW, $maxH] = $upload ? [1600, 1000] : [600, 250];
-        $scale = min(1, $maxW / $w, $maxH / $h);
+        $scale = min(1, 1600 / $w, 1000 / $h);
         $nw = max(1, (int) round($w * $scale));
         $nh = max(1, (int) round($h * $scale));
         $dst = imagecreatetruecolor($nw, $nh);
@@ -138,30 +122,19 @@ class SignatureService
         imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
         imagedestroy($src);
 
-        $tinta = 0;
+        // Tolak gambar polos (semua piksel sama).
         $dasar = imagecolorat($dst, 0, 0);
-        for ($y = 0; $y < $nh; $y++) {
-            for ($x = 0; $x < $nw; $x++) {
-                $c = imagecolorat($dst, $x, $y);
-                if ($upload) {
-                    // Unggahan: hanya tolak gambar polos (semua piksel sama); warna tidak diubah.
-                    if ($c !== $dasar) {
-                        $tinta++;
-                    }
-                    continue;
-                }
-                $a = ($c >> 24) & 0x7F;
-                $r = ($c >> 16) & 0xFF; $g = ($c >> 8) & 0xFF; $b = $c & 0xFF;
-                if ($a < 127 && $r >= 235 && $g >= 235 && $b >= 235) {
-                    imagesetpixel($dst, $x, $y, imagecolorallocatealpha($dst, 0, 0, 0, 127));
-                } elseif ($a < 100) {
-                    $tinta++;
+        $beda = 0;
+        for ($y = 0; $y < $nh && $beda < 20; $y++) {
+            for ($x = 0; $x < $nw && $beda < 20; $x++) {
+                if (imagecolorat($dst, $x, $y) !== $dasar) {
+                    $beda++;
                 }
             }
         }
-        if ($tinta < max(20, (int) ($nw * $nh * 0.001))) {
+        if ($beda < 20) {
             imagedestroy($dst);
-            throw ValidationException::withMessages(['signature' => ['Gambar tanda tangan kosong atau polos. Pilih gambar yang benar.']]);
+            throw ValidationException::withMessages(['signature' => ['Gambar kosong atau polos. Pilih gambar visualisasi TTE yang benar.']]);
         }
 
         ob_start();
@@ -176,12 +149,15 @@ class SignatureService
      * Menandatangani satu versi BA. Idempoten: pengulangan untuk laporan, peran, dan versi yang sama
      * mengembalikan persetujuan yang sudah ada. Isian peran, waktu, dan hash selalu dari server.
      */
-    public function sign(InspectionReport $r, User $user, string $role, string $method, string $imageBytes, string $password, int $version, ?string $ip = null): ReportSignature
+    public function sign(InspectionReport $r, User $user, string $role, string $imageBytes, string $password, int $version, ?string $ip = null): ReportSignature
     {
-        if (!in_array($method, ['draw', 'upload'], true)) {
-            throw ValidationException::withMessages(['method' => ['Metode harus draw atau upload.']]);
-        }
         $this->authorize($r, $user, $role);
+        if (blank($user->nip)) {
+            // Visualisasi TTE dibuat dari NIP; akun penanda tangan harus memilikinya.
+            throw ValidationException::withMessages(['nip' => [$role === ReportSignature::ADMIN
+                ? 'Lengkapi NIP akun Anda di menu Akun (Ubah) sebelum menandatangani.'
+                : 'NIP akun Anda belum diisi. Minta admin melengkapinya di menu Akun.']]);
+        }
         if (!Hash::check($password, $user->password)) {
             throw ValidationException::withMessages(['password' => ['Sandi salah.']]);
         }
@@ -195,9 +171,9 @@ class SignatureService
             throw new \DomainException('Isi BA telah berubah. Muat ulang BA lalu periksa kembali sebelum menandatangani.');
         }
 
-        $png = $this->normalize($imageBytes, $method);
+        $png = $this->normalize($imageBytes);
 
-        return DB::transaction(function () use ($r, $user, $role, $method, $png, $version, $ip) {
+        return DB::transaction(function () use ($r, $user, $role, $png, $version, $ip) {
             $r = InspectionReport::lockForUpdate()->findOrFail($r->id);
             if ((int) $r->version !== $version) {
                 throw new \DomainException('Isi BA telah berubah. Muat ulang BA lalu periksa kembali sebelum menandatangani.');
@@ -215,14 +191,14 @@ class SignatureService
             Storage::disk(self::DISK)->put($path, $png);
 
             $sig = ReportSignature::create([
-                'report_id' => $r->id, 'role' => $role, 'user_id' => $user->id, 'method' => $method,
+                'report_id' => $r->id, 'role' => $role, 'user_id' => $user->id, 'method' => 'upload',
                 'signature_path' => $path, 'document_hash' => $this->documentHash($r), 'report_version' => $version,
-                'signed_at' => now(), 'provider' => 'gambar', 'ip' => $ip,
+                'signed_at' => now(), 'provider' => 'visualisasi_tte', 'ip' => $ip,
             ]);
 
             if ($r->submission) {
                 $label = $role === ReportSignature::KETUA ? 'Ketua Pengawas' : 'Admin';
-                $this->notifier->event($r->submission, $user, "report_signed_{$role}", "BA ditandatangani {$label}", "BA {$r->report_number} versi {$version}.", ['report_id' => $r->id, 'method' => $method]);
+                $this->notifier->event($r->submission, $user, "report_signed_{$role}", "BA ditandatangani {$label}", "BA {$r->report_number} versi {$version}.", ['report_id' => $r->id]);
                 if ($role === ReportSignature::KETUA) {
                     $this->notifier->toVerifiers($r->submission, 'report_signed_ketua', 'BA ditandatangani Ketua', "{$r->report_number} · {$r->nama_perumahan}", ['report_id' => $r->id]);
                 }
