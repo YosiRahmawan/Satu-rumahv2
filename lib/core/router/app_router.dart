@@ -11,6 +11,7 @@ import '../../features/monitoring/data/models/kamera_context.dart';
 import '../../features/monitoring/data/models/monitoring_model.dart';
 import '../../features/monitoring/presentation/screens/kamera_lapangan_screen.dart';
 import '../../features/monitoring/presentation/screens/laporan_preview_screen.dart';
+import '../../features/monitoring/presentation/screens/tanda_tangan_ba_screen.dart';
 import '../../features/monitoring/presentation/screens/laporan_success_screen.dart';
 import '../../features/monitoring/presentation/screens/monitoring_list_screen.dart';
 import '../../features/monitoring/presentation/screens/monitoring_draft_screen.dart';
@@ -231,6 +232,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             );
           }
           return LaporanSuccessScreen(monitoring: item);
+        },
+      ),
+      GoRoute(
+        path: '/monitoring/tanda-tangan',
+        builder: (_, state) {
+          final extra = state.extra;
+          final number = extra is Map ? '${extra['number'] ?? ''}' : '';
+          if (number.isEmpty) {
+            final role = ref.read(roleSessionProvider).role;
+            return RouteUnavailableScreen(
+              title: 'Laporan tidak tersedia',
+              message: 'Nomor BA tidak ditemukan. Buka lagi dari daftar laporan.',
+              safeDestination: monitoringFailureDestination(role),
+              destinationLabel: monitoringFailureDestinationLabel(role),
+            );
+          }
+          return TandaTanganBaScreen(number: number, namaPerumahan: (extra as Map)['nama'] as String?);
         },
       ),
       GoRoute(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
@@ -34,7 +35,7 @@ Widget _app({Size size = const Size(360, 800), double textScale = 1}) {
   );
   return MediaQuery(
     data: MediaQueryData(size: size, textScaler: TextScaler.linear(textScale)),
-    child: MaterialApp.router(routerConfig: router),
+    child: ProviderScope(child: MaterialApp.router(routerConfig: router)),
   );
 }
 
@@ -46,10 +47,15 @@ void main() {
     expect(find.text('Berita Acara Generated'), findsOneWidget);
     expect(find.text('Laporan Berhasil Dibuat!'), findsOneWidget);
     expect(
-      find.text('Berita Acara Monitoring & Evaluasi Lapangan resmi telah diterbitkan oleh sistem.'),
+      find.text(
+        'Berita Acara Monitoring & Evaluasi Lapangan telah terkirim ke Admin. Tanda tangani BA agar dapat diterbitkan.',
+      ),
       findsOneWidget,
     );
-    expect(find.text('BERITA ACARA MONITORING DAN EVALUASI LAPANGAN'), findsOneWidget);
+    expect(
+      find.text('BERITA ACARA MONITORING DAN EVALUASI LAPANGAN'),
+      findsOneWidget,
+    );
     expect(find.textContaining('Perumahan Uji'), findsOneWidget);
     expect(find.textContaining('Jl. Karikil, Cipari'), findsOneWidget);
     expect(find.textContaining('BA/2026/001'), findsOneWidget);
@@ -88,7 +94,7 @@ void main() {
     await tester.pumpWidget(
       MediaQuery(
         data: const MediaQueryData(size: Size(360, 800)),
-        child: MaterialApp.router(routerConfig: router),
+        child: ProviderScope(child: MaterialApp.router(routerConfig: router)),
       ),
     );
 

@@ -7,6 +7,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
+import '../widgets/ba_signature_entry_card.dart';
 import '../widgets/berita_acara_action_buttons.dart';
 import '../widgets/berita_acara_document_card.dart';
 import '../../utils/ba_pdf_generator.dart';
@@ -69,6 +70,11 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
                 monitoring: item,
                 isSuccessContext: true,
               ),
+              const SizedBox(height: 16),
+              BaSignatureEntryCard(
+                number: item.nomorSuratBA,
+                namaPerumahan: item.namaPerumahan,
+              ),
               const SizedBox(height: 24),
               BeritaAcaraActionButtons(
                 isPdfBusy: _isPdfBusy,
@@ -125,7 +131,7 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Text(
-          'Berita Acara Monitoring & Evaluasi Lapangan resmi telah diterbitkan oleh sistem.',
+          'Berita Acara Monitoring & Evaluasi Lapangan telah terkirim ke Admin. Tanda tangani BA agar dapat diterbitkan.',
           style: AppTextStyles.bodyMedium.copyWith(
             fontFamily: AppTextStyles.enterpriseFontFamily,
             fontSize: 13,
