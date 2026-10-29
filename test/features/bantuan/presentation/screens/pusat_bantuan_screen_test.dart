@@ -170,6 +170,12 @@ void main() {
         expect(find.text('Alur & Status Pengajuan'), findsOneWidget);
         // Verify stages from StatusTahapPengajuan enum
         for (final tahap in StatusTahapPengajuan.values) {
+          // Daftar tahap dibangun malas: gulir sampai tahap terakhir (Ditolak) terbuat.
+          await tester.scrollUntilVisible(
+            find.text(tahap.label),
+            80,
+            scrollable: find.byType(Scrollable).last,
+          );
           expect(find.text(tahap.label), findsWidgets);
         }
 

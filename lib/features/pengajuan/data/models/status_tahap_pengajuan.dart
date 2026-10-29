@@ -9,6 +9,7 @@ enum StatusTahapPengajuan {
   persetujuan,
   selesai,
   perluPerbaikan,
+  ditolak,
 }
 
 extension StatusTahapPengajuanX on StatusTahapPengajuan {
@@ -28,6 +29,8 @@ extension StatusTahapPengajuanX on StatusTahapPengajuan {
         return 'Selesai';
       case StatusTahapPengajuan.perluPerbaikan:
         return 'Perlu Perbaikan';
+      case StatusTahapPengajuan.ditolak:
+        return 'Ditolak';
     }
   }
 
@@ -47,6 +50,8 @@ extension StatusTahapPengajuanX on StatusTahapPengajuan {
         return AppColors.statusCompleted;
       case StatusTahapPengajuan.perluPerbaikan:
         return AppColors.primaryRed;
+      case StatusTahapPengajuan.ditolak:
+        return AppColors.statusUrgentText;
     }
   }
 
@@ -70,6 +75,8 @@ extension StatusTahapPengajuanX on StatusTahapPengajuan {
         return Icons.check_circle_outline;
       case StatusTahapPengajuan.perluPerbaikan:
         return Icons.warning_amber_rounded;
+      case StatusTahapPengajuan.ditolak:
+        return Icons.cancel_outlined;
     }
   }
 
@@ -89,6 +96,8 @@ extension StatusTahapPengajuanX on StatusTahapPengajuan {
         return 1.0;
       case StatusTahapPengajuan.perluPerbaikan:
         return 0.40;
+      case StatusTahapPengajuan.ditolak:
+        return 1.0;
     }
   }
 }

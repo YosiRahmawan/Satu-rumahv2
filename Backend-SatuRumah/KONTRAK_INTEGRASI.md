@@ -82,7 +82,7 @@ Kosakata `sub_status` yang diusulkan:
 | `terjadwal` | Survei dijadwalkan (tahap 4) | `surveyLapangan` |
 | `menunggu_persetujuan` | Laporan final diterima, menunggu keputusan | `persetujuan` |
 | `selesai` | Keputusan terbit (`decision_number`, `completed_at`) | `selesai` |
-| `ditolak` | Ditolak | belum ada di Flutter **[KEPUTUSAN Q04: final atau boleh diajukan ulang]** |
+| `ditolak` | Ditolak | `ditolak`; tombol "Ajukan Ulang" membuka form baru berisi data lama (berkas diunggah lagi, nomor baru) **[KEPUTUSAN Q04: keputusan tim, belum dikonfirmasi Disperwaskim]** |
 
 Aturan transisi memakai guard yang sudah ada di Flutter (lihat `design.md` bagian 6.2). **Server menjadi penentu
 akhir**; Flutter hanya menampilkan dan tidak boleh mengubah `stage` sendiri.
@@ -263,13 +263,13 @@ pemisahan hak admin (bila Disperwaskim meminta dua role).
 
 | Rujukan | Pertanyaan | Asumsi sementara di kode |
 |---|---|---|
-| Q04 | Nomor tahap 1 dan 6; `ditolak` final atau boleh diajukan ulang; arti `selesai` | Tahap 1 draf, 6 selesai; `ditolak` final (tidak ada pengajuan ulang) |
+| Q04 | Nomor tahap 1 dan 6; `ditolak` final atau boleh diajukan ulang; arti `selesai` | Tahap 1 draf, 6 selesai; `ditolak` tidak final: pengembang boleh mengajukan ulang sebagai pengajuan baru (data disalin, berkas diunggah lagi) |
 | Q05 | Nilai `decision_type`; apakah revisi wajib diperiksa ulang per berkas | `revisi`; berkas pengganti kembali `menunggu_telaah` dan dinilai ulang |
 | Q06/Q07 | Slot mana yang wajib; hubungan 18 slot dengan DOC01–DOC16 | Semua wajib kecuali S3-10; pemetaan DOC belum dibuat |
 | Q08 | Satu petugas atau tim; pengalihan dan pembatalan tugas | Satu petugas; pengalihan lewat jadwal ulang |
 | Q09 | Penandatangan BA, arti final, siapa membuat PDF resmi | `final` = terkirim petugas; belum ada PDF server |
 | Q10 | Matriks hak Administrator vs Verifikator | Digabung menjadi satu role `admin`; semua tindakan tercatat dengan nama pelakunya di Riwayat |
-| Q16 | Waktu penghentian layar Admin di Flutter | Layar Admin prototipe masih ada |
+| Q16 | Waktu penghentian layar Admin di Flutter | Dalam mode API, role web tidak bisa masuk lewat aplikasi dan layar Admin tidak terjangkau; kode prototipe masih ada untuk mode lokal |
 
 **Keputusan bahwa persetujuan akhir sah** (setuju/tolak, nomor dan tanggal SK) saat ini dicatat oleh verifikator di
 Web Admin. Apakah itu cukup sebagai keputusan resmi, atau perlu pejabat Disperwaskim menyetujui lebih dulu, adalah

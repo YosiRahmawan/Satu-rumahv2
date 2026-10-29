@@ -41,6 +41,8 @@ class PengajuanListCard extends StatelessWidget {
         return (4, 4, 'Selesai Validasi', 1.0);
       case StatusTahapPengajuan.perluPerbaikan:
         return (2, 4, 'Perlu Perbaikan', 0.40);
+      case StatusTahapPengajuan.ditolak:
+        return (4, 4, 'Ditolak', 1.0);
     }
   }
 
@@ -53,6 +55,7 @@ class PengajuanListCard extends StatelessWidget {
       return 'Perlu Perbaikan';
     }
     if (item.statusTahap == StatusTahapPengajuan.selesai) return 'Disetujui';
+    if (item.statusTahap == StatusTahapPengajuan.ditolak) return 'Ditolak';
     return 'Dalam Proses';
   }
 

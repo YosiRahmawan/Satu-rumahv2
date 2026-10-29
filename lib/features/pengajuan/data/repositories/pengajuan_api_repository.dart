@@ -9,6 +9,7 @@ import '../../../../core/utils/file_picker_util.dart';
 import '../../presentation/providers/pengajuan_form_controller.dart';
 import '../models/hasil_survey_model.dart';
 import '../models/pengajuan_model.dart';
+import '../models/riwayat_item.dart';
 import '../models/status_tahap_pengajuan.dart';
 import '../slot_catalog.dart';
 
@@ -70,6 +71,26 @@ class PengajuanApiRepository implements PengajuanRemote {
       return [
         for (final item in data)
           if (item['status_tahap'] != 'draft') pengajuanFromApi(item),
+      ];
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// Riwayat peristiwa pengajuan [number] (terbaru dahulu). Kosong bila nomor
+  /// belum dikenal server.
+  Future<List<RiwayatItem>> timeline(String number) async {
+    try {
+      if (!_idByNumber.containsKey(number)) await list();
+      final id = _idByNumber[number];
+      if (id == null) return const [];
+      final response = await _dio.get<Map<String, dynamic>>(
+        'submissions/$id/timeline',
+      );
+      return [
+        for (final e
+            in (response.data!['data'] as List).cast<Map<String, dynamic>>())
+          RiwayatItem.fromJson(e),
       ];
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
@@ -298,6 +319,16 @@ class PengajuanApiRepository implements PengajuanRemote {
   }
 }
 
+/// Riwayat aktivitas satu pengajuan dari server. Mode lokal (tanpa API) kosong.
+final riwayatPengajuanProvider = FutureProvider.autoDispose
+    .family<List<RiwayatItem>, String>((ref, number) async {
+      if (!ref.watch(apiEnabledProvider)) return const <RiwayatItem>[];
+      final remote = ref.watch(pengajuanRemoteProvider);
+      return remote is PengajuanApiRepository
+          ? remote.timeline(number)
+          : const <RiwayatItem>[];
+    });
+
 final pengajuanRemoteProvider = Provider<PengajuanRemote>(
   (ref) => PengajuanApiRepository(ref.watch(apiDioProvider)),
 );
@@ -431,6 +462,8 @@ Pengajuan pengajuanFromApi(Map<String, dynamic> json) {
         ? 'Selesai'
         : tahapNow == StatusTahapPengajuan.perluPerbaikan
         ? 'Perlu Perbaikan'
+        : tahapNow == StatusTahapPengajuan.ditolak
+        ? 'Ditolak'
         : 'Dalam Proses',
     statusTahap: tahapNow,
     tanggal: _tanggal(json['submitted_at'] as String?),

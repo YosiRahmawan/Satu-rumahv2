@@ -9,7 +9,8 @@ enum PengajuanFilter {
   menungguVerifikasi('Menunggu Verifikasi Perbaikan'),
   perbaikan('Perlu Perbaikan'),
   proses('Dalam Proses'),
-  selesai('Disetujui');
+  selesai('Disetujui'),
+  ditolak('Ditolak');
 
   const PengajuanFilter(this.label);
   final String label;
@@ -26,9 +27,11 @@ enum PengajuanFilter {
           !item.revisionSubmitted &&
           item.status.toLowerCase() != 'menunggu verifikasi perbaikan',
     selesai => item.statusTahap == StatusTahapPengajuan.selesai,
+    ditolak => item.statusTahap == StatusTahapPengajuan.ditolak,
     proses =>
       item.statusTahap != StatusTahapPengajuan.perluPerbaikan &&
           item.statusTahap != StatusTahapPengajuan.selesai &&
+          item.statusTahap != StatusTahapPengajuan.ditolak &&
           item.status.toLowerCase() != 'menunggu verifikasi perbaikan' &&
           !item.revisionSubmitted,
   };
@@ -44,7 +47,9 @@ enum PengajuanSort {
 
 DateTime parsePengajuanDate(String tanggal) {
   final matchYear = RegExp(r'\b(19|20)\d{2}\b').firstMatch(tanggal);
-  final year = matchYear != null ? int.tryParse(matchYear.group(0)!) ?? 2026 : 2026;
+  final year = matchYear != null
+      ? int.tryParse(matchYear.group(0)!) ?? 2026
+      : 2026;
 
   final lower = tanggal.toLowerCase();
   int month = 1;

@@ -635,6 +635,22 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
     }
   }
 
+  /// Menyalin data isian pengajuan [p] ke form baru ("Ajukan Ulang" setelah
+  /// ditolak). Berkas tidak ikut disalin: harus diunggah lagi, dan pengajuan
+  /// baru mendapat nomor baru dari server.
+  void prefillFrom(Pengajuan p) {
+    state = PengajuanFormState(
+      tipePengajuan: p.tipePengajuan ?? 'Pengajuan Site Plan Baru',
+      namaPerumahan: p.namaPerumahan,
+      alamatProyek: p.alamatProyek ?? '',
+      npwpPerusahaan: p.npwpPerusahaan,
+      npwpVerified: true,
+      luasLahan: p.luasLahan,
+      jumlahUnit: p.jumlahUnit,
+      tipePerumahan: p.tipePerumahan,
+    );
+  }
+
   void fillDummyData() {
     state = PengajuanFormState(
       tipePengajuan: 'Pengajuan Site Plan Baru',
