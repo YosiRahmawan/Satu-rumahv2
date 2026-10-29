@@ -34,7 +34,7 @@ class TandaTanganBaScreen extends ConsumerStatefulWidget {
 }
 
 class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
-  static const _maxBytes = 2 * 1024 * 1024;
+  static const _maxBytes = 4 * 1024 * 1024;
 
   final _pad = SignaturePadController();
   final _password = TextEditingController();
@@ -98,15 +98,15 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
       if (bytes == null || bytes.isEmpty)
         return _setUploadError('Gambar tidak bisa dibaca. Pilih berkas lain.');
       if (bytes.length > _maxBytes)
-        return _setUploadError('Ukuran gambar maksimal 2 MB.');
+        return _setUploadError('Ukuran gambar maksimal 4 MB.');
       final ext = (file.extension ?? '').toLowerCase();
       if (ext != 'png' && ext != 'jpg' && ext != 'jpeg')
         return _setUploadError('Gunakan gambar PNG atau JPEG.');
       final decoded = await _decode(bytes);
       if (decoded == null)
         return _setUploadError('Berkas bukan gambar yang valid.');
-      if (decoded.$1 < 80 || decoded.$2 < 40)
-        return _setUploadError('Gambar terlalu kecil (minimal 80x40 piksel).');
+      if (decoded.$1 < 40 || decoded.$2 < 20)
+        return _setUploadError('Gambar terlalu kecil (minimal 40x20 piksel).');
       setState(() {
         _uploaded = bytes;
         _uploadName = ext == 'png' ? 'ttd.png' : 'ttd.jpg';
@@ -425,7 +425,7 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
               ),
             ),
           const Text(
-            'PNG atau JPEG, maksimal 2 MB. Latar putih otomatis dibuat transparan.',
+            'Gambar visualisasi TTE (unduh di suresman.tasikmalayakota.go.id/visualcustom dengan NIP Anda) atau gambar tanda tangan. PNG atau JPEG, maksimal 4 MB; ukurannya menyesuaikan di PDF.',
             style: TextStyle(
               color: AppColors.enterpriseTextMuted,
               fontSize: 12,
