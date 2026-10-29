@@ -15,6 +15,9 @@ return [
 
     'roles' => ['administrator', 'verifikator', 'pengembang', 'tim_lapangan'],
 
+    // Format PDF BA. Tetap false sampai Disperwaskim menyetujui template resmi; PDF diberi tanda "template sementara".
+    'ba_template_resmi' => (bool) env('BA_TEMPLATE_RESMI', false),
+
     'defaults' => [
         // SLA (hari kerja) per tahap
         'sla.t2_days' => (int) env('SLA_T2_DAYS', 5),

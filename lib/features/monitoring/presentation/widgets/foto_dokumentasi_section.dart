@@ -11,7 +11,6 @@ import '../../services/photo_import.dart';
 import '../../services/stamp_renderer.dart';
 import '../providers/camera_providers.dart';
 import '../providers/monitoring_form_provider.dart';
-import '../screens/kamera_lapangan_screen.dart' show kMaxReportPhotos;
 import '../../../../core/widgets/app_illustration.dart';
 
 /// Bagian foto di Langkah 3: ambil lewat kamera aplikasi atau pilih dari

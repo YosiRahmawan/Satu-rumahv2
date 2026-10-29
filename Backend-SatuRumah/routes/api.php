@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\DeveloperProfileController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\Officer\AssignmentController;
 use App\Http\Controllers\Api\Officer\ReportController;
+use App\Http\Controllers\Api\Officer\ReportSignatureController;
 use App\Http\Controllers\Api\Officer\ReportPhotoController;
 use App\Http\Controllers\Api\SubmissionController;
 use App\Http\Controllers\Api\SubmissionFileController;
@@ -54,6 +55,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('reports/{id}', [ReportController::class, 'show'])->whereNumber('id');
                 Route::put('reports/{id}', [ReportController::class, 'update'])->whereNumber('id');
                 Route::post('reports/{id}/submit', [ReportController::class, 'submit'])->whereNumber('id');
+                Route::post('reports/{id}/sign', [ReportSignatureController::class, 'sign'])->whereNumber('id')->middleware('throttle:signature');
+                Route::get('reports/{id}/pdf', [ReportSignatureController::class, 'pdf'])->whereNumber('id');
 
                 Route::post('reports/{id}/photos', [ReportPhotoController::class, 'store'])->whereNumber('id');
                 Route::delete('reports/{id}/photos/{photoId}', [ReportPhotoController::class, 'destroy'])->whereNumber(['id', 'photoId']);

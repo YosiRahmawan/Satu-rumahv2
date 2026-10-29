@@ -20,6 +20,8 @@ class SubmissionWorkflow
         private readonly NumberGenerator $numbers,
         private readonly SubmissionFileValidator $files,
         private readonly Notifier $notifier,
+        private readonly SignatureService $signatures,
+        private readonly BaPdfService $pdf,
     ) {
     }
 
@@ -391,9 +393,13 @@ class SubmissionWorkflow
         if ($s->stage < Submission::STAGE_PERSETUJUAN) {
             throw new \DomainException('Terima laporan survei lebih dulu sebelum menerbitkan BA.');
         }
+        if (!$this->signatures->status($report)['ready_to_publish']) {
+            throw new \DomainException('BA belum ditandatangani Ketua Pengawas dan Admin, atau isinya berubah setelah ditandatangani.');
+        }
 
         return DB::transaction(function () use ($s, $report, $by) {
             $report->forceFill(['published_at' => now()])->save();
+            $this->pdf->generate($report); // PDF final dibuat server; gagal membuat PDF membatalkan penerbitan
             $this->notifier->event($s, $by, 'report_published', 'BA diterbitkan', "BA {$report->report_number} diterbitkan.", ['report_id' => $report->id]);
             $this->notifier->toUser($report->officer_id, $s, 'report_published', 'BA diterbitkan', "{$report->report_number} · {$s->nama_perumahan}", ['report_id' => $report->id]);
             $this->notifier->toDeveloper($s, 'report_published', 'BA diterbitkan', "{$s->number}: BA {$report->report_number} diterbitkan.");

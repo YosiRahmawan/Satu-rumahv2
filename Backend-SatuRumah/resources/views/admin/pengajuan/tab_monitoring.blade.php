@@ -99,20 +99,33 @@
                     <div class="fw-700">{{ $r->report_number }} &middot; {{ $r->officer?->name }}</div>
                     @php
                         $diverifikasi = $s->stage >= \App\Models\Submission::STAGE_PERSETUJUAN;
+                        $ttd = app(\App\Services\SignatureService::class)->status($r);
                     @endphp
                     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
                         @if($r->published_at)
                             <span class="badge badge-success badge-dot">Diterbitkan {{ $r->published_at->translatedFormat('d M Y') }}</span>
+                            @if($r->pdf_path)<a class="btn btn-outline btn-sm" href="{{ route('pengajuan.pdf_ba', [$s->id, $r->id]) }}">Unduh PDF</a>@endif
                         @elseif($diverifikasi)
                             <span class="badge badge-info badge-dot">Diverifikasi</span>
-                            <form method="POST" action="{{ route('pengajuan.terbitkan_ba', [$s->id, $r->id]) }}" data-konfirmasi="BA {{ $r->report_number }} akan ditandai resmi dan petugas serta pengembang diberi tahu." data-konfirmasi-judul="Terbitkan BA" data-konfirmasi-tombol="Ya, terbitkan">
-                                @csrf <button class="btn btn-primary btn-sm">Terbitkan BA</button>
-                            </form>
+                            @if($ttd['ready_to_publish'])
+                                <form method="POST" action="{{ route('pengajuan.terbitkan_ba', [$s->id, $r->id]) }}" data-konfirmasi="BA {{ $r->report_number }} akan ditandai terbit dan PDF final dibuat. Petugas dan pengembang diberi tahu." data-konfirmasi-judul="Terbitkan BA" data-konfirmasi-tombol="Ya, terbitkan">
+                                    @csrf <button class="btn btn-primary btn-sm">Terbitkan BA</button>
+                                </form>
+                            @elseif($ttd['ketua']['signed'])
+                                <button type="button" class="btn btn-primary btn-sm" data-ttd="{{ route('pengajuan.tanda_tangan_ba', [$s->id, $r->id]) }}" data-ttd-versi="{{ $r->version }}" data-ttd-nomor="{{ $r->report_number }}">Tanda tangani</button>
+                                <button type="button" class="btn btn-primary btn-sm" disabled title="Tanda tangani dulu">Terbitkan BA</button>
+                            @else
+                                <button type="button" class="btn btn-primary btn-sm" disabled title="Menunggu tanda tangan Ketua Pengawas">Terbitkan BA</button>
+                            @endif
                         @else
                             <span class="badge badge-warning badge-dot">Dikirim</span>
                             <span class="text-muted" style="font-size:12px;">Terima laporan untuk memverifikasi</span>
                         @endif
                     </div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;">
+                    <span class="badge {{ $ttd['ketua']['signed'] ? 'badge-success' : 'badge-warning' }} badge-dot">Ketua Pengawas: {{ $ttd['ketua']['signed'] ? 'sudah menyetujui' : 'belum menyetujui' }}</span>
+                    <span class="badge {{ $ttd['admin']['signed'] ? 'badge-success' : '' }} badge-dot">Admin: {{ $ttd['admin']['signed'] ? 'sudah menyetujui' : 'belum menyetujui' }}</span>
                 </div>
                 <div class="text-muted" style="font-size:12px;margin-bottom:8px;">
                     Dikirim {{ $r->submitted_at?->translatedFormat('d M Y, H.i') }} &middot; Hasil: {{ $r->status_hasil_evaluasi }}
@@ -250,5 +263,139 @@
     document.getElementById('batalTutup').addEventListener('click', tutup);
     document.getElementById('batalBatal').addEventListener('click', tutup);
     m.addEventListener('click', (e) => { if (e.target === m) tutup(); });
+})();
+</script>
+
+<div id="ttdModal" class="modal-backdrop" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="ttdJudul">
+    <div class="modal" style="max-width:520px;">
+        <div class="modal-head">
+            <div>
+                <h3 class="modal-title" id="ttdJudul">Tanda Tangan Admin</h3>
+                <div class="modal-sub" id="ttdNomor"></div>
+            </div>
+            <button type="button" class="modal-close" id="ttdTutup" aria-label="Tutup" style="font-size:24px;">&times;</button>
+        </div>
+        <form method="POST" id="ttdForm" action="#" enctype="multipart/form-data">
+            @csrf
+            <input type="hidden" name="version" id="ttdVersi">
+            <input type="hidden" name="method" id="ttdMetode" value="draw">
+            <input type="hidden" name="signature_data" id="ttdData">
+            <div class="modal-body" style="display:grid;gap:12px;">
+                <div class="seg" style="justify-self:start;">
+                    <button type="button" class="seg-btn is-active" data-ttd-tab="draw">Gambar langsung</button>
+                    <button type="button" class="seg-btn" data-ttd-tab="upload">Unggah gambar</button>
+                </div>
+
+                <div id="ttdDraw">
+                    <canvas id="ttdCanvas" width="460" height="180" style="width:100%;max-width:460px;height:auto;border:1px dashed var(--border-strong);border-radius:10px;background:#fff;touch-action:none;cursor:crosshair;"></canvas>
+                    <div style="display:flex;gap:8px;margin-top:6px;"><button type="button" class="btn btn-outline btn-sm" id="ttdHapus">Hapus dan ulangi</button></div>
+                </div>
+
+                <div id="ttdUpload" style="display:none;">
+                    <input type="file" id="ttdBerkas" accept="image/png,image/jpeg" class="form-input">
+                    <div class="text-muted" style="font-size:12px;margin-top:4px;">PNG atau JPEG, maksimal 2 MB. Latar putih otomatis dibuat transparan.</div>
+                    <button type="button" class="btn btn-outline btn-sm" id="ttdGanti" style="display:none;margin-top:6px;">Hapus gambar</button>
+                </div>
+
+                <div>
+                    <div class="form-label">Pratinjau</div>
+                    <div style="min-height:80px;border:1px solid var(--border);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;padding:8px;">
+                        <img id="ttdPratinjau" alt="Pratinjau tanda tangan" style="max-height:90px;max-width:100%;display:none;">
+                        <span id="ttdKosong" class="text-muted" style="font-size:12px;">Belum ada tanda tangan</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label" for="ttdSandi">Konfirmasi dengan sandi Anda</label>
+                    <input class="form-input" type="password" name="password" id="ttdSandi" autocomplete="current-password" required>
+                </div>
+                <div class="text-muted" style="font-size:12px;">Ini persetujuan elektronik berbasis akun Anda, bukan tanda tangan elektronik tersertifikasi. Isi BA yang disetujui dikunci dengan sidik digital.</div>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-outline" id="ttdBatal">Batal</button>
+                <button type="submit" class="btn btn-primary" id="ttdKirim">Setujui dan Tandatangani</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+(function () {
+    const $ = (id) => document.getElementById(id);
+    const m = $('ttdModal');
+    if (!m) return;
+    const canvas = $('ttdCanvas');
+    const ctx = canvas.getContext('2d');
+    let metode = 'draw', tergambar = false, menggambar = false, kirim = false;
+
+    function reset() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        tergambar = false;
+        $('ttdBerkas').value = '';
+        $('ttdGanti').style.display = 'none';
+        $('ttdData').value = '';
+        pratinjau(null);
+    }
+    function pratinjau(src) {
+        $('ttdPratinjau').style.display = src ? '' : 'none';
+        $('ttdKosong').style.display = src ? 'none' : '';
+        if (src) $('ttdPratinjau').src = src;
+    }
+    function tab(nama) {
+        metode = nama;
+        $('ttdMetode').value = nama;
+        $('ttdDraw').style.display = nama === 'draw' ? '' : 'none';
+        $('ttdUpload').style.display = nama === 'upload' ? '' : 'none';
+        document.querySelectorAll('[data-ttd-tab]').forEach(b => b.classList.toggle('is-active', b.dataset.ttdTab === nama));
+        // Hanya satu sumber gambar yang dikirim.
+        $('ttdBerkas').name = nama === 'upload' ? 'signature' : '';
+        reset();
+    }
+    const titik = (e) => {
+        const r = canvas.getBoundingClientRect();
+        return [(e.clientX - r.left) * canvas.width / r.width, (e.clientY - r.top) * canvas.height / r.height];
+    };
+    canvas.addEventListener('pointerdown', (e) => { menggambar = true; canvas.setPointerCapture(e.pointerId); const [x, y] = titik(e); ctx.beginPath(); ctx.moveTo(x, y); });
+    canvas.addEventListener('pointermove', (e) => {
+        if (!menggambar) return;
+        const [x, y] = titik(e);
+        ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#111';
+        ctx.lineTo(x, y); ctx.stroke(); tergambar = true;
+    });
+    const selesai = () => { if (!menggambar) return; menggambar = false; if (tergambar) pratinjau(canvas.toDataURL('image/png')); };
+    canvas.addEventListener('pointerup', selesai);
+    canvas.addEventListener('pointerleave', selesai);
+    $('ttdHapus').addEventListener('click', reset);
+    $('ttdGanti').addEventListener('click', reset);
+    $('ttdBerkas').addEventListener('change', (e) => {
+        const f = e.target.files[0];
+        if (!f) return reset();
+        if (!['image/png', 'image/jpeg'].includes(f.type) || f.size > 2 * 1024 * 1024) { alert('Pilih gambar PNG atau JPEG maksimal 2 MB.'); return reset(); }
+        pratinjau(URL.createObjectURL(f));
+        $('ttdGanti').style.display = '';
+    });
+    document.querySelectorAll('[data-ttd-tab]').forEach(b => b.addEventListener('click', () => tab(b.dataset.ttdTab)));
+
+    const tutup = () => { m.style.display = 'none'; reset(); $('ttdSandi').value = ''; kirim = false; $('ttdKirim').disabled = false; };
+    document.querySelectorAll('[data-ttd]').forEach(b => b.addEventListener('click', () => {
+        $('ttdForm').action = b.dataset.ttd;
+        $('ttdVersi').value = b.dataset.ttdVersi;
+        $('ttdNomor').textContent = 'BA ' + b.dataset.ttdNomor;
+        tab('draw');
+        m.style.display = 'flex';
+    }));
+    $('ttdTutup').addEventListener('click', tutup);
+    $('ttdBatal').addEventListener('click', tutup);
+    m.addEventListener('click', (e) => { if (e.target === m) tutup(); });
+    $('ttdForm').addEventListener('submit', (e) => {
+        if (kirim) { e.preventDefault(); return; } // cegah kirim ganda
+        if (metode === 'draw') {
+            if (!tergambar) { e.preventDefault(); alert('Gambar tanda tangan Anda terlebih dahulu.'); return; }
+            $('ttdData').value = canvas.toDataURL('image/png');
+        } else if (!$('ttdBerkas').files.length) {
+            e.preventDefault(); alert('Pilih gambar tanda tangan terlebih dahulu.'); return;
+        }
+        kirim = true; $('ttdKirim').disabled = true;
+    });
 })();
 </script>
