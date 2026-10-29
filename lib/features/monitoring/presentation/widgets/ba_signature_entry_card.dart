@@ -37,12 +37,12 @@ class BaSignatureEntryCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Persetujuan Berita Acara',
+            'Tanda Tangan Berita Acara',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
           ),
           const SizedBox(height: 4),
           const Text(
-            'BA diterbitkan Admin setelah Anda (Ketua Pengawas) dan Admin menyetujuinya.',
+            'BA diterbitkan Admin setelah Anda (Ketua Pengawas) dan Admin menandatanganinya dengan visualisasi TTE.',
             style: TextStyle(
               color: AppColors.enterpriseTextMuted,
               fontSize: 12.5,
@@ -114,14 +114,14 @@ class BaSignatureEntryCard extends ConsumerWidget {
           children: [
             chip(
               s.ketuaSigned
-                  ? 'Ketua: sudah menyetujui'
-                  : 'Ketua: belum menyetujui',
+                  ? 'Ketua: sudah menandatangani'
+                  : 'Ketua: belum menandatangani',
               s.ketuaSigned,
             ),
             chip(
               s.adminSigned
-                  ? 'Admin: sudah menyetujui'
-                  : 'Admin: belum menyetujui',
+                  ? 'Admin: sudah menandatangani'
+                  : 'Admin: belum menandatangani',
               s.adminSigned,
             ),
             if (s.published) chip('Diterbitkan', true),

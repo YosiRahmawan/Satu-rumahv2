@@ -1,5 +1,4 @@
-/// Status persetujuan elektronik BA dari server (Ketua Pengawas lalu Admin).
-/// Bukan tanda tangan elektronik tersertifikasi: hanya persetujuan berbasis akun.
+/// Status tanda tangan BA dari server (Ketua Pengawas lalu Admin).
 class BaSignatureStatus {
   const BaSignatureStatus({
     this.ketuaSigned = false,
@@ -35,19 +34,16 @@ class BaSignatureStatus {
   }
 }
 
-/// Gambar tanda tangan siap kirim: PNG dari kanvas atau berkas yang dipilih.
+/// Visualisasi TTE (gambar PNG/JPEG dari Suresman) siap diunggah.
 class SignatureImage {
   const SignatureImage({
     required this.bytes,
-    required this.method,
     this.filename = 'ttd.png',
     this.contentType = 'image/png',
   });
 
   final List<int> bytes;
 
-  /// `draw` (gambar langsung) atau `upload` (unggah gambar).
-  final String method;
   final String filename;
   final String contentType;
 }
