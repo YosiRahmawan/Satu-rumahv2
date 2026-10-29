@@ -1383,14 +1383,18 @@ class _TambahMonitoringStepperScreenState
     final hasRequiredRtl =
         !state.statusHasilEvaluasi.wajibRencanaTindakLanjut ||
         state.rencanaTindakLanjut.any((item) => item.trim().isNotEmpty);
+    final photoBlocker = photoSubmitBlocker(state.photos);
+    final hasValidPhotos = photoBlocker == null;
+    final photoLabel = hasValidPhotos
+        ? '${state.photos.length} foto dokumentasi siap dilampirkan'
+        : (state.photos.isEmpty
+            ? 'Minimal 1 foto dokumentasi lapangan (wajib)'
+            : photoBlocker);
+
     final checks = [
       (hasHousing, 'Nama perumahan dari Langkah 1'),
       (hasRequiredRtl, 'Rencana tindak lanjut dari Langkah 2'),
-      if (state.photos.isNotEmpty)
-        (
-          photoSubmitBlocker(state.photos) == null,
-          '${state.photos.length} foto dokumentasi siap dilampirkan',
-        ),
+      (hasValidPhotos, photoLabel),
     ];
     return Container(
       width: double.infinity,

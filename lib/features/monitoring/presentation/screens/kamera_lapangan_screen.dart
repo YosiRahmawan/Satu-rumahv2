@@ -19,8 +19,8 @@ import '../providers/monitoring_form_provider.dart';
 import '../providers/monitoring_list_provider.dart';
 import '../widgets/kamera_flow.dart';
 
-/// Jumlah foto maksimum per laporan.
-const int kMaxReportPhotos = 10;
+/// Jumlah foto maksimum per laporan (diekspor kembali dari provider form monitoring).
+export '../providers/monitoring_form_provider.dart' show kMaxReportPhotos;
 
 class _Pending {
   final Uint8List bytes;

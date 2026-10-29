@@ -22,8 +22,17 @@ import '../../../pengajuan/data/repositories/pengajuan_api_repository.dart'
 import 'camera_providers.dart';
 import 'monitoring_list_provider.dart';
 
+/// Jumlah foto maksimum per laporan.
+const int kMaxReportPhotos = 10;
+
 /// Alasan foto menghalangi pengiriman laporan, atau null bila semuanya siap.
 String? photoSubmitBlocker(List<ReportPhoto> photos) {
+  if (photos.isEmpty) {
+    return 'Laporan wajib memiliki minimal 1 foto dokumentasi sebelum submit.';
+  }
+  if (photos.length > kMaxReportPhotos) {
+    return 'Maksimal $kMaxReportPhotos foto per laporan.';
+  }
   final reselect = photos.where((p) => p.needsReselect).length;
   if (reselect > 0) {
     return '$reselect foto perlu diambil ulang karena berkasnya tidak tersimpan. Hapus lalu potret kembali.';
@@ -487,6 +496,12 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
       return null;
     }
 
+    final photoBlocker = photoSubmitBlocker(state.photos);
+    if (photoBlocker != null) {
+      state = state.copyWith(errorMessage: photoBlocker);
+      return null;
+    }
+
     final filteredRTL = state.rencanaTindakLanjut
         .where((e) => e.trim().isNotEmpty)
         .toList();
@@ -661,10 +676,13 @@ class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
 
   /// Alasan laporan belum boleh dikirim, atau null bila siap.
   String? _submitBlocker(MonitoringModel draft) {
-    if (draft.namaPerumahan.trim().isEmpty)
+    if (draft.namaPerumahan.trim().isEmpty) {
       return 'Nama Perumahan wajib diisi.';
+    }
     final photoBlocker = photoSubmitBlocker(draft.photos);
-    if (photoBlocker != null) return photoBlocker;
+    if (photoBlocker != null) {
+      return photoBlocker;
+    }
     if (draft.statusHasilEvaluasi.wajibRencanaTindakLanjut &&
         draft.rencanaTindakLanjut.every((item) => item.trim().isEmpty)) {
       return 'Untuk status "${draft.statusHasilEvaluasi.label}", wajib mengisikan minimal 1 poin Rencana Tindak Lanjut.';

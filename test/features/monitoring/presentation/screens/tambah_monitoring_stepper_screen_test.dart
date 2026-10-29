@@ -1,13 +1,19 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
+import 'package:satu_rumah/features/monitoring/data/models/geo_stamp.dart';
+import 'package:satu_rumah/features/monitoring/data/models/report_photo.dart';
 import 'package:satu_rumah/features/monitoring/data/models/status_hasil_evaluasi.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_form_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/screens/tambah_monitoring_stepper_screen.dart';
+
+import '../../../../support/camera_fakes.dart';
 
 void main() {
   late ProviderContainer container;
@@ -332,6 +338,18 @@ void main() {
     final router = _router();
     final notifier = container.read(monitoringFormProvider.notifier);
     notifier.updateNamaPerumahan('Perumahan Preview');
+    notifier.addPhoto(
+      ReportPhoto(
+        id: 'photo-preview',
+        source: PhotoSource.camera,
+        stamp: GeoStamp(
+          latitude: -7.3274,
+          longitude: 108.2207,
+          capturedAt: DateTime(2025, 5, 22),
+        ),
+      ),
+      plainJpeg(),
+    );
     notifier.setStep(2);
 
     await pumpStep1(tester, router: router);
@@ -350,6 +368,41 @@ void main() {
     expect(container.read(monitoringFormProvider).errorMessage, isNull);
     expect(find.text('Preview Berita Acara'), findsOneWidget);
     expect(container.read(monitoringFormProvider).isSubmitting, isFalse);
+  });
+
+  testWidgets('Step 3 blocks submit to preview when 0 photos and shows SnackBar', (
+    tester,
+  ) async {
+    final router = _router();
+    final notifier = container.read(monitoringFormProvider.notifier);
+    notifier.updateNamaPerumahan('Perumahan Tanpa Foto');
+    notifier.setStep(2);
+
+    await pumpStep1(tester, router: router);
+
+    expect(
+      find.text('Minimal 1 foto dokumentasi lapangan (wajib)'),
+      findsOneWidget,
+    );
+
+    final previewAction = find.text('Submit & Buat Berita Acara');
+    final previewButton = find.ancestor(
+      of: previewAction,
+      matching: find.byType(ElevatedButton),
+    );
+    await tester.ensureVisible(previewButton);
+    await tester.tap(previewButton);
+    await tester.pump();
+
+    expect(
+      find.text('Laporan wajib memiliki minimal 1 foto dokumentasi sebelum submit.'),
+      findsOneWidget,
+    );
+    expect(find.text('Preview Berita Acara'), findsNothing);
+    expect(
+      container.read(monitoringFormProvider).namaPerumahan,
+      'Perumahan Tanpa Foto',
+    );
   });
 
   testWidgets('Step 3 remains usable at 360dp and 412dp with 200% text', (
@@ -692,6 +745,18 @@ void main() {
     notifier.updatePengajuanId('SR-2025-0148');
     notifier.updateNamaPerumahan('Griya Mangkubumi Asri');
     notifier.updateStatusHasilEvaluasi(StatusHasilEvaluasi.sesuaiSiteplan);
+    notifier.addPhoto(
+      ReportPhoto(
+        id: 'photo-draf-1',
+        source: PhotoSource.camera,
+        stamp: GeoStamp(
+          latitude: -7.3274,
+          longitude: 108.2207,
+          capturedAt: DateTime(2025, 5, 22),
+        ),
+      ),
+      Uint8List(0),
+    );
     final draft = notifier.saveDraft()!;
     expect(repo.getMonitoringById(draft.id)!.isDraft, isTrue);
 

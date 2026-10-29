@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:satu_rumah/features/monitoring/data/models/geo_stamp.dart';
 import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart';
+import 'package:satu_rumah/features/monitoring/data/models/report_photo.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/monitoring_repository.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_form_provider.dart';
 
@@ -9,12 +11,24 @@ MonitoringModel _report(
   String? nomor,
   DateTime? tanggal,
   bool isDraft = true,
+  List<ReportPhoto>? photos,
 }) => MonitoringModel(
   id: id,
   tanggalMonitoring: tanggal ?? DateTime(2026, 10, 19),
   namaPerumahan: 'Perumahan $id',
   nomorSuratBA: nomor,
   pengajuanId: 'SR-2025-0148',
+  photos: photos ?? [
+    ReportPhoto(
+      id: 'photo-$id',
+      source: PhotoSource.camera,
+      stamp: GeoStamp(
+        latitude: -7.3274,
+        longitude: 108.2207,
+        capturedAt: tanggal ?? DateTime(2026, 10, 19),
+      ),
+    ),
+  ],
   isDraft: isDraft,
 );
 
