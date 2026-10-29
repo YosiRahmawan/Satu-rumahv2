@@ -8,6 +8,7 @@ import '../../../../core/api/api_client.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/data/slot_catalog.dart';
+import '../models/ba_signature.dart';
 import '../models/monitoring_model.dart';
 import '../models/report_photo.dart';
 import '../photo_bytes_cache.dart';
@@ -112,6 +113,18 @@ abstract class OfficerRemote {
     required double longitude,
     void Function(String message, double fraction)? onProgress,
   });
+
+  /// Status persetujuan Ketua dan Admin untuk BA bernomor [reportNumber].
+  Future<BaSignatureStatus> signatureStatus(String reportNumber);
+
+  /// Ketua Pengawas menyetujui BA dengan gambar tanda tangan dan konfirmasi sandi.
+  /// [idempotencyKey] harus sama pada percobaan ulang agar tidak tersimpan ganda.
+  Future<BaSignatureStatus> signReport({
+    required String reportNumber,
+    required SignatureImage image,
+    required String password,
+    required String idempotencyKey,
+  });
 }
 
 class OfficerApiRepository implements OfficerRemote {
@@ -180,6 +193,64 @@ class OfficerApiRepository implements OfficerRemote {
       return '${sent['report_number']}';
     } on DioException catch (e) {
       throw _describe(ApiException.fromDio(e));
+    }
+  }
+
+  /// Id dan versi laporan di server dari nomor BA (daftar laporan milik petugas).
+  Future<({int id, int version})> _resolveReport(String number) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      'officer/reports',
+      queryParameters: {'per_page': 50},
+    );
+    for (final item in (response.data!['data'] as List).cast<Map<String, dynamic>>()) {
+      if ('${item['report_number']}' == number) {
+        return (id: item['id'] as int, version: item['version'] as int);
+      }
+    }
+    throw const ApiException(
+      code: 'NOT_FOUND',
+      status: 404,
+      message: 'Laporan tidak ditemukan di server. Muat ulang lalu coba lagi.',
+    );
+  }
+
+  @override
+  Future<BaSignatureStatus> signatureStatus(String reportNumber) async {
+    try {
+      final ref = await _resolveReport(reportNumber);
+      final detail = await _dio.get<Map<String, dynamic>>('officer/reports/${ref.id}');
+      return BaSignatureStatus.fromReport(detail.data!['data'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  @override
+  Future<BaSignatureStatus> signReport({
+    required String reportNumber,
+    required SignatureImage image,
+    required String password,
+    required String idempotencyKey,
+  }) async {
+    try {
+      final ref = await _resolveReport(reportNumber);
+      final response = await _dio.post<Map<String, dynamic>>(
+        'officer/reports/${ref.id}/sign',
+        data: FormData.fromMap({
+          'method': image.method,
+          'password': password,
+          'version': ref.version,
+          'signature': MultipartFile.fromBytes(
+            image.bytes,
+            filename: image.filename,
+            contentType: DioMediaType.parse(image.contentType),
+          ),
+        }),
+        options: Options(headers: {'Idempotency-Key': idempotencyKey}),
+      );
+      return BaSignatureStatus.fromReport(response.data!['data'] as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
     }
   }
 
@@ -298,3 +369,10 @@ class OfficerApiRepository implements OfficerRemote {
 final officerRemoteProvider = Provider<OfficerRemote>(
   (ref) => OfficerApiRepository(ref.watch(apiDioProvider)),
 );
+
+/// Status persetujuan BA dari server; null di mode lokal (tanpa API).
+final baSignatureStatusProvider = FutureProvider.autoDispose
+    .family<BaSignatureStatus?, String>((ref, number) async {
+      if (!ref.watch(apiEnabledProvider)) return null;
+      return ref.watch(officerRemoteProvider).signatureStatus(number);
+    });

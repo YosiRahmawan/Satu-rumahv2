@@ -11,6 +11,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_form_provider.dart';
+import '../widgets/ba_signature_entry_card.dart';
 import '../widgets/berita_acara_action_buttons.dart';
 import '../widgets/berita_acara_document_card.dart';
 import '../../utils/ba_pdf_generator.dart';
@@ -86,6 +87,13 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
                 monitoring: monitoring,
                 isSuccessContext: false,
               ),
+              if (!monitoring.isDraft) ...[
+                const SizedBox(height: 16),
+                BaSignatureEntryCard(
+                  number: monitoring.nomorSuratBA,
+                  namaPerumahan: monitoring.namaPerumahan,
+                ),
+              ],
               const SizedBox(height: 24),
               _buildBottomActions(context, monitoring),
             ],

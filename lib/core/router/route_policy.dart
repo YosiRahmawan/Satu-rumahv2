@@ -45,6 +45,7 @@ AppRole? _requiredRole(String path) {
   if (path == '/monitoring/tambah' ||
       path == '/monitoring/success' ||
       path == '/monitoring/kamera' ||
+      path == '/monitoring/tanda-tangan' ||
       path.startsWith('/monitoring/draft')) {
     return AppRole.perwaskim;
   }

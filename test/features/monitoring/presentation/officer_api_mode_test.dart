@@ -11,6 +11,7 @@ import 'package:satu_rumah/features/monitoring/data/models/status_hasil_evaluasi
 import 'package:satu_rumah/features/monitoring/data/photo_bytes_cache.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/monitoring_repository.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/officer_api_repository.dart';
+import 'package:satu_rumah/features/monitoring/data/models/ba_signature.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/camera_providers.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_form_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
@@ -51,6 +52,18 @@ class FakeOfficerRemote implements OfficerRemote {
     if (error != null) throw error!;
     return '600.2.5/BA-MON/X/2026/007';
   }
+
+  @override
+  Future<BaSignatureStatus> signatureStatus(String reportNumber) =>
+      throw UnimplementedError();
+
+  @override
+  Future<BaSignatureStatus> signReport({
+    required String reportNumber,
+    required SignatureImage image,
+    required String password,
+    required String idempotencyKey,
+  }) => throw UnimplementedError();
 }
 
 OfficerAssignment _task(int id, String nama) => OfficerAssignment(
@@ -351,5 +364,17 @@ class _FailingRemote implements OfficerRemote {
     required double latitude,
     required double longitude,
     void Function(String message, double fraction)? onProgress,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<BaSignatureStatus> signatureStatus(String reportNumber) =>
+      throw UnimplementedError();
+
+  @override
+  Future<BaSignatureStatus> signReport({
+    required String reportNumber,
+    required SignatureImage image,
+    required String password,
+    required String idempotencyKey,
   }) => throw UnimplementedError();
 }

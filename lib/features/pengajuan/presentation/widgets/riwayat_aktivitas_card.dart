@@ -61,6 +61,24 @@ import '../../data/repositories/pengajuan_api_repository.dart';
       icon: Icons.description_outlined,
       label: 'Laporan Survei',
     ),
+    'survey_cancelled' => (
+      fg: AppColors.statusWarningText,
+      bg: AppColors.statusWarningSurface,
+      icon: Icons.event_busy_outlined,
+      label: 'Survei Dibatalkan',
+    ),
+    'report_signed_ketua' || 'report_signed_admin' => (
+      fg: AppColors.statusSuccessText,
+      bg: AppColors.statusSuccessSurface,
+      icon: Icons.draw_outlined,
+      label: 'BA Ditandatangani',
+    ),
+    'report_published' => (
+      fg: AppColors.statusSuccessText,
+      bg: AppColors.statusSuccessSurface,
+      icon: Icons.verified_outlined,
+      label: 'BA Diterbitkan',
+    ),
     'resubmitted' => (
       fg: AppColors.statusSurveyText,
       bg: AppColors.statusSurveySurface,

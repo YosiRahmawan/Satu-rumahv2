@@ -10,6 +10,7 @@ import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:satu_rumah/core/widgets/connection_banner.dart';
 import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/officer_api_repository.dart';
+import 'package:satu_rumah/features/monitoring/data/models/ba_signature.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
 import 'package:satu_rumah/features/pengajuan/data/repositories/pengajuan_api_repository.dart';
@@ -54,6 +55,18 @@ class _Officer implements OfficerRemote {
     required double latitude,
     required double longitude,
     void Function(String message, double fraction)? onProgress,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<BaSignatureStatus> signatureStatus(String reportNumber) =>
+      throw UnimplementedError();
+
+  @override
+  Future<BaSignatureStatus> signReport({
+    required String reportNumber,
+    required SignatureImage image,
+    required String password,
+    required String idempotencyKey,
   }) => throw UnimplementedError();
 }
 
