@@ -40,9 +40,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
                     </svg>
                     Antrean Pengajuan
-                    @if(isset($antreanCount) && $antreanCount > 0)
-                        <span class="nav-count">{{ $antreanCount }}</span>
-                    @endif
+                    <span class="nav-count" id="antreanHitung" @if(!isset($antreanCount) || $antreanCount < 1) style="display:none;" @endif>{{ $antreanCount ?? 0 }}</span>
                 </a>
                 <a href="{{ route('akun.index') }}" class="nav-link {{ request()->routeIs('akun.*') ? 'active' : '' }}">
                     <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,9 +87,7 @@
                         <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                         </svg>
-                        @if(isset($unreadCount) && $unreadCount > 0)
-                            <span class="dot"></span>
-                        @endif
+                        <span class="dot" id="loncengDot" @if(!isset($unreadCount) || $unreadCount < 1) style="display:none;" @endif></span>
                     </a>
                     <div class="user-pill">
                         <div class="avatar avatar-sm">{{ mb_strtoupper(mb_substr(auth()->user()->name ?? 'V', 0, 2)) }}</div>
@@ -118,6 +114,28 @@
             </main>
         </div>
     </div>
+
+    <script>
+    // Lonceng dan jumlah antrean diperbarui tiap 15 detik (berhenti saat tab tersembunyi).
+    (function () {
+        const dot = document.getElementById('loncengDot');
+        const hitung = document.getElementById('antreanHitung');
+        if (!dot || !hitung) return;
+        async function segarkan() {
+            if (document.hidden) return;
+            try {
+                const res = await fetch(@json(route('notifikasi.jumlah')), { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, credentials: 'same-origin' });
+                if (!res.ok) return;
+                const d = await res.json();
+                dot.style.display = d.belum_dibaca > 0 ? '' : 'none';
+                hitung.textContent = d.antrean;
+                hitung.style.display = d.antrean > 0 ? '' : 'none';
+            } catch (e) { /* jaringan putus: biarkan angka terakhir */ }
+        }
+        setInterval(segarkan, 15000);
+        document.addEventListener('visibilitychange', segarkan);
+    })();
+    </script>
 
     <div id="konfirmModal" class="modal-backdrop" style="display:none;z-index:120;" role="alertdialog" aria-modal="true" aria-labelledby="konfirmJudul">
         <div class="modal" style="max-width:440px;">

@@ -55,6 +55,7 @@ Route::middleware(['auth', 'role:admin', 'password.changed'])->group(function ()
     Route::get('/pengaturan', [SettingController::class, 'index'])->name('pengaturan.index');
     Route::post('/pengaturan', [SettingController::class, 'update'])->name('pengaturan.update');
 
+    Route::get('/notifikasi/jumlah', [NotificationController::class, 'jumlah'])->name('notifikasi.jumlah');
     Route::get('/notifikasi', [NotificationController::class, 'index'])->name('notifikasi.index');
     Route::post('/notifikasi/read-all', [NotificationController::class, 'readAll'])->name('notifikasi.read_all');
     Route::post('/notifikasi/{id}/read', [NotificationController::class, 'read'])->name('notifikasi.read');

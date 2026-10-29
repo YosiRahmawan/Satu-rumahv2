@@ -30,6 +30,8 @@
         'sla_warning' => ['Mendekati SLA', 'warn', 'M12 7v5l3 2M12 21a9 9 0 100-18 9 9 0 000 18z'],
         'sla_overdue' => ['Lewat SLA', 'danger', 'M12 9v4m0 4h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z'],
         'deadline_overdue_admin' => ['Tenggat Terlewat', 'danger', 'M12 9v4m0 4h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z'],
+        'assignment_rescheduled' => ['Jadwal Survei', 'info', 'M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z'],
+        'assignment_reassigned' => ['Tugas Dialihkan', 'warn', 'M6 6l12 12M18 6L6 18'],
         'assignment_cancelled' => ['Survei Dibatalkan', 'warn', 'M6 6l12 12M18 6L6 18'],
         'report_signed_ketua' => ['BA Ditandatangani Ketua', 'ok', 'M15.2 5.8l3 3M4 20l1-4L16.5 4.5a2 2 0 013 3L8 19l-4 1z'],
         'report_published' => ['BA Diterbitkan', 'ok', 'M5 13l4 4L19 7'],

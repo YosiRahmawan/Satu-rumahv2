@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
+use App\Models\Submission;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
@@ -15,6 +16,15 @@ class NotificationController extends Controller
         return view('admin.notifikasi.index', [
             'notifications' => $notifications,
             'unreadCount' => $notifications->whereNull('read_at')->count(),
+        ]);
+    }
+
+    /** Angka lonceng dan antrean untuk penyegaran berkala di layout. */
+    public function jumlah(Request $request)
+    {
+        return response()->json([
+            'belum_dibaca' => AppNotification::where('user_id', $request->user()->id)->whereNull('read_at')->count(),
+            'antrean' => Submission::whereBetween('stage', [2, 5])->whereIn('sub_status', ['baru', 'perbaikan_terkirim'])->count(),
         ]);
     }
 
