@@ -22,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Nama hari dan bulan di BA, notifikasi, dan layar admin berbahasa Indonesia apa pun isi APP_LOCALE.
+        app()->setLocale('id');
+
         // Login: 5 percobaan per menit untuk pasangan IP + username.
         RateLimiter::for('api-login', fn (Request $request) => Limit::perMinute(5)
             ->by($request->ip() . '|' . mb_strtolower((string) $request->input('username'))));

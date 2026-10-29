@@ -298,8 +298,11 @@ class BaSignatureTest extends TestCase
 
         // Halaman verifikasi QR: publik, status dasar, tanpa nama orang atau isi BA, ditandai template sementara.
         $this->get("/verifikasi/{$r->verification_token}")->assertOk()
-            ->assertSee('600.2.5/BA-MON/X/2026/001')->assertSee('Diterbitkan')->assertSee('template sementara')
+            ->assertSee('600.2.5/BA-MON/X/2026/001')->assertSee('Diterbitkan')->assertDontSee('template sementara')
             ->assertDontSee('Ketua Uji')->assertDontSee('Admin Uji')->assertDontSee('Pemeriksaan PSU');
+        // Tanda template sementara muncul hanya bila format resmi dimatikan lewat pengaturan.
+        config(['satu_rumah.ba_template_resmi' => false]);
+        $this->get("/verifikasi/{$r->verification_token}")->assertOk()->assertSee('template sementara');
         $this->get('/verifikasi/' . str_repeat('a', 48))->assertNotFound();
     }
 

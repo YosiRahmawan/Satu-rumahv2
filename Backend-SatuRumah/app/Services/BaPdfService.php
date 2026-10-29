@@ -49,15 +49,15 @@ class BaPdfService
             'verifyUrl' => $this->verificationUrl($r),
             'ketua' => $ketua ? ['sig' => $ketua] + $this->tandaTangan($disk->get($ketua->signature_path)) : null,
             'admin' => $admin ? ['sig' => $admin] + $this->tandaTangan($disk->get($admin->signature_path)) : null,
-            'foto' => $r->photos->map(fn ($p) => ['posisi' => $p->position, 'catatan' => $p->note, 'uri' => $this->fotoUri($p->storage_path)])->all(),
+            'foto' => $r->photos->map(fn ($p) => $this->foto($p->storage_path))->filter()->values()->all(),
             'hash' => $this->signatures->documentHash($r),
         ])->render();
 
         $options = new Options();
         $options->set('isRemoteEnabled', false);
-        $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('defaultFont', 'Times');
         $dompdf = new Dompdf($options);
-        $dompdf->setPaper('A4');
+        $dompdf->setPaper([0, 0, 609.6, 935.52]); // Folio/F4 (21,59 x 33,02 cm), ukuran BA resmi
         $dompdf->loadHtml($html, 'UTF-8');
         $dompdf->render();
         $pdf = $dompdf->output();
@@ -69,11 +69,11 @@ class BaPdfService
         return $path;
     }
 
-    /** Gambar tanda tangan sebagai data URI beserta ukuran tampil yang muat di kotak 235x100 titik (rasio terjaga). */
+    /** Gambar tanda tangan sebagai data URI beserta ukuran tampil (px) yang muat di kotak 235x100 titik (rasio terjaga). */
     private function tandaTangan(string $png): array
     {
-        [$w, $h] = getimagesizefromstring($png) ?: [235, 100];
-        $skala = min(235 / $w, 100 / $h);
+        [$w, $h] = getimagesizefromstring($png) ?: [313, 133];
+        $skala = min(313 / $w, 133 / $h); // 313x133 px = 235x100 titik
 
         return ['img' => $this->dataUri($png, 'image/png'), 'w' => max(1, (int) round($w * $skala)), 'h' => max(1, (int) round($h * $skala))];
     }
@@ -93,8 +93,8 @@ class BaPdfService
         return "data:{$mime};base64," . base64_encode($bytes);
     }
 
-    /** Foto lapangan diperkecil agar PDF tidak membengkak; kosong bila berkas hilang. */
-    private function fotoUri(string $path): ?string
+    /** Foto lapangan untuk bingkai 496x372 titik (rasio terjaga); null bila berkas hilang atau rusak. */
+    private function foto(string $path): ?array
     {
         $disk = Storage::disk(SignatureService::DISK);
         if (!$disk->exists($path)) {
@@ -106,16 +106,20 @@ class BaPdfService
         }
         $w = imagesx($src);
         $h = imagesy($src);
-        $nw = min(360, $w);
+        // Piksel secukupnya untuk bingkai (sekitar 150 dpi) agar PDF tidak membengkak.
+        $nw = min(1000, $w);
         $nh = max(1, (int) round($h * $nw / $w));
         $dst = imagecreatetruecolor($nw, $nh);
         imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
         ob_start();
-        imagejpeg($dst, null, 70);
+        imagejpeg($dst, null, 78);
         $jpg = (string) ob_get_clean();
         imagedestroy($src);
         imagedestroy($dst);
 
-        return $this->dataUri($jpg, 'image/jpeg');
+        // Ukuran HTML dalam piksel (96 dpi): bingkai 496x372 titik = 661x496 px; sisakan margin.
+        $skala = min(650 / $w, 484 / $h);
+
+        return ['uri' => $this->dataUri($jpg, 'image/jpeg'), 'w' => max(1, (int) round($w * $skala)), 'h' => max(1, (int) round($h * $skala))];
     }
 }
