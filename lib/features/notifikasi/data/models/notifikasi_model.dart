@@ -13,13 +13,28 @@ enum JenisNotifikasi {
   /// (revisi Pengembang atau berita acara survey) kepada Admin.
   perluRevisi,
 
-  /// Dari server: tahap pengajuan lanjut, keputusan, jadwal dibatalkan atau dialihkan,
-  /// BA diterbitkan, dan pengingat batas waktu perbaikan.
+  /// Tahap verifikasi atau alur pengajuan maju ke tahap berikutnya.
   tahapLanjut,
-  disetujui,
-  ditolak,
-  dibatalkan,
-  baTerbit,
+
+  /// Tugas survei baru diterbitkan untuk Petugas Lapangan.
+  penugasanSurvei,
+
+  /// Jadwal survei dibatalkan oleh Admin.
+  jadwalDibatalkan,
+
+  /// Tugas survei dibatalkan untuk Petugas Lapangan.
+  penugasanDibatalkan,
+
+  /// Berita Acara survei resmi diterbitkan oleh Admin.
+  baDiterbitkan,
+
+  /// Keputusan akhir pengajuan disetujui.
+  keputusanDisetujui,
+
+  /// Keputusan akhir pengajuan ditolak.
+  keputusanDitolak,
+
+  /// Pengingat batas waktu perbaikan berkas oleh Pengembang (mendekat atau terlewat).
   batasPerbaikan,
 }
 
@@ -37,15 +52,19 @@ extension JenisNotifikasiX on JenisNotifikasi {
       case JenisNotifikasi.perluRevisi:
         return 'Perlu Revisi';
       case JenisNotifikasi.tahapLanjut:
-        return 'Tahap Lanjut';
-      case JenisNotifikasi.disetujui:
-        return 'Disetujui';
-      case JenisNotifikasi.ditolak:
-        return 'Ditolak';
-      case JenisNotifikasi.dibatalkan:
+        return 'Tahap Lanjutan';
+      case JenisNotifikasi.penugasanSurvei:
+        return 'Tugas Survei';
+      case JenisNotifikasi.jadwalDibatalkan:
         return 'Survei Dibatalkan';
-      case JenisNotifikasi.baTerbit:
+      case JenisNotifikasi.penugasanDibatalkan:
+        return 'Tugas Dibatalkan';
+      case JenisNotifikasi.baDiterbitkan:
         return 'BA Diterbitkan';
+      case JenisNotifikasi.keputusanDisetujui:
+        return 'Pengajuan Disetujui';
+      case JenisNotifikasi.keputusanDitolak:
+        return 'Pengajuan Ditolak';
       case JenisNotifikasi.batasPerbaikan:
         return 'Batas Perbaikan';
     }
@@ -64,15 +83,19 @@ extension JenisNotifikasiX on JenisNotifikasi {
       case JenisNotifikasi.perluRevisi:
         return Icons.sync_problem_outlined;
       case JenisNotifikasi.tahapLanjut:
-        return Icons.arrow_forward_rounded;
-      case JenisNotifikasi.disetujui:
-        return Icons.verified_outlined;
-      case JenisNotifikasi.ditolak:
-        return Icons.cancel_outlined;
-      case JenisNotifikasi.dibatalkan:
+        return Icons.trending_up_rounded;
+      case JenisNotifikasi.penugasanSurvei:
+        return Icons.assignment_outlined;
+      case JenisNotifikasi.jadwalDibatalkan:
         return Icons.event_busy_outlined;
-      case JenisNotifikasi.baTerbit:
-        return Icons.description_outlined;
+      case JenisNotifikasi.penugasanDibatalkan:
+        return Icons.cancel_outlined;
+      case JenisNotifikasi.baDiterbitkan:
+        return Icons.verified_rounded;
+      case JenisNotifikasi.keputusanDisetujui:
+        return Icons.check_circle_outline_rounded;
+      case JenisNotifikasi.keputusanDitolak:
+        return Icons.highlight_off_rounded;
       case JenisNotifikasi.batasPerbaikan:
         return Icons.hourglass_bottom_outlined;
     }
@@ -91,13 +114,16 @@ extension JenisNotifikasiX on JenisNotifikasi {
       case JenisNotifikasi.perluRevisi:
         return const Color(0xFFE65100);
       case JenisNotifikasi.tahapLanjut:
-        return AppColors.info;
-      case JenisNotifikasi.disetujui:
-      case JenisNotifikasi.baTerbit:
-        return const Color(0xFF2E7D32);
-      case JenisNotifikasi.ditolak:
+        return const Color(0xFF0284C7);
+      case JenisNotifikasi.penugasanSurvei:
+        return const Color(0xFF0D9488);
+      case JenisNotifikasi.jadwalDibatalkan:
+      case JenisNotifikasi.penugasanDibatalkan:
+      case JenisNotifikasi.keputusanDitolak:
         return AppColors.primaryRed;
-      case JenisNotifikasi.dibatalkan:
+      case JenisNotifikasi.baDiterbitkan:
+      case JenisNotifikasi.keputusanDisetujui:
+        return const Color(0xFF16A34A);
       case JenisNotifikasi.batasPerbaikan:
         return const Color(0xFFE65100);
     }
@@ -129,6 +155,9 @@ class NotifikasiModel {
   /// Data contoh lokal, bukan hasil alur kerja nyata.
   final bool isSimulasi;
 
+  /// Payload metadata tambahan dari backend (misal: assignment_id, report_id).
+  final Map<String, dynamic>? data;
+
   NotifikasiModel({
     required this.id,
     required this.jenis,
@@ -140,7 +169,11 @@ class NotifikasiModel {
     this.pengajuanId,
     this.penerima,
     this.isSimulasi = false,
+    this.data,
   });
+
+  int? get assignmentId => (data?['assignment_id'] as num?)?.toInt();
+  int? get reportId => (data?['report_id'] as num?)?.toInt();
 
   /// Apakah notifikasi ini boleh tampil untuk [role]. Pengembang hanya melihat
   /// yang ditujukan kepadanya; role lain tetap melihat yang tanpa penerima.
@@ -160,6 +193,7 @@ class NotifikasiModel {
     String? pengajuanId,
     AppRole? penerima,
     bool? isSimulasi,
+    Map<String, dynamic>? data,
   }) {
     return NotifikasiModel(
       id: id ?? this.id,
@@ -172,6 +206,7 @@ class NotifikasiModel {
       pengajuanId: pengajuanId ?? this.pengajuanId,
       penerima: penerima ?? this.penerima,
       isSimulasi: isSimulasi ?? this.isSimulasi,
+      data: data ?? this.data,
     );
   }
 }

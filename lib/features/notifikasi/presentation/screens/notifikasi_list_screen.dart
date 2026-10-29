@@ -62,6 +62,9 @@ String? notificationTargetForRole(NotifikasiModel item, AppRole role) {
       if (target == '/dashboard') return target;
       return null;
     case AppRole.perwaskim:
+      if (item.jenis == JenisNotifikasi.baDiterbitkan) {
+        return '/monitoring/lapangan/riwayat';
+      }
       if (target.startsWith('/monitoring/lapangan')) return target;
       if (target == '/monitoring') return '/monitoring/lapangan';
       if (target.startsWith('/monitoring/preview')) return target;
@@ -69,7 +72,7 @@ String? notificationTargetForRole(NotifikasiModel item, AppRole role) {
           target.startsWith('/admin/pengajuan/detail/')) {
         return '/monitoring/lapangan';
       }
-      return null;
+      return '/monitoring/lapangan';
   }
 }
 
@@ -112,7 +115,11 @@ String? developerNotificationTarget(
 }) {
   final id = item.pengajuanId;
   if (id != null) {
-    if (!pengajuan.any((e) => e.id == id)) return null;
+    // Jika daftar pengajuan sudah terisi dan ID tidak ditemukan, tujuan tidak tersedia.
+    // Jika daftar pengajuan masih kosong/loading, tetap izinkan navigasi ke detail pengajuan.
+    if (pengajuan.isNotEmpty && !pengajuan.any((e) => e.id == id)) {
+      return null;
+    }
     final encoded = Uri.encodeComponent(id);
     return revisiAktif
         ? '/pengajuan/perbarui-berkas/$encoded'
@@ -293,7 +300,8 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
     }
 
     // Penugasan survei baru atau agenda survei lapangan aktif
-    if (item.jenis == JenisNotifikasi.reminderSurvey) {
+    if (item.jenis == JenisNotifikasi.reminderSurvey ||
+        item.jenis == JenisNotifikasi.penugasanSurvei) {
       return true;
     }
 
@@ -584,6 +592,19 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           const Color(0xFFF1F5F9),
           const Color(0xFF334155),
         );
+      case JenisNotifikasi.penugasanSurvei:
+        return (
+          'PENUGASAN SURVEI',
+          const Color(0xFFEFF6FF),
+          const Color(0xFF1D4ED8),
+        );
+      case JenisNotifikasi.jadwalDibatalkan:
+      case JenisNotifikasi.penugasanDibatalkan:
+        return (
+          'PEMBATALAN',
+          const Color(0xFFFEF2F2),
+          const Color(0xFFB91C1C),
+        );
       case JenisNotifikasi.dokumenDiunggahUlang:
         return (
           'TINDAKAN DIPERLUKAN',
@@ -602,32 +623,41 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           const Color(0xFFECFDF5),
           const Color(0xFF065F46),
         );
+      case JenisNotifikasi.baDiterbitkan:
+        return (
+          'BERITA ACARA',
+          const Color(0xFFECFDF5),
+          const Color(0xFF065F46),
+        );
+      case JenisNotifikasi.tahapLanjut:
+        return (
+          'TAHAP LANJUT',
+          const Color(0xFFEFF6FF),
+          const Color(0xFF1D4ED8),
+        );
+      case JenisNotifikasi.keputusanDisetujui:
+        return (
+          'DISETUJUI',
+          const Color(0xFFECFDF5),
+          const Color(0xFF047857),
+        );
+      case JenisNotifikasi.keputusanDitolak:
+        return (
+          'DITOLAK',
+          const Color(0xFFFEF2F2),
+          const Color(0xFFB91C1C),
+        );
       case JenisNotifikasi.perluRevisi:
         return (
           'PERLU REVISI',
           const Color(0xFFFEF3C7),
           const Color(0xFF92400E),
         );
-      case JenisNotifikasi.dibatalkan:
-        return (
-          'SURVEI DIBATALKAN',
-          const Color(0xFFFEF3C7),
-          const Color(0xFF92400E),
-        );
-      case JenisNotifikasi.baTerbit:
-        return (
-          'BA DITERBITKAN',
-          const Color(0xFFECFDF5),
-          const Color(0xFF065F46),
-        );
-      case JenisNotifikasi.tahapLanjut:
-      case JenisNotifikasi.disetujui:
-      case JenisNotifikasi.ditolak:
       case JenisNotifikasi.batasPerbaikan:
         return (
-          'INFORMASI',
-          const Color(0xFFF1F5F9),
-          const Color(0xFF475569),
+          'BATAS PERBAIKAN',
+          const Color(0xFFFEF3C7),
+          const Color(0xFF92400E),
         );
     }
   }
@@ -663,15 +693,15 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
         child: InkWell(
           borderRadius: AppRadii.card,
           onTap: () {
-            notifier.markAsRead(item.id);
             if (validRoute == null) {
               showUnavailableAction(context, 'Tujuan notifikasi ini');
-            } else {
-              try {
-                context.push(validRoute);
-              } catch (_) {
-                // Safe fallback for isolated widget tests without GoRouter
-              }
+              return;
+            }
+            notifier.markAsRead(item.id);
+            try {
+              context.push(validRoute);
+            } catch (_) {
+              // Safe fallback for isolated widget tests without GoRouter
             }
           },
           child: Padding(
@@ -976,7 +1006,6 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(16),
                                 onTap: () {
-                                  notifier.markAsRead(item.id);
                                   final route = notificationTargetForRole(
                                     item,
                                     role,
@@ -987,6 +1016,7 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
                                       'Tujuan notifikasi ini',
                                     );
                                   } else {
+                                    notifier.markAsRead(item.id);
                                     try {
                                       context.push(route);
                                     } catch (_) {

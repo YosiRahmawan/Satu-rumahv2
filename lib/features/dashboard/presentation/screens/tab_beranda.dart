@@ -13,6 +13,7 @@ import '../../../pengajuan/presentation/screens/unduh_sk_ba_screen.dart';
 import '../../../pengajuan/presentation/screens/template_berkas_screen.dart';
 import '../../../bantuan/presentation/screens/pusat_bantuan_screen.dart';
 import '../providers/dashboard_provider.dart';
+import '../../../notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../../../core/api/remote_load.dart';
 import '../../../../core/widgets/connection_banner.dart';
 
@@ -50,6 +51,8 @@ class TabBeranda extends ConsumerWidget {
             : session.username!.trim().toUpperCase())
         : null;
 
+    final unreadNotifs = ref.watch(unreadNotifikasiCountProvider);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundCanvas,
       body: SingleChildScrollView(
@@ -65,6 +68,12 @@ class TabBeranda extends ConsumerWidget {
               avatarTooltip: 'Buka profil',
               onAvatarTap: () =>
                   ref.read(dashboardTabProvider.notifier).state = 3,
+              showNotification: true,
+              notificationCount: unreadNotifs,
+              showNotificationCount: true,
+              notificationTooltip: 'Notifikasi ($unreadNotifs belum dibaca)',
+              onNotificationTap: () =>
+                  ref.read(dashboardTabProvider.notifier).state = 2,
               bottomPadding: 24.0,
             ),
 

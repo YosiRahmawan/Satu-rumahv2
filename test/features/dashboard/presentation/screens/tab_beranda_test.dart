@@ -368,7 +368,7 @@ void main() {
       // Find the avatar widget inside DeveloperHeader
       final avatarFinder = find.descendant(
         of: find.byType(DeveloperHeader),
-        matching: find.byType(InkWell),
+        matching: find.byTooltip('Buka profil'),
       );
       expect(avatarFinder, findsOneWidget);
 
@@ -377,6 +377,36 @@ void main() {
 
       // State switches to 3 (Profil tab) without navigating to success screen
       expect(container.read(dashboardTabProvider), 3);
+    });
+
+    testWidgets('tapping notification bell in header switches dashboardTabProvider to 2 (Notifikasi)', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: const MaterialApp(
+            home: Scaffold(
+              body: TabBeranda(),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(container.read(dashboardTabProvider), 0);
+
+      final notifFinder = find.descendant(
+        of: find.byType(DeveloperHeader),
+        matching: find.byIcon(Icons.notifications_none_rounded),
+      );
+      expect(notifFinder, findsOneWidget);
+
+      await tester.tap(notifFinder);
+      await tester.pump();
+
+      expect(container.read(dashboardTabProvider), 2);
     });
 
     testWidgets('renders and taps Template Berkas menu card', (tester) async {

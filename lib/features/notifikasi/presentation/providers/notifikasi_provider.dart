@@ -134,7 +134,10 @@ class NotifikasiNotifier extends StateNotifier<List<NotifikasiModel>> {
   }
 
   void addNotification(NotifikasiModel item) {
-    state = [item, ...state];
+    state = [
+      item,
+      ...state.where((e) => e.id != item.id),
+    ];
   }
 
   void markAsRead(String id) {

@@ -28,10 +28,12 @@ class DeveloperNotificationTile extends StatelessWidget {
     JenisNotifikasi.perluRevisi =>
       actionRequired ? 'TINDAKAN DIPERLUKAN' : 'REVISI',
     JenisNotifikasi.tahapLanjut => 'TAHAP LANJUT',
-    JenisNotifikasi.disetujui => 'DISETUJUI',
-    JenisNotifikasi.ditolak => 'DITOLAK',
-    JenisNotifikasi.dibatalkan => 'JADWAL SURVEY',
-    JenisNotifikasi.baTerbit => 'BERITA ACARA',
+    JenisNotifikasi.penugasanSurvei => 'PENUGASAN',
+    JenisNotifikasi.jadwalDibatalkan => 'SURVEI DIBATALKAN',
+    JenisNotifikasi.penugasanDibatalkan => 'TUGAS DIBATALKAN',
+    JenisNotifikasi.baDiterbitkan => 'BA DITERBITKAN',
+    JenisNotifikasi.keputusanDisetujui => 'DISETUJUI',
+    JenisNotifikasi.keputusanDitolak => 'DITOLAK',
     JenisNotifikasi.batasPerbaikan => 'BATAS PERBAIKAN',
   };
 
@@ -39,28 +41,26 @@ class DeveloperNotificationTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // Keep the Pengembang palette local: other roles use the existing model.
     final (color, surface) = switch (item.jenis) {
-      JenisNotifikasi.pengajuanBaru || JenisNotifikasi.reminderSurvey => (
-        AppColors.statusSurveyText,
-        AppColors.statusSurveySurface,
-      ),
-      JenisNotifikasi.dokumenDiunggahUlang => (
-        AppColors.statusWarningText,
-        AppColors.statusWarningSurface,
-      ),
-      JenisNotifikasi.deadlineVerifikasi ||
-      JenisNotifikasi.ditolak => (
-        AppColors.statusUrgentText,
-        AppColors.statusUrgentSurface,
-      ),
-      JenisNotifikasi.disetujui || JenisNotifikasi.baTerbit => (
-        AppColors.statusSuccessText,
-        AppColors.statusSuccessSurface,
-      ),
+      JenisNotifikasi.pengajuanBaru ||
+      JenisNotifikasi.reminderSurvey ||
+      JenisNotifikasi.penugasanSurvei ||
       JenisNotifikasi.tahapLanjut => (
         AppColors.statusSurveyText,
         AppColors.statusSurveySurface,
       ),
-      JenisNotifikasi.dibatalkan ||
+      JenisNotifikasi.baDiterbitkan ||
+      JenisNotifikasi.keputusanDisetujui => (
+        const Color(0xFF16A34A),
+        const Color(0xFFDCFCE7),
+      ),
+      JenisNotifikasi.jadwalDibatalkan ||
+      JenisNotifikasi.penugasanDibatalkan ||
+      JenisNotifikasi.keputusanDitolak ||
+      JenisNotifikasi.deadlineVerifikasi => (
+        AppColors.statusUrgentText,
+        AppColors.statusUrgentSurface,
+      ),
+      JenisNotifikasi.dokumenDiunggahUlang ||
       JenisNotifikasi.batasPerbaikan => (
         AppColors.statusWarningText,
         AppColors.statusWarningSurface,

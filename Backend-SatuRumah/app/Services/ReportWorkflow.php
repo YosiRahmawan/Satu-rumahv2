@@ -48,6 +48,9 @@ class ReportWorkflow
         if (in_array($report->status_hasil_evaluasi, InspectionReport::EVALUASI_WAJIB_RTL, true) && !$rtl) {
             $problems['rtl'] = ['Wajib minimal 1 poin untuk hasil evaluasi ini.'];
         }
+        if (!$report->photos()->exists()) {
+            $problems['photos'] = ['Laporan survei wajib memiliki minimal 1 foto dokumentasi lapangan.'];
+        }
         if ($problems) {
             throw ValidationException::withMessages($problems);
         }

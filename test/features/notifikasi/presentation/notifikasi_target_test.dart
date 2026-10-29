@@ -58,4 +58,45 @@ void main() {
       );
     },
   );
+
+  test('Perwaskim diarahkan ke /monitoring/lapangan dan riwayat untuk BA', () {
+    final notifAdminRoute = _notification(targetRoute: '/monitoring');
+    expect(
+      notificationTargetForRole(notifAdminRoute, AppRole.perwaskim),
+      '/monitoring/lapangan',
+    );
+
+    final notifBA = NotifikasiModel(
+      id: 'ba-1',
+      jenis: JenisNotifikasi.baDiterbitkan,
+      judul: 'BA Terbit',
+      deskripsi: 'BA selesai',
+      waktu: DateTime(2026),
+      targetRoute: '/monitoring/lapangan',
+    );
+    expect(
+      notificationTargetForRole(notifBA, AppRole.perwaskim),
+      '/monitoring/lapangan/riwayat',
+    );
+  });
+
+  test('developerNotificationTarget tetap membuka detail saat daftar pengajuan kosong / loading', () {
+    final serverItem = NotifikasiModel(
+      id: 'srv-10',
+      jenis: JenisNotifikasi.pengajuanBaru,
+      judul: 'Update',
+      deskripsi: 'Update pengajuan',
+      waktu: DateTime(2026),
+      pengajuanId: 'SR-2026-9999',
+      isSimulasi: false,
+    );
+
+    // Saat daftar pengajuan kosong (masih loading / belum selesai fetch)
+    final target = developerNotificationTarget(
+      serverItem,
+      [],
+      revisiAktif: false,
+    );
+    expect(target, '/pengajuan/detail/SR-2026-9999');
+  });
 }

@@ -77,7 +77,7 @@ class OfficerTest extends TestCase
     }
 
     /** Laporan draf yang siap dikirim (dasar uji kirim). */
-    private function readyReport(string $evaluasi = 'sesuaiSiteplan', array $extra = []): array
+    private function readyReport(string $evaluasi = 'sesuaiSiteplan', array $extra = [], bool $withPhoto = true): array
     {
         $report = $this->draftReport();
         $this->putJson("/api/v1/officer/reports/{$report['id']}", [
@@ -86,6 +86,13 @@ class OfficerTest extends TestCase
             'status_hasil_evaluasi' => $evaluasi,
             'temuan' => ['Jalan selesai'],
         ] + $extra)->assertOk();
+
+        if ($withPhoto) {
+            $this->postJson("/api/v1/officer/reports/{$report['id']}/photos", [
+                'file' => $this->fixture('geotag_ok'),
+                'source' => 'camera',
+            ])->assertStatus(201);
+        }
 
         return $report;
     }
@@ -303,6 +310,68 @@ class OfficerTest extends TestCase
         $this->assertSame('draft', InspectionReport::find($r['id'])->status);
     }
 
+    public function test_kirim_menolak_laporan_tanpa_foto_dan_tetap_berstatus_draf(): void
+    {
+        // Laporan dengan isian lengkap tapi tanpa foto
+        $r = $this->readyReport(withPhoto: false);
+        $this->assertSame(0, InspectionReport::find($r['id'])->photos()->count());
+
+        $res = $this->postJson("/api/v1/officer/reports/{$r['id']}/submit", [
+            'latitude' => -7.3274,
+            'longitude' => 108.2207,
+        ])->assertStatus(422);
+
+        $res->assertJsonPath('error.code', 'ERR-010');
+        $res->assertJsonPath('error.fields.photos.0', 'Laporan survei wajib memiliki minimal 1 foto dokumentasi lapangan.');
+
+        $fresh = InspectionReport::find($r['id']);
+        $this->assertSame('draft', $fresh->status);
+        $this->assertNull($fresh->report_number);
+        $this->assertNull($fresh->submitted_at);
+        $this->assertSame('dijadwalkan', $this->assignment->fresh()->status);
+    }
+
+    public function test_kirim_menolak_laporan_jika_foto_dihapus_sebelum_submit(): void
+    {
+        $r = $this->readyReport(withPhoto: true);
+        $this->assertSame(1, InspectionReport::find($r['id'])->photos()->count());
+
+        $photoId = InspectionReport::find($r['id'])->photos()->first()->id;
+        $this->deleteJson("/api/v1/officer/reports/{$r['id']}/photos/{$photoId}")->assertOk();
+        $this->assertSame(0, InspectionReport::find($r['id'])->photos()->count());
+
+        $this->postJson("/api/v1/officer/reports/{$r['id']}/submit", [
+            'latitude' => -7.3274,
+            'longitude' => 108.2207,
+        ])->assertStatus(422)->assertJsonPath('error.fields.photos.0', 'Laporan survei wajib memiliki minimal 1 foto dokumentasi lapangan.');
+
+        $this->assertSame('draft', InspectionReport::find($r['id'])->status);
+    }
+
+    public function test_kirim_menolak_jika_foto_hanya_milik_laporan_lain(): void
+    {
+        // Report 1: Tanpa foto
+        $r1 = $this->readyReport(withPhoto: false);
+
+        // Report 2: Memiliki foto
+        $secondAssignment = $this->assign($this->officer, $this->submission);
+        $r2 = $this->draftReport(['assignment_id' => $secondAssignment->id]);
+        $this->postJson("/api/v1/officer/reports/{$r2['id']}/photos", [
+            'file' => $this->fixture('geotag_ok'),
+        ])->assertStatus(201);
+
+        $this->assertSame(1, InspectionReport::find($r2['id'])->photos()->count());
+        $this->assertSame(0, InspectionReport::find($r1['id'])->photos()->count());
+
+        // Report 1 harus tetap ditolak walaupun report 2 memiliki foto
+        $this->postJson("/api/v1/officer/reports/{$r1['id']}/submit", [
+            'latitude' => -7.3274,
+            'longitude' => 108.2207,
+        ])->assertStatus(422)->assertJsonPath('error.fields.photos.0', 'Laporan survei wajib memiliki minimal 1 foto dokumentasi lapangan.');
+
+        $this->assertSame('draft', InspectionReport::find($r1['id'])->status);
+    }
+
     public function test_data_saling_terhubung_antar_tiga_role(): void
     {
         $this->developer->developerProfile->update(['nama_direktur' => 'Pak Direktur', 'no_hp_direktur' => '0812345']);
@@ -348,6 +417,7 @@ class OfficerTest extends TestCase
         $second = $this->assign($this->officer, $this->submission);
         $r2 = $this->draftReport(['assignment_id' => $second->id]);
         $this->putJson("/api/v1/officer/reports/{$r2['id']}", ['version' => 1, 'maksud_tujuan' => 'T', 'status_hasil_evaluasi' => 'sesuaiSiteplan'])->assertOk();
+        $this->postJson("/api/v1/officer/reports/{$r2['id']}/photos", ['file' => $this->fixture('geotag_ok')])->assertStatus(201);
         $this->postJson("/api/v1/officer/reports/{$r2['id']}/submit", ['latitude' => 1, 'longitude' => 1])
             ->assertOk()->assertJsonPath('data.report_number', "{$prefix}/002");
 

@@ -6,16 +6,16 @@ void main() {
   test('setiap jenis dari server dipetakan ke jenis tampilan yang sesuai', () {
     const peta = {
       'revision_requested': JenisNotifikasi.perluRevisi,
-      'assignment': JenisNotifikasi.reminderSurvey,
+      'assignment': JenisNotifikasi.penugasanSurvei,
       'assignment_rescheduled': JenisNotifikasi.reminderSurvey,
       'survey_scheduled': JenisNotifikasi.reminderSurvey,
       'resubmitted': JenisNotifikasi.dokumenDiunggahUlang,
       'report_submitted': JenisNotifikasi.dokumenDiunggahUlang,
       'stage_advanced': JenisNotifikasi.tahapLanjut,
-      'survey_cancelled': JenisNotifikasi.dibatalkan,
-      'assignment_cancelled': JenisNotifikasi.dibatalkan,
-      'assignment_reassigned': JenisNotifikasi.dibatalkan,
-      'report_published': JenisNotifikasi.baTerbit,
+      'survey_cancelled': JenisNotifikasi.jadwalDibatalkan,
+      'assignment_cancelled': JenisNotifikasi.penugasanDibatalkan,
+      'assignment_reassigned': JenisNotifikasi.penugasanDibatalkan,
+      'report_published': JenisNotifikasi.baDiterbitkan,
       'deadline_reminder': JenisNotifikasi.batasPerbaikan,
       'deadline_overdue': JenisNotifikasi.batasPerbaikan,
       'submitted': JenisNotifikasi.pengajuanBaru,
@@ -28,17 +28,17 @@ void main() {
   test('keputusan dibedakan antara disetujui dan ditolak lewat judul', () {
     expect(
       jenisFromApi('decided', 'Pengajuan disetujui'),
-      JenisNotifikasi.disetujui,
+      JenisNotifikasi.keputusanDisetujui,
     );
     expect(
       jenisFromApi('decided', 'Pengajuan ditolak'),
-      JenisNotifikasi.ditolak,
+      JenisNotifikasi.keputusanDitolak,
     );
     expect(
       jenisFromApi('decided', 'PENGAJUAN DITOLAK'),
-      JenisNotifikasi.ditolak,
+      JenisNotifikasi.keputusanDitolak,
     );
-    expect(jenisFromApi('decided'), JenisNotifikasi.disetujui);
+    expect(jenisFromApi('decided'), JenisNotifikasi.keputusanDisetujui);
   });
 
   test(
@@ -55,9 +55,9 @@ void main() {
         expect(j.color, isNotNull);
       }
       // Ditolak tidak berlabel sama dengan pengajuan baru.
-      expect(JenisNotifikasi.ditolak.label, 'Ditolak');
+      expect(JenisNotifikasi.keputusanDitolak.label, 'Pengajuan Ditolak');
       expect(
-        JenisNotifikasi.ditolak.label,
+        JenisNotifikasi.keputusanDitolak.label,
         isNot(JenisNotifikasi.pengajuanBaru.label),
       );
     },
