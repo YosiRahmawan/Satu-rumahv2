@@ -14,19 +14,39 @@ import '../../../pengajuan/data/repositories/pengajuan_api_repository.dart'
     show newDraftKey;
 import '../../data/models/ba_signature.dart';
 import '../../data/repositories/officer_api_repository.dart';
-import '../widgets/signature_pad.dart';
 
-/// Ketua Pengawas menyetujui BA yang sudah dikirim: gambar langsung atau unggah gambar,
-/// pratinjau, lalu konfirmasi sandi. Ini persetujuan elektronik berbasis akun, bukan TTE tersertifikasi.
+/// Gambar yang dipilih pengguna: isi berkas dan ekstensinya.
+typedef PickedSignature = ({Uint8List bytes, String ext});
+
+/// Pemilih gambar; bisa diganti pada tes.
+typedef SignaturePicker = Future<PickedSignature?> Function();
+
+Future<PickedSignature?> _pilihDariPerangkat() async {
+  final result = await FilePickerUtil.pickSingleFileResult(
+    allowedExtensions: const ['png', 'jpg', 'jpeg'],
+  );
+  final file = result.value;
+  if (!result.isSelected || file == null) return null;
+  final bytes =
+      file.bytes ??
+      (file.path == null ? null : await File(file.path!).readAsBytes());
+  if (bytes == null) return null;
+  return (bytes: bytes, ext: (file.extension ?? '').toLowerCase());
+}
+
+/// Ketua Pengawas menandatangani BA yang sudah dikirim dengan mengunggah visualisasi TTE
+/// (diunduh dari Suresman memakai NIP), lalu mengonfirmasi dengan sandi.
 class TandaTanganBaScreen extends ConsumerStatefulWidget {
   const TandaTanganBaScreen({
     super.key,
     required this.number,
     this.namaPerumahan,
+    this.picker = _pilihDariPerangkat,
   });
 
   final String number;
   final String? namaPerumahan;
+  final SignaturePicker picker;
 
   @override
   ConsumerState<TandaTanganBaScreen> createState() =>
@@ -36,16 +56,12 @@ class TandaTanganBaScreen extends ConsumerStatefulWidget {
 class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
   static const _maxBytes = 4 * 1024 * 1024;
 
-  final _pad = SignaturePadController();
   final _password = TextEditingController();
   // Kunci tetap selama layar ini terbuka: percobaan ulang setelah jaringan putus tidak menyimpan ganda.
   final String _key = newDraftKey();
 
-  String _method = 'draw';
-  Uint8List? _drawn;
-  Uint8List? _uploaded;
-  String _uploadName = 'ttd.png';
-  String _uploadType = 'image/png';
+  Uint8List? _image;
+  String _ext = 'png';
   bool _obscure = true;
   bool _submitting = false;
   bool _done = false;
@@ -53,88 +69,46 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
 
   @override
   void dispose() {
-    _pad.dispose();
     _password.dispose();
     super.dispose();
-  }
-
-  SignatureImage? get _image {
-    final bytes = _method == 'draw' ? _drawn : _uploaded;
-    if (bytes == null) return null;
-    return SignatureImage(
-      bytes: bytes,
-      method: _method,
-      filename: _method == 'draw' ? 'ttd.png' : _uploadName,
-      contentType: _method == 'draw' ? 'image/png' : _uploadType,
-    );
   }
 
   bool get _canSubmit =>
       !_submitting && _image != null && _password.text.isNotEmpty;
 
-  Future<void> _refreshDrawn() async {
-    final png = await _pad.toPng();
-    if (mounted) setState(() => _drawn = png);
-  }
-
-  void _clearDrawn() {
-    _pad.clear();
-    setState(() => _drawn = null);
-  }
-
-  Future<void> _pickUpload() async {
-    final result = await FilePickerUtil.pickSingleFileResult(
-      allowedExtensions: const ['png', 'jpg', 'jpeg'],
-    );
-    if (result.isCancelled) return;
-    final file = result.value;
-    if (!result.isSelected || file == null) {
-      return _setUploadError('Gambar tidak bisa dibuka. Pilih berkas lain.');
-    }
-    try {
-      final bytes =
-          file.bytes ??
-          (file.path == null ? null : await File(file.path!).readAsBytes());
-      if (bytes == null || bytes.isEmpty)
-        return _setUploadError('Gambar tidak bisa dibaca. Pilih berkas lain.');
-      if (bytes.length > _maxBytes)
-        return _setUploadError('Ukuran gambar maksimal 4 MB.');
-      final ext = (file.extension ?? '').toLowerCase();
-      if (ext != 'png' && ext != 'jpg' && ext != 'jpeg')
-        return _setUploadError('Gunakan gambar PNG atau JPEG.');
-      final decoded = await _decode(bytes);
-      if (decoded == null)
-        return _setUploadError('Berkas bukan gambar yang valid.');
-      if (decoded.$1 < 40 || decoded.$2 < 20)
-        return _setUploadError('Gambar terlalu kecil (minimal 40x20 piksel).');
-      setState(() {
-        _uploaded = bytes;
-        _uploadName = ext == 'png' ? 'ttd.png' : 'ttd.jpg';
-        _uploadType = ext == 'png' ? 'image/png' : 'image/jpeg';
+  Future<void> _pick() async {
+    final picked = await widget.picker();
+    if (picked == null) return;
+    final problem = await _validate(picked);
+    if (!mounted) return;
+    setState(() {
+      if (problem != null) {
+        _error = problem;
+      } else {
+        _image = picked.bytes;
+        _ext = picked.ext;
         _error = null;
-      });
-    } catch (_) {
-      _setUploadError('Gambar tidak bisa dibaca. Pilih berkas lain.');
-    }
+      }
+    });
   }
 
-  Future<(int, int)?> _decode(Uint8List bytes) async {
+  /// Pesan masalah, atau null bila gambar layak dikirim.
+  Future<String?> _validate(PickedSignature p) async {
+    if (p.bytes.isEmpty) return 'Gambar tidak bisa dibaca. Pilih berkas lain.';
+    if (p.bytes.length > _maxBytes) return 'Ukuran gambar maksimal 4 MB.';
+    if (p.ext != 'png' && p.ext != 'jpg' && p.ext != 'jpeg') {
+      return 'Gunakan gambar PNG atau JPEG.';
+    }
     try {
-      final image = await decodeImageFromList(bytes);
-      final size = (image.width, image.height);
-      image.dispose();
-      return size;
+      final decoded = await decodeImageFromList(p.bytes);
+      final tooSmall = decoded.width < 40 || decoded.height < 20;
+      decoded.dispose();
+      if (tooSmall) return 'Gambar terlalu kecil (minimal 40x20 piksel).';
     } catch (_) {
-      return null;
+      return 'Berkas bukan gambar yang valid.';
     }
+    return null;
   }
-
-  void _setUploadError(String message) => setState(() => _error = message);
-
-  void _selectMethod(String method) => setState(() {
-    _method = method;
-    _error = null;
-  });
 
   Future<void> _confirm() async {
     final image = _image;
@@ -148,21 +122,18 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              height: 90,
+              constraints: const BoxConstraints(maxHeight: 120),
               width: double.infinity,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: AppColors.enterpriseBorder),
               ),
-              child: Image.memory(
-                Uint8List.fromList(image.bytes),
-                fit: BoxFit.contain,
-              ),
+              child: Image.memory(image, fit: BoxFit.contain),
             ),
             const SizedBox(height: 12),
             Text(
-              'BA ${widget.number} akan ditandai Anda setujui sebagai Ketua Pengawas. '
+              'BA ${widget.number} akan Anda setujui sebagai Ketua Pengawas. '
               'Isi BA tidak dapat diubah setelah ini.',
               style: const TextStyle(fontSize: 13),
             ),
@@ -195,7 +166,11 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
           .read(officerRemoteProvider)
           .signReport(
             reportNumber: widget.number,
-            image: image,
+            image: SignatureImage(
+              bytes: image,
+              filename: _ext == 'png' ? 'ttd.png' : 'ttd.jpg',
+              contentType: _ext == 'png' ? 'image/png' : 'image/jpeg',
+            ),
             password: _password.text,
             idempotencyKey: _key,
           );
@@ -205,13 +180,14 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
       if (!mounted) return;
       setState(() {
         _error = e.isNetwork
-            ? 'Koneksi bermasalah. Tanda tangan Anda masih tersimpan di layar ini; coba kirim lagi.'
-            : e.fields['password']?.first ?? e.message;
+            ? 'Koneksi bermasalah. Gambar Anda masih tersimpan di layar ini; coba kirim lagi.'
+            : (e.fields.isNotEmpty ? e.fields.values.first.first : e.message);
         if (e.fields.containsKey('password')) _password.clear();
       });
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() => _error = 'Tanda tangan belum terkirim. Coba lagi.');
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -330,13 +306,13 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Anda sudah menyetujui BA ini',
+              'Anda sudah menandatangani BA ini',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 6),
             Text(
               'BA ${widget.number}${when.isEmpty ? '' : ' · $when WIB'}\n'
-              '${s.adminSigned ? 'Admin juga sudah menyetujui.' : 'Menunggu persetujuan Admin sebelum diterbitkan.'}',
+              '${s.adminSigned ? 'Admin juga sudah menandatangani.' : 'Menunggu tanda tangan Admin sebelum diterbitkan.'}',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.enterpriseTextMuted,
@@ -357,7 +333,6 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
   }
 
   Widget _form() {
-    final image = _image;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
       children: [
@@ -367,71 +342,51 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Anda menandatangani sebagai Ketua Pengawas Lapangan. Periksa kembali isi BA; setelah disetujui, isinya terkunci.',
+          'Anda menandatangani sebagai Ketua Pengawas Lapangan. Periksa kembali isi BA; setelah ditandatangani, isinya terkunci.',
           style: TextStyle(
             color: AppColors.enterpriseTextMuted,
             fontSize: 13,
             height: 1.4,
           ),
         ),
-        const SizedBox(height: 16),
-        SegmentedButton<String>(
-          segments: const [
-            ButtonSegment(
-              value: 'draw',
-              label: Text('Gambar langsung'),
-              icon: Icon(Icons.draw_outlined),
-            ),
-            ButtonSegment(
-              value: 'upload',
-              label: Text('Unggah gambar'),
-              icon: Icon(Icons.upload_file_outlined),
-            ),
-          ],
-          selected: {_method},
-          onSelectionChanged: _submitting
-              ? null
-              : (v) => _selectMethod(v.first),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.statusSurveySurface,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Text(
+            'Unduh visualisasi TTE Anda di suresman.tasikmalayakota.go.id/visualcustom '
+            'dengan memasukkan NIP, lalu pilih gambarnya di sini.',
+            key: Key('ttd-petunjuk'),
+            style: TextStyle(fontSize: 13, height: 1.4),
+          ),
         ),
         const SizedBox(height: 12),
-        if (_method == 'draw') ...[
-          SignaturePad(controller: _pad, onChanged: _refreshDrawn),
-          const SizedBox(height: 6),
+        OutlinedButton.icon(
+          key: const Key('ttd-pilih'),
+          onPressed: _submitting ? null : _pick,
+          icon: const Icon(Icons.image_outlined),
+          label: Text(
+            _image == null ? 'Pilih gambar visualisasi TTE' : 'Ganti gambar',
+          ),
+        ),
+        if (_image != null)
           Align(
             alignment: Alignment.centerRight,
             child: TextButton.icon(
-              onPressed: _submitting ? null : _clearDrawn,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Hapus dan ulangi'),
+              onPressed: _submitting
+                  ? null
+                  : () => setState(() => _image = null),
+              icon: const Icon(Icons.delete_outline, size: 18),
+              label: const Text('Hapus gambar'),
             ),
           ),
-        ] else ...[
-          OutlinedButton.icon(
-            onPressed: _submitting ? null : _pickUpload,
-            icon: const Icon(Icons.image_outlined),
-            label: Text(
-              _uploaded == null ? 'Pilih gambar tanda tangan' : 'Ganti gambar',
-            ),
-          ),
-          if (_uploaded != null)
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _submitting
-                    ? null
-                    : () => setState(() => _uploaded = null),
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('Hapus gambar'),
-              ),
-            ),
-          const Text(
-            'Gambar visualisasi TTE (unduh di suresman.tasikmalayakota.go.id/visualcustom dengan NIP Anda) atau gambar tanda tangan. PNG atau JPEG, maksimal 4 MB; ukurannya menyesuaikan di PDF.',
-            style: TextStyle(
-              color: AppColors.enterpriseTextMuted,
-              fontSize: 12,
-            ),
-          ),
-        ],
+        const Text(
+          'PNG atau JPEG, maksimal 4 MB. Ukurannya menyesuaikan di PDF.',
+          style: TextStyle(color: AppColors.enterpriseTextMuted, fontSize: 12),
+        ),
         const SizedBox(height: 12),
         const Text(
           'Pratinjau',
@@ -440,27 +395,28 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
         const SizedBox(height: 6),
         Container(
           key: const Key('ttd-pratinjau'),
-          height: 90,
+          constraints: const BoxConstraints(minHeight: 90, maxHeight: 180),
           width: double.infinity,
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppColors.enterpriseBorder),
           ),
-          child: image == null
-              ? const Center(
-                  child: Text(
-                    'Belum ada tanda tangan',
-                    style: TextStyle(
-                      color: AppColors.enterpriseTextMuted,
-                      fontSize: 12,
+          child: _image == null
+              ? const SizedBox(
+                  height: 78,
+                  child: Center(
+                    child: Text(
+                      'Belum ada gambar',
+                      style: TextStyle(
+                        color: AppColors.enterpriseTextMuted,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 )
-              : Image.memory(
-                  Uint8List.fromList(image.bytes),
-                  fit: BoxFit.contain,
-                ),
+              : Image.memory(_image!, fit: BoxFit.contain),
         ),
         const SizedBox(height: 16),
         TextField(
@@ -525,14 +481,6 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
                         ? 'Setujui dan Tandatangani'
                         : 'Coba kirim lagi',
                   ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Ini persetujuan elektronik berbasis akun Anda, bukan tanda tangan elektronik tersertifikasi.',
-          style: TextStyle(
-            color: AppColors.enterpriseTextMuted,
-            fontSize: 11.5,
           ),
         ),
       ],

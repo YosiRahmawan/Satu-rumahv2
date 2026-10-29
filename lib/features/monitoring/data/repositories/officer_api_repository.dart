@@ -117,7 +117,7 @@ abstract class OfficerRemote {
   /// Status persetujuan Ketua dan Admin untuk BA bernomor [reportNumber].
   Future<BaSignatureStatus> signatureStatus(String reportNumber);
 
-  /// Ketua Pengawas menyetujui BA dengan gambar tanda tangan dan konfirmasi sandi.
+  /// Ketua Pengawas menandatangani BA dengan mengunggah visualisasi TTE dan konfirmasi sandi.
   /// [idempotencyKey] harus sama pada percobaan ulang agar tidak tersimpan ganda.
   Future<BaSignatureStatus> signReport({
     required String reportNumber,
@@ -202,7 +202,8 @@ class OfficerApiRepository implements OfficerRemote {
       'officer/reports',
       queryParameters: {'per_page': 50},
     );
-    for (final item in (response.data!['data'] as List).cast<Map<String, dynamic>>()) {
+    for (final item
+        in (response.data!['data'] as List).cast<Map<String, dynamic>>()) {
       if ('${item['report_number']}' == number) {
         return (id: item['id'] as int, version: item['version'] as int);
       }
@@ -218,8 +219,12 @@ class OfficerApiRepository implements OfficerRemote {
   Future<BaSignatureStatus> signatureStatus(String reportNumber) async {
     try {
       final ref = await _resolveReport(reportNumber);
-      final detail = await _dio.get<Map<String, dynamic>>('officer/reports/${ref.id}');
-      return BaSignatureStatus.fromReport(detail.data!['data'] as Map<String, dynamic>);
+      final detail = await _dio.get<Map<String, dynamic>>(
+        'officer/reports/${ref.id}',
+      );
+      return BaSignatureStatus.fromReport(
+        detail.data!['data'] as Map<String, dynamic>,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }
@@ -237,7 +242,6 @@ class OfficerApiRepository implements OfficerRemote {
       final response = await _dio.post<Map<String, dynamic>>(
         'officer/reports/${ref.id}/sign',
         data: FormData.fromMap({
-          'method': image.method,
           'password': password,
           'version': ref.version,
           'signature': MultipartFile.fromBytes(
@@ -248,7 +252,9 @@ class OfficerApiRepository implements OfficerRemote {
         }),
         options: Options(headers: {'Idempotency-Key': idempotencyKey}),
       );
-      return BaSignatureStatus.fromReport(response.data!['data'] as Map<String, dynamic>);
+      return BaSignatureStatus.fromReport(
+        response.data!['data'] as Map<String, dynamic>,
+      );
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }
