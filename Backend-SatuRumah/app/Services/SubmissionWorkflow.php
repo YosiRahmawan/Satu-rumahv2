@@ -343,8 +343,19 @@ class SubmissionWorkflow
                 "{$tanggal} · " . collect($assignment->team())->pluck('nama')->implode(', ') . ($note ? " · {$note}" : ''),
                 ['assignment_id' => $assignment->id],
             );
-            $this->notifier->toUser($officer, $s, 'assignment', 'Tugas survei baru', "{$name} · {$tanggal}", ['assignment_id' => $assignment->id]);
-            $this->notifier->toDeveloper($s, 'survey_scheduled', 'Survei lapangan dijadwalkan', "{$s->number}: survei pada {$tanggal}.");
+            // Petugas yang tugasnya dialihkan ke orang lain diberi tahu; petugas yang sama hanya jadwalnya berubah.
+            $dialihkan = $previous->pluck('officer_id')->unique()->reject(fn ($id) => $id === $officer->id);
+            foreach ($dialihkan as $lamaId) {
+                $this->notifier->toUser($lamaId, $s, 'assignment_reassigned', 'Tugas survei dialihkan', "{$name} · tugas dialihkan ke petugas lain" . ($reason ? " ({$reason})" : ''), ['assignment_id' => $assignment->id]);
+            }
+            $jadwalDiubah = $previous->contains('officer_id', $officer->id);
+            $this->notifier->toUser(
+                $officer, $s,
+                $jadwalDiubah ? 'assignment_rescheduled' : 'assignment',
+                $jadwalDiubah ? 'Jadwal survei diubah' : 'Tugas survei baru',
+                "{$name} · {$tanggal}", ['assignment_id' => $assignment->id],
+            );
+            $this->notifier->toDeveloper($s, 'survey_scheduled', $previous->isNotEmpty() ? 'Jadwal survei diubah' : 'Survei lapangan dijadwalkan', "{$s->number}: survei pada {$tanggal}.");
 
             return $assignment;
         });

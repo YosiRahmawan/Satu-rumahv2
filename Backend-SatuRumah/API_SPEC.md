@@ -312,3 +312,19 @@ disimpan privat. Server mencatat penanda tangan, waktu, versi, dan hash isi BA (
 Tanda tangan tidak berlaku bila isi atau versi BA berubah. Peran, waktu, dan hash tidak pernah diambil dari klien. Server
 tidak memverifikasi bahwa gambar benar milik NIP itu (pengamannya akun, sandi, dan hash); bila Pemkot menyediakan API resmi,
 `provider`/`provider_ref` pada `report_signatures` disiapkan untuk itu. PDF mengikuti **format resmi Disperwaskim** (contoh BA View Medina, diterima 29 Okt 2026): kertas Folio 21,59 x 33,02 cm, Times 12, bab I-V (Maksud dan Tujuan, Temuan Di Lapangan, Kesimpulan, Kesepakatan, Rencana Tindak Lanjut), kolom "Yang Melaksanakan Observasi / Inspeksi" (Ketua) dan "Yang Ditemui di Lapangan", lalu "Dokumentasi Lapangan/ Drone" dengan foto dalam bingkai (2 per halaman). Blok "Mengetahui, Tim Verifikator" untuk tanda tangan Admin dan QR verifikasi ditambahkan di bawahnya (asumsi; contoh resmi tidak memuatnya). `BA_TEMPLATE_RESMI=false` menandai PDF sebagai template sementara.
+
+## 16. Jenis notifikasi dan zona waktu
+
+`GET /notifications` mengirim `type` berikut. Aplikasi memetakan tiap jenis ke label, ikon, dan warna sendiri; jenis tak dikenal
+tampil sebagai pengajuan biasa.
+
+| `type` | Penerima | Arti |
+|---|---|---|
+| `submitted`, `resubmitted`, `report_submitted`, `report_signed_ketua`, `sla_warning`, `sla_overdue`, `deadline_overdue_admin` | Admin | pengajuan masuk, perbaikan terkirim, BA terkirim, Ketua menandatangani, SLA, tenggat terlewat |
+| `revision_requested`, `stage_advanced`, `survey_scheduled`, `survey_cancelled`, `report_published`, `decided` (judul "disetujui"/"ditolak"), `deadline_reminder`, `deadline_overdue` | Pengembang | perkembangan pengajuannya |
+| `assignment`, `assignment_rescheduled`, `assignment_reassigned`, `assignment_cancelled`, `report_published` | Pengawas | tugas baru, jadwal diubah, tugas dialihkan ke petugas lain, tugas dibatalkan, BA diterbitkan |
+
+Zona waktu server **Asia/Jakarta** (`APP_TIMEZONE`, bawaan WIB) dan bahasa **id**; semua jam di web, PDF, dan notifikasi berlabel WIB
+sudah sesuai. Tanggal pada API tetap berbentuk ISO 8601 dengan selisih zona (`+07:00`). Data lama yang disimpan saat server masih
+UTC tampak bergeser 7 jam. Aplikasi menyegarkan notifikasi saat dibuka kembali dan tiap 60 detik; lonceng Web Admin tiap 15 detik
+(`GET /notifikasi/jumlah`). Belum ada push.
