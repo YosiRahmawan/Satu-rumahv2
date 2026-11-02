@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -5,11 +6,13 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/api/api_client.dart';
+import '../../../../core/auth/role_session.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/data/slot_catalog.dart';
 import '../models/ba_signature.dart';
 import '../models/monitoring_model.dart';
+import '../models/server_report.dart';
 import '../models/report_photo.dart';
 import '../photo_bytes_cache.dart';
 
@@ -114,6 +117,15 @@ abstract class OfficerRemote {
     void Function(String message, double fraction)? onProgress,
   });
 
+  /// Daftar BA milik petugas di server (terbaru dahulu), beserta status tanda tangan.
+  Future<List<ServerReport>> reports();
+
+  /// Isi lengkap satu BA di server (tanpa foto) untuk dibuka dari riwayat.
+  Future<MonitoringModel> reportDetail(int id);
+
+  /// PDF final BA yang sudah diterbitkan Admin; galat bila belum terbit.
+  Future<Uint8List> downloadPdf(String reportNumber);
+
   /// Status persetujuan Ketua dan Admin untuk BA bernomor [reportNumber].
   Future<BaSignatureStatus> signatureStatus(String reportNumber);
 
@@ -213,6 +225,61 @@ class OfficerApiRepository implements OfficerRemote {
       status: 404,
       message: 'Laporan tidak ditemukan di server. Muat ulang lalu coba lagi.',
     );
+  }
+
+  @override
+  Future<List<ServerReport>> reports() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        'officer/reports',
+        queryParameters: {'per_page': 50},
+      );
+      return [
+        for (final item
+            in (response.data!['data'] as List).cast<Map<String, dynamic>>())
+          ServerReport.fromJson(item),
+      ];
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  @override
+  Future<MonitoringModel> reportDetail(int id) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        'officer/reports/$id',
+      );
+      return ServerReport.detailToModel(
+        response.data!['data'] as Map<String, dynamic>,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  @override
+  Future<Uint8List> downloadPdf(String reportNumber) async {
+    try {
+      final ref = await _resolveReport(reportNumber);
+      final response = await _dio.get<List<int>>(
+        'officer/reports/${ref.id}/pdf',
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+      return Uint8List.fromList(response.data!);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw const ApiException(
+          code: 'NOT_FOUND',
+          status: 404,
+          message: 'PDF belum tersedia. BA diterbitkan setelah Admin menandatangani.',
+        );
+      }
+      throw ApiException.fromDio(e);
+    }
   }
 
   @override
@@ -375,6 +442,49 @@ class OfficerApiRepository implements OfficerRemote {
 final officerRemoteProvider = Provider<OfficerRemote>(
   (ref) => OfficerApiRepository(ref.watch(apiDioProvider)),
 );
+
+/// BA milik petugas di server (riwayat yang tahan pasang ulang dan status tanda tangan).
+/// Kosong di mode lokal. Dimuat saat petugas masuk dan disegarkan berkala.
+class OfficerReportsNotifier extends StateNotifier<List<ServerReport>> {
+  OfficerReportsNotifier(this._remote) : super(const []);
+
+  final OfficerRemote? _remote;
+
+  Future<void> refresh() async {
+    final source = _remote;
+    if (source == null) return;
+    try {
+      final items = await source.reports();
+      if (mounted) state = items;
+    } on ApiException {
+      // Daftar lama dipertahankan; dicoba lagi pada putaran berikutnya.
+    }
+  }
+}
+
+final officerReportsProvider =
+    StateNotifierProvider<OfficerReportsNotifier, List<ServerReport>>((ref) {
+      final api = ref.watch(apiEnabledProvider);
+      final isOfficer = ref.watch(
+        roleSessionProvider.select((s) => s.role == AppRole.perwaskim),
+      );
+      final notifier = OfficerReportsNotifier(
+        api && isOfficer ? ref.watch(officerRemoteProvider) : null,
+      );
+      unawaited(notifier.refresh());
+      return notifier;
+    });
+
+/// BA di server menurut nomornya; null bila belum ada atau mode lokal.
+final serverReportProvider = Provider.family<ServerReport?, String>((
+  ref,
+  number,
+) {
+  for (final r in ref.watch(officerReportsProvider)) {
+    if (r.reportNumber == number) return r;
+  }
+  return null;
+});
 
 /// Status persetujuan BA dari server; null di mode lokal (tanpa API).
 final baSignatureStatusProvider = FutureProvider.autoDispose

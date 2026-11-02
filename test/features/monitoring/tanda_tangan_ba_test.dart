@@ -10,6 +10,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:satu_rumah/core/api/api_client.dart';
 import 'package:satu_rumah/core/auth/token_store.dart';
 import 'package:satu_rumah/features/monitoring/data/models/ba_signature.dart';
+import 'package:satu_rumah/features/monitoring/data/models/server_report.dart';
 import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/officer_api_repository.dart';
 import 'package:satu_rumah/features/monitoring/presentation/screens/tanda_tangan_ba_screen.dart';
@@ -27,6 +28,16 @@ class _Remote implements OfficerRemote {
   final List<String> keys = [];
   final List<SignatureImage> images = [];
   int signCalls = 0;
+
+  @override
+  Future<List<ServerReport>> reports() async => const [];
+
+  @override
+  Future<MonitoringModel> reportDetail(int id) => throw UnimplementedError();
+
+  @override
+  Future<Uint8List> downloadPdf(String reportNumber) =>
+      throw UnimplementedError();
 
   @override
   Future<BaSignatureStatus> signatureStatus(String reportNumber) async =>

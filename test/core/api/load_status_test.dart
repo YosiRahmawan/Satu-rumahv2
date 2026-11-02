@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -11,6 +12,7 @@ import 'package:satu_rumah/core/widgets/connection_banner.dart';
 import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/officer_api_repository.dart';
 import 'package:satu_rumah/features/monitoring/data/models/ba_signature.dart';
+import 'package:satu_rumah/features/monitoring/data/models/server_report.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
 import 'package:satu_rumah/features/pengajuan/data/repositories/pengajuan_api_repository.dart';
@@ -56,6 +58,16 @@ class _Officer implements OfficerRemote {
     required double longitude,
     void Function(String message, double fraction)? onProgress,
   }) => throw UnimplementedError();
+
+  @override
+  Future<List<ServerReport>> reports() async => const [];
+
+  @override
+  Future<MonitoringModel> reportDetail(int id) => throw UnimplementedError();
+
+  @override
+  Future<Uint8List> downloadPdf(String reportNumber) =>
+      throw UnimplementedError();
 
   @override
   Future<BaSignatureStatus> signatureStatus(String reportNumber) =>

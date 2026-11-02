@@ -33,15 +33,19 @@ class PerwaskimIdentity {
   factory PerwaskimIdentity.fromSession(RoleSessionState session) {
     final asli = session.nama?.trim();
     if (asli != null && asli.isNotEmpty) {
+      // Akun dari server: NIP dan email apa adanya; tidak dikarang bila kosong.
+      final nipAsli = session.nip?.trim();
       final jabatan = session.jabatan?.trim();
       return PerwaskimIdentity(
         nama: asli,
         jabatan: jabatan == null || jabatan.isEmpty
             ? session.role.label
             : jabatan,
-        nip: 'NIP: Belum tersedia',
+        nip: nipAsli == null || nipAsli.isEmpty
+            ? 'NIP: Belum diisi'
+            : 'NIP: $nipAsli',
         initials: _extractInitials(asli),
-        email: '${session.username ?? 'petugas'}@tasikmalayakota.go.id',
+        email: session.email?.trim() ?? '',
       );
     }
     final username = session.username?.trim();

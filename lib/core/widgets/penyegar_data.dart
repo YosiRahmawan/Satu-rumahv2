@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/monitoring/data/repositories/officer_api_repository.dart';
 import '../../features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import '../../features/notifikasi/presentation/providers/notifikasi_provider.dart';
 import '../../features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
@@ -17,7 +18,7 @@ class PenyegarData extends ConsumerStatefulWidget {
   const PenyegarData({
     super.key,
     required this.child,
-    this.interval = const Duration(seconds: 60),
+    this.interval = const Duration(seconds: 20),
   });
 
   final Widget child;
@@ -75,6 +76,7 @@ class _PenyegarDataState extends ConsumerState<PenyegarData>
           await Future.wait([
             ref.read(notifikasiProvider.notifier).refresh(),
             ref.read(officerAssignmentsProvider.notifier).refresh(silent: true),
+            ref.read(officerReportsProvider.notifier).refresh(),
           ]);
         case AppRole.admin:
         case AppRole.guest:

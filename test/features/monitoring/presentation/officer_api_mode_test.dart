@@ -12,6 +12,7 @@ import 'package:satu_rumah/features/monitoring/data/photo_bytes_cache.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/monitoring_repository.dart';
 import 'package:satu_rumah/features/monitoring/data/repositories/officer_api_repository.dart';
 import 'package:satu_rumah/features/monitoring/data/models/ba_signature.dart';
+import 'package:satu_rumah/features/monitoring/data/models/server_report.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/camera_providers.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_form_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
@@ -52,6 +53,16 @@ class FakeOfficerRemote implements OfficerRemote {
     if (error != null) throw error!;
     return '600.2.5/BA-MON/X/2026/007';
   }
+
+  @override
+  Future<List<ServerReport>> reports() async => const [];
+
+  @override
+  Future<MonitoringModel> reportDetail(int id) => throw UnimplementedError();
+
+  @override
+  Future<Uint8List> downloadPdf(String reportNumber) =>
+      throw UnimplementedError();
 
   @override
   Future<BaSignatureStatus> signatureStatus(String reportNumber) =>
@@ -365,6 +376,16 @@ class _FailingRemote implements OfficerRemote {
     required double longitude,
     void Function(String message, double fraction)? onProgress,
   }) => throw UnimplementedError();
+
+  @override
+  Future<List<ServerReport>> reports() async => const [];
+
+  @override
+  Future<MonitoringModel> reportDetail(int id) => throw UnimplementedError();
+
+  @override
+  Future<Uint8List> downloadPdf(String reportNumber) =>
+      throw UnimplementedError();
 
   @override
   Future<BaSignatureStatus> signatureStatus(String reportNumber) =>

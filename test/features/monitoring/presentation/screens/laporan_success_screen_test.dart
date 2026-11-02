@@ -44,7 +44,7 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(_app());
-    expect(find.text('Berita Acara Generated'), findsOneWidget);
+    expect(find.text('Berita Acara Terkirim'), findsOneWidget);
     expect(find.text('Laporan Berhasil Dibuat!'), findsOneWidget);
     expect(
       find.text(

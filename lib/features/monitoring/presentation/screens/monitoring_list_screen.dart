@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/api/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_radii.dart';
 import '../../../../core/theme/app_spacing.dart';
@@ -10,6 +11,7 @@ import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/widgets/developer_header.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
+import '../../data/repositories/officer_api_repository.dart';
 import '../providers/monitoring_list_provider.dart';
 import '../../../../core/widgets/app_illustration.dart';
 
@@ -55,7 +57,7 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allMonitoring = ref.watch(monitoringListProvider);
+    final allMonitoring = ref.watch(riwayatGabunganProvider);
     final monitoringAsync = ref.watch(monitoringListAsyncProvider);
 
     return Scaffold(
@@ -448,12 +450,14 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: AppRadii.card,
-          onTap: () => context.push(
-            item.isDraft ? '/monitoring/draft' : '/monitoring/preview',
-            extra: item.isDraft
-                ? item
-                : {'model': item, 'isDraft': item.isDraft},
-          ),
+          onTap: () => item.id.startsWith('srv-')
+              ? _bukaDariServer(item)
+              : context.push(
+                  item.isDraft ? '/monitoring/draft' : '/monitoring/preview',
+                  extra: item.isDraft
+                      ? item
+                      : {'model': item, 'isDraft': item.isDraft},
+                ),
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
@@ -495,12 +499,33 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                if (!item.isDraft) _StatusBa(nomor: item.nomorSuratBA),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  /// BA yang hanya ada di server (mis. setelah pasang ulang): isinya diambil saat dibuka.
+  Future<void> _bukaDariServer(MonitoringModel item) async {
+    final id = int.tryParse(item.id.replaceFirst('srv-', ''));
+    if (id == null) return;
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Memuat laporan dari server…'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    try {
+      final model = await ref.read(officerRemoteProvider).reportDetail(id);
+      if (!mounted) return;
+      context.push('/monitoring/preview', extra: {'model': model, 'isDraft': false});
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   List<MonitoringModel> _filterItems(List<MonitoringModel> items) {
@@ -530,6 +555,58 @@ class _MonitoringListScreenState extends ConsumerState<MonitoringListScreen> {
         return !item.isDraft &&
             item.statusHasilEvaluasi != StatusHasilEvaluasi.sesuaiSiteplan;
     }
+  }
+}
+
+/// Status BA di server pada kartu riwayat: perlu tanda tangan, menunggu Admin, atau diterbitkan.
+class _StatusBa extends ConsumerWidget {
+  const _StatusBa({required this.nomor});
+
+  final String nomor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final r = ref.watch(serverReportProvider(nomor));
+    if (r == null) return const SizedBox.shrink();
+    final s = r.signatures;
+    final (teks, warna, ikon) = s.published
+        ? ('BA diterbitkan', const Color(0xFF166534), Icons.verified_outlined)
+        : !s.ketuaSigned
+        ? (
+            'Perlu tanda tangan Anda',
+            const Color(0xFF92400E),
+            Icons.draw_outlined,
+          )
+        : !s.adminSigned
+        ? (
+            'Menunggu tanda tangan Admin',
+            const Color(0xFF1D4ED8),
+            Icons.hourglass_top_outlined,
+          )
+        : (
+            'Menunggu diterbitkan Admin',
+            const Color(0xFF1D4ED8),
+            Icons.hourglass_top_outlined,
+          );
+    return Padding(
+      padding: const EdgeInsets.only(top: AppSpacing.xs),
+      child: Row(
+        children: [
+          Icon(ikon, size: 14, color: warna),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              teks,
+              key: const Key('status-ba-server'),
+              style: AppTextStyles.bodySmall.copyWith(
+                color: warna,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -13,12 +13,18 @@ class AuthUser {
   final AppRole role;
   final String? jabatan;
 
+  /// Email akun dan NIP pegawai dari server (NIP wajib untuk tanda tangan BA); bisa kosong.
+  final String? email;
+  final String? nip;
+
   const AuthUser({
     required this.id,
     required this.name,
     required this.username,
     required this.role,
     this.jabatan,
+    this.email,
+    this.nip,
   });
 
   factory AuthUser.fromJson(Map<String, dynamic> json) => AuthUser(
@@ -27,6 +33,8 @@ class AuthUser {
     username: '${json['username']}',
     role: appRoleFromApi('${json['role']}'),
     jabatan: json['jabatan'] as String?,
+    email: json['email'] as String?,
+    nip: json['nip'] as String?,
   );
 }
 

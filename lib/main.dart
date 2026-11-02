@@ -15,7 +15,8 @@ void main() async {
   // Draf dan laporan monitoring dipulihkan dari penyimpanan perangkat. Bila
   // gagal dibaca, aplikasi tetap berjalan dengan data awal.
   final monitoringRepository = MonitoringRepository(
-    store: const SharedPrefsMonitoringStore(),
+    // Foto draf disimpan sebagai berkas (tahan tutup aplikasi); di web tidak ada sistem berkas.
+    store: kIsWeb ? const SharedPrefsMonitoringStore() : FileMonitoringStore(),
     seed: kApiBaseUrl.isEmpty,
   );
   try {

@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Penyimpanan laporan monitoring (draf dan final) beserta isi fotonya di
@@ -128,6 +130,86 @@ class SharedPrefsMonitoringStore extends MonitoringStore {
   Future<Set<String>> storedPhotoIds() async {
     final prefs = await SharedPreferences.getInstance();
     return (await _index(prefs)).keys.toSet();
+  }
+}
+
+/// Laporan tetap di SharedPreferences (kecil), tetapi isi foto disimpan sebagai berkas di folder
+/// aplikasi, sehingga foto draf tidak hilang saat aplikasi ditutup walau jumlah dan ukurannya besar.
+/// Tidak untuk web (tanpa sistem berkas); di sana dipakai [SharedPrefsMonitoringStore].
+class FileMonitoringStore extends MonitoringStore {
+  FileMonitoringStore({Future<Directory> Function()? direktori})
+    : _direktori = direktori ?? _bawaan;
+
+  final Future<Directory> Function() _direktori;
+  final SharedPrefsMonitoringStore _prefs = const SharedPrefsMonitoringStore();
+
+  static Future<Directory> _bawaan() async {
+    final dasar = await getApplicationDocumentsDirectory();
+    return Directory('${dasar.path}${Platform.pathSeparator}monitoring_photos');
+  }
+
+  Future<File> _berkas(String photoId) async {
+    final dir = await _direktori();
+    if (!await dir.exists()) await dir.create(recursive: true);
+    // Id foto dipakai sebagai nama berkas; karakter di luar huruf, angka, dan _- diganti agar aman.
+    final aman = photoId.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
+    return File('${dir.path}${Platform.pathSeparator}$aman.img');
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> loadReports() => _prefs.loadReports();
+
+  @override
+  Future<void> saveReports(List<Map<String, dynamic>> reports) =>
+      _prefs.saveReports(reports);
+
+  @override
+  Future<Uint8List?> loadPhoto(String photoId) async {
+    try {
+      final f = await _berkas(photoId);
+      return await f.exists() ? await f.readAsBytes() : null;
+    } on FileSystemException {
+      return null;
+    }
+  }
+
+  @override
+  Future<bool> savePhoto(String photoId, Uint8List bytes) async {
+    try {
+      final f = await _berkas(photoId);
+      // Tulis ke berkas sementara lalu ganti nama, agar berkas setengah jadi tidak terbaca.
+      final sementara = File('${f.path}.tmp');
+      await sementara.writeAsBytes(bytes, flush: true);
+      await sementara.rename(f.path);
+      return true;
+    } on FileSystemException {
+      return false; // penyimpanan penuh atau tidak bisa ditulis
+    }
+  }
+
+  @override
+  Future<void> deletePhoto(String photoId) async {
+    try {
+      final f = await _berkas(photoId);
+      if (await f.exists()) await f.delete();
+    } on FileSystemException {
+      // sudah hilang atau tidak bisa dihapus; tidak memengaruhi laporan
+    }
+  }
+
+  @override
+  Future<Set<String>> storedPhotoIds() async {
+    try {
+      final dir = await _direktori();
+      if (!await dir.exists()) return {};
+      return {
+        await for (final e in dir.list())
+          if (e is File && e.path.endsWith('.img'))
+            e.uri.pathSegments.last.replaceFirst(RegExp(r'\.img$'), ''),
+      };
+    } on FileSystemException {
+      return {};
+    }
   }
 }
 

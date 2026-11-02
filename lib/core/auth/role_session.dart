@@ -43,6 +43,10 @@ class RoleSessionState {
   final String? nama;
   final String? jabatan;
 
+  /// Email akun dan NIP dari server (mode API); null bila belum diisi.
+  final String? email;
+  final String? nip;
+
   /// Kata sandi masih sementara; pengguna wajib menggantinya dulu.
   final bool mustChangePassword;
 
@@ -51,6 +55,8 @@ class RoleSessionState {
     this.username,
     this.nama,
     this.jabatan,
+    this.email,
+    this.nip,
     this.mustChangePassword = false,
   });
 
@@ -66,6 +72,8 @@ class RoleSessionState {
       username: username ?? this.username,
       nama: nama,
       jabatan: jabatan,
+      email: email,
+      nip: nip,
       mustChangePassword: mustChangePassword ?? this.mustChangePassword,
     );
   }
@@ -79,6 +87,8 @@ class RoleSessionNotifier extends StateNotifier<RoleSessionState> {
     String? username,
     String? nama,
     String? jabatan,
+    String? email,
+    String? nip,
     bool mustChangePassword = false,
   }) {
     if (role == AppRole.guest) {
@@ -90,6 +100,8 @@ class RoleSessionNotifier extends StateNotifier<RoleSessionState> {
       username: username,
       nama: nama,
       jabatan: jabatan,
+      email: email,
+      nip: nip,
       mustChangePassword: mustChangePassword,
     );
   }

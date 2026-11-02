@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:printing/printing.dart';
 
 import '../../../../core/api/api_client.dart';
+import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../data/models/ba_signature.dart';
 import '../../data/repositories/officer_api_repository.dart';
@@ -77,14 +79,15 @@ class BaSignatureEntryCard extends ConsumerWidget {
               ],
             ),
             data: (s) =>
-                s == null ? const SizedBox.shrink() : _content(context, s),
+                s == null ? const SizedBox.shrink() : _content(context, s, ref),
           ),
         ],
       ),
     );
   }
 
-  Widget _content(BuildContext context, BaSignatureStatus s) {
+  Widget _content(BuildContext context, BaSignatureStatus s, WidgetRef ref) {
+    final nipKosong = (ref.watch(roleSessionProvider).nip ?? '').trim().isEmpty;
     Widget chip(String text, bool done) => Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -127,6 +130,21 @@ class BaSignatureEntryCard extends ConsumerWidget {
             if (s.published) chip('Diterbitkan', true),
           ],
         ),
+        if (s.published) ...[
+          const SizedBox(height: 12),
+          _UnduhPdfResmi(number: number),
+        ],
+        if (!s.ketuaSigned && nipKosong) ...[
+          const SizedBox(height: 10),
+          const Text(
+            'NIP akun Anda belum diisi. Minta Admin melengkapinya (menu Akun) sebelum menandatangani.',
+            key: Key('ba-nip-kosong'),
+            style: TextStyle(
+              fontSize: 12.5,
+              color: AppColors.statusWarningText,
+            ),
+          ),
+        ],
         if (!s.ketuaSigned) ...[
           const SizedBox(height: 12),
           SizedBox(
@@ -149,4 +167,58 @@ class BaSignatureEntryCard extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Mengunduh PDF final BA yang diterbitkan Admin (dibuat server) lalu membukanya untuk dilihat,
+/// dicetak, atau dibagikan. Berbeda dari PDF pratinjau buatan HP yang bukan dokumen resmi.
+class _UnduhPdfResmi extends ConsumerStatefulWidget {
+  const _UnduhPdfResmi({required this.number});
+
+  final String number;
+
+  @override
+  ConsumerState<_UnduhPdfResmi> createState() => _UnduhPdfResmiState();
+}
+
+class _UnduhPdfResmiState extends ConsumerState<_UnduhPdfResmi> {
+  bool _sibuk = false;
+
+  Future<void> _unduh() async {
+    if (_sibuk) return;
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _sibuk = true);
+    try {
+      final bytes = await ref
+          .read(officerRemoteProvider)
+          .downloadPdf(widget.number);
+      final nama = 'BA-${widget.number.replaceAll('/', '-')}.pdf';
+      await Printing.sharePdf(bytes: bytes, filename: nama);
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('PDF belum bisa dibuka. Coba lagi.')),
+      );
+    } finally {
+      if (mounted) setState(() => _sibuk = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: double.infinity,
+    height: 46,
+    child: OutlinedButton.icon(
+      key: const Key('ba-unduh-pdf'),
+      onPressed: _sibuk ? null : _unduh,
+      icon: _sibuk
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.picture_as_pdf_outlined, size: 18),
+      label: const Text('Unduh PDF Resmi'),
+    ),
+  );
 }

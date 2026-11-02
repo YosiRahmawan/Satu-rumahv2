@@ -38,7 +38,7 @@ class TabProfilMonitoring extends ConsumerWidget {
     final isVerified =
         session.isAuthenticated &&
         identity.nip.isNotEmpty &&
-        !identity.nip.toLowerCase().contains('belum tersedia');
+        !identity.nip.toLowerCase().contains('belum');
 
     return Scaffold(
       backgroundColor: AppColors.enterpriseCanvas,
@@ -458,7 +458,7 @@ class TabProfilMonitoring extends ConsumerWidget {
               _buildInfoRow(
                 icon: Icons.mail_outline,
                 label: 'Email Resmi Dinas',
-                value: emailText,
+                value: emailText.isEmpty ? '-' : emailText,
               ),
               const Divider(
                 height: 1,

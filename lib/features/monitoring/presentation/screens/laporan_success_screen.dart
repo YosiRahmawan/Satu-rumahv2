@@ -49,7 +49,7 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
           ),
         ),
         title: Text(
-          'Berita Acara Generated',
+          'Berita Acara Terkirim',
           style: AppTextStyles.titleLarge.copyWith(
             fontFamily: AppTextStyles.enterpriseFontFamily,
             fontWeight: FontWeight.w700,

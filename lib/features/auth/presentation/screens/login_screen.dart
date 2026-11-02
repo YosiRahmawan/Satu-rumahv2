@@ -50,6 +50,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             username: result.user.username,
             nama: result.user.name,
             jabatan: result.user.jabatan,
+            email: result.user.email,
+            nip: result.user.nip,
             mustChangePassword: result.mustChangePassword,
           );
       context.go(

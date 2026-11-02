@@ -29,8 +29,26 @@ final monitoringTabProvider = StateProvider<int>((ref) => 0);
 /// berkedip menampilkan kartu "Memuat data" sesaat setelah login. Bila sumber
 /// data berubah menjadi jaringan, ganti kembali dengan `FutureProvider`.
 final monitoringListAsyncProvider = Provider<AsyncValue<List<MonitoringModel>>>(
-  (ref) => AsyncValue.data(ref.watch(monitoringListProvider)),
+  (ref) => AsyncValue.data(ref.watch(riwayatGabunganProvider)),
 );
+
+/// Riwayat laporan: yang ada di perangkat ditambah BA yang hanya ada di server (mis. setelah
+/// pasang ulang aplikasi atau ganti HP). Yang dari server dikenali lewat id berawalan `srv-`;
+/// isinya diambil saat dibuka.
+final riwayatGabunganProvider = Provider<List<MonitoringModel>>((ref) {
+  final lokal = ref.watch(monitoringListProvider);
+  if (!ref.watch(apiEnabledProvider)) return lokal;
+  final nomorLokal = {
+    for (final m in lokal)
+      if (!m.isDraft) m.nomorSuratBA,
+  };
+  final hanyaServer = [
+    for (final r in ref.watch(officerReportsProvider))
+      if (!nomorLokal.contains(r.reportNumber)) r.toStub(),
+  ];
+  return [...lokal, ...hanyaServer]
+    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+});
 
 /// Provider penugasan survey aktif yang dikirim dari Admin ke Tim Perwaskim
 final surveyAktifProvider = Provider<List<Pengajuan>>((ref) {
