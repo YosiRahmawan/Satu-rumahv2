@@ -441,6 +441,7 @@ class SubmissionWorkflow
 
             $this->notifier->event($s, $reviewer, 'stage_advanced', 'Laporan survei diterima', "BA {$report->report_number}. Menunggu keputusan akhir.", ['report_id' => $report->id]);
             $this->notifier->toDeveloper($s, 'stage_advanced', 'Survei selesai', "{$s->number} masuk tahap persetujuan.");
+            $this->notifier->toUser($report->officer_id, $s, 'report_accepted', 'BA diterima Admin', "{$report->report_number} · siap ditandatangani.", ['report_id' => $report->id]);
 
             return $s;
         });

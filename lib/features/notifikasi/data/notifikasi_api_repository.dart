@@ -62,7 +62,9 @@ JenisNotifikasi jenisFromApi(String? type, [String? title]) => switch (type) {
   'assignment' => JenisNotifikasi.penugasanSurvei,
   'survey_scheduled' || 'assignment_rescheduled' => JenisNotifikasi.reminderSurvey,
   'resubmitted' || 'report_submitted' => JenisNotifikasi.dokumenDiunggahUlang,
-  'stage_advanced' => JenisNotifikasi.tahapLanjut,
+  'stage_advanced' ||
+  'report_accepted' ||
+  'report_signed_admin' => JenisNotifikasi.tahapLanjut,
   'survey_cancelled' => JenisNotifikasi.jadwalDibatalkan,
   'assignment_cancelled' ||
   'assignment_reassigned' => JenisNotifikasi.penugasanDibatalkan,

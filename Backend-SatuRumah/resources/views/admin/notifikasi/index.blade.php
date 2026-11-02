@@ -34,6 +34,8 @@
         'assignment_reassigned' => ['Tugas Dialihkan', 'warn', 'M6 6l12 12M18 6L6 18'],
         'assignment_cancelled' => ['Survei Dibatalkan', 'warn', 'M6 6l12 12M18 6L6 18'],
         'report_signed_ketua' => ['BA Ditandatangani Ketua', 'ok', 'M15.2 5.8l3 3M4 20l1-4L16.5 4.5a2 2 0 013 3L8 19l-4 1z'],
+        'report_accepted' => ['BA Diterima', 'ok', 'M5 13l4 4L19 7'],
+        'report_signed_admin' => ['BA Ditandatangani Admin', 'ok', 'M15.2 5.8l3 3M4 20l1-4L16.5 4.5a2 2 0 013 3L8 19l-4 1z'],
         'report_published' => ['BA Diterbitkan', 'ok', 'M5 13l4 4L19 7'],
     ];
 @endphp

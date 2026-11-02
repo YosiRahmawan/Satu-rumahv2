@@ -201,6 +201,8 @@ class SignatureService
                 $this->notifier->event($r->submission, $user, "report_signed_{$role}", "BA ditandatangani {$label}", "BA {$r->report_number} versi {$version}.", ['report_id' => $r->id]);
                 if ($role === ReportSignature::KETUA) {
                     $this->notifier->toVerifiers($r->submission, 'report_signed_ketua', 'BA ditandatangani Ketua', "{$r->report_number} · {$r->nama_perumahan}", ['report_id' => $r->id]);
+                } else {
+                    $this->notifier->toUser($r->officer_id, $r->submission, 'report_signed_admin', 'BA ditandatangani Admin', "{$r->report_number} · menunggu diterbitkan.", ['report_id' => $r->id]);
                 }
             }
 

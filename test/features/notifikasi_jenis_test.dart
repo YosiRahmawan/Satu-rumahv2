@@ -16,6 +16,8 @@ void main() {
       'assignment_cancelled': JenisNotifikasi.penugasanDibatalkan,
       'assignment_reassigned': JenisNotifikasi.penugasanDibatalkan,
       'report_published': JenisNotifikasi.baDiterbitkan,
+    'report_accepted': JenisNotifikasi.tahapLanjut,
+    'report_signed_admin': JenisNotifikasi.tahapLanjut,
       'deadline_reminder': JenisNotifikasi.batasPerbaikan,
       'deadline_overdue': JenisNotifikasi.batasPerbaikan,
       'submitted': JenisNotifikasi.pengajuanBaru,
