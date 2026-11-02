@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
+use App\Models\InspectionAssignment;
+use App\Models\InspectionReport;
+use App\Models\SubmissionEvent;
 use App\Models\Submission;
 use Illuminate\Http\Request;
 
@@ -25,6 +28,13 @@ class NotificationController extends Controller
         return response()->json([
             'belum_dibaca' => AppNotification::where('user_id', $request->user()->id)->whereNull('read_at')->count(),
             'antrean' => Submission::whereBetween('stage', [2, 5])->whereIn('sub_status', ['baru', 'perbaikan_terkirim'])->count(),
+            // Berubah bila ada data pengajuan/penugasan/laporan/riwayat baru dari Pengembang atau Pengawas.
+            'versi' => md5(implode('|', [
+                Submission::max('updated_at'),
+                InspectionAssignment::max('updated_at'),
+                InspectionReport::max('updated_at'),
+                SubmissionEvent::max('id'),
+            ])),
         ]);
     }
 

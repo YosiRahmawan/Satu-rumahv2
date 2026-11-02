@@ -55,7 +55,7 @@ Format galat (semua 4xx/5xx):
 
 | Metode dan jalur | Isi | Keterangan |
 |---|---|---|
-| `POST /auth/login` | `{username, password, device_name}` | Sukses: `{token, user:{id,name,role,jabatan}, must_change_password}`. Gagal berulang menaikkan `failed_login_attempts` dan mengisi `locked_until` (batas dan durasi **[KEPUTUSAN Q14]**) |
+| `POST /auth/login` | `{username, password, device_name}` | Sukses: `{token, user:{id,name,username,role,jabatan,email,nip}, must_change_password}`. Gagal berulang menaikkan `failed_login_attempts` dan mengisi `locked_until` (batas dan durasi **[KEPUTUSAN Q14]**) |
 | `POST /auth/logout` | | Mencabut token saat ini |
 | `GET /me` | | Profil akun dan, untuk pengembang, `developer_profile` |
 | `POST /auth/change-password` | `{current_password, new_password}` | Wajib bila `must_change_password` |

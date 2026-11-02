@@ -306,6 +306,17 @@ class BaSignatureTest extends TestCase
         $this->get('/verifikasi/' . str_repeat('a', 48))->assertNotFound();
     }
 
+    public function test_daftar_laporan_petugas_memuat_status_tanda_tangan_dan_login_memuat_nip_dan_email(): void
+    {
+        Sanctum::actingAs($this->ketua, ['*']);
+        $this->getJson('/api/v1/officer/reports')->assertOk()
+            ->assertJsonPath('data.0.signatures.ketua.signed', false)->assertJsonPath('data.0.published_at', null);
+
+        $this->postJson('/api/v1/auth/login', ['username' => 'ketua1', 'password' => self::SANDI])->assertOk()
+            ->assertJsonPath('user.nip', '198001012005011001')->assertJsonPath('user.email', 'ketua1@saturumah.go.id');
+        $this->getJson('/api/v1/me')->assertOk()->assertJsonPath('user.nip', '198001012005011001');
+    }
+
     public function test_detail_laporan_menampilkan_status_tanda_tangan_dan_alur_lama_tetap_jalan(): void
     {
         Sanctum::actingAs($this->ketua, ['*']);

@@ -116,11 +116,25 @@
     </div>
 
     <script>
-    // Lonceng dan jumlah antrean diperbarui tiap 15 detik (berhenti saat tab tersembunyi).
+    // Lonceng, jumlah antrean, dan penanda data berubah dicek tiap 8 detik (berhenti saat tab tersembunyi).
     (function () {
         const dot = document.getElementById('loncengDot');
         const hitung = document.getElementById('antreanHitung');
         if (!dot || !hitung) return;
+        // Data pengajuan berubah (mis. Pengawas mengirim BA): daftar dimuat ulang otomatis,
+        // halaman rincian cukup diberi tanda agar isian Admin yang sedang diketik tidak hilang.
+        let versi = null;
+        function dataBerubah() {
+            const halaman = location.pathname;
+            if (/\/pengajuan\/?$/.test(halaman) || /\/(dashboard)?\/?$/.test(halaman)) { location.reload(); return; }
+            if (!/\/pengajuan\/\d+/.test(halaman) || document.getElementById('bannerBerubah')) return;
+            const b = document.createElement('div');
+            b.id = 'bannerBerubah';
+            b.className = 'alert alert-warning';
+            b.style.cssText = 'margin:20px 28px 0;';
+            b.innerHTML = '<span>Data pengajuan ini baru saja berubah.</span> <a href="" style="font-weight:700;">Muat ulang</a>';
+            document.querySelector('main.content').before(b);
+        }
         async function segarkan() {
             if (document.hidden) return;
             try {
@@ -130,9 +144,12 @@
                 dot.style.display = d.belum_dibaca > 0 ? '' : 'none';
                 hitung.textContent = d.antrean;
                 hitung.style.display = d.antrean > 0 ? '' : 'none';
+                if (versi === null) versi = d.versi;
+                else if (d.versi !== versi) dataBerubah();
             } catch (e) { /* jaringan putus: biarkan angka terakhir */ }
         }
-        setInterval(segarkan, 15000);
+        segarkan();
+        setInterval(segarkan, 8000);
         document.addEventListener('visibilitychange', segarkan);
     })();
     </script>
