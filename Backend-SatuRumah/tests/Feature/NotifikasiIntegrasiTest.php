@@ -93,7 +93,7 @@ class NotifikasiIntegrasiTest extends TestCase
         $this->actingAs($this->admin);
         $this->get('/dashboard')->assertOk()->assertSee('id="loncengDot"', false)->assertSee('id="antreanHitung"', false)->assertSee('notifikasi\/jumlah', false);
 
-        $this->get('/notifikasi/jumlah')->assertOk()->assertExactJson(['belum_dibaca' => 0, 'antrean' => 0]);
+        $this->get('/notifikasi/jumlah')->assertOk()->assertJson(['belum_dibaca' => 0, 'antrean' => 0])->assertJsonStructure(['versi']);
 
         Submission::create([
             'developer_id' => $this->developer->id, 'client_uuid' => (string) Str::uuid(), 'number' => 'SR-2026-0002',
@@ -101,7 +101,7 @@ class NotifikasiIntegrasiTest extends TestCase
         ]);
         app(\App\Services\Notifier::class)->toUser($this->admin, $this->submission, 'submitted', 'Pengajuan baru masuk');
 
-        $this->get('/notifikasi/jumlah')->assertOk()->assertExactJson(['belum_dibaca' => 1, 'antrean' => 1]);
+        $this->get('/notifikasi/jumlah')->assertOk()->assertJson(['belum_dibaca' => 1, 'antrean' => 1]);
 
         // Hanya admin.
         $this->actingAs($this->developer)->get('/notifikasi/jumlah')->assertRedirect('/login');

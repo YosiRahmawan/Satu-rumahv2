@@ -57,6 +57,8 @@ class ReportPresenter
             'photo_count' => $r->relationLoaded('photos') ? $r->photos->count() : $r->photos()->count(),
             'submitted_at' => $r->submitted_at?->toIso8601String(),
             'published_at' => $r->published_at?->toIso8601String(),
+            // Status tanda tangan Ketua dan Admin (tanpa gambar atau hash); hanya bermakna setelah BA dikirim.
+            'signatures' => $r->status === 'final' ? app(SignatureService::class)->status($r) : null,
         ];
     }
 
@@ -77,8 +79,6 @@ class ReportPresenter
             'submit_latitude' => $r->submit_latitude,
             'submit_longitude' => $r->submit_longitude,
             'photos' => $r->photos->map(fn (InspectionReportPhoto $p) => $this->photo($p))->values()->all(),
-            // Status persetujuan Ketua dan Admin (tanpa gambar atau hash); hanya bermakna setelah BA dikirim.
-            'signatures' => $r->status === 'final' ? app(SignatureService::class)->status($r) : null,
         ];
     }
 
