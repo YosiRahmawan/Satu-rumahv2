@@ -30,6 +30,9 @@ class OfficerAssignment {
   /// Titik lokasi dari pengembang; null bila belum dikirim.
   final double? latitude;
   final double? longitude;
+
+  /// Alasan Admin bila BA tugas ini dikembalikan; petugas membuat BA pengganti.
+  final String? revisionNote;
   final String? namaDirektur;
   final String? noHpDirektur;
   final String? npwp;
@@ -51,6 +54,7 @@ class OfficerAssignment {
     this.alamatProyek,
     this.latitude,
     this.longitude,
+    this.revisionNote,
     this.namaDirektur,
     this.noHpDirektur,
     this.npwp,
@@ -67,6 +71,7 @@ class OfficerAssignment {
       status: '${json['status']}',
       scheduledDate: DateTime.tryParse('${json['scheduled_date'] ?? ''}'),
       note: json['note'] as String?,
+      revisionNote: json['revision_note'] as String?,
       submissionNumber: s['number'] as String?,
       namaPerumahan: '${s['nama_perumahan'] ?? '-'}',
       namaPt: s['nama_pt'] as String?,

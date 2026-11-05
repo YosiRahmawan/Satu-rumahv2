@@ -15,6 +15,7 @@ class _Remote extends FakeOfficerRemote {
   String status = 'dijadwalkan';
   double? lat;
   double? lng;
+  String? revisi;
 
   @override
   Future<List<OfficerAssignment>> assignments() async => [
@@ -26,6 +27,7 @@ class _Remote extends FakeOfficerRemote {
       alamatProyek: 'Jl. Karikil, Tasikmalaya',
       latitude: lat,
       longitude: lng,
+      revisionNote: revisi,
     ),
   ];
 
@@ -81,6 +83,32 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Cari Alamat di Peta'), findsOneWidget);
+  });
+
+  testWidgets('BA dikembalikan Admin: alasan tampil di kartu tugas', (
+    tester,
+  ) async {
+    final remote = _Remote()..revisi = 'Temuan drainase belum lengkap.';
+    await tester.binding.setSurfaceSize(const Size(390, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          apiBaseUrlProvider.overrideWithValue('http://uji.test/api/v1/'),
+          officerRemoteProvider.overrideWithValue(remote),
+          roleSessionProvider.overrideWith(
+            (ref) =>
+                RoleSessionNotifier()
+                  ..signIn(AppRole.perwaskim, username: 'shabik001'),
+          ),
+        ],
+        child: const MaterialApp(home: TabBerandaMonitoring()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('tugas-perbaikan-ba')), findsOneWidget);
+    expect(find.text('Temuan drainase belum lengkap.'), findsOneWidget);
   });
 
   testWidgets('titik dari pengembang dipakai untuk peta, bukan alamat', (

@@ -17,5 +17,17 @@ void main() {
     final stub = r.toStub();
     expect(stub.id, 'srv-7');
     expect(stub.nomorSuratBA, '001/BA/2026');
+    expect(r.isRevisi, isFalse);
+  });
+
+  test('BA yang dikembalikan Admin dikenali dari status revisi', () {
+    final r = ServerReport.fromJson({
+      'id': 8,
+      'report_number': '002/BA/2026',
+      'nama_perumahan': 'Griya Asri',
+      'monitoring_date': '2026-03-01',
+      'status': 'revisi',
+    });
+    expect(r.isRevisi, isTrue);
   });
 }

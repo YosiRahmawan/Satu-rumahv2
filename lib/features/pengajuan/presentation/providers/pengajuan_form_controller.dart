@@ -148,6 +148,9 @@ class PengajuanFormState {
   final String namaPerumahan;
   final String alamatProyek;
 
+  /// Kecamatan lokasi proyek (pilihan); kosong bila belum dipilih.
+  final String kecamatan;
+
   /// Titik lokasi proyek di peta (opsional); dikirim ke server agar petugas membuka peta tepat ke titik ini.
   final double? latitude;
   final double? longitude;
@@ -177,6 +180,7 @@ class PengajuanFormState {
     this.tipePengajuan = 'Pengajuan Site Plan Baru',
     this.namaPerumahan = '',
     this.alamatProyek = '',
+    this.kecamatan = '',
     this.latitude,
     this.longitude,
     this.npwpPerusahaan = '',
@@ -206,6 +210,7 @@ class PengajuanFormState {
           json['tipePengajuan'] as String? ?? 'Pengajuan Site Plan Baru',
       namaPerumahan: json['namaPerumahan'] as String? ?? '',
       alamatProyek: json['alamatProyek'] as String? ?? '',
+      kecamatan: json['kecamatan'] as String? ?? '',
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       npwpPerusahaan: json['npwpPerusahaan'] as String? ?? '',
@@ -227,6 +232,7 @@ class PengajuanFormState {
     'tipePengajuan': tipePengajuan,
     'namaPerumahan': namaPerumahan,
     'alamatProyek': alamatProyek,
+    'kecamatan': kecamatan,
     'latitude': latitude,
     'longitude': longitude,
     'npwpPerusahaan': npwpPerusahaan,
@@ -303,6 +309,7 @@ class PengajuanFormState {
     String? tipePengajuan,
     String? namaPerumahan,
     String? alamatProyek,
+    String? kecamatan,
     Object? latitude = _sentinelTitik,
     Object? longitude = _sentinelTitik,
     String? npwpPerusahaan,
@@ -321,6 +328,7 @@ class PengajuanFormState {
       tipePengajuan: tipePengajuan ?? this.tipePengajuan,
       namaPerumahan: namaPerumahan ?? this.namaPerumahan,
       alamatProyek: alamatProyek ?? this.alamatProyek,
+      kecamatan: kecamatan ?? this.kecamatan,
       latitude: latitude == _sentinelTitik
           ? this.latitude
           : latitude as double?,
@@ -479,6 +487,11 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
   void updateNamaPerumahan(String value) {
     if (value == state.namaPerumahan) return;
     state = state.copyWith(namaPerumahan: value);
+  }
+
+  void setKecamatan(String value) {
+    if (value == state.kecamatan) return;
+    state = state.copyWith(kecamatan: value);
   }
 
   /// Mengisi atau mengosongkan titik lokasi proyek (keduanya sekaligus).

@@ -13,6 +13,7 @@ import '../../../../core/widgets/pengajuan_step_header.dart';
 import '../../../../core/widgets/stepper_header.dart';
 import '../../../profil/data/developer_profile_repository.dart';
 import '../providers/pengajuan_form_controller.dart';
+import '../widgets/kecamatan_field.dart';
 import '../widgets/pengajuan_draft_ui.dart';
 import '../widgets/titik_lokasi_field.dart';
 import '../widgets/smart_validation_bottom_sheet.dart';
@@ -1070,6 +1071,8 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
                 ? 'Alamat lokasi proyek wajib diisi'
                 : null,
           ),
+          const SizedBox(height: AppSpacing.md),
+          const KecamatanField(),
           const SizedBox(height: AppSpacing.sm),
           const TitikLokasiField(),
           const SizedBox(height: AppSpacing.md),

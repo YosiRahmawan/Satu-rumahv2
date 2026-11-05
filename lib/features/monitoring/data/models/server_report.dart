@@ -14,6 +14,7 @@ class ServerReport {
     this.submittedAt,
     this.photoCount = 0,
     this.signatures = const BaSignatureStatus(),
+    this.status = 'final',
   });
 
   final int id;
@@ -23,6 +24,11 @@ class ServerReport {
   final StatusHasilEvaluasi hasil;
   final DateTime? submittedAt;
   final int photoCount;
+
+  /// `final`, atau `revisi` bila Admin mengembalikannya dan petugas perlu membuat BA pengganti.
+  final String status;
+
+  bool get isRevisi => status == 'revisi';
 
   /// Status Ketua, Admin, dan penerbitan.
   final BaSignatureStatus signatures;
@@ -42,6 +48,7 @@ class ServerReport {
         '${json['submitted_at'] ?? ''}',
       )?.toLocal(),
       photoCount: (json['photo_count'] as num?)?.toInt() ?? 0,
+      status: '${json['status'] ?? 'final'}',
       signatures: BaSignatureStatus(
         ketuaSigned: base.ketuaSigned,
         adminSigned: base.adminSigned,
@@ -52,8 +59,8 @@ class ServerReport {
     );
   }
 
-  static StatusHasilEvaluasi _hasil(Object? v) => StatusHasilEvaluasi.values
-      .firstWhere(
+  static StatusHasilEvaluasi _hasil(Object? v) =>
+      StatusHasilEvaluasi.values.firstWhere(
         (e) => e.name == v,
         orElse: () => StatusHasilEvaluasi.sesuaiSiteplan,
       );

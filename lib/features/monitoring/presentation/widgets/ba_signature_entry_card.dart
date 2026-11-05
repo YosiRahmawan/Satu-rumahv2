@@ -25,6 +25,24 @@ class BaSignatureEntryCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (!ref.watch(apiEnabledProvider) || number.trim().isEmpty)
       return const SizedBox.shrink();
+    // BA yang dikembalikan Admin tidak bisa ditandatangani; petugas membuat BA pengganti.
+    if (ref.watch(serverReportProvider(number))?.isRevisi ?? false) {
+      return Container(
+        key: const Key('ba-dikembalikan'),
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFEF2F2),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFFECACA)),
+        ),
+        child: const Text(
+          'BA ini dikembalikan Admin untuk diperbaiki. Buat BA pengganti dari tugas survei di Beranda; '
+          'BA ini tidak perlu ditandatangani.',
+          style: TextStyle(fontSize: 13.5, height: 1.45),
+        ),
+      );
+    }
     final status = ref.watch(baSignatureStatusProvider(number));
 
     return Container(

@@ -535,6 +535,7 @@ class _PrimaryTaskCard extends ConsumerWidget {
         .where((a) => (a.submissionNumber ?? 'TUGAS-${a.id}') == assignment.id)
         .firstOrNull;
     final diterima = tugas != null && tugas.status == 'diterima';
+    final catatanPerbaikan = tugas?.revisionNote?.trim() ?? '';
     final adaTitik = tugas?.latitude != null && tugas?.longitude != null;
     // Titik dari pengembang lebih tepat daripada pencarian alamat.
     final kueriPeta = adaTitik
@@ -644,6 +645,46 @@ class _PrimaryTaskCard extends ConsumerWidget {
               ],
             ),
           ),
+          if (catatanPerbaikan.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              key: const Key('tugas-perbaikan-ba'),
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEF2F2),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'ADMIN MEMINTA BA DIPERBAIKI',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: Color(0xFFB91C1C),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    catatanPerbaikan,
+                    style: const TextStyle(fontSize: 12.5, height: 1.5),
+                  ),
+                  const SizedBox(height: 6),
+                  const Text(
+                    'Buat BA pengganti lewat tombol di bawah.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.enterpriseTextMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           if (kueriPeta.isNotEmpty) ...[
             SizedBox(

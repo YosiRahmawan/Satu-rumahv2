@@ -138,6 +138,7 @@ class PengajuanApiRepository implements PengajuanRemote {
           'version': created['version'],
           'nama_perumahan': form.namaPerumahan.trim(),
           'alamat_proyek': form.alamatProyek.trim(),
+          if (form.kecamatan.isNotEmpty) 'kecamatan': form.kecamatan,
           if (form.latitude != null && form.longitude != null) ...{
             'latitude': form.latitude,
             'longitude': form.longitude,

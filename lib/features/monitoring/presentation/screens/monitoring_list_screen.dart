@@ -569,7 +569,13 @@ class _StatusBa extends ConsumerWidget {
     final r = ref.watch(serverReportProvider(nomor));
     if (r == null) return const SizedBox.shrink();
     final s = r.signatures;
-    final (teks, warna, ikon) = s.published
+    final (teks, warna, ikon) = r.isRevisi
+        ? (
+            'Diminta diperbaiki Admin',
+            const Color(0xFFB91C1C),
+            Icons.report_problem_outlined,
+          )
+        : s.published
         ? ('BA diterbitkan', const Color(0xFF166534), Icons.verified_outlined)
         : !s.ketuaSigned
         ? (
