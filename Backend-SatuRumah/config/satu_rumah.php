@@ -9,6 +9,9 @@
 
 return [
 
+    // Pengingat tenggat/SLA dijalankan otomatis sekali per jam oleh server (tanpa schedule:work). Nonaktif di tes.
+    'pengingat_otomatis' => (bool) env('PENGINGAT_OTOMATIS', true),
+
     // Kunci penanda geotag foto; harus sama dengan konstanta di aplikasi Flutter
     // (geo_stamp_signer.dart). Penandatanganan di server menggantikannya kelak.
     'photo_stamp_key' => env('PHOTO_STAMP_KEY', 'satu-rumah.geostamp.v1'),

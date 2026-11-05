@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsurePasswordChanged;
 use App\Http\Middleware\EnsureRole;
+use App\Http\Middleware\JalankanPengingatOtomatis;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureRole::class,
             'password.changed' => EnsurePasswordChanged::class,
         ]);
+        $middleware->append(JalankanPengingatOtomatis::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Semua galat /api memakai satu bentuk: {"error": {"code", "message", "fields"?}}.

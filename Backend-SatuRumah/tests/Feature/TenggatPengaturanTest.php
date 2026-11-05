@@ -45,6 +45,28 @@ class TenggatPengaturanTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_server_menjalankan_pengingat_sendiri_sekali_per_jam_tanpa_penjadwal(): void
+    {
+        config(['satu_rumah.pengingat_otomatis' => true]);
+        \Illuminate\Support\Facades\Cache::flush();
+        $dev = \App\Models\User::factory()->create(['role' => 'pengembang', 'is_active' => true, 'must_change_password' => false]);
+        $s = \App\Models\Submission::create([
+            'developer_id' => $dev->id, 'client_uuid' => (string) \Illuminate\Support\Str::uuid(), 'number' => 'SR-2026-7777',
+            'nama_perumahan' => 'Griya Uji', 'stage' => 2, 'sub_status' => 'perlu_perbaikan', 'version' => 1,
+            'submitted_at' => now(), 'correction_deadline_at' => now()->addDay(),
+        ]);
+        $jumlah = fn () => \App\Models\AppNotification::where('user_id', $dev->id)->where('type', 'deadline_reminder')->count();
+
+        $this->get('/login')->assertOk(); // permintaan biasa memicu pengingat
+        $this->assertSame(1, $jumlah());
+        $this->assertTrue(\Illuminate\Support\Facades\Cache::has('pengingat-otomatis'));
+
+        // Dalam satu jam berikutnya tidak dijalankan lagi.
+        \App\Models\AppNotification::where('user_id', $dev->id)->delete();
+        $this->get('/login')->assertOk();
+        $this->assertSame(0, $jumlah());
+    }
+
     public function test_sla_hari_kerja_ok_mendekati_dan_terlambat(): void
     {
         Setting::set('sla.t2_days', 5);
