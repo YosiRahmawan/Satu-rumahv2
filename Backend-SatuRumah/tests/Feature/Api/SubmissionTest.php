@@ -160,6 +160,22 @@ class SubmissionTest extends TestCase
         ])->assertOk()->assertJsonPath('data.nama_perumahan', 'Griya Baru')->assertJsonPath('data.daya_listrik', '2200');
     }
 
+    public function test_titik_lokasi_proyek_disimpan_dan_divalidasi_berpasangan(): void
+    {
+        $id = $this->postJson('/api/v1/submissions', [], ['Idempotency-Key' => $this->uuid()])->assertStatus(201)->json('data.id');
+
+        $this->patchJson("/api/v1/submissions/{$id}", ['version' => 1, 'latitude' => -7.3274, 'longitude' => 108.2207])
+            ->assertOk()->assertJsonPath('data.latitude', -7.3274)->assertJsonPath('data.longitude', 108.2207);
+
+        // Hanya satu koordinat, atau di luar rentang bumi: ditolak.
+        $this->patchJson("/api/v1/submissions/{$id}", ['version' => 2, 'latitude' => -7.3])->assertStatus(422);
+        $this->patchJson("/api/v1/submissions/{$id}", ['version' => 2, 'latitude' => 95, 'longitude' => 108.2])->assertStatus(422);
+
+        // Menghapus titik: keduanya dikosongkan.
+        $this->patchJson("/api/v1/submissions/{$id}", ['version' => 2, 'latitude' => null, 'longitude' => null])
+            ->assertOk()->assertJsonPath('data.latitude', null);
+    }
+
     public function test_pengajuan_orang_lain_memberi_404(): void
     {
         $other = $this->makeDeveloper('dev2', '3333333333333');

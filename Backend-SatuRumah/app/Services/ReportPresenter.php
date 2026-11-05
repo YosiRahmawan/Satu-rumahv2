@@ -30,6 +30,8 @@ class ReportPresenter
                 'nama_perumahan' => $s->nama_perumahan ?? $profile?->nama_perumahan,
                 'nama_pt' => $profile?->nama_pt,
                 'alamat_proyek' => $s->alamat_proyek ?? $profile?->alamat_perumahan,
+                'latitude' => $s->latitude,
+                'longitude' => $s->longitude,
                 // Bekal di lapangan: data proyek dan kontak pengembang dari pengajuan.
                 'nama_direktur' => $profile?->nama_direktur,
                 'no_hp_direktur' => $profile?->no_hp_direktur,

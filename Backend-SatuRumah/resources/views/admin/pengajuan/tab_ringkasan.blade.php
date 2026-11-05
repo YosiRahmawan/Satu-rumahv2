@@ -7,6 +7,15 @@
                 <div class="kv-row"><dt>Perusahaan</dt><dd>{{ $p?->nama_pt ?? '-' }}</dd></div>
                 <div class="kv-row"><dt>Nama perumahan</dt><dd>{{ $s->nama_perumahan }}</dd></div>
                 <div class="kv-row"><dt>Alamat proyek</dt><dd>{{ $s->alamat_proyek }}</dd></div>
+                <div class="kv-row"><dt>Titik lokasi</dt><dd>
+                    @if($s->latitude !== null && $s->longitude !== null)
+                        <a href="https://www.google.com/maps/search/?api=1&query={{ $s->latitude }},{{ $s->longitude }}" target="_blank" rel="noopener">{{ number_format($s->latitude, 6) }}, {{ number_format($s->longitude, 6) }} &middot; Buka di peta</a>
+                    @elseif($s->alamat_proyek)
+                        <span class="text-muted">Belum dikirim pengembang.</span> <a href="https://www.google.com/maps/search/?api=1&query={{ urlencode($s->alamat_proyek) }}" target="_blank" rel="noopener">Cari alamat di peta</a>
+                    @else
+                        -
+                    @endif
+                </dd></div>
                 <div class="kv-row"><dt>Jenis pengajuan</dt><dd>{{ $s->tipe_pengajuan }}</dd></div>
                 <div class="kv-row"><dt>NPWP</dt><dd>{{ $s->npwp }}</dd></div>
                 <div class="kv-row"><dt>Luas lahan</dt><dd>{{ $s->luas_lahan }} m²</dd></div>
@@ -31,14 +40,45 @@
             @if($s->isInRevision())
                 <p style="font-size:14px;">Menunggu pengembang mengirim perbaikan berkas. Tindakan lain dibuka setelah perbaikan diterima.</p>
             @elseif($s->stage === \App\Models\Submission::STAGE_ADMINISTRASI)
-                <p style="font-size:14px;margin-bottom:14px;">Nilai berkas di tab Dokumen. Setelah semua berkas administrasi sesuai, setujui untuk lanjut ke verifikasi teknis.</p>
-                <form method="POST" action="{{ route('pengajuan.setujui_administrasi', $s->id) }}" data-konfirmasi="Semua berkas administrasi sudah sesuai. Pengajuan akan lanjut ke verifikasi teknis dan pengembang diberi tahu." data-konfirmasi-judul="Setujui Verifikasi Administrasi" data-konfirmasi-tombol="Ya, setujui">
-                    @csrf <button class="btn btn-primary btn-block">Setujui Verifikasi Administrasi</button>
-                </form>
+                @php $siap = $progresAdministrasi['siap']; $total = $progresAdministrasi['total']; $lengkap = $siap === $total; @endphp
+                <div style="margin-bottom:14px;">
+                    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span>Berkas administrasi sesuai</span><strong>{{ $siap }} dari {{ $total }}</strong></div>
+                    <div class="progress"><div class="progress-bar" style="width:{{ $total ? round($siap / $total * 100) : 0 }}%;"></div></div>
+                </div>
+                @if($lengkap)
+                    <p style="font-size:14px;margin-bottom:14px;">Semua berkas sudah dinilai sesuai. Konfirmasi untuk melanjutkan ke verifikasi teknis; pengembang akan diberi tahu.</p>
+                    <form method="POST" action="{{ route('pengajuan.setujui_administrasi', $s->id) }}" data-konfirmasi="Pengajuan akan lanjut ke verifikasi teknis dan pengembang diberi tahu." data-konfirmasi-judul="Setujui Verifikasi Administrasi" data-konfirmasi-tombol="Ya, setujui">
+                        @csrf <button class="btn btn-primary btn-block">Setujui Verifikasi Administrasi</button>
+                    </form>
+                @else
+                    <p style="font-size:14px;margin-bottom:14px;">Nilai semua berkas di tab Dokumen. Tombol setuju aktif setelah seluruhnya sesuai.</p>
+                    <button class="btn btn-primary btn-block" disabled title="Masih ada berkas yang belum sesuai">Setujui Verifikasi Administrasi</button>
+                @endif
             @elseif($s->stage === \App\Models\Submission::STAGE_TEKNIS)
-                <p style="font-size:14px;">Nilai berkas teknis di tab Dokumen, lalu jadwalkan survei di tab Survei &amp; Monitoring.</p>
+                @php $siap = $progresTeknis['siap']; $total = $progresTeknis['total']; $lengkap = $siap === $total; @endphp
+                <div style="margin-bottom:14px;">
+                    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;"><span>Berkas teknis sesuai</span><strong>{{ $siap }} dari {{ $total }}</strong></div>
+                    <div class="progress"><div class="progress-bar" style="width:{{ $total ? round($siap / $total * 100) : 0 }}%;"></div></div>
+                </div>
+                @if($lengkap)
+                    <p style="font-size:14px;margin-bottom:14px;">Semua berkas teknis sesuai. Jadwalkan survei di bawah ini.</p>
+                    @include('admin.pengajuan._form-jadwal', ['kompak' => true])
+                @else
+                    <p style="font-size:14px;margin-bottom:14px;">Nilai semua berkas teknis di tab Dokumen. Form jadwal survei muncul di sini setelah seluruhnya sesuai.</p>
+                    <a href="{{ route('pengajuan.show', ['id' => $s->id, 'tab' => 'dokumen']) }}" class="btn btn-outline btn-block">Buka tab Dokumen</a>
+                @endif
             @elseif($s->stage === \App\Models\Submission::STAGE_SURVEI)
-                <p style="font-size:14px;">Survei berjalan. Terima laporan petugas di tab Survei &amp; Monitoring.</p>
+                @php $laporanFinal = $s->reports->firstWhere('status', 'final'); @endphp
+                @if($laporanFinal)
+                    <p style="font-size:14px;margin-bottom:14px;">Petugas sudah mengirim BA <strong>{{ $laporanFinal->report_number }}</strong>. Periksa isinya di tab Survei &amp; Monitoring, lalu terima untuk lanjut ke persetujuan.</p>
+                    <form method="POST" action="{{ route('pengajuan.terima_laporan', $s->id) }}" data-konfirmasi="Laporan survei diterima dan pengajuan masuk tahap persetujuan." data-konfirmasi-judul="Terima Laporan Survei" data-konfirmasi-tombol="Ya, terima">
+                        @csrf <button class="btn btn-primary btn-block">Terima Laporan Survei</button>
+                    </form>
+                    <a href="{{ route('pengajuan.show', ['id' => $s->id, 'tab' => 'monitoring']) }}" class="btn btn-outline btn-block" style="margin-top:8px;">Lihat BA</a>
+                @else
+                    <p style="font-size:14px;margin-bottom:14px;">Survei berjalan. Menunggu petugas mengirim Berita Acara.</p>
+                    <a href="{{ route('pengajuan.show', ['id' => $s->id, 'tab' => 'monitoring']) }}" class="btn btn-outline btn-block">Lihat penugasan</a>
+                @endif
             @elseif($s->stage === \App\Models\Submission::STAGE_PERSETUJUAN)
                 <form method="POST" action="{{ route('pengajuan.keputusan', $s->id) }}" class="form-group" style="display:grid;gap:10px;" data-konfirmasi="Keputusan akhir tidak dapat diubah setelah disimpan." data-konfirmasi-judul="Simpan Keputusan Akhir" data-konfirmasi-tombol="Ya, simpan">
                     @csrf

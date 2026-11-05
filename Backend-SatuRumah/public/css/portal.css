@@ -345,6 +345,23 @@ table {
     background: var(--primary-tint);
     color: var(--primary);
 }
+.icon-btn .count-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 14px;
+    text-align: center;
+    box-sizing: content-box;
+}
 .icon-btn .dot {
     position: absolute;
     top: 8px;
@@ -1425,6 +1442,32 @@ table {
     overflow: hidden;
     box-shadow: var(--shadow-pop);
 }
+/* Baris yang baru dinilai disorot sebentar; toast menggantikan pesan di atas halaman yang tak terlihat. */
+.dok-sorot td { animation: dokSorot 2.6s ease-out; }
+@keyframes dokSorot { from { background: #fff4c2; } to { background: transparent; } }
+.toast-sukses {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 130;
+    max-width: 360px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    background: #14532d;
+    color: #fff;
+    font-size: 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+}
+
+.pdf-modal-container.pdf-full {
+    max-width: none;
+    width: 100vw;
+    height: 100vh;
+    max-height: none;
+    border-radius: 0;
+}
+.pdf-modal-container.pdf-full .pdf-toolbar { padding: 10px 20px; }
+
 .pdf-toolbar {
     display: flex;
     align-items: center;

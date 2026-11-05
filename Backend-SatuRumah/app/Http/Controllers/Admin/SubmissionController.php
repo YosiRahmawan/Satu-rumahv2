@@ -58,6 +58,8 @@ class SubmissionController extends Controller
             'tab' => $tab,
             'slots' => $this->workflow->slots(),
             'filesBySlot' => $s->currentFiles->groupBy('slot_code'),
+            'progresAdministrasi' => $this->workflow->slotProgress($s, Submission::STAGE_ADMINISTRASI),
+            'progresTeknis' => $this->workflow->slotProgress($s, Submission::STAGE_TEKNIS),
             'officers' => User::where('role', 'tim_lapangan')->where('is_active', true)->orderBy('name')->get(),
         ]);
     }

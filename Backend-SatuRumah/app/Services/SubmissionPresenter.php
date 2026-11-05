@@ -38,6 +38,8 @@ class SubmissionPresenter
 
         return $this->summary($s) + [
             'alamat_proyek' => $s->alamat_proyek ?? $s->developer?->developerProfile?->alamat_perumahan,
+            'latitude' => $s->latitude,
+            'longitude' => $s->longitude,
             'tipe_pengajuan' => $s->tipe_pengajuan ?? $s->developer?->developerProfile?->tipe_pengajuan,
             'daya_listrik' => $s->daya_listrik,
             'npwp' => $s->npwp,
