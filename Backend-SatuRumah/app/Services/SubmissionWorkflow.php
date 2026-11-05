@@ -480,6 +480,29 @@ class SubmissionWorkflow
         });
     }
 
+    /** Admin mengunggah berkas SK (PDF) untuk pengajuan yang disetujui; pengembang diberi tahu dan bisa mengunduhnya. */
+    public function uploadDecisionFile(Submission $s, \Illuminate\Http\UploadedFile $file, User $by): Submission
+    {
+        if ($s->sub_status !== 'selesai') {
+            throw new \DomainException('SK hanya dapat diunggah untuk pengajuan yang sudah disetujui.');
+        }
+        $head = $file->isValid() ? (string) file_get_contents($file->getRealPath(), false, null, 0, 5) : '';
+        if (!str_starts_with($head, '%PDF') || $file->getSize() > 5 * 1024 * 1024) {
+            throw ValidationException::withMessages(['sk' => ['Pilih berkas SK berupa PDF, maksimal 5 MB.']]);
+        }
+
+        return DB::transaction(function () use ($s, $file, $by) {
+            $baru = $s->decision_file_path === null;
+            $path = \Illuminate\Support\Facades\Storage::disk('local')->putFileAs("decisions/{$s->id}", $file, 'sk.pdf');
+            $s->forceFill(['decision_file_path' => $path, 'version' => $s->version + 1])->save();
+
+            $this->notifier->event($s, $by, 'sk_uploaded', $baru ? 'SK diunggah' : 'SK diperbarui', "SK untuk {$s->number}.");
+            $this->notifier->toDeveloper($s, 'sk_uploaded', $baru ? 'SK persetujuan tersedia' : 'SK persetujuan diperbarui', "{$s->number}: unduh SK di menu Unduh SK & BA.");
+
+            return $s;
+        });
+    }
+
     /** Laporan survei final diterima → Persetujuan. */
     public function acceptReports(Submission $s, User $reviewer): Submission
     {

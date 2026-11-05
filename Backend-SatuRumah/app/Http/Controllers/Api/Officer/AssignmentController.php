@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Officer;
 use App\Http\Controllers\Api\Concerns\RespondsWithErrors;
 use App\Http\Controllers\Controller;
 use App\Models\InspectionAssignment;
+use App\Services\Notifier;
 use App\Services\ReportPresenter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ class AssignmentController extends Controller
 {
     use RespondsWithErrors;
 
-    public function __construct(private readonly ReportPresenter $presenter)
+    public function __construct(private readonly ReportPresenter $presenter, private readonly Notifier $notifier)
     {
     }
 
@@ -43,6 +44,12 @@ class AssignmentController extends Controller
 
         if ($assignment->status === 'dijadwalkan') {
             $assignment->forceFill(['status' => 'diterima', 'accepted_at' => now()])->save();
+            // Admin diberi tahu tugas sudah dilihat petugas (sebelumnya hanya terlihat bila membuka halaman).
+            if ($submission = $assignment->submission) {
+                $nama = $request->user()->name;
+                $this->notifier->event($submission, $request->user(), 'assignment_accepted', 'Tugas survei diterima petugas', "{$nama} menerima tugas survei.", ['assignment_id' => $assignment->id]);
+                $this->notifier->toVerifiers($submission, 'assignment_accepted', 'Tugas survei diterima', "{$nama} · {$submission->nama_perumahan}", ['assignment_id' => $assignment->id]);
+            }
         } elseif ($assignment->status !== 'diterima') {
             return $this->error('ERR-011', 'Tugas ini tidak dapat diterima pada status sekarang.', 409);
         }

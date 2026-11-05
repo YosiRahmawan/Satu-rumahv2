@@ -9,6 +9,7 @@ use App\Services\SubmissionPresenter;
 use App\Services\SubmissionWorkflow;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 /** Pengajuan milik pengembang yang sedang masuk (objek orang lain → 404). */
@@ -164,6 +165,24 @@ class SubmissionController extends Controller
         }
 
         return response()->json(['data' => $this->presenter->detail($submission->fresh())]);
+    }
+
+    /** PDF resmi BA yang sudah diterbitkan, untuk pengembang pemilik pengajuan. */
+    public function reportPdf(Request $request, int $id, int $reportId)
+    {
+        $report = $this->own($request, $id)->reports()->whereKey($reportId)->firstOrFail();
+        abort_unless($report->published_at && $report->pdf_path && Storage::disk('local')->exists($report->pdf_path), 404);
+
+        return Storage::disk('local')->download($report->pdf_path, 'BA-' . str_replace('/', '-', (string) $report->report_number) . '.pdf');
+    }
+
+    /** Berkas SK yang diunggah Admin, untuk pengembang pemilik pengajuan. */
+    public function skFile(Request $request, int $id)
+    {
+        $s = $this->own($request, $id);
+        abort_unless($s->decision_file_path && Storage::disk('local')->exists($s->decision_file_path), 404);
+
+        return Storage::disk('local')->download($s->decision_file_path, 'SK-' . $s->number . '.pdf');
     }
 
     private function own(Request $request, int $id): Submission

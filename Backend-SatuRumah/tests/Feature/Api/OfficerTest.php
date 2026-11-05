@@ -117,6 +117,16 @@ class OfficerTest extends TestCase
         $this->getJson('/api/v1/officer/assignments?status=ngawur')->assertStatus(422);
     }
 
+    public function test_admin_diberi_tahu_saat_petugas_menerima_tugas_sekali_saja(): void
+    {
+        $admin = $this->makeUser('admin1', 'admin');
+        $this->postJson("/api/v1/officer/assignments/{$this->assignment->id}/accept")->assertOk();
+        $this->postJson("/api/v1/officer/assignments/{$this->assignment->id}/accept")->assertOk(); // ulang: tidak ganda
+
+        $this->assertSame(1, \App\Models\AppNotification::where('user_id', $admin->id)->where('type', 'assignment_accepted')->count());
+        $this->assertTrue($this->submission->events()->where('type', 'assignment_accepted')->exists());
+    }
+
     public function test_tugas_membawa_titik_lokasi_proyek_bila_ada(): void
     {
         $this->getJson('/api/v1/officer/assignments')->assertOk()

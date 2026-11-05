@@ -51,6 +51,7 @@ class SubmissionPresenter
             'decision' => $s->decision_number ? [
                 'number' => $s->decision_number,
                 'date' => $s->decision_date?->toDateString(),
+                'sk_available' => (bool) $s->decision_file_path,
             ] : null,
             'files' => $s->currentFiles->map(fn (SubmissionFile $f) => $this->file($f))->values()->all(),
             'survey' => $this->survey($s),
@@ -66,6 +67,9 @@ class SubmissionPresenter
                 'rtl' => $r->rtl ?? [],
                 'tim_pelaksana' => $r->tim_pelaksana ?? [],
                 'submitted_at' => $r->submitted_at?->toIso8601String(),
+                // PDF resmi (ditandatangani dan diterbitkan Admin) yang bisa diunduh pengembang.
+                'published_at' => $r->published_at?->toIso8601String(),
+                'pdf_available' => (bool) ($r->published_at && $r->pdf_path),
             ])->values()->all(),
         ];
     }

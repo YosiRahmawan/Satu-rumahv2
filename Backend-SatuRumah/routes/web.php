@@ -45,6 +45,8 @@ Route::middleware(['auth', 'role:admin', 'password.changed'])->group(function ()
     Route::post('/pengajuan/{id}/laporan/{reportId}/minta-perbaikan', [SubmissionController::class, 'requestReportRevision'])->name('pengajuan.perbaikan_ba');
     Route::get('/pengajuan/{id}/laporan/{reportId}/pdf', [SubmissionController::class, 'reportPdf'])->name('pengajuan.pdf_ba');
     Route::post('/pengajuan/{id}/terima-laporan', [SubmissionController::class, 'acceptReports'])->name('pengajuan.terima_laporan');
+    Route::post('/pengajuan/{id}/sk', [SubmissionController::class, 'uploadSk'])->name('pengajuan.unggah_sk');
+    Route::get('/pengajuan/{id}/sk', [SubmissionController::class, 'downloadSk'])->name('pengajuan.unduh_sk');
     Route::post('/pengajuan/{id}/keputusan', [SubmissionController::class, 'decide'])->name('pengajuan.keputusan');
 
     Route::get('/akun', [AccountController::class, 'index'])->name('akun.index');

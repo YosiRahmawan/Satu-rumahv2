@@ -82,7 +82,7 @@
                     <a href="{{ route('pengajuan.show', ['id' => $s->id, 'tab' => 'monitoring']) }}" class="btn btn-outline btn-block">Lihat penugasan</a>
                 @endif
             @elseif($s->stage === \App\Models\Submission::STAGE_PERSETUJUAN)
-                <form method="POST" action="{{ route('pengajuan.keputusan', $s->id) }}" class="form-group" style="display:grid;gap:10px;" data-konfirmasi="Keputusan akhir tidak dapat diubah setelah disimpan." data-konfirmasi-judul="Simpan Keputusan Akhir" data-konfirmasi-tombol="Ya, simpan">
+                <form method="POST" action="{{ route('pengajuan.keputusan', $s->id) }}" enctype="multipart/form-data" class="form-group" style="display:grid;gap:10px;" data-konfirmasi="Keputusan akhir tidak dapat diubah setelah disimpan." data-konfirmasi-judul="Simpan Keputusan Akhir" data-konfirmasi-tombol="Ya, simpan">
                     @csrf
                     <label class="form-label">Keputusan</label>
                     <select name="keputusan" class="form-select">
@@ -93,12 +93,31 @@
                     <input class="form-input" name="nomor" value="{{ old('nomor') }}">
                     <label class="form-label">Tanggal keputusan (bila disetujui)</label>
                     <input class="form-input" type="date" name="tanggal" value="{{ old('tanggal', now()->toDateString()) }}">
+                    <label class="form-label">Berkas SK (PDF, opsional; bisa diunggah nanti)</label>
+                    <input class="form-input" type="file" name="sk" accept="application/pdf">
                     <label class="form-label">Alasan (wajib bila ditolak)</label>
                     <textarea class="form-textarea" name="catatan" rows="3">{{ old('catatan') }}</textarea>
                     <button class="btn btn-primary btn-block">Simpan Keputusan</button>
                 </form>
             @else
                 <p style="font-size:14px;">Proses selesai: {{ $s->statusLabel() }}.</p>
+                @if($s->sub_status === 'selesai')
+                    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+                        <div class="fw-700" style="font-size:14px;margin-bottom:6px;">Surat Keputusan (SK)</div>
+                        @if($s->decision_file_path)
+                            <p class="text-muted" style="font-size:13px;margin-bottom:8px;">SK sudah diunggah dan bisa diunduh pengembang.</p>
+                            <a href="{{ route('pengajuan.unduh_sk', $s->id) }}" class="btn btn-outline btn-block" style="margin-bottom:8px;">Unduh SK</a>
+                        @else
+                            <p class="text-muted" style="font-size:13px;margin-bottom:8px;">Belum ada berkas SK. Unggah agar pengembang bisa mengunduhnya.</p>
+                        @endif
+                        <form method="POST" action="{{ route('pengajuan.unggah_sk', $s->id) }}" enctype="multipart/form-data" style="display:grid;gap:8px;">
+                            @csrf
+                            <input class="form-input" type="file" name="sk" accept="application/pdf" required>
+                            @error('sk')<div class="text-primary" style="font-size:12px;">{{ $message }}</div>@enderror
+                            <button class="btn btn-primary btn-block">{{ $s->decision_file_path ? 'Ganti Berkas SK' : 'Unggah SK' }}</button>
+                        </form>
+                    </div>
+                @endif
             @endif
         </div>
     </div>

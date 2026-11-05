@@ -13,6 +13,8 @@
             $e->type === 'survey_cancelled' => ['warn', 'Survei Dibatalkan', 'M6 6l12 12M18 6L6 18'],
             in_array($e->type, ['report_signed_ketua', 'report_signed_admin'], true) => ['ok', 'BA Ditandatangani', 'M15.2 5.8l3 3M4 20l1-4L16.5 4.5a2 2 0 013 3L8 19l-4 1z'],
             $e->type === 'report_published' => ['ok', 'BA Diterbitkan', 'M5 13l4 4L19 7'],
+            $e->type === 'sk_uploaded' => ['ok', 'SK Diunggah', 'M5 13l4 4L19 7'],
+            $e->type === 'assignment_accepted' => ['ok', 'Tugas Diterima', 'M5 13l4 4L19 7'],
             $e->type === 'report_revision' => ['warn', 'BA Diminta Diperbaiki', 'M12 9v4m0 4h.01M10.3 3.9L2.4 18a2 2 0 001.7 3h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z'],
             $e->type === 'report_submitted' => ['info', 'Laporan Survei', 'M9 12h6m-6 4h6M7 3h7l5 5v13H7z'],
             $e->type === 'resubmitted' => ['info', 'Perbaikan Dikirim', 'M4 4v6h6M20 20v-6h-6M20 10A8 8 0 006 6M4 14a8 8 0 0014 4'],
@@ -47,7 +49,7 @@
                     $grup = match (true) {
                         $warna === 'warn' => 'perbaikan dokumen',
                         $e->type === 'file_reviewed' => 'dokumen',
-                        str_contains($e->type, 'survey') || in_array($e->type, ['report_submitted', 'report_published', 'report_revision', 'report_signed_ketua', 'report_signed_admin'], true) => 'survei',
+                        str_contains($e->type, 'survey') || in_array($e->type, ['report_submitted', 'report_published', 'report_revision', 'assignment_accepted', 'report_signed_ketua', 'report_signed_admin'], true) => 'survei',
                         default => '',
                     };
                     $slot = $e->meta['slot'] ?? null;
