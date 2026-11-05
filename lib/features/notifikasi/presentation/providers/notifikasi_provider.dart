@@ -1,14 +1,21 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/api/api_client.dart';
+import '../../../../core/notifications/notifikasi_sistem.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../data/models/notifikasi_model.dart';
 import '../../data/notifikasi_api_repository.dart';
 
 class NotifikasiNotifier extends StateNotifier<List<NotifikasiModel>> {
-  NotifikasiNotifier({this.remote, this.role})
-    : super(
+  NotifikasiNotifier({
+    this.remote,
+    this.role,
+    this.sistem,
+    bool Function()? sedangDiLayar,
+  }) : _sedangDiLayar = sedangDiLayar ?? _layarAktif,
+       super(
         remote != null
             ? <NotifikasiModel>[]
             : [
@@ -115,6 +122,15 @@ class NotifikasiNotifier extends StateNotifier<List<NotifikasiModel>> {
   final NotifikasiRemote? remote;
   final AppRole? role;
 
+  /// Penampil notifikasi di bilah sistem HP; null = tidak dipakai (mode contoh dan tes).
+  final NotifikasiSistem? sistem;
+  final bool Function() _sedangDiLayar;
+  bool _sudahMemuat = false;
+
+  static bool _layarAktif() =>
+      WidgetsBinding.instance.lifecycleState == null ||
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+
   /// Memuat ulang dari server; yang lokal (bukan dari server) tetap ada.
   /// Gagal jaringan tidak menghapus daftar yang sudah tampil.
   Future<void> refresh() async {
@@ -124,12 +140,49 @@ class NotifikasiNotifier extends StateNotifier<List<NotifikasiModel>> {
     try {
       final items = await source.list(who);
       if (!mounted) return;
+      final dikenal = {
+        for (final e in state)
+          if (e.id.startsWith(serverNotifPrefix)) e.id,
+      };
       state = [
         ...items,
         ...state.where((e) => !e.id.startsWith(serverNotifPrefix)),
       ];
+      // Pemuatan pertama hanya menentukan acuan; yang baru sesudahnya diberitahukan lewat bilah sistem.
+      if (_sudahMemuat) {
+        _beritahuBaru([
+          for (final e in items)
+            if (!e.isRead && !dikenal.contains(e.id) && e.untukRole(who)) e,
+        ]);
+      }
+      _sudahMemuat = true;
     } on ApiException {
       // Dicoba lagi saat layar dibuka berikutnya.
+    }
+  }
+
+  /// Notifikasi sistem hanya bila aplikasi tidak sedang dilihat (di layar, badge sudah cukup).
+  void _beritahuBaru(List<NotifikasiModel> baru) {
+    final tampil = sistem;
+    if (tampil == null || baru.isEmpty || _sedangDiLayar()) return;
+    if (baru.length > 3) {
+      unawaited(
+        tampil.tampilkan(
+          id: 0,
+          judul: 'Satu Rumah',
+          isi: '${baru.length} notifikasi baru',
+        ),
+      );
+      return;
+    }
+    for (final e in baru) {
+      unawaited(
+        tampil.tampilkan(
+          id: int.tryParse(e.id.replaceFirst(serverNotifPrefix, '')) ?? e.id.hashCode,
+          judul: e.judul,
+          isi: e.deskripsi,
+        ),
+      );
     }
   }
 
@@ -180,9 +233,15 @@ final notifikasiProvider =
       final remote = ref.watch(apiEnabledProvider)
           ? ref.watch(notifikasiRemoteProvider)
           : null;
-      final notifier = NotifikasiNotifier(remote: remote, role: role);
+      final sistem = remote == null ? null : ref.watch(notifikasiSistemProvider);
+      final notifier = NotifikasiNotifier(
+        remote: remote,
+        role: role,
+        sistem: sistem,
+      );
       if (remote != null &&
           (role == AppRole.developer || role == AppRole.perwaskim)) {
+        unawaited(sistem?.siapkan());
         unawaited(notifier.refresh());
       }
       return notifier;

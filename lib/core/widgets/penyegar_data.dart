@@ -19,10 +19,14 @@ class PenyegarData extends ConsumerStatefulWidget {
     super.key,
     required this.child,
     this.interval = const Duration(seconds: 20),
+    this.intervalLatar = const Duration(seconds: 60),
   });
 
   final Widget child;
   final Duration interval;
+
+  /// Jarak pemeriksaan saat aplikasi di latar belakang (notifikasi sistem HP bergantung padanya).
+  final Duration intervalLatar;
 
   @override
   ConsumerState<PenyegarData> createState() => _PenyegarDataState();
@@ -36,7 +40,7 @@ class _PenyegarDataState extends ConsumerState<PenyegarData>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _start();
+    _start(widget.interval);
   }
 
   @override
@@ -49,16 +53,20 @@ class _PenyegarDataState extends ConsumerState<PenyegarData>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _start();
+      _start(widget.interval);
       unawaited(segarkan());
-    } else {
-      _timer?.cancel(); // latar belakang: berhenti agar hemat baterai dan data
+    } else if (state == AppLifecycleState.paused) {
+      // Di latar belakang tetap memeriksa pelan supaya notifikasi sistem HP bisa muncul; OS dapat
+      // menghentikan proses kapan saja, jadi ini upaya terbaik, bukan push dari server.
+      _start(widget.intervalLatar);
+    } else if (state == AppLifecycleState.detached) {
+      _timer?.cancel();
     }
   }
 
-  void _start() {
+  void _start(Duration jarak) {
     _timer?.cancel();
-    _timer = Timer.periodic(widget.interval, (_) => unawaited(segarkan()));
+    _timer = Timer.periodic(jarak, (_) => unawaited(segarkan()));
   }
 
   /// Memuat ulang data milik role yang masuk. Aman dipanggil kapan saja.

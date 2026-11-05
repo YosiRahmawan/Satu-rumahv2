@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 
+import '../../../../core/api/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../../../core/widgets/app_toast.dart';
+import '../../data/repositories/officer_api_repository.dart';
 
 /// Reusable action buttons for Berita Acara actions (PDF printing and sharing).
 ///
 /// Uses responsive 2-column layout on standard mobile/web screens,
 /// gracefully collapsing to a single column on compact viewports or high text scaling.
-class BeritaAcaraActionButtons extends StatelessWidget {
+class BeritaAcaraActionButtons extends ConsumerWidget {
   final bool isPdfBusy;
   final bool isShareBusy;
   final VoidCallback? onPdf;
   final VoidCallback? onShare;
+
+  /// Nomor BA. Dengan server: bila BA sudah diterbitkan Admin, tombol PDF mengunduh dokumen resmi;
+  /// bila belum, PDF dari HP hanya pratinjau dan diberi label "belum resmi".
+  final String? nomorBa;
 
   const BeritaAcaraActionButtons({
     super.key,
@@ -19,18 +28,54 @@ class BeritaAcaraActionButtons extends StatelessWidget {
     required this.isShareBusy,
     required this.onPdf,
     required this.onShare,
+    this.nomorBa,
   });
 
+  Future<void> _unduhResmi(
+    BuildContext context,
+    WidgetRef ref,
+    String nomor,
+  ) async {
+    try {
+      final bytes = await ref.read(officerRemoteProvider).downloadPdf(nomor);
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: 'BA-${nomor.replaceAll('/', '-')}.pdf',
+      );
+    } on ApiException catch (e) {
+      if (context.mounted) showAppToast(context, e.message, error: true);
+    } catch (_) {
+      if (context.mounted) {
+        showAppToast(
+          context,
+          'PDF resmi belum bisa dibuka. Coba lagi.',
+          error: true,
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isBusy = isPdfBusy || isShareBusy;
+    final nomor = nomorBa?.trim() ?? '';
+    final denganServer = ref.watch(apiEnabledProvider) && nomor.isNotEmpty;
+    final resmi =
+        denganServer &&
+        (ref.watch(serverReportProvider(nomor))?.signatures.published ?? false);
+    final label = !denganServer
+        ? 'Download / Cetak PDF'
+        : resmi
+        ? 'Unduh PDF Resmi'
+        : 'Pratinjau PDF (belum resmi)';
+    final aksiPdf = resmi ? () => _unduhResmi(context, ref, nomor) : onPdf;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final textScale = MediaQuery.textScalerOf(context).scale(1);
         final useTwoColumns = constraints.maxWidth >= 340 && textScale <= 1.3;
 
-        final pdfButton = _buildPdfButton(isBusy);
+        final pdfButton = _buildPdfButton(isBusy, label, aksiPdf);
         final shareButton = _buildShareButton(isBusy);
 
         if (useTwoColumns) {
@@ -50,13 +95,13 @@ class BeritaAcaraActionButtons extends StatelessWidget {
     );
   }
 
-  Widget _buildPdfButton(bool isBusy) {
+  Widget _buildPdfButton(bool isBusy, String label, VoidCallback? aksi) {
     return ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 48),
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton(
-          onPressed: isBusy ? null : onPdf,
+          onPressed: isBusy ? null : aksi,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.enterprisePrimary,
             foregroundColor: Colors.white,
@@ -87,7 +132,7 @@ class BeritaAcaraActionButtons extends StatelessWidget {
                     const SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        'Download / Cetak PDF',
+                        label,
                         style: AppTextStyles.labelMedium.copyWith(
                           fontFamily: AppTextStyles.enterpriseFontFamily,
                           fontWeight: FontWeight.w700,

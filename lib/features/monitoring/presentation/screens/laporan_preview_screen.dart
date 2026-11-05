@@ -211,6 +211,7 @@ class _LaporanPreviewScreenState extends ConsumerState<LaporanPreviewScreen> {
         BeritaAcaraActionButtons(
           isPdfBusy: _isPdfBusy,
           isShareBusy: _isShareBusy,
+          nomorBa: monitoring.nomorSuratBA,
           onPdf: () => _printPdf(context, monitoring),
           onShare: () => _shareSummary(context, monitoring),
         ),

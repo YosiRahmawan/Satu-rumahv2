@@ -79,6 +79,7 @@ class _LaporanSuccessScreenState extends State<LaporanSuccessScreen> {
               BeritaAcaraActionButtons(
                 isPdfBusy: _isPdfBusy,
                 isShareBusy: _isShareBusy,
+                nomorBa: item.nomorSuratBA,
                 onPdf: () => _printPdf(context, item),
                 onShare: () => _shareSummary(context, item),
               ),

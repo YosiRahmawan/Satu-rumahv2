@@ -173,22 +173,23 @@ void main() {
   });
 
   testWidgets(
-    'aplikasi dibuka kembali dari latar belakang memuat ulang segera, dan berhenti saat di latar belakang',
+    'di latar belakang memeriksa pelan (60 detik), berhenti saat ditutup, dan memuat segera saat dibuka kembali',
     (tester) async {
       await pasang(tester, role: AppRole.developer);
       final n0 = notif.lists;
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-      await tester.pump(const Duration(seconds: 95)); // lama di latar belakang
-      expect(notif.lists, n0); // pewaktu berhenti
+      await tester.pump(const Duration(seconds: 65));
+      expect(notif.lists, n0 + 1); // tetap memeriksa agar notifikasi sistem bisa muncul
+
+      tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.detached);
+      await tester.pump(const Duration(seconds: 200));
+      expect(notif.lists, n0 + 1); // proses akan berhenti: pewaktu dihentikan
 
       tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
       await tester.pump();
       await tester.pump();
-      expect(
-        notif.lists,
-        n0 + 1,
-      ); // segera setelah dibuka kembali, tanpa menunggu 30 detik
+      expect(notif.lists, n0 + 2); // segera setelah dibuka kembali, tanpa menunggu
     },
   );
 
