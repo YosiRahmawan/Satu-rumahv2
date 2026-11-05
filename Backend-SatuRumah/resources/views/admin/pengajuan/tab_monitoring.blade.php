@@ -280,18 +280,28 @@
             <input type="hidden" name="version" id="ttdVersi">
             <div class="modal-body" style="display:grid;gap:12px;">
                 <div class="callout" style="margin:0;font-size:13px;">
-                    Unduh visualisasi TTE Anda di
-                    <a href="https://suresman.tasikmalayakota.go.id/visualcustom" target="_blank" rel="noopener">suresman.tasikmalayakota.go.id/visualcustom</a>
-                    dengan memasukkan NIP, lalu unggah gambarnya di sini. NIP akun Anda: <strong>{{ auth()->user()->nip ?: 'belum diisi (lengkapi di menu Akun)' }}</strong>.
+                    NIP akun Anda: <strong>{{ auth()->user()->nip ?: 'belum diisi (lengkapi di menu Akun)' }}</strong>.
                 </div>
 
-                <div>
-                    <input type="file" id="ttdBerkas" name="signature" accept="image/png,image/jpeg" class="form-input" required>
+                <div style="display:grid;gap:8px;">
+                    <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;">
+                        <input type="radio" name="metode" value="suresman" id="ttdOtomatis" checked style="margin-top:3px;">
+                        <span><strong>Ambil TTE otomatis dari Suresman</strong> memakai NIP akun Anda (disarankan).</span>
+                    </label>
+                    <label style="display:flex;gap:8px;align-items:flex-start;font-size:13px;">
+                        <input type="radio" name="metode" value="upload" id="ttdManual" style="margin-top:3px;">
+                        <span>Unggah gambar visualisasi TTE sendiri. Unduh di
+                            <a href="https://suresman.tasikmalayakota.go.id/visualcustom" target="_blank" rel="noopener">suresman.tasikmalayakota.go.id/visualcustom</a>.</span>
+                    </label>
+                </div>
+
+                <div id="ttdUnggah" style="display:none;">
+                    <input type="file" id="ttdBerkas" name="signature" accept="image/png,image/jpeg" class="form-input">
                     <div class="text-muted" style="font-size:12px;margin-top:4px;">PNG atau JPEG, maksimal 4 MB. Ukuran menyesuaikan di PDF.</div>
                     <button type="button" class="btn btn-outline btn-sm" id="ttdGanti" style="display:none;margin-top:6px;">Hapus gambar</button>
                 </div>
 
-                <div>
+                <div id="ttdPratinjauBox" style="display:none;">
                     <div class="form-label">Pratinjau</div>
                     <div style="min-height:80px;border:1px solid var(--border);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;padding:8px;">
                         <img id="ttdPratinjau" alt="Pratinjau tanda tangan" style="max-height:130px;max-width:100%;display:none;">
@@ -326,6 +336,15 @@
         $('ttdPratinjau').style.display = 'none';
         $('ttdKosong').style.display = '';
     }
+    function aturMetode() {
+        const manual = $('ttdManual').checked;
+        $('ttdUnggah').style.display = manual ? '' : 'none';
+        $('ttdPratinjauBox').style.display = manual ? '' : 'none';
+        $('ttdBerkas').required = manual;
+        if (!manual) reset();
+    }
+    $('ttdOtomatis').addEventListener('change', aturMetode);
+    $('ttdManual').addEventListener('change', aturMetode);
     $('ttdBerkas').addEventListener('change', (e) => {
         const f = e.target.files[0];
         if (!f) return reset();
@@ -337,7 +356,7 @@
     });
     $('ttdGanti').addEventListener('click', reset);
 
-    const tutup = () => { m.style.display = 'none'; reset(); $('ttdSandi').value = ''; kirim = false; $('ttdKirim').disabled = false; };
+    const tutup = () => { m.style.display = 'none'; $('ttdOtomatis').checked = true; aturMetode(); $('ttdSandi').value = ''; kirim = false; $('ttdKirim').disabled = false; };
     document.querySelectorAll('[data-ttd]').forEach(b => b.addEventListener('click', () => {
         $('ttdForm').action = b.dataset.ttd;
         $('ttdVersi').value = b.dataset.ttdVersi;

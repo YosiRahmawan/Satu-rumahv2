@@ -62,9 +62,6 @@
                     <div class="sidebar-user-name">{{ auth()->user()->name ?? 'Verifikator Disperwaskim' }}</div>
                     <div class="sidebar-user-role">{{ ucfirst(auth()->user()->role) }}</div>
                 </div>
-                <a href="{{ route('sandi.ubah') }}" class="logout-btn" title="Ganti sandi" style="display:flex;align-items:center;">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a4 4 0 11-3.9 4.9L4 19v2h3v-2h2v-2h2l1.6-1.6A4 4 0 0115 7z"></path></svg>
-                </a>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="logout-btn" title="Keluar">

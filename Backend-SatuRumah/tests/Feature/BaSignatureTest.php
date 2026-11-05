@@ -233,6 +233,56 @@ class BaSignatureTest extends TestCase
         $this->assertSame($this->admin->id, $this->signature('admin')->user_id);
     }
 
+    private function fakeSuresman(bool $ditemukan = true): void
+    {
+        $base = 'suresman.tasikmalayakota.go.id/visualcustom';
+        $form = $ditemukan
+            ? '<input type="hidden" name="name" value="Ketua Uji"><input type="hidden" name="position" value="Ketua Tim">'
+            : '<p>Data tidak ditemukan</p>';
+        \Illuminate\Support\Facades\Http::fake([
+            "{$base}/search" => \Illuminate\Support\Facades\Http::response($form, 200),
+            "{$base}/download" => \Illuminate\Support\Facades\Http::response($this->gambar(), 200, ['Content-Type' => 'image/png']),
+            $base => \Illuminate\Support\Facades\Http::response('<html></html>', 200),
+        ]);
+    }
+
+    public function test_tte_otomatis_dari_suresman_memakai_nip_akun_dan_disimpan_di_cache_privat(): void
+    {
+        $this->fakeSuresman();
+        Sanctum::actingAs($this->ketua, ['*']);
+
+        $this->postJson("/api/v1/officer/reports/{$this->report->id}/sign", [
+            'metode' => 'suresman', 'password' => self::SANDI, 'version' => $this->report->version,
+        ], ['Idempotency-Key' => (string) Str::uuid()])->assertOk();
+
+        $this->assertSame('suresman', $this->signature('ketua')->method);
+        Storage::disk('local')->assertExists('tte-cache/' . $this->ketua->nip . '.png');
+        \Illuminate\Support\Facades\Http::assertSent(fn ($req) => str_ends_with($req->url(), '/search') && $req['nip'] === $this->ketua->nip);
+
+        // Admin menandatangani lewat web dengan metode yang sama; NIP-nya sendiri yang dipakai.
+        $this->app['auth']->shouldUse('web');
+        $this->actingAs($this->admin)->post("/pengajuan/{$this->submission->id}/laporan/{$this->report->id}/tanda-tangan", [
+            'metode' => 'suresman', 'password' => self::SANDI, 'version' => $this->report->fresh()->version,
+        ])->assertSessionHas('success');
+        $this->assertSame('suresman', $this->signature('admin')->method);
+        \Illuminate\Support\Facades\Http::assertSent(fn ($req) => str_ends_with($req->url(), '/search') && $req['nip'] === $this->admin->nip);
+    }
+
+    public function test_tte_otomatis_ditolak_bila_nip_kosong_atau_tidak_ditemukan_di_suresman(): void
+    {
+        $this->fakeSuresman(ditemukan: false);
+        Sanctum::actingAs($this->ketua, ['*']);
+        $kirim = fn () => $this->postJson("/api/v1/officer/reports/{$this->report->id}/sign", [
+            'metode' => 'suresman', 'password' => self::SANDI, 'version' => $this->report->version,
+        ], ['Idempotency-Key' => (string) Str::uuid()]);
+
+        $kirim()->assertStatus(422)->assertJsonPath('error.fields.signature.0', fn ($m) => str_contains($m, 'Suresman'));
+        $this->assertNull($this->signature('ketua'));
+
+        $this->ketua->forceFill(['nip' => null])->save();
+        $kirim()->assertStatus(422)->assertJsonStructure(['error' => ['fields' => ['nip']]]);
+    }
+
     public function test_terbitkan_terkunci_sampai_kedua_pihak_menandatangani(): void
     {
         $this->actingAs($this->admin);

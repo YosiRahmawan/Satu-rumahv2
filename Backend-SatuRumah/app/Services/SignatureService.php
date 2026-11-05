@@ -80,9 +80,31 @@ class SignatureService
         ];
     }
 
-    /** Berkas visualisasi TTE yang diunggah (`signature`); maksimal 4 MB. */
+    /** Cara memperoleh gambar TTE: `suresman` (otomatis dari NIP akun) atau `upload` (berkas dari penanda tangan). */
+    public function metode(Request $request): string
+    {
+        return $request->input('metode') === 'suresman' ? 'suresman' : 'upload';
+    }
+
+    /**
+     * Gambar visualisasi TTE. Metode `suresman`: diambil dari Suresman memakai NIP akun penanda tangan sendiri.
+     * Metode `upload`: berkas `signature` yang diunggah; maksimal 4 MB.
+     */
     public function bytesFrom(Request $request): string
     {
+        if ($this->metode($request) === 'suresman') {
+            $user = $request->user();
+            if (blank($user?->nip)) {
+                throw ValidationException::withMessages(['nip' => ['NIP akun Anda belum diisi. Lengkapi di menu Akun sebelum menandatangani.']]);
+            }
+            $bytes = SuresmanTteService::fromConfig()->fetch($user->nip);
+            if ($bytes === null) {
+                throw ValidationException::withMessages(['signature' => ['TTE belum dapat diambil dari Suresman. Periksa NIP akun Anda atau unggah gambar visualisasi secara manual.']]);
+            }
+
+            return $bytes;
+        }
+
         $file = $request->file('signature');
         if (!$file || !$file->isValid() || $file->getSize() > self::MAX_BYTES) {
             throw ValidationException::withMessages(['signature' => ['Pilih gambar visualisasi TTE (PNG atau JPEG, maksimal 4 MB).']]);
@@ -149,7 +171,7 @@ class SignatureService
      * Menandatangani satu versi BA. Idempoten: pengulangan untuk laporan, peran, dan versi yang sama
      * mengembalikan persetujuan yang sudah ada. Isian peran, waktu, dan hash selalu dari server.
      */
-    public function sign(InspectionReport $r, User $user, string $role, string $imageBytes, string $password, int $version, ?string $ip = null): ReportSignature
+    public function sign(InspectionReport $r, User $user, string $role, string $imageBytes, string $password, int $version, ?string $ip = null, string $metode = 'upload'): ReportSignature
     {
         $this->authorize($r, $user, $role);
         if (blank($user->nip)) {
@@ -173,7 +195,7 @@ class SignatureService
 
         $png = $this->normalize($imageBytes);
 
-        return DB::transaction(function () use ($r, $user, $role, $png, $version, $ip) {
+        return DB::transaction(function () use ($r, $user, $role, $png, $version, $ip, $metode) {
             $r = InspectionReport::lockForUpdate()->findOrFail($r->id);
             if ((int) $r->version !== $version) {
                 throw new \DomainException('Isi BA telah berubah. Muat ulang BA lalu periksa kembali sebelum menandatangani.');
@@ -191,7 +213,7 @@ class SignatureService
             Storage::disk(self::DISK)->put($path, $png);
 
             $sig = ReportSignature::create([
-                'report_id' => $r->id, 'role' => $role, 'user_id' => $user->id, 'method' => 'upload',
+                'report_id' => $r->id, 'role' => $role, 'user_id' => $user->id, 'method' => $metode,
                 'signature_path' => $path, 'document_hash' => $this->documentHash($r), 'report_version' => $version,
                 'signed_at' => now(), 'provider' => 'visualisasi_tte', 'ip' => $ip,
             ]);

@@ -9,7 +9,7 @@
         <div class="hero-title">Dashboard Pengawasan</div>
         <div class="hero-sub">Ringkasan pengajuan persetujuan site plan yang sedang berjalan.</div>
     </div>
-    <div class="hero-meta">Diperbarui {{ now()->translatedFormat('d M Y, H.i') }} WIB</div>
+    <div class="hero-meta">Diperbarui <span id="diperbarui">{{ now()->translatedFormat('d M Y, H.i') }}</span> WIB</div>
 </div>
 
 <div id="kpi" data-url="{{ route('dashboard.kpi') }}">
@@ -49,7 +49,13 @@
         if (document.hidden) return;
         try {
             const [htmlKpi, htmlBox] = await Promise.all([ambil(kpi), ambil(box)]);
-            if (htmlKpi !== null) kpi.innerHTML = htmlKpi;
+            if (htmlKpi !== null) {
+                kpi.innerHTML = htmlKpi;
+                const w = new Date(), o = { timeZone: 'Asia/Jakarta' };
+                const tgl = new Intl.DateTimeFormat('id-ID', { ...o, day: '2-digit', month: 'short', year: 'numeric' }).format(w);
+                const jam = new Intl.DateTimeFormat('id-ID', { ...o, hour: '2-digit', minute: '2-digit', hour12: false }).format(w).replace(':', '.');
+                document.getElementById('diperbarui').textContent = tgl + ', ' + jam;
+            }
             if (htmlBox === null) return;
             const lama = {};
             box.querySelectorAll('.progress-bar[data-kec]').forEach(b => lama[b.dataset.kec] = b.style.width);

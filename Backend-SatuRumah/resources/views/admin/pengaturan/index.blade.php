@@ -33,4 +33,14 @@
     @endforeach
     <div style="display:flex;justify-content:flex-end;"><button class="btn btn-primary">Simpan Pengaturan</button></div>
 </form>
+
+<div id="ganti-sandi" style="margin-top:28px;">
+    <div class="card-title" style="font-size:16px;margin-bottom:4px;">Keamanan akun</div>
+    <div class="text-muted" style="font-size:13px;margin-bottom:14px;">Ganti sandi akun Anda. Gunakan sandi yang kuat dan tidak dipakai di tempat lain.</div>
+    @include('auth._form-sandi', ['dari' => 'pengaturan'])
+</div>
+@endsection
+
+@section('scripts')
+@include('auth._script-sandi')
 @endsection

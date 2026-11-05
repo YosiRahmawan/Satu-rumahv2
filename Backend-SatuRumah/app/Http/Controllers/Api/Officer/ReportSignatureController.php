@@ -39,6 +39,7 @@ class ReportSignatureController extends Controller
             $this->signatures->sign(
                 $report, $request->user(), ReportSignature::KETUA,
                 $this->signatures->bytesFrom($request), $data['password'], (int) $data['version'], $request->ip(),
+                $this->signatures->metode($request),
             );
         } catch (AuthorizationException $e) {
             return $this->error('ERR-022', $e->getMessage(), 403);

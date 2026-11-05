@@ -200,6 +200,19 @@ class AdminWebTest extends TestCase
         $this->get('/dashboard')->assertOk();
     }
 
+    public function test_ganti_sandi_ada_di_pengaturan_dan_kembali_ke_pengaturan(): void
+    {
+        $this->actingAs($this->admin);
+
+        $this->get('/pengaturan')->assertOk()->assertSee('Keamanan akun')->assertSee('name="dari" value="pengaturan"', false);
+        // Ikon kunci di bilah samping sudah dipindahkan ke Pengaturan.
+        $this->get('/dashboard')->assertOk()->assertDontSee('title="Ganti sandi"', false)->assertSee('id="diperbarui"', false);
+
+        $this->post('/ganti-sandi', ['dari' => 'pengaturan', 'current_password' => 'Sandi-Uji-2026', 'new_password' => 'SandiBaru2026x', 'new_password_confirmation' => 'SandiBaru2026x'])
+            ->assertRedirect('/pengaturan');
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('SandiBaru2026x', $this->admin->fresh()->password));
+    }
+
     public function test_pengembang_tidak_bisa_membuka_web_admin(): void
     {
         $this->actingAs($this->developer)->get('/dashboard')->assertRedirect('/login');
