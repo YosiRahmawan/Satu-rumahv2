@@ -72,6 +72,9 @@ class _Officer implements OfficerRemote {
   }) => throw UnimplementedError();
 
   @override
+  Future<void> acceptAssignment(int id) async {}
+
+  @override
   Future<List<ServerReport>> reports() async => const [];
 
   @override
@@ -88,7 +91,7 @@ class _Officer implements OfficerRemote {
   @override
   Future<BaSignatureStatus> signReport({
     required String reportNumber,
-    required SignatureImage image,
+    SignatureImage? image,
     required String password,
     required String idempotencyKey,
   }) => throw UnimplementedError();

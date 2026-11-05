@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/geo_stamp.dart';
 import '../../services/camera_gateway.dart';
+import '../../services/gallery_saver.dart';
 import '../../services/geocoding_service.dart';
 import '../../services/location_service.dart';
 import '../../services/photo_import.dart';
@@ -35,6 +36,10 @@ typedef StampRenderFn =
 
 final stampRenderFnProvider = Provider<StampRenderFn>(
   (ref) => StampRenderer.render,
+);
+
+final gallerySaverProvider = Provider<GallerySaver>(
+  (ref) => const DeviceGallerySaver(),
 );
 
 final photoPickerProvider = Provider<PhotoPickerGateway>(

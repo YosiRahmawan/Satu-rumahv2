@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Salinan foto bergeotag disimpan ke galeri Anda sebagai arsip.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Kamera digunakan untuk mengambil foto dokumentasi lapangan.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -60,6 +60,9 @@ class _Officer implements OfficerRemote {
   }) => throw UnimplementedError();
 
   @override
+  Future<void> acceptAssignment(int id) async {}
+
+  @override
   Future<List<ServerReport>> reports() async => const [];
 
   @override
@@ -76,7 +79,7 @@ class _Officer implements OfficerRemote {
   @override
   Future<BaSignatureStatus> signReport({
     required String reportNumber,
-    required SignatureImage image,
+    SignatureImage? image,
     required String password,
     required String idempotencyKey,
   }) => throw UnimplementedError();
@@ -101,8 +104,10 @@ const _offline = ApiException(code: 'NETWORK', message: 'x');
 void main() {
   group('pemetaan galat jaringan', () {
     test('waktu habis dibedakan dari tanpa sambungan', () {
-      DioException e(DioExceptionType t) =>
-          DioException(requestOptions: RequestOptions(path: 'x'), type: t);
+      DioException e(DioExceptionType t) => DioException(
+        requestOptions: RequestOptions(path: 'x'),
+        type: t,
+      );
 
       final timeout = ApiException.fromDio(e(DioExceptionType.receiveTimeout));
       final offline = ApiException.fromDio(e(DioExceptionType.connectionError));
@@ -138,24 +143,27 @@ void main() {
   });
 
   group('status pemuatan daftar', () {
-    test('Pengajuan: memuat lalu selesai; gagal tidak menghapus data lama', () async {
-      final remote = _Remote()..items = [_item('SR-1')];
-      final n = PengajuanListNotifier(remote: remote);
-      addTearDown(n.dispose);
+    test(
+      'Pengajuan: memuat lalu selesai; gagal tidak menghapus data lama',
+      () async {
+        final remote = _Remote()..items = [_item('SR-1')];
+        final n = PengajuanListNotifier(remote: remote);
+        addTearDown(n.dispose);
 
-      expect(n.load.value.state, LoadState.idle);
-      final future = n.refresh();
-      expect(n.load.value.isLoading, isTrue);
-      await future;
-      expect(n.load.value.state, LoadState.loaded);
-      expect(n.state, hasLength(1));
+        expect(n.load.value.state, LoadState.idle);
+        final future = n.refresh();
+        expect(n.load.value.isLoading, isTrue);
+        await future;
+        expect(n.load.value.state, LoadState.loaded);
+        expect(n.state, hasLength(1));
 
-      remote.error = _offline;
-      final error = await n.refresh();
-      expect(error, same(_offline));
-      expect(n.load.value.isFailed, isTrue);
-      expect(n.state, hasLength(1)); // data terakhir tetap ada
-    });
+        remote.error = _offline;
+        final error = await n.refresh();
+        expect(error, same(_offline));
+        expect(n.load.value.isFailed, isTrue);
+        expect(n.state, hasLength(1)); // data terakhir tetap ada
+      },
+    );
 
     test('tugas Pengawas: gagal tercatat lalu pulih', () async {
       final remote = _Officer()..error = _offline;

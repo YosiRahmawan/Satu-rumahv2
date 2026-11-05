@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +13,7 @@ import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/screens/kamera_lapangan_screen.dart';
 import 'package:satu_rumah/features/monitoring/services/camera_gateway.dart';
+import 'package:satu_rumah/features/monitoring/services/gallery_saver.dart';
 import 'package:satu_rumah/features/monitoring/services/location_service.dart';
 import 'package:satu_rumah/features/monitoring/utils/geo_stamp_signer.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
@@ -32,7 +35,18 @@ Pengajuan _task(String id, String nama) => Pengajuan(
   tanggalSurvey: DateTime(2026, 5, 20),
 );
 
+class _FakeGallery implements GallerySaver {
+  final saved = <String>[];
+
+  @override
+  Future<bool> save(Uint8List bytes, String name) async {
+    saved.add(name);
+    return true;
+  }
+}
+
 void main() {
+  final gallery = _FakeGallery();
   late FakeCameraGateway camera;
   late FakeLocationService location;
   late MonitoringRepository repo;
@@ -50,6 +64,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         cameraGatewayProvider.overrideWithValue(camera),
+        gallerySaverProvider.overrideWithValue(gallery),
         locationServiceProvider.overrideWithValue(location),
         geocodingServiceProvider.overrideWithValue(FakeGeocoding()),
         mapThumbnailProvider.overrideWithValue(FakeMapThumbnail()),
@@ -124,6 +139,18 @@ void main() {
     );
     expect(drafts.single.photos, hasLength(1));
     expect(find.text('1 foto tersimpan dari sesi ini'), findsOneWidget);
+    // Salinan juga masuk galeri HP.
+    expect(gallery.saved, hasLength(1));
+    expect(find.textContaining('dan galeri HP'), findsOneWidget);
+  });
+
+  testWidgets('pratinjau kamera memenuhi layar tanpa pita hitam', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    final preview = tester.getRect(find.byType(FittedBox).first);
+    expect(preview.width, greaterThanOrEqualTo(390));
+    expect(preview.height, greaterThanOrEqualTo(844));
   });
 
   testWidgets('mode tugas menyiapkan draf tugas lalu menyimpan foto', (
@@ -162,7 +189,10 @@ void main() {
     await pumpScreen(
       tester,
       prefillForm: false,
-      tasks: [_task('task-1', 'Perumahan Satu'), _task('task-2', 'Perumahan Dua')],
+      tasks: [
+        _task('task-1', 'Perumahan Satu'),
+        _task('task-2', 'Perumahan Dua'),
+      ],
       context: const KameraContext.mandiri(),
     );
     await shoot(tester);

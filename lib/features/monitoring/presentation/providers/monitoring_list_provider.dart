@@ -9,6 +9,7 @@ import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/repositories/officer_api_repository.dart';
+import '../../services/maps_launcher.dart';
 import 'monitoring_form_provider.dart';
 import '../../../../core/api/remote_load.dart';
 
@@ -49,6 +50,8 @@ final riwayatGabunganProvider = Provider<List<MonitoringModel>>((ref) {
   return [...lokal, ...hanyaServer]
     ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 });
+
+final mapsLauncherProvider = Provider<MapsLauncher>((ref) => bukaDiPeta);
 
 /// Provider penugasan survey aktif yang dikirim dari Admin ke Tim Perwaskim
 final surveyAktifProvider = Provider<List<Pengajuan>>((ref) {
@@ -94,6 +97,24 @@ class OfficerAssignmentsNotifier
   void dispose() {
     load.dispose();
     super.dispose();
+  }
+
+  /// Menandai tugas bernomor pengajuan [pengajuanId] sebagai diterima bila masih berstatus
+  /// dijadwalkan. Mengembalikan galatnya (bila ada); status lokal baru berubah setelah server menjawab.
+  Future<ApiException?> accept(String pengajuanId) async {
+    final source = remote;
+    if (source == null) return null;
+    for (final a in state) {
+      if ((a.submissionNumber ?? 'TUGAS-${a.id}') != pengajuanId) continue;
+      if (a.status != 'dijadwalkan') return null;
+      try {
+        await source.acceptAssignment(a.id);
+      } on ApiException catch (e) {
+        return e;
+      }
+      return refresh(silent: true);
+    }
+    return null;
   }
 
   /// Memuat ulang; mengembalikan galatnya (bila ada) dan mempertahankan daftar lama.

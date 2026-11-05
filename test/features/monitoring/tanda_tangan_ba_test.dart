@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:satu_rumah/core/api/api_client.dart';
+import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:satu_rumah/core/auth/token_store.dart';
 import 'package:satu_rumah/features/monitoring/data/models/ba_signature.dart';
 import 'package:satu_rumah/features/monitoring/data/models/server_report.dart';
@@ -28,6 +29,10 @@ class _Remote implements OfficerRemote {
   final List<String> keys = [];
   final List<SignatureImage> images = [];
   int signCalls = 0;
+  int autos = 0;
+
+  @override
+  Future<void> acceptAssignment(int id) async {}
 
   @override
   Future<List<ServerReport>> reports() async => const [];
@@ -46,13 +51,17 @@ class _Remote implements OfficerRemote {
   @override
   Future<BaSignatureStatus> signReport({
     required String reportNumber,
-    required SignatureImage image,
+    SignatureImage? image,
     required String password,
     required String idempotencyKey,
   }) async {
     signCalls++;
     keys.add(idempotencyKey);
-    images.add(image);
+    if (image == null) {
+      autos++;
+    } else {
+      images.add(image);
+    }
     final outcome = signOutcomes.isEmpty ? 'ok' : signOutcomes.removeAt(0);
     if (outcome is ApiException) throw outcome;
     status = BaSignatureStatus(
@@ -95,20 +104,29 @@ Future<Uint8List> _png(WidgetTester tester, {int w = 300, int h = 100}) async {
   return bytes!;
 }
 
-Widget _layar(_Remote remote, SignaturePicker picker, {bool api = true}) =>
-    ProviderScope(
-      overrides: [
-        apiEnabledProvider.overrideWithValue(api),
-        officerRemoteProvider.overrideWithValue(remote),
-      ],
-      child: MaterialApp(
-        home: TandaTanganBaScreen(
-          number: _nomor,
-          namaPerumahan: 'Griya Uji',
-          picker: picker,
-        ),
-      ),
-    );
+Widget _layar(
+  _Remote remote,
+  SignaturePicker picker, {
+  bool api = true,
+  String? nip,
+}) => ProviderScope(
+  overrides: [
+    apiEnabledProvider.overrideWithValue(api),
+    officerRemoteProvider.overrideWithValue(remote),
+    roleSessionProvider.overrideWith(
+      (ref) =>
+          RoleSessionNotifier()
+            ..signIn(AppRole.perwaskim, username: 'ketua', nip: nip),
+    ),
+  ],
+  child: MaterialApp(
+    home: TandaTanganBaScreen(
+      number: _nomor,
+      namaPerumahan: 'Griya Uji',
+      picker: picker,
+    ),
+  ),
+);
 
 /// Layar tinggi supaya tombol di bawah lipatan tetap terjangkau.
 void _tw(String name, Future<void> Function(WidgetTester) body) =>
@@ -120,6 +138,11 @@ void _tw(String name, Future<void> Function(WidgetTester) body) =>
     });
 
 Future<void> _pilih(WidgetTester tester) async {
+  // Bawaan memakai TTE otomatis dari NIP; unggah manual dipilih lewat tombol mode.
+  if (find.byKey(const Key('ttd-pilih')).evaluate().isEmpty) {
+    await tester.tap(find.byKey(const Key('ttd-mode')));
+    await tester.pump();
+  }
   await tester.tap(find.byKey(const Key('ttd-pilih')));
   await tester.runAsync(
     () => Future<void>.delayed(const Duration(milliseconds: 200)),
@@ -175,6 +198,8 @@ void main() {
           _layar(_Remote(), () async => (bytes: png, ext: 'png')),
         );
         await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('ttd-mode')));
+        await tester.pump();
 
         expect(
           find.textContaining('suresman.tasikmalayakota.go.id'),
@@ -215,6 +240,38 @@ void main() {
         expect(find.text('Anda sudah menandatangani BA ini'), findsOneWidget);
       },
     );
+
+    _tw('bawaan: TTE otomatis dari NIP akun, tanpa gambar', (tester) async {
+      final remote = _Remote();
+      await tester.pumpWidget(
+        _layar(remote, () async => null, nip: '198501012010011002'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('198501012010011002'), findsWidgets);
+      expect(find.byKey(const Key('ttd-pilih')), findsNothing);
+      expect(_kirimAktif(tester), isFalse); // sandi belum diisi
+      await _isiSandi(tester);
+      expect(_kirimAktif(tester), isTrue);
+
+      await _kirim(tester);
+      expect(remote.signCalls, 1);
+      expect(remote.autos, 1);
+      expect(remote.images, isEmpty);
+      expect(find.text('Anda sudah menandatangani BA ini'), findsOneWidget);
+    });
+
+    _tw('NIP kosong: otomatis tidak bisa dikirim, tetap bisa unggah sendiri', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_layar(_Remote(), () async => null));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('NIP akun Anda belum diisi'), findsOneWidget);
+      await _isiSandi(tester);
+      expect(_kirimAktif(tester), isFalse);
+      expect(find.byKey(const Key('ttd-mode')), findsOneWidget);
+    });
 
     _tw('ekstensi jpg dikirim dengan tipe image/jpeg', (tester) async {
       final remote = _Remote();

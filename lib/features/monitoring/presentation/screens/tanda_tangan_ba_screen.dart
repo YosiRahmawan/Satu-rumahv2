@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/api/api_client.dart';
+import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
 import '../../../../core/utils/file_picker_util.dart';
@@ -61,6 +62,8 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
   final String _key = newDraftKey();
 
   Uint8List? _image;
+  // Bawaan: TTE diambil otomatis dari Suresman lewat NIP akun; unggah manual sebagai cadangan.
+  bool _manual = false;
   String _ext = 'png';
   bool _obscure = true;
   bool _submitting = false;
@@ -73,8 +76,12 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
     super.dispose();
   }
 
+  String get _nip => ref.read(roleSessionProvider).nip?.trim() ?? '';
+
   bool get _canSubmit =>
-      !_submitting && _image != null && _password.text.isNotEmpty;
+      !_submitting &&
+      _password.text.isNotEmpty &&
+      (_manual ? _image != null : _nip.isNotEmpty);
 
   Future<void> _pick() async {
     final picked = await widget.picker();
@@ -111,8 +118,8 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
   }
 
   Future<void> _confirm() async {
-    final image = _image;
-    if (image == null || _submitting) return;
+    final image = _manual ? _image : null;
+    if ((_manual && image == null) || _submitting) return;
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -121,17 +128,25 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              constraints: const BoxConstraints(maxHeight: 120),
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.enterpriseBorder),
+            if (image != null) ...[
+              Container(
+                constraints: const BoxConstraints(maxHeight: 120),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.enterpriseBorder),
+                ),
+                child: Image.memory(image, fit: BoxFit.contain),
               ),
-              child: Image.memory(image, fit: BoxFit.contain),
-            ),
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
+            ] else ...[
+              Text(
+                'TTE diambil dari Suresman dengan NIP $_nip.',
+                style: const TextStyle(fontSize: 13),
+              ),
+              const SizedBox(height: 8),
+            ],
             Text(
               'BA ${widget.number} akan Anda setujui sebagai Ketua Pengawas. '
               'Isi BA tidak dapat diubah setelah ini.',
@@ -155,8 +170,8 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
   }
 
   Future<void> _submit() async {
-    final image = _image;
-    if (image == null || _submitting) return; // cegah kirim ganda
+    final image = _manual ? _image : null;
+    if ((_manual && image == null) || _submitting) return; // cegah kirim ganda
     setState(() {
       _submitting = true;
       _error = null;
@@ -166,11 +181,13 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
           .read(officerRemoteProvider)
           .signReport(
             reportNumber: widget.number,
-            image: SignatureImage(
-              bytes: image,
-              filename: _ext == 'png' ? 'ttd.png' : 'ttd.jpg',
-              contentType: _ext == 'png' ? 'image/png' : 'image/jpeg',
-            ),
+            image: image == null
+                ? null
+                : SignatureImage(
+                    bytes: image,
+                    filename: _ext == 'png' ? 'ttd.png' : 'ttd.jpg',
+                    contentType: _ext == 'png' ? 'image/png' : 'image/jpeg',
+                  ),
             password: _password.text,
             idempotencyKey: _key,
           );
@@ -356,68 +373,95 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
             color: AppColors.statusSurveySurface,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: const Text(
-            'Unduh visualisasi TTE Anda di suresman.tasikmalayakota.go.id/visualcustom '
-            'dengan memasukkan NIP, lalu pilih gambarnya di sini.',
-            key: Key('ttd-petunjuk'),
-            style: TextStyle(fontSize: 13, height: 1.4),
+          child: Text(
+            _manual
+                ? 'Unduh visualisasi TTE Anda di suresman.tasikmalayakota.go.id/visualcustom '
+                      'dengan memasukkan NIP, lalu pilih gambarnya di sini.'
+                : (_nip.isEmpty
+                      ? 'NIP akun Anda belum diisi. Minta Admin melengkapinya di menu Akun, '
+                            'atau unggah gambar TTE sendiri.'
+                      : 'TTE Anda diambil otomatis dari Suresman memakai NIP akun: $_nip. '
+                            'Tidak perlu mengunduh atau mengunggah gambar.'),
+            key: const Key('ttd-petunjuk'),
+            style: const TextStyle(fontSize: 13, height: 1.4),
           ),
         ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          key: const Key('ttd-pilih'),
-          onPressed: _submitting ? null : _pick,
-          icon: const Icon(Icons.image_outlined),
-          label: Text(
-            _image == null ? 'Pilih gambar visualisasi TTE' : 'Ganti gambar',
-          ),
-        ),
-        if (_image != null)
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton.icon(
-              onPressed: _submitting
-                  ? null
-                  : () => setState(() => _image = null),
-              icon: const Icon(Icons.delete_outline, size: 18),
-              label: const Text('Hapus gambar'),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            key: const Key('ttd-mode'),
+            onPressed: _submitting
+                ? null
+                : () => setState(() {
+                    _manual = !_manual;
+                    _error = null;
+                  }),
+            child: Text(
+              _manual
+                  ? 'Pakai TTE otomatis dari NIP'
+                  : 'Unggah gambar TTE sendiri',
             ),
           ),
-        const Text(
-          'PNG atau JPEG, maksimal 4 MB. Ukurannya menyesuaikan di PDF.',
-          style: TextStyle(color: AppColors.enterpriseTextMuted, fontSize: 12),
         ),
-        const SizedBox(height: 12),
-        const Text(
-          'Pratinjau',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          key: const Key('ttd-pratinjau'),
-          constraints: const BoxConstraints(minHeight: 90, maxHeight: 180),
-          width: double.infinity,
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.enterpriseBorder),
+        if (_manual) ...[
+          OutlinedButton.icon(
+            key: const Key('ttd-pilih'),
+            onPressed: _submitting ? null : _pick,
+            icon: const Icon(Icons.image_outlined),
+            label: Text(
+              _image == null ? 'Pilih gambar visualisasi TTE' : 'Ganti gambar',
+            ),
           ),
-          child: _image == null
-              ? const SizedBox(
-                  height: 78,
-                  child: Center(
-                    child: Text(
-                      'Belum ada gambar',
-                      style: TextStyle(
-                        color: AppColors.enterpriseTextMuted,
-                        fontSize: 12,
+          if (_image != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _submitting
+                    ? null
+                    : () => setState(() => _image = null),
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Hapus gambar'),
+              ),
+            ),
+          const Text(
+            'PNG atau JPEG, maksimal 4 MB. Ukurannya menyesuaikan di PDF.',
+            style: TextStyle(
+              color: AppColors.enterpriseTextMuted,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Pratinjau',
+            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            key: const Key('ttd-pratinjau'),
+            constraints: const BoxConstraints(minHeight: 90, maxHeight: 180),
+            width: double.infinity,
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.enterpriseBorder),
+            ),
+            child: _image == null
+                ? const SizedBox(
+                    height: 78,
+                    child: Center(
+                      child: Text(
+                        'Belum ada gambar',
+                        style: TextStyle(
+                          color: AppColors.enterpriseTextMuted,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
-                  ),
-                )
-              : Image.memory(_image!, fit: BoxFit.contain),
-        ),
+                  )
+                : Image.memory(_image!, fit: BoxFit.contain),
+          ),
+        ],
         const SizedBox(height: 16),
         TextField(
           key: const Key('ttd-sandi'),

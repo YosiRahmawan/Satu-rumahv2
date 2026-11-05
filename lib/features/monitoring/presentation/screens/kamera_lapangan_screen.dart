@@ -279,6 +279,10 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
       pending.bytes,
     );
     final saved = notifier.saveDraft();
+    final galeri = ref.read(gallerySaverProvider);
+    final namaFoto =
+        'SatuRumah_${pending.stamp.capturedAt.millisecondsSinceEpoch}';
+    final masukGaleri = await galeri.save(pending.bytes, namaFoto);
     if (!mounted) return;
     setState(() {
       _pending = null;
@@ -289,7 +293,7 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     _snack(
       saved == null
           ? 'Foto ditambahkan, tetapi draf belum tersimpan.'
-          : 'Foto $count tersimpan di draf Berita Acara.',
+          : 'Foto $count tersimpan di draf Berita Acara${masukGaleri ? ' dan galeri HP' : ''}.',
     );
   }
 
@@ -359,38 +363,36 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     return Scaffold(
       backgroundColor: Colors.black,
       resizeToAvoidBottomInset: false,
-      body: SafeArea(
-        child: Stack(
-          children: [
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: _pending != null
+                ? SafeArea(child: _buildPhotoReviewLayout(_pending!))
+                : _buildLiveCameraLayout(),
+          ),
+          if (_busy)
             Positioned.fill(
-              child: _pending != null
-                  ? _buildPhotoReviewLayout(_pending!)
-                  : _buildLiveCameraLayout(),
-            ),
-            if (_busy)
-              Positioned.fill(
-                child: ColoredBox(
-                  color: const Color(0x99000000),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const CircularProgressIndicator(color: Colors.white),
-                        const SizedBox(height: 16),
-                        Text(
-                          _busyLabel,
-                          style: const TextStyle(
-                            fontFamily: 'Plus Jakarta Sans',
-                            color: Colors.white,
-                          ),
+              child: ColoredBox(
+                color: const Color(0x99000000),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: Colors.white),
+                      const SizedBox(height: 16),
+                      Text(
+                        _busyLabel,
+                        style: const TextStyle(
+                          fontFamily: 'Plus Jakarta Sans',
+                          color: Colors.white,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -399,51 +401,65 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
   // LIVE CAMERA
   // ==========================================
   Widget _buildLiveCameraLayout() {
-    return Column(
+    return Stack(
+      fit: StackFit.expand,
       children: [
-        _buildTopBar(),
-        Expanded(
-          child: Stack(
-            fit: StackFit.expand,
+        // Pratinjau memenuhi seluruh layar (potong tepi, tanpa pita hitam).
+        if (_session != null)
+          ClipRect(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _session!.aspectRatio * 1000,
+                height: 1000,
+                child: _session!.buildPreview(),
+              ),
+            ),
+          ),
+        Positioned.fill(
+          child: Column(
             children: [
-              Container(color: const Color(0xFF0F172A)),
-              if (_session != null)
-                Center(
-                  child: AspectRatio(
-                    aspectRatio: _session!.aspectRatio,
-                    child: _session!.buildPreview(),
-                  ),
+              SafeArea(bottom: false, child: _buildTopBar()),
+              Expanded(child: _buildLiveMiddle()),
+              SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [_buildInfoCard(), _buildShutterControlsBar()],
                 ),
-              if (_session != null && _isGridVisible)
-                const IgnorePointer(
-                  child: CustomPaint(painter: _GridPainter()),
-                ),
-              if (_session != null) _buildCenterFocusBracket(),
-              if (_session != null && _fix != null)
-                Positioned(
-                  left: 10,
-                  right: 10,
-                  bottom: 10,
-                  child: IgnorePointer(
-                    child: _LiveStampOverlay(
-                      fix: _fix!,
-                      address: _liveAddress,
-                      map: _liveMap,
-                      note: _noteController,
-                    ),
-                  ),
-                ),
-              if (_opening)
-                const Center(
-                  child: CircularProgressIndicator(color: Colors.white),
-                )
-              else if (_session == null)
-                _buildCameraProblemCard(),
+              ),
             ],
           ),
         ),
-        _buildInfoCard(),
-        _buildShutterControlsBar(),
+      ],
+    );
+  }
+
+  Widget _buildLiveMiddle() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_session != null && _isGridVisible)
+          const IgnorePointer(child: CustomPaint(painter: _GridPainter())),
+        if (_session != null) _buildCenterFocusBracket(),
+        if (_session != null && _fix != null)
+          Positioned(
+            left: 10,
+            right: 10,
+            bottom: 10,
+            child: IgnorePointer(
+              child: _LiveStampOverlay(
+                fix: _fix!,
+                address: _liveAddress,
+                map: _liveMap,
+                note: _noteController,
+              ),
+            ),
+          ),
+        if (_opening)
+          const Center(child: CircularProgressIndicator(color: Colors.white))
+        else if (_session == null)
+          _buildCameraProblemCard(),
       ],
     );
   }
@@ -452,7 +468,13 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     final isTask = widget.contextData.isTaskFlow;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      color: Colors.black.withValues(alpha: 0.85),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x99000000), Color(0x00000000)],
+        ),
+      ),
       child: Row(
         children: [
           IconButton(
@@ -546,9 +568,9 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
+            color: Colors.black.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: color.withValues(alpha: 0.4)),
+            border: Border.all(color: color.withValues(alpha: 0.6)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -680,9 +702,8 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
       margin: const EdgeInsets.fromLTRB(14, 8, 14, 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A).withValues(alpha: 0.88),
+        color: Colors.black.withValues(alpha: 0.45),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -783,7 +804,13 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     final canShoot = _session != null && !_busy;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
-      color: Colors.black.withValues(alpha: 0.95),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x00000000), Color(0xB3000000)],
+        ),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [

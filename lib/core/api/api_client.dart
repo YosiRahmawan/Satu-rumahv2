@@ -9,7 +9,14 @@ import '../auth/token_store.dart';
 const String kApiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
 /// Dapat diganti pada tes agar mode API bisa dinyalakan tanpa `--dart-define`.
-final apiBaseUrlProvider = Provider<String>((ref) => kApiBaseUrl);
+final apiBaseUrlProvider = Provider<String>(
+  (ref) => withTrailingSlash(kApiBaseUrl),
+);
+
+/// Dio menyambung `baseUrl` + 'auth/login' apa adanya; tanpa garis miring penutup alamatnya
+/// menjadi `/api/v1auth/login` dan server menjawab 404.
+String withTrailingSlash(String url) =>
+    url.isEmpty || url.endsWith('/') ? url : '$url/';
 
 final apiEnabledProvider = Provider<bool>(
   (ref) => ref.watch(apiBaseUrlProvider).isNotEmpty,

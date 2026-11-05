@@ -55,6 +55,9 @@ class FakeOfficerRemote implements OfficerRemote {
   }
 
   @override
+  Future<void> acceptAssignment(int id) async {}
+
+  @override
   Future<List<ServerReport>> reports() async => const [];
 
   @override
@@ -71,7 +74,7 @@ class FakeOfficerRemote implements OfficerRemote {
   @override
   Future<BaSignatureStatus> signReport({
     required String reportNumber,
-    required SignatureImage image,
+    SignatureImage? image,
     required String password,
     required String idempotencyKey,
   }) => throw UnimplementedError();
@@ -308,9 +311,7 @@ void main() {
         final c = _container(remote);
         final notifier = c.read(monitoringFormProvider.notifier);
 
-        var result = await notifier.submitFinalViaApi(
-          _draft(photos: const []),
-        );
+        var result = await notifier.submitFinalViaApi(_draft(photos: const []));
         expect(
           result.errorMessage,
           'Laporan wajib memiliki minimal 1 foto dokumentasi sebelum submit.',
@@ -378,6 +379,9 @@ class _FailingRemote implements OfficerRemote {
   }) => throw UnimplementedError();
 
   @override
+  Future<void> acceptAssignment(int id) async {}
+
+  @override
   Future<List<ServerReport>> reports() async => const [];
 
   @override
@@ -394,7 +398,7 @@ class _FailingRemote implements OfficerRemote {
   @override
   Future<BaSignatureStatus> signReport({
     required String reportNumber,
-    required SignatureImage image,
+    SignatureImage? image,
     required String password,
     required String idempotencyKey,
   }) => throw UnimplementedError();

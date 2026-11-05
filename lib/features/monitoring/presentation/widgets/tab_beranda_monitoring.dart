@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,6 +10,7 @@ import '../../../../core/widgets/data_state_view.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
+import '../../services/maps_launcher.dart';
 import 'kamera_flow.dart';
 import '../providers/monitoring_list_provider.dart';
 import '../../../../core/widgets/app_illustration.dart';
@@ -123,6 +126,10 @@ class TabBerandaMonitoring extends ConsumerWidget {
     Pengajuan pengajuan,
     PerwaskimIdentity identity,
   ) {
+    // Membuka BA berarti tugas dilihat: tandai diterima (diam-diam, tidak menghalangi).
+    unawaited(
+      ref.read(officerAssignmentsProvider.notifier).accept(pengajuan.id),
+    );
     prepareFormForPengajuan(ref, pengajuan);
     context.push('/monitoring/tambah');
   }
@@ -502,7 +509,7 @@ String? _scheduleLabel(Pengajuan assignment) {
   return '${_formatDate(date)}, ${_formatTime(date)}';
 }
 
-class _PrimaryTaskCard extends StatelessWidget {
+class _PrimaryTaskCard extends ConsumerWidget {
   final Pengajuan assignment;
   final VoidCallback onStartSurvey;
 
@@ -512,8 +519,16 @@ class _PrimaryTaskCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final schedule = _scheduleLabel(assignment);
+    final belumDiterima = ref
+        .watch(officerAssignmentsProvider)
+        .any(
+          (a) =>
+              (a.submissionNumber ?? 'TUGAS-${a.id}') == assignment.id &&
+              a.status == 'dijadwalkan',
+        );
+    final alamat = assignment.alamatProyek?.trim() ?? '';
     final instructionText =
         (assignment.catatanSurvey != null &&
             assignment.catatanSurvey!.trim().isNotEmpty)
@@ -619,6 +634,56 @@ class _PrimaryTaskCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
+          if (alamat.isNotEmpty) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                key: const Key('tugas-buka-peta'),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final ok = await ref.read(mapsLauncherProvider)(alamat);
+                  if (!ok) {
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Aplikasi peta tidak dapat dibuka.'),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.map_outlined, size: 18),
+                label: const Text('Buka Lokasi di Peta'),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          if (belumDiterima) ...[
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                key: const Key('tugas-terima'),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final error = await ref
+                      .read(officerAssignmentsProvider.notifier)
+                      .accept(assignment.id);
+                  messenger.showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        error == null
+                            ? 'Tugas diterima. Admin akan melihat statusnya.'
+                            : error.message,
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: const Text('Terima Tugas'),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           SizedBox(
             width: double.infinity,
             height: 48,

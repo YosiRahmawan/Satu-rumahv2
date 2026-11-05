@@ -117,6 +117,9 @@ abstract class OfficerRemote {
     void Function(String message, double fraction)? onProgress,
   });
 
+  /// Petugas menerima tugas (status dijadwalkan → diterima) agar Admin tahu tugas sudah dilihat.
+  Future<void> acceptAssignment(int id);
+
   /// Daftar BA milik petugas di server (terbaru dahulu), beserta status tanda tangan.
   Future<List<ServerReport>> reports();
 
@@ -133,7 +136,7 @@ abstract class OfficerRemote {
   /// [idempotencyKey] harus sama pada percobaan ulang agar tidak tersimpan ganda.
   Future<BaSignatureStatus> signReport({
     required String reportNumber,
-    required SignatureImage image,
+    SignatureImage? image,
     required String password,
     required String idempotencyKey,
   });
@@ -228,6 +231,15 @@ class OfficerApiRepository implements OfficerRemote {
   }
 
   @override
+  Future<void> acceptAssignment(int id) async {
+    try {
+      await _dio.post<void>('officer/assignments/$id/accept');
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  @override
   Future<List<ServerReport>> reports() async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -275,7 +287,8 @@ class OfficerApiRepository implements OfficerRemote {
         throw const ApiException(
           code: 'NOT_FOUND',
           status: 404,
-          message: 'PDF belum tersedia. BA diterbitkan setelah Admin menandatangani.',
+          message:
+              'PDF belum tersedia. BA diterbitkan setelah Admin menandatangani.',
         );
       }
       throw ApiException.fromDio(e);
@@ -300,7 +313,7 @@ class OfficerApiRepository implements OfficerRemote {
   @override
   Future<BaSignatureStatus> signReport({
     required String reportNumber,
-    required SignatureImage image,
+    SignatureImage? image,
     required String password,
     required String idempotencyKey,
   }) async {
@@ -311,11 +324,15 @@ class OfficerApiRepository implements OfficerRemote {
         data: FormData.fromMap({
           'password': password,
           'version': ref.version,
-          'signature': MultipartFile.fromBytes(
-            image.bytes,
-            filename: image.filename,
-            contentType: DioMediaType.parse(image.contentType),
-          ),
+          // Tanpa gambar: server mengambil TTE dari Suresman memakai NIP akun.
+          if (image == null)
+            'metode': 'suresman'
+          else
+            'signature': MultipartFile.fromBytes(
+              image.bytes,
+              filename: image.filename,
+              contentType: DioMediaType.parse(image.contentType),
+            ),
         }),
         options: Options(headers: {'Idempotency-Key': idempotencyKey}),
       );
