@@ -8,5 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Pengingat tenggat berjalan tiap pagi; butuh `php artisan schedule:work` (lokal) atau penjadwal sistem (produksi).
+// Pengingat tenggat berjalan tiap pagi bila penjadwal sistem aktif (produksi). Di mana pun server berjalan,
+// middleware JalankanPengingatOtomatis juga menjalankannya sekali per jam; perintahnya mengirim tiap pengingat sekali.
 Schedule::command('pengajuan:ingatkan-tenggat')->dailyAt('08:00');
