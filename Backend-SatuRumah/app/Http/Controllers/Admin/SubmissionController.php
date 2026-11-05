@@ -40,7 +40,7 @@ class SubmissionController extends Controller
                     ->orWhereHas('developer.developerProfile', fn ($d) => $d->where('nama_pt', 'like', "%{$term}%")));
             })
             ->when($request->query('tahap'), fn ($q, $v) => $q->where('stage', (int) $v))
-            ->when($request->query('status'), fn ($q, $v) => $q->where('sub_status', $v))
+            ->when($request->query('status'), fn ($q, $v) => $q->whereIn('sub_status', array_filter(explode(',', (string) $v))))
             ->latest('updated_at')->paginate(15)->withQueryString();
 
         return view('admin.pengajuan.index', compact('pengajuans', 'totals'));
@@ -167,6 +167,15 @@ class SubmissionController extends Controller
         }
 
         return $this->run($s, fn () => $signatures->sign($r, $request->user(), ReportSignature::ADMIN, $bytes, $data['password'], (int) $data['version'], $request->ip(), $signatures->metode($request)), 'Tanda tangan Admin tersimpan.', 'monitoring');
+    }
+
+    public function requestReportRevision(Request $request, int $id, int $reportId)
+    {
+        $data = $request->validate(['catatan' => 'required|string|min:5|max:500']);
+        $s = Submission::findOrFail($id);
+        $r = InspectionReport::where('submission_id', $id)->findOrFail($reportId);
+
+        return $this->run($s, fn () => $this->workflow->requestReportRevision($s, $r, $request->user(), $data['catatan']), 'BA dikembalikan ke petugas untuk diperbaiki.', 'monitoring');
     }
 
     public function reportPdf(int $id, int $reportId)

@@ -113,6 +113,19 @@
     </div>
 
     <script>
+    // Pesan hasil aksi (sukses/peringatan) juga muncul sebagai toast, supaya terlihat walau halaman sedang di bawah.
+    (function () {
+        document.querySelectorAll('.alert-success span, .alert-warning span').forEach((el, i) => {
+            const t = document.createElement('div');
+            t.className = el.closest('.alert-warning') ? 'toast-sukses toast-peringatan' : 'toast-sukses';
+            t.style.bottom = (24 + i * 64) + 'px';
+            t.textContent = el.textContent;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 6000);
+        });
+    })();
+    </script>
+    <script>
     // Lonceng, jumlah antrean, dan penanda data berubah dicek tiap 8 detik (berhenti saat tab tersembunyi).
     (function () {
         const dot = document.getElementById('loncengDot');

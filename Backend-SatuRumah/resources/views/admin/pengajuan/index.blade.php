@@ -28,8 +28,9 @@
     </div>
 
     <div style="padding:20px 24px 0;">
-        <form method="GET" action="{{ route('pengajuan.index') }}" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <form method="GET" action="{{ route('pengajuan.index') }}" class="filter-bar" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
             <div class="search" style="flex:1;min-width:260px;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"/></svg>
                 <input type="text" name="search" class="input" placeholder="Cari nomor, perumahan, atau nama PT" value="{{ request('search') }}" onchange="this.form.submit()">
             </div>
             <select name="tahap" class="select" onchange="this.form.submit()">
@@ -46,7 +47,7 @@
                 @endforeach
             </select>
             @if(request()->hasAny(['search', 'tahap', 'status']))
-                <a href="{{ route('pengajuan.index') }}" class="btn btn-outline btn-sm">&times; Reset</a>
+                <a href="{{ route('pengajuan.index') }}" class="btn btn-outline"><svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" d="M6 6l12 12M18 6L6 18"/></svg>Reset</a>
             @endif
         </form>
     </div>

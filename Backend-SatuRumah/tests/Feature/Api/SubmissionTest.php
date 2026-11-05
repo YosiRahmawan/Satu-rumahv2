@@ -160,6 +160,15 @@ class SubmissionTest extends TestCase
         ])->assertOk()->assertJsonPath('data.nama_perumahan', 'Griya Baru')->assertJsonPath('data.daya_listrik', '2200');
     }
 
+    public function test_kecamatan_proyek_dipilih_dari_daftar_kecamatan_kota(): void
+    {
+        $id = $this->postJson('/api/v1/submissions', [], ['Idempotency-Key' => $this->uuid()])->assertStatus(201)->json('data.id');
+
+        $this->patchJson("/api/v1/submissions/{$id}", ['version' => 1, 'kecamatan' => 'Tawang'])
+            ->assertOk()->assertJsonPath('data.kecamatan', 'Tawang');
+        $this->patchJson("/api/v1/submissions/{$id}", ['version' => 2, 'kecamatan' => 'Bandung'])->assertStatus(422);
+    }
+
     public function test_titik_lokasi_proyek_disimpan_dan_divalidasi_berpasangan(): void
     {
         $id = $this->postJson('/api/v1/submissions', [], ['Idempotency-Key' => $this->uuid()])->assertStatus(201)->json('data.id');

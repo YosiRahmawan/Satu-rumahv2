@@ -42,6 +42,7 @@ Route::middleware(['auth', 'role:admin', 'password.changed'])->group(function ()
     Route::post('/pengajuan/{id}/jadwal/{assignmentId}/batal', [SubmissionController::class, 'cancelAssignment'])->name('pengajuan.batal_jadwal');
     Route::post('/pengajuan/{id}/laporan/{reportId}/terbitkan', [SubmissionController::class, 'publishReport'])->name('pengajuan.terbitkan_ba');
     Route::post('/pengajuan/{id}/laporan/{reportId}/tanda-tangan', [SubmissionController::class, 'signReport'])->name('pengajuan.tanda_tangan_ba')->middleware('throttle:signature');
+    Route::post('/pengajuan/{id}/laporan/{reportId}/minta-perbaikan', [SubmissionController::class, 'requestReportRevision'])->name('pengajuan.perbaikan_ba');
     Route::get('/pengajuan/{id}/laporan/{reportId}/pdf', [SubmissionController::class, 'reportPdf'])->name('pengajuan.pdf_ba');
     Route::post('/pengajuan/{id}/terima-laporan', [SubmissionController::class, 'acceptReports'])->name('pengajuan.terima_laporan');
     Route::post('/pengajuan/{id}/keputusan', [SubmissionController::class, 'decide'])->name('pengajuan.keputusan');

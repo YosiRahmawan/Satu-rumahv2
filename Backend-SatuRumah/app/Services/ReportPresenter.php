@@ -24,6 +24,8 @@ class ReportPresenter
             // Ditetapkan Admin; dipakai aplikasi untuk mengisi Tim Pelaksana (hanya-baca).
             'team' => $a->team(),
             'accepted_at' => $a->accepted_at?->toIso8601String(),
+            // Alasan Admin bila BA tugas ini dikembalikan; petugas membuat BA pengganti.
+            'revision_note' => InspectionReport::where('assignment_id', $a->id)->where('status', 'revisi')->latest('revision_requested_at')->value('revision_note'),
             'submission' => $s ? [
                 'id' => $s->id,
                 'number' => $s->number,
