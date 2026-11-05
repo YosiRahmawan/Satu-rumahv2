@@ -38,6 +38,8 @@ Route::prefix('v1')->group(function () {
                 Route::patch('submissions/{id}', [SubmissionController::class, 'update'])->whereNumber('id');
                 Route::post('submissions/{id}/submit', [SubmissionController::class, 'submit'])->whereNumber('id');
                 Route::get('submissions/{id}/timeline', [SubmissionController::class, 'timeline'])->whereNumber('id');
+                Route::get('submissions/{id}/reports/{reportId}/pdf', [SubmissionController::class, 'reportPdf'])->whereNumber(['id', 'reportId']);
+                Route::get('submissions/{id}/sk', [SubmissionController::class, 'skFile'])->whereNumber('id');
                 Route::post('submissions/{id}/resubmit', [SubmissionController::class, 'resubmit'])->whereNumber('id');
 
                 Route::post('submissions/{id}/files', [SubmissionFileController::class, 'store'])->whereNumber('id');

@@ -302,6 +302,54 @@ class BaSignatureTest extends TestCase
         $this->assertNotNull($this->report->fresh()->published_at);
     }
 
+    public function test_pengembang_mengunduh_ba_resmi_dan_sk_yang_diunggah_admin(): void
+    {
+        $this->apiSign($this->ketua)->assertOk();
+        $this->app['auth']->shouldUse('web');
+        $this->webSign()->assertSessionHas('success');
+        $id = $this->submission->id;
+
+        // BA belum terbit: pengembang belum bisa mengunduh.
+        Sanctum::actingAs($this->developer, ['*']);
+        $this->getJson("/api/v1/submissions/{$id}")->assertJsonPath('data.survey_reports.0.pdf_available', false);
+        $this->get("/api/v1/submissions/{$id}/reports/{$this->report->id}/pdf")->assertNotFound();
+
+        $this->app['auth']->shouldUse('web');
+        $this->actingAs($this->admin)->post("/pengajuan/{$id}/laporan/{$this->report->id}/terbitkan")->assertSessionHas('success');
+
+        // Keputusan dengan berkas SK palsu: keputusan tersimpan, SK ditolak.
+        $this->post("/pengajuan/{$id}/keputusan", [
+            'keputusan' => 'setuju', 'nomor' => 'SK-9/2026', 'tanggal' => '2026-11-10',
+            'sk' => UploadedFile::fake()->createWithContent('sk.pdf', 'bukan pdf'),
+        ]);
+        $this->assertSame('selesai', $this->submission->fresh()->sub_status);
+        $this->assertNull($this->submission->fresh()->decision_file_path);
+
+        $this->post("/pengajuan/{$id}/sk", ['sk' => UploadedFile::fake()->createWithContent('sk.pdf', 'bukan pdf')])->assertSessionHasErrors('sk');
+        $this->post("/pengajuan/{$id}/sk", ['sk' => UploadedFile::fake()->createWithContent('sk.pdf', "%PDF-1.4
+1 0 obj<<>>endobj
+%%EOF
+")])
+            ->assertSessionHas('success');
+        $this->get("/pengajuan/{$id}/sk")->assertOk();
+
+        // Pengembang diberi tahu dan bisa mengunduh keduanya; pengembang lain tidak.
+        $this->assertContains('sk_uploaded', \App\Models\AppNotification::where('user_id', $this->developer->id)->pluck('type')->all());
+        Sanctum::actingAs($this->developer, ['*']);
+        $this->getJson("/api/v1/submissions/{$id}")->assertOk()
+            ->assertJsonPath('data.decision.sk_available', true)->assertJsonPath('data.survey_reports.0.pdf_available', true);
+        $this->assertStringStartsWith('%PDF', $this->get("/api/v1/submissions/{$id}/sk")->assertOk()->streamedContent());
+        $this->assertStringStartsWith('%PDF', $this->get("/api/v1/submissions/{$id}/reports/{$this->report->id}/pdf")->assertOk()->streamedContent());
+
+        $lain = User::factory()->create([
+            'username' => 'dev2', 'email' => 'dev2@saturumah.go.id', 'role' => 'pengembang', 'password' => self::SANDI,
+            'is_active' => true, 'must_change_password' => false,
+        ]);
+        Sanctum::actingAs($lain, ['*']);
+        $this->get("/api/v1/submissions/{$id}/sk")->assertNotFound();
+        $this->get("/api/v1/submissions/{$id}/reports/{$this->report->id}/pdf")->assertNotFound();
+    }
+
     public function test_ba_tetap_bisa_diterbitkan_setelah_keputusan_akhir(): void
     {
         $this->apiSign($this->ketua)->assertOk();

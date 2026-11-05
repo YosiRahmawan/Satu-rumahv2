@@ -200,12 +200,35 @@ class SubmissionController extends Controller
             'nomor' => 'nullable|string|max:100',
             'tanggal' => 'nullable|date',
             'catatan' => 'nullable|string|max:1000',
+            'sk' => 'nullable|file|max:5120',
         ]);
         $s = Submission::findOrFail($id);
 
-        return $this->run($s, fn () => $this->workflow->decide(
-            $s, $data['keputusan'] === 'setuju', $data['nomor'] ?? null, $data['tanggal'] ?? null, $data['catatan'] ?? null, $request->user()
-        ), 'Keputusan akhir disimpan.', 'ringkasan');
+        return $this->run($s, function () use ($s, $data, $request) {
+            $this->workflow->decide(
+                $s, $data['keputusan'] === 'setuju', $data['nomor'] ?? null, $data['tanggal'] ?? null, $data['catatan'] ?? null, $request->user()
+            );
+            // SK boleh diunggah sekaligus saat menyetujui.
+            if ($data['keputusan'] === 'setuju' && $request->hasFile('sk')) {
+                $this->workflow->uploadDecisionFile($s->fresh(), $request->file('sk'), $request->user());
+            }
+        }, 'Keputusan akhir disimpan.', 'ringkasan');
+    }
+
+    public function uploadSk(Request $request, int $id)
+    {
+        $request->validate(['sk' => 'required|file|max:5120'], ['sk.required' => 'Pilih berkas SK (PDF).', 'sk.max' => 'Berkas SK maksimal 5 MB.']);
+        $s = Submission::findOrFail($id);
+
+        return $this->run($s, fn () => $this->workflow->uploadDecisionFile($s, $request->file('sk'), $request->user()), 'SK tersimpan dan pengembang diberi tahu.', 'ringkasan');
+    }
+
+    public function downloadSk(int $id)
+    {
+        $s = Submission::findOrFail($id);
+        abort_unless($s->decision_file_path && Storage::disk('local')->exists($s->decision_file_path), 404);
+
+        return Storage::disk('local')->download($s->decision_file_path, 'SK-' . $s->number . '.pdf');
     }
 
     /** Menjalankan aksi workflow; galat aturan ditampilkan sebagai pesan, bukan 500. */
