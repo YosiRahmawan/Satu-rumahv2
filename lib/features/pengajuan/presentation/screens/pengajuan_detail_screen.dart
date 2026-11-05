@@ -18,6 +18,7 @@ import '../../../monitoring/utils/ba_pdf_generator.dart';
 import '../../data/models/hasil_survey_model.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
+import '../dokumen_resmi.dart';
 import '../providers/pengajuan_form_controller.dart';
 import '../providers/pengajuan_verifikasi_controller.dart';
 import '../widgets/pengajuan_list_card.dart';
@@ -2453,6 +2454,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
   }
 
   MonitoringModel? _getMonitoringModelForPengajuan(Pengajuan item) {
+    final resmi = baResmiSebagaiModel(item);
+    if (resmi != null) return resmi;
     final repo = ref.read(monitoringRepositoryProvider);
     return findLinkedFinalMonitoring(
       repo.getAllMonitoring(),
@@ -2469,7 +2472,8 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
     final finalMonitoring = _getMonitoringModelForPengajuan(item);
     final hasBa = finalMonitoring != null;
     final hasSk =
-        item.skPersetujuanPath != null && item.skPersetujuanPath!.isNotEmpty;
+        item.serverSkTersedia ||
+        (item.skPersetujuanPath != null && item.skPersetujuanPath!.isNotEmpty);
 
     return Card(
       color: Colors.white,
@@ -2642,6 +2646,10 @@ class _PengajuanDetailScreenState extends ConsumerState<PengajuanDetailScreen> {
                 ),
                 onPressed: hasBa
                     ? () async {
+                        if (item.serverBaReportId != null) {
+                          await bukaBaResmi(context, ref, item);
+                          return;
+                        }
                         final monitoringModel = _getMonitoringModelForPengajuan(
                           item,
                         );

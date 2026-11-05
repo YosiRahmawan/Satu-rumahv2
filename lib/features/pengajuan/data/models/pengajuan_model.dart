@@ -24,6 +24,7 @@ class Pengajuan {
   final DateTime? tanggalSurvey;
   final String? catatanSurvey;
   final StatusTahapPengajuan? tahapAsalPerbaikan;
+
   /// True after the developer has uploaded all requested revision files and
   /// the submission is waiting for an explicit Admin decision.
   final bool revisionSubmitted;
@@ -36,6 +37,12 @@ class Pengajuan {
   final String? diperbarui;
   final String? nib;
   final String? alamatProyek;
+
+  /// Dokumen resmi dari server (mode API): BA yang sudah diterbitkan Admin dan berkas SK.
+  final int? serverBaReportId;
+  final String? serverBaNomor;
+  final DateTime? serverBaTanggal;
+  final bool serverSkTersedia;
 
   Pengajuan({
     required this.id,
@@ -68,6 +75,10 @@ class Pengajuan {
     this.diperbarui,
     this.nib,
     this.alamatProyek,
+    this.serverBaReportId,
+    this.serverBaNomor,
+    this.serverBaTanggal,
+    this.serverSkTersedia = false,
   });
 
   Pengajuan copyWith({
@@ -102,6 +113,10 @@ class Pengajuan {
     Object? diperbarui = _sentinel,
     Object? nib = _sentinel,
     Object? alamatProyek = _sentinel,
+    int? serverBaReportId,
+    String? serverBaNomor,
+    DateTime? serverBaTanggal,
+    bool? serverSkTersedia,
   }) {
     return Pengajuan(
       id: id ?? this.id,
@@ -149,6 +164,10 @@ class Pengajuan {
       alamatProyek: alamatProyek == _sentinel
           ? this.alamatProyek
           : alamatProyek as String?,
+      serverBaReportId: serverBaReportId ?? this.serverBaReportId,
+      serverBaNomor: serverBaNomor ?? this.serverBaNomor,
+      serverBaTanggal: serverBaTanggal ?? this.serverBaTanggal,
+      serverSkTersedia: serverSkTersedia ?? this.serverSkTersedia,
     );
   }
 }

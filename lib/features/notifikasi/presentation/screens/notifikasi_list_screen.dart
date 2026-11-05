@@ -659,6 +659,12 @@ class _NotifikasiListScreenState extends ConsumerState<NotifikasiListScreen> {
           const Color(0xFFFEF3C7),
           const Color(0xFF92400E),
         );
+      case JenisNotifikasi.baDikembalikan:
+        return (
+          'BA DIPERBAIKI',
+          const Color(0xFFFEE2E2),
+          const Color(0xFFB91C1C),
+        );
     }
   }
 

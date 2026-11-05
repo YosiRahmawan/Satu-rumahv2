@@ -35,6 +35,7 @@ class DeveloperNotificationTile extends StatelessWidget {
     JenisNotifikasi.keputusanDisetujui => 'DISETUJUI',
     JenisNotifikasi.keputusanDitolak => 'DITOLAK',
     JenisNotifikasi.batasPerbaikan => 'BATAS PERBAIKAN',
+    JenisNotifikasi.baDikembalikan => 'BA DIPERBAIKI',
   };
 
   @override
@@ -61,6 +62,7 @@ class DeveloperNotificationTile extends StatelessWidget {
         AppColors.statusUrgentSurface,
       ),
       JenisNotifikasi.dokumenDiunggahUlang ||
+      JenisNotifikasi.baDikembalikan ||
       JenisNotifikasi.batasPerbaikan => (
         AppColors.statusWarningText,
         AppColors.statusWarningSurface,

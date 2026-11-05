@@ -34,6 +34,12 @@ abstract class PengajuanRemote {
     Map<String, String> revisedDocs, {
     String? catatan,
   });
+
+  /// PDF resmi BA yang sudah diterbitkan Admin (ditandatangani Ketua dan Admin).
+  Future<Uint8List> downloadBaPdf(String number, int reportId);
+
+  /// Berkas SK yang diunggah Admin untuk pengajuan yang disetujui.
+  Future<Uint8List> downloadSk(String number);
 }
 
 /// UUID v4 untuk header Idempotency-Key.
@@ -257,6 +263,48 @@ class PengajuanApiRepository implements PengajuanRemote {
     }
   }
 
+  Future<int> _idOf(String number) async {
+    if (!_idByNumber.containsKey(number)) await list();
+    final id = _idByNumber[number];
+    if (id == null) {
+      throw const ApiException(
+        code: 'ERR-013',
+        message: 'Pengajuan tidak ditemukan di server.',
+      );
+    }
+    return id;
+  }
+
+  Future<Uint8List> _unduh(String path) async {
+    try {
+      final response = await _dio.get<List<int>>(
+        path,
+        options: Options(
+          responseType: ResponseType.bytes,
+          receiveTimeout: const Duration(seconds: 60),
+        ),
+      );
+      return Uint8List.fromList(response.data!);
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) {
+        throw const ApiException(
+          code: 'NOT_FOUND',
+          status: 404,
+          message: 'Dokumen belum tersedia. Admin menerbitkannya setelah proses selesai.',
+        );
+      }
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  @override
+  Future<Uint8List> downloadBaPdf(String number, int reportId) async =>
+      _unduh('submissions/${await _idOf(number)}/reports/$reportId/pdf');
+
+  @override
+  Future<Uint8List> downloadSk(String number) async =>
+      _unduh('submissions/${await _idOf(number)}/sk');
+
   Future<void> _uploadFiles(
     int id,
     PengajuanFormState form,
@@ -451,6 +499,12 @@ Pengajuan pengajuanFromApi(Map<String, dynamic> json) {
       _hasilSurvey(r),
   ];
 
+  // BA terbaru yang sudah diterbitkan Admin (PDF resminya bisa diunduh pengembang).
+  final baResmi = ((json['survey_reports'] as List?) ?? const [])
+      .cast<Map<String, dynamic>>()
+      .where((r) => r['pdf_available'] == true)
+      .lastOrNull;
+
   final tahap =
       _tahap(json['status_tahap'] as String?) ??
       StatusTahapPengajuan.verifikasiAdministrasi;
@@ -499,5 +553,9 @@ Pengajuan pengajuanFromApi(Map<String, dynamic> json) {
     riwayatSurvey: riwayatSurvey,
     nomorSk: decision?['number'] as String?,
     tanggalSk: decision == null ? null : _tanggal(decision['date'] as String?),
+    serverSkTersedia: decision?['sk_available'] == true,
+    serverBaReportId: baResmi?['id'] as int?,
+    serverBaNomor: baResmi?['report_number'] as String?,
+    serverBaTanggal: DateTime.tryParse('${baResmi?['monitoring_date'] ?? ''}'),
   );
 }

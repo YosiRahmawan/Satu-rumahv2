@@ -16,6 +16,7 @@ import '../../../monitoring/presentation/providers/monitoring_form_provider.dart
 import '../../../monitoring/utils/ba_pdf_generator.dart';
 import '../../data/models/pengajuan_model.dart';
 import '../../data/models/status_tahap_pengajuan.dart';
+import '../dokumen_resmi.dart';
 import '../providers/pengajuan_form_controller.dart';
 import 'pengajuan_detail_screen.dart';
 import '../../../../core/widgets/app_illustration.dart';
@@ -91,6 +92,7 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
 
   bool _hasValidSk(Pengajuan item) {
     if (item.statusTahap != StatusTahapPengajuan.selesai) return false;
+    if (item.serverSkTersedia) return true; // SK resmi dari server
     final path = item.skPersetujuanPath?.trim();
     if (path == null || path.isEmpty) return false;
     try {
@@ -102,6 +104,9 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
   }
 
   MonitoringModel? _getValidBa(Pengajuan item) {
+    // BA resmi dari server (sudah diterbitkan Admin) didahulukan daripada BA lokal.
+    final resmi = baResmiSebagaiModel(item);
+    if (resmi != null) return resmi;
     final repo = ref.read(monitoringRepositoryProvider);
     return findLinkedFinalMonitoring(
       repo.getAllMonitoring(),
@@ -881,6 +886,10 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
               height: 40,
               child: ElevatedButton.icon(
                 onPressed: () async {
+                  if (item.serverSkTersedia) {
+                    await bukaSkResmi(context, ref, item);
+                    return;
+                  }
                   try {
                     final bytes = await File(
                       item.skPersetujuanPath!,
@@ -1085,6 +1094,10 @@ class _UnduhSkBaScreenState extends ConsumerState<UnduhSkBaScreen> {
               height: 40,
               child: ElevatedButton.icon(
                 onPressed: () async {
+                  if (item.serverBaReportId != null) {
+                    await bukaBaResmi(context, ref, item);
+                    return;
+                  }
                   try {
                     await BaPdfGenerator.printAndShare(baModel);
                   } catch (_) {

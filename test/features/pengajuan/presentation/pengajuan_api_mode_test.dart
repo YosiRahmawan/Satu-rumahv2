@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,6 +40,13 @@ class FakeRemote implements PengajuanRemote {
     if (submitError != null) throw submitError!;
     return _item('SR-2026-0042');
   }
+
+  @override
+  Future<Uint8List> downloadBaPdf(String number, int reportId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<Uint8List> downloadSk(String number) => throw UnimplementedError();
 
   @override
   Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs, {String? catatan}) async {
@@ -233,6 +241,13 @@ class _Failing implements PengajuanRemote {
     required String draftKey,
     void Function(String message, double fraction)? onProgress,
   }) => throw UnimplementedError();
+
+  @override
+  Future<Uint8List> downloadBaPdf(String number, int reportId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<Uint8List> downloadSk(String number) => throw UnimplementedError();
 
   @override
   Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs, {String? catatan}) =>

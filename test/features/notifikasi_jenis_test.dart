@@ -20,6 +20,7 @@ void main() {
     'report_signed_admin': JenisNotifikasi.tahapLanjut,
       'deadline_reminder': JenisNotifikasi.batasPerbaikan,
       'deadline_overdue': JenisNotifikasi.batasPerbaikan,
+      'report_revision': JenisNotifikasi.baDikembalikan,
       'submitted': JenisNotifikasi.pengajuanBaru,
     };
     peta.forEach((type, jenis) {

@@ -70,6 +70,8 @@ JenisNotifikasi jenisFromApi(String? type, [String? title]) => switch (type) {
   'assignment_reassigned' => JenisNotifikasi.penugasanDibatalkan,
   'report_published' => JenisNotifikasi.baDiterbitkan,
   'deadline_reminder' || 'deadline_overdue' => JenisNotifikasi.batasPerbaikan,
+  'report_revision' => JenisNotifikasi.baDikembalikan,
+  'sk_uploaded' => JenisNotifikasi.keputusanDisetujui, // SK persetujuan tersedia
   'decided' => (title?.toLowerCase().contains('tolak') ?? false)
       ? JenisNotifikasi.keputusanDitolak
       : JenisNotifikasi.keputusanDisetujui,

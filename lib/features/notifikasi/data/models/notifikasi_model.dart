@@ -36,6 +36,9 @@ enum JenisNotifikasi {
 
   /// Pengingat batas waktu perbaikan berkas oleh Pengembang (mendekat atau terlewat).
   batasPerbaikan,
+
+  /// Admin mengembalikan BA ke petugas untuk diperbaiki (petugas membuat BA pengganti).
+  baDikembalikan,
 }
 
 extension JenisNotifikasiX on JenisNotifikasi {
@@ -67,6 +70,8 @@ extension JenisNotifikasiX on JenisNotifikasi {
         return 'Pengajuan Ditolak';
       case JenisNotifikasi.batasPerbaikan:
         return 'Batas Perbaikan';
+      case JenisNotifikasi.baDikembalikan:
+        return 'BA Diminta Diperbaiki';
     }
   }
 
@@ -98,6 +103,8 @@ extension JenisNotifikasiX on JenisNotifikasi {
         return Icons.highlight_off_rounded;
       case JenisNotifikasi.batasPerbaikan:
         return Icons.hourglass_bottom_outlined;
+      case JenisNotifikasi.baDikembalikan:
+        return Icons.report_problem_outlined;
     }
   }
 
@@ -125,6 +132,7 @@ extension JenisNotifikasiX on JenisNotifikasi {
       case JenisNotifikasi.keputusanDisetujui:
         return const Color(0xFF16A34A);
       case JenisNotifikasi.batasPerbaikan:
+      case JenisNotifikasi.baDikembalikan:
         return const Color(0xFFE65100);
     }
   }
