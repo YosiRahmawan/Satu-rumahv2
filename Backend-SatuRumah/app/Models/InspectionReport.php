@@ -20,7 +20,7 @@ class InspectionReport extends Model
         'temuan', 'kesimpulan', 'kesepakatan', 'rtl', 'status_hasil_evaluasi',
         'tim_pelaksana', 'pihak_ditemui', 'status', 'version',
         'submit_latitude', 'submit_longitude', 'submitted_at', 'published_at',
-        'pdf_path', 'docx_path', 'verification_token',
+        'pdf_path', 'docx_path', 'verification_token', 'revision_note', 'revision_requested_at',
     ];
 
     protected function casts(): array
@@ -38,6 +38,7 @@ class InspectionReport extends Model
             'submit_longitude' => 'float',
             'submitted_at' => 'datetime',
             'published_at' => 'datetime',
+            'revision_requested_at' => 'datetime',
         ];
     }
 

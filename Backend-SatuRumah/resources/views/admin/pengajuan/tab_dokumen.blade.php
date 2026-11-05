@@ -198,14 +198,6 @@
         window.scrollTo({ top: s.y, behavior: 'instant' });
         const baris = [...document.querySelectorAll('tr.dok-baris')].find(r => s.kode && (r.cells[0]?.textContent || '').trim().startsWith(s.kode));
         if (baris) baris.classList.add('dok-sorot');
-        const pesan = document.querySelector('.alert-success span');
-        if (pesan) {
-            const t = document.createElement('div');
-            t.className = 'toast-sukses';
-            t.textContent = pesan.textContent;
-            document.body.appendChild(t);
-            setTimeout(() => t.remove(), 3500);
-        }
     })();
 
     function nilai(doc) {

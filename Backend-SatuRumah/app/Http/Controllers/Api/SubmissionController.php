@@ -118,6 +118,7 @@ class SubmissionController extends Controller
             'version' => ['required', 'integer'],
             'nama_perumahan' => ['nullable', 'string', 'max:150'],
             'alamat_proyek' => ['nullable', 'string', 'max:500'],
+            'kecamatan' => ['nullable', Rule::in(\App\Services\DashboardSummary::KECAMATAN)],
             // Titik lokasi: keduanya diisi bersama, atau keduanya kosong.
             'latitude' => ['nullable', 'numeric', 'between:-90,90', 'required_with:longitude'],
             'longitude' => ['nullable', 'numeric', 'between:-180,180', 'required_with:latitude'],
@@ -138,7 +139,7 @@ class SubmissionController extends Controller
         }
 
         $changes = array_intersect_key($data, array_flip([
-            'nama_perumahan', 'alamat_proyek', 'latitude', 'longitude', 'tipe_pengajuan', 'daya_listrik',
+            'nama_perumahan', 'alamat_proyek', 'kecamatan', 'latitude', 'longitude', 'tipe_pengajuan', 'daya_listrik',
             'npwp', 'luas_lahan', 'jumlah_unit', 'tipe_perumahan', 'current_step',
         ]));
         $submission->forceFill($changes + ['version' => $submission->version + 1])->save();

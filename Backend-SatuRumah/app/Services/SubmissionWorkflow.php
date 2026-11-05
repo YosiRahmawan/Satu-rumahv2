@@ -410,7 +410,11 @@ class SubmissionWorkflow
     /** Admin menerbitkan BA final yang sudah diterima (menandai resmi). Status `final` tidak berubah. */
     public function publishReport(Submission $s, InspectionReport $report, User $by): InspectionReport
     {
-        $this->ensureWorkable($s);
+        // BA boleh diterbitkan juga setelah keputusan akhir (dokumennya terpisah dari keputusan);
+        // hanya pengajuan yang ditolak yang tidak diterbitkan BA-nya.
+        if ($s->sub_status === 'ditolak') {
+            throw new \DomainException('BA tidak diterbitkan untuk pengajuan yang ditolak.');
+        }
         if ($report->submission_id !== $s->id || $report->status !== 'final') {
             throw new \DomainException('Hanya BA final milik pengajuan ini yang dapat diterbitkan.');
         }
@@ -430,6 +434,47 @@ class SubmissionWorkflow
             $this->notifier->event($s, $by, 'report_published', 'BA diterbitkan', "BA {$report->report_number} diterbitkan.", ['report_id' => $report->id]);
             $this->notifier->toUser($report->officer_id, $s, 'report_published', 'BA diterbitkan', "{$report->report_number} · {$s->nama_perumahan}", ['report_id' => $report->id]);
             $this->notifier->toDeveloper($s, 'report_published', 'BA diterbitkan', "{$s->number}: BA {$report->report_number} diterbitkan.");
+
+            return $report;
+        });
+    }
+
+    /**
+     * Admin mengembalikan BA final ke petugas dengan alasan. BA itu ditandai `revisi` (tanda tangan tidak
+     * berlaku lagi), tugasnya dibuka kembali, dan petugas membuat BA pengganti dari tugas yang sama.
+     */
+    public function requestReportRevision(Submission $s, InspectionReport $report, User $by, string $note): InspectionReport
+    {
+        $this->ensureWorkable($s);
+        if (!in_array($s->stage, [Submission::STAGE_SURVEI, Submission::STAGE_PERSETUJUAN], true)) {
+            throw new \DomainException('BA hanya dapat dikembalikan pada tahap survei atau persetujuan.');
+        }
+        if ($report->submission_id !== $s->id || $report->status !== 'final') {
+            throw new \DomainException('Hanya BA final milik pengajuan ini yang dapat dikembalikan.');
+        }
+        if ($report->published_at) {
+            throw new \DomainException('BA yang sudah diterbitkan tidak dapat dikembalikan.');
+        }
+
+        return DB::transaction(function () use ($s, $report, $by, $note) {
+            $report->forceFill([
+                'status' => 'revisi', 'revision_note' => $note, 'revision_requested_at' => now(),
+            ])->save();
+
+            if ($s->stage === Submission::STAGE_PERSETUJUAN) {
+                $s->forceFill([
+                    'stage' => Submission::STAGE_SURVEI, 'sub_status' => 'terjadwal',
+                    'stage_entered_at' => now(), 'version' => $s->version + 1,
+                ])->save();
+            }
+            // Tugas dibuka lagi agar muncul di aplikasi petugas.
+            $assignment = $report->assignment;
+            if ($assignment && $assignment->status === 'selesai') {
+                $assignment->forceFill(['status' => $assignment->accepted_at ? 'diterima' : 'dijadwalkan', 'completed_at' => null])->save();
+            }
+
+            $this->notifier->event($s, $by, 'report_revision', 'BA diminta diperbaiki', "BA {$report->report_number}. Alasan: {$note}", ['report_id' => $report->id]);
+            $this->notifier->toUser($report->officer_id, $s, 'report_revision', 'BA perlu diperbaiki', "{$report->report_number} · {$note}", ['report_id' => $report->id]);
 
             return $report;
         });

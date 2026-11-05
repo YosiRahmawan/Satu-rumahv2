@@ -7,6 +7,7 @@
                 <div class="kv-row"><dt>Perusahaan</dt><dd>{{ $p?->nama_pt ?? '-' }}</dd></div>
                 <div class="kv-row"><dt>Nama perumahan</dt><dd>{{ $s->nama_perumahan }}</dd></div>
                 <div class="kv-row"><dt>Alamat proyek</dt><dd>{{ $s->alamat_proyek }}</dd></div>
+                <div class="kv-row"><dt>Kecamatan</dt><dd>{{ $s->kecamatan ?: '-' }}</dd></div>
                 <div class="kv-row"><dt>Titik lokasi</dt><dd>
                     @if($s->latitude !== null && $s->longitude !== null)
                         <a href="https://www.google.com/maps/search/?api=1&query={{ $s->latitude }},{{ $s->longitude }}" target="_blank" rel="noopener">{{ number_format($s->latitude, 6) }}, {{ number_format($s->longitude, 6) }} &middot; Buka di peta</a>
@@ -74,6 +75,7 @@
                     <form method="POST" action="{{ route('pengajuan.terima_laporan', $s->id) }}" data-konfirmasi="Laporan survei diterima dan pengajuan masuk tahap persetujuan." data-konfirmasi-judul="Terima Laporan Survei" data-konfirmasi-tombol="Ya, terima">
                         @csrf <button class="btn btn-primary btn-block">Terima Laporan Survei</button>
                     </form>
+                    @include('admin.pengajuan._minta-perbaikan-ba', ['r' => $laporanFinal])
                     <a href="{{ route('pengajuan.show', ['id' => $s->id, 'tab' => 'monitoring']) }}" class="btn btn-outline btn-block" style="margin-top:8px;">Lihat BA</a>
                 @else
                     <p style="font-size:14px;margin-bottom:14px;">Survei berjalan. Menunggu petugas mengirim Berita Acara.</p>

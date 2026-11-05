@@ -62,10 +62,21 @@ class DashboardRingkasanTest extends TestCase
 
         $this->assertSame(['Kawalu', 'Cibeureum'], array_column($r['rows'], 'nama'));
         $this->assertSame([2, 1], array_column($r['rows'], 'jumlah'));
-        $this->assertTrue($r['rows'][0]['prioritas']);
-        $this->assertFalse($r['rows'][1]['prioritas']);
+        $this->assertTrue($r['rows'][0]['terbanyak']);
+        $this->assertFalse($r['rows'][1]['terbanyak']);
         $this->assertSame(10, $r['rows'][0]['persen']); // 2 dari target bawaan 20
         $this->assertSame(1, $r['tanpa']);
+    }
+
+    public function test_kecamatan_pilihan_pengembang_diutamakan_atas_teks_alamat(): void
+    {
+        $s = $this->pengajuan('Jl. A, Kawalu');
+        $s->update(['kecamatan' => 'Tawang']);
+
+        $r = (new DashboardSummary())->sebaranKecamatan();
+
+        $this->assertSame(['Tawang'], array_column($r['rows'], 'nama'));
+        $this->assertArrayNotHasKey('triwulan', $r); // badge triwulan dihapus: angka selalu setahun penuh
     }
 
     public function test_jadwal_memuat_penugasan_hari_ini_dan_tujuh_hari_ke_depan_saja(): void
@@ -88,6 +99,7 @@ class DashboardRingkasanTest extends TestCase
         $this->assertCount(2, $r['items']);
         $this->assertTrue($r['items'][0]['hari_ini']);
         $this->assertSame($this->officer->name, $r['items'][0]['tim']);
+        $this->assertFalse($r['items'][0]['diterima']); // belum diterima petugas
     }
 
     public function test_dashboard_menampilkan_kedua_kartu_dan_ikut_berubah_saat_data_berubah(): void

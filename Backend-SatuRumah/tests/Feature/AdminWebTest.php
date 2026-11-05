@@ -283,6 +283,36 @@ class AdminWebTest extends TestCase
         $this->assertMatchesRegularExpression('/class="count-badge" id="loncengDot"\s*>2<\/span>/', $html);
     }
 
+    public function test_kartu_dashboard_bisa_diklik_dan_menyaring_antrean(): void
+    {
+        $this->actingAs($this->admin);
+        $this->get('/dashboard/kpi')->assertOk()
+            ->assertSee('class="kpi kpi-link"', false)
+            ->assertSee('status=baru%2Cperbaikan_terkirim', false)
+            ->assertSee('tahap=3', false);
+
+        // Penyaring daftar menerima beberapa status sekaligus (dipisah koma).
+        $this->submission->update(['sub_status' => 'perbaikan_terkirim']);
+        $this->get('/pengajuan?status=baru,perbaikan_terkirim')->assertOk()->assertSee('Griya Mangkubumi');
+        $this->get('/pengajuan?status=selesai')->assertOk()->assertDontSee('Griya Mangkubumi')
+            ->assertSee('class="filter-bar"', false)->assertSee('M21 21l-4.35-4.35', false);
+    }
+
+    public function test_dashboard_tanpa_badge_triwulan_dengan_label_jujur_dan_status_petugas(): void
+    {
+        $this->actingAs($this->admin);
+        $this->get('/dashboard')->assertOk()->assertDontSee('Triwulan')->assertDontSee('Prioritas Utama Dinas')
+            ->assertSee('Paling banyak', false)->assertSee('Kecamatan lain', false);
+
+        $this->submission->forceFill(['stage' => 4, 'sub_status' => 'terjadwal', 'kecamatan' => 'Kawalu'])->save();
+        InspectionAssignment::create([
+            'submission_id' => $this->submission->id, 'officer_id' => $this->officer->id, 'scheduled_date' => now()->toDateString(),
+            'status' => 'dijadwalkan', 'created_by' => $this->admin->id,
+        ]);
+        $this->get('/dashboard')->assertOk()->assertSee('Belum diterima petugas');
+        $this->get("/pengajuan/{$this->submission->id}")->assertOk()->assertSee('Kecamatan');
+    }
+
     public function test_pratinjau_pdf_punya_tombol_layar_penuh(): void
     {
         $this->actingAs($this->admin);

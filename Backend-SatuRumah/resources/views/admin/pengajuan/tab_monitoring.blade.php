@@ -85,6 +85,9 @@
                         @endif
                     </div>
                 </div>
+                @if(!$r->published_at && $s->stage >= \App\Models\Submission::STAGE_SURVEI && $s->stage < \App\Models\Submission::STAGE_SELESAI)
+                    @include('admin.pengajuan._minta-perbaikan-ba', ['r' => $r])
+                @endif
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;">
                     <span class="badge {{ $ttd['ketua']['signed'] ? 'badge-success' : 'badge-warning' }} badge-dot">Ketua Pengawas: {{ $ttd['ketua']['signed'] ? 'sudah menyetujui' : 'belum menyetujui' }}</span>
                     <span class="badge {{ $ttd['admin']['signed'] ? 'badge-success' : '' }} badge-dot">Admin: {{ $ttd['admin']['signed'] ? 'sudah menyetujui' : 'belum menyetujui' }}</span>
@@ -114,8 +117,21 @@
                 @endif
             </div>
         @empty
-            <div class="text-muted">Belum ada laporan final dari petugas.</div>
+            @if($s->reports->where('status', 'revisi')->isEmpty())
+                <div class="text-muted">Belum ada laporan final dari petugas.</div>
+            @endif
         @endforelse
+
+        @foreach($s->reports->where('status', 'revisi') as $r)
+            <div style="margin-bottom:18px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:#fffaf0;">
+                <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                    <div class="fw-700">{{ $r->report_number }} &middot; {{ $r->officer?->name }}</div>
+                    <span class="badge badge-warning badge-dot">Diminta diperbaiki</span>
+                </div>
+                <div style="font-size:13px;margin-top:6px;"><strong>Alasan:</strong> {{ $r->revision_note }}</div>
+                <div class="text-muted" style="font-size:12px;margin-top:4px;">{{ $r->revision_requested_at?->translatedFormat('d M Y, H.i') }} WIB &middot; menunggu BA pengganti dari petugas.</div>
+            </div>
+        @endforeach
     </div>
 </div>
 

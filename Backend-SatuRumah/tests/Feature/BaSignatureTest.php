@@ -302,6 +302,58 @@ class BaSignatureTest extends TestCase
         $this->assertNotNull($this->report->fresh()->published_at);
     }
 
+    public function test_ba_tetap_bisa_diterbitkan_setelah_keputusan_akhir(): void
+    {
+        $this->apiSign($this->ketua)->assertOk();
+        $this->app['auth']->shouldUse('web');
+        $this->webSign()->assertSessionHas('success');
+
+        // Admin sudah memutuskan lebih dulu (pengajuan selesai); penerbitan BA tidak boleh terkunci.
+        $this->submission->forceFill(['stage' => 6, 'sub_status' => 'selesai'])->save();
+        $this->post("/pengajuan/{$this->submission->id}/laporan/{$this->report->id}/terbitkan")->assertSessionHas('success');
+        $this->assertNotNull($this->report->fresh()->published_at);
+
+        // Pengajuan yang ditolak tidak diterbitkan BA-nya.
+        $this->report->forceFill(['published_at' => null])->save();
+        $this->submission->forceFill(['sub_status' => 'ditolak'])->save();
+        $this->post("/pengajuan/{$this->submission->id}/laporan/{$this->report->id}/terbitkan")->assertSessionHas('warning');
+        $this->assertNull($this->report->fresh()->published_at);
+    }
+
+    public function test_admin_mengembalikan_ba_ke_petugas_dan_petugas_membuat_ba_pengganti(): void
+    {
+        $assignment = \App\Models\InspectionAssignment::create([
+            'submission_id' => $this->submission->id, 'officer_id' => $this->ketua->id, 'scheduled_date' => now()->toDateString(),
+            'status' => 'selesai', 'completed_at' => now(), 'accepted_at' => now(), 'created_by' => $this->admin->id,
+        ]);
+        $this->report->forceFill(['assignment_id' => $assignment->id])->save();
+        $url = "/pengajuan/{$this->submission->id}/laporan/{$this->report->id}/minta-perbaikan";
+        $this->actingAs($this->admin);
+
+        // Alasan wajib.
+        $this->post($url, ['catatan' => ''])->assertSessionHasErrors('catatan');
+
+        $this->post($url, ['catatan' => 'Temuan drainase belum lengkap.'])->assertSessionHas('success');
+        $r = $this->report->fresh();
+        $this->assertSame(['revisi', 'Temuan drainase belum lengkap.'], [$r->status, $r->revision_note]);
+        $this->assertSame([4, 'terjadwal'], [$this->submission->fresh()->stage, $this->submission->fresh()->sub_status]);
+        $this->assertSame('diterima', $assignment->fresh()->status);
+        $this->assertContains('report_revision', \App\Models\AppNotification::where('user_id', $this->ketua->id)->pluck('type')->all());
+
+        // Tidak bisa ditandatangani atau diterbitkan lagi; BA yang dikembalikan tampil dengan alasannya.
+        $this->get("/pengajuan/{$this->submission->id}?tab=monitoring")->assertOk()->assertSee('Diminta diperbaiki')->assertSee('Temuan drainase belum lengkap.');
+        $this->post($url, ['catatan' => 'Sekali lagi lagi'])->assertSessionHas('warning');
+
+        // Petugas melihat tugasnya terbuka lagi beserta alasan, dan bisa membuat BA baru dari tugas itu.
+        Sanctum::actingAs($this->ketua, ['*']);
+        $tugas = $this->getJson('/api/v1/officer/assignments')->assertOk()->json('data');
+        $this->assertSame('Temuan drainase belum lengkap.', $tugas[0]['revision_note']);
+        $baru = $this->postJson('/api/v1/officer/reports', ['assignment_id' => $assignment->id], ['Idempotency-Key' => (string) Str::uuid()])
+            ->assertStatus(201)->json('data');
+        $this->assertNotSame($this->report->id, $baru['id']);
+        $this->assertSame('draft', $baru['status']);
+    }
+
     public function test_isi_ba_berubah_setelah_ketua_menandatangani_membatalkan_persetujuan(): void
     {
         $this->apiSign($this->ketua)->assertOk();

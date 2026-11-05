@@ -52,7 +52,7 @@ class DashboardSummary
     /**
      * Sebaran pengajuan tahun berjalan per kecamatan.
      *
-     * @return array{tahun: int, triwulan: string, target: int, total: int, tanpa: int, rows: list<array{nama: string, jumlah: int, persen: int, lebar: int, prioritas: bool}>}
+     * @return array{tahun: int, target: int, total: int, tanpa: int, rows: list<array{nama: string, jumlah: int, persen: int, lebar: int, terbanyak: bool}>}
      */
     public function sebaranKecamatan(int $limit = 5): array
     {
@@ -67,7 +67,10 @@ class DashboardSummary
         $counts = [];
         $tanpa = 0;
         foreach ($submissions as $s) {
-            $kec = $this->kecamatanOf($s->alamat_proyek) ?? $this->kecamatanOf($s->developer?->developerProfile?->alamat_perumahan);
+            // Pilihan pengembang diutamakan; pengajuan lama yang belum memilih dibaca dari teks alamat.
+            $kec = $s->kecamatan
+                ?? $this->kecamatanOf($s->alamat_proyek)
+                ?? $this->kecamatanOf($s->developer?->developerProfile?->alamat_perumahan);
             if ($kec === null) {
                 $tanpa++;
                 continue;
@@ -84,13 +87,12 @@ class DashboardSummary
                 'jumlah' => $jumlah,
                 'persen' => $persen,
                 'lebar' => min(100, $persen),
-                'prioritas' => $rows === [], // yang terbanyak diberi warna prioritas
+                'terbanyak' => $rows === [], // hanya penanda jumlah terbanyak, bukan penetapan prioritas Dinas
             ];
         }
 
         return [
             'tahun' => now()->year,
-            'triwulan' => ['I', 'II', 'III', 'IV'][intdiv(now()->month - 1, 3)],
             'target' => $target,
             'total' => $submissions->count(),
             'tanpa' => $tanpa,
@@ -118,6 +120,7 @@ class DashboardSummary
             'nomor' => $a->submission?->number,
             'tanggal' => $a->scheduled_date,
             'hari_ini' => $a->scheduled_date->isSameDay($today),
+            'diterima' => $a->status === 'diterima',
             'tim' => collect($a->team())->pluck('nama')->implode(', '),
         ])->values()->all();
 
