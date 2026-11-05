@@ -53,10 +53,14 @@ class _DocUpdate {
   final String? fileSize;
   final String uploadTime;
 
+  /// Catatan pengembang untuk Admin tentang berkas ini (opsional).
+  final String catatan;
+
   const _DocUpdate({
     required this.fileName,
     required this.fileSize,
     required this.uploadTime,
+    this.catatan = '',
   });
 }
 
@@ -2176,6 +2180,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen>
             fileName: (result['fileName'] as String?) ?? doc.fileName,
             fileSize: result['fileSize'] as String?,
             uploadTime: 'Diunggah $now WIB',
+            catatan: ((result['catatan'] as String?) ?? '').trim(),
           );
         });
 
@@ -2383,9 +2388,17 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen>
           for (final d in _revisiDocs)
             if (_updates[d.key] != null) d.key: _updates[d.key]!.fileName,
         };
+        // Satu berkas: catatannya apa adanya; beberapa berkas: diberi nama berkasnya.
+        final catatan = [
+          for (final d in _revisiDocs)
+            if ((_updates[d.key]?.catatan ?? '').isNotEmpty)
+              mapDocs.length > 1
+                  ? '${d.title}: ${_updates[d.key]!.catatan}'
+                  : _updates[d.key]!.catatan,
+        ].join(' | ');
         result = await ref
             .read(pengajuanVerifikasiControllerProvider.notifier)
-            .kirimRevisiAsync(submission!.id, mapDocs);
+            .kirimRevisiAsync(submission!.id, mapDocs, catatan: catatan);
       },
     );
     _isSubmittingRevisi = false;
@@ -2401,23 +2414,7 @@ class _PerbaruiBerkasScreenState extends ConsumerState<PerbaruiBerkasScreen>
 
     if (confirmed == true && mounted) {
       final id = submission!.id;
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Revisi berkas berhasil dikirim ke Verifikator!'),
-            ],
-          ),
-          backgroundColor: Color(0xFF16A34A),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.all(Radius.circular(8)),
-          ),
-        ),
-      );
-
+      // Konfirmasi ada di layar status berikutnya; tidak perlu pesan ganda.
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => StatusPerbaikanBerkasScreen(pengajuanId: id),

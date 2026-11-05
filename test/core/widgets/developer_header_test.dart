@@ -98,6 +98,8 @@ void main() {
           find.text('Daftar pengajuan site plan perumahan'),
           findsOneWidget,
         );
+        // Lonceng memakai angka (bukan titik) di semua halaman.
+        expect(find.text('3'), findsOneWidget);
         expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
         expect(find.text('YR'), findsOneWidget);
 

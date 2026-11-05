@@ -26,6 +26,10 @@ class OfficerAssignment {
   final String namaPerumahan;
   final String? namaPt;
   final String? alamatProyek;
+
+  /// Titik lokasi dari pengembang; null bila belum dikirim.
+  final double? latitude;
+  final double? longitude;
   final String? namaDirektur;
   final String? noHpDirektur;
   final String? npwp;
@@ -45,6 +49,8 @@ class OfficerAssignment {
     required this.namaPerumahan,
     this.namaPt,
     this.alamatProyek,
+    this.latitude,
+    this.longitude,
     this.namaDirektur,
     this.noHpDirektur,
     this.npwp,
@@ -65,6 +71,8 @@ class OfficerAssignment {
       namaPerumahan: '${s['nama_perumahan'] ?? '-'}',
       namaPt: s['nama_pt'] as String?,
       alamatProyek: s['alamat_proyek'] as String?,
+      latitude: (s['latitude'] as num?)?.toDouble(),
+      longitude: (s['longitude'] as num?)?.toDouble(),
       namaDirektur: s['nama_direktur'] as String?,
       noHpDirektur: s['no_hp_direktur'] as String?,
       npwp: s['npwp'] as String?,

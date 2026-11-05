@@ -58,8 +58,11 @@ void main() {
           find.textContaining('Scan buram, nomor NIK dan tanda tangan'),
           findsOneWidget,
         );
-        expect(find.text('Oleh Tim Verifikator Disperwaskim'), findsOneWidget);
-        expect(find.text('14 Mar 2026'), findsOneWidget);
+        expect(
+          find.textContaining('Oleh Tim Verifikator Disperwaskim'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('14 Mar 2026'), findsOneWidget);
       },
     );
 
@@ -108,11 +111,8 @@ void main() {
       expect(find.text('Siap Diunggah'), findsOneWidget);
       expect(find.text('Hapus'), findsOneWidget);
 
-      // Info notice
-      expect(
-        find.textContaining('Ketentuan File: PDF max 10 MB'),
-        findsOneWidget,
-      );
+      // Aturan berkas sudah ada di area unggah; kotak ketentuan yang mengulang dihapus.
+      expect(find.textContaining('Ketentuan File: PDF max'), findsNothing);
     });
 
     testWidgets('clearing file with Hapus disables Kirim Perbaikan button', (

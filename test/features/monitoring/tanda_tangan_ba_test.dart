@@ -108,7 +108,7 @@ Widget _layar(
   _Remote remote,
   SignaturePicker picker, {
   bool api = true,
-  String? nip,
+  String? nip = '198501012010011002',
 }) => ProviderScope(
   overrides: [
     apiEnabledProvider.overrideWithValue(api),
@@ -261,16 +261,55 @@ void main() {
       expect(find.text('Anda sudah menandatangani BA ini'), findsOneWidget);
     });
 
-    _tw('NIP kosong: otomatis tidak bisa dikirim, tetap bisa unggah sendiri', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_layar(_Remote(), () async => null));
+    _tw('NIP kosong: tidak ada formulir, hanya penjelasan', (tester) async {
+      await tester.pumpWidget(_layar(_Remote(), () async => null, nip: ''));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('NIP akun Anda belum diisi'), findsOneWidget);
+      // Server menolak tanda tangan tanpa NIP, jadi tidak ada formulir maupun jalur unggah.
+      expect(find.byKey(const Key('ttd-nip-kosong')), findsOneWidget);
+      expect(find.byKey(const Key('ttd-kirim')), findsNothing);
+      expect(find.byKey(const Key('ttd-mode')), findsNothing);
+    });
+
+    _tw('TTE otomatis gagal: layar pindah ke unggah sendiri dan bisa dikirim', (
+      tester,
+    ) async {
+      final remote = _Remote()
+        ..signOutcomes.add(
+          const ApiException(
+            code: 'ERR-010',
+            status: 422,
+            message: 'invalid',
+            fields: {
+              'signature': [
+                'TTE belum dapat diambil dari Suresman. Unggah manual.',
+              ],
+            },
+          ),
+        );
+      final png = await _png(tester);
+      await tester.pumpWidget(
+        _layar(
+          remote,
+          () async => (bytes: png, ext: 'png'),
+          nip: '199001012015011002',
+        ),
+      );
+      await tester.pumpAndSettle();
       await _isiSandi(tester);
-      expect(_kirimAktif(tester), isFalse);
-      expect(find.byKey(const Key('ttd-mode')), findsOneWidget);
+      await _kirim(tester);
+
+      expect(find.textContaining('Suresman'), findsWidgets);
+      expect(
+        find.byKey(const Key('ttd-pilih')),
+        findsOneWidget,
+      ); // otomatis pindah ke unggah
+
+      await _pilih(tester);
+      await _isiSandi(tester);
+      await _kirim(tester);
+      expect(remote.images, hasLength(1));
+      expect(find.text('Anda sudah menandatangani BA ini'), findsOneWidget);
     });
 
     _tw('ekstensi jpg dikirim dengan tipe image/jpeg', (tester) async {

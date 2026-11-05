@@ -10,6 +10,7 @@ import '../../../../core/widgets/route_feedback.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
 import '../providers/monitoring_list_provider.dart';
+import '../providers/simpan_galeri_provider.dart';
 import 'tab_beranda_monitoring.dart';
 
 class TabProfilMonitoring extends ConsumerWidget {
@@ -63,7 +64,7 @@ class TabProfilMonitoring extends ConsumerWidget {
                   const SizedBox(height: 20),
                   _buildAccountInfoSection(identity, session),
                   const SizedBox(height: 20),
-                  _buildSettingsSection(context),
+                  _buildSettingsSection(context, ref),
                   const SizedBox(height: 20),
                   _buildLogoutButton(context, ref),
                   const SizedBox(height: 16),
@@ -557,7 +558,7 @@ class TabProfilMonitoring extends ConsumerWidget {
     );
   }
 
-  Widget _buildSettingsSection(BuildContext context) {
+  Widget _buildSettingsSection(BuildContext context, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -579,6 +580,19 @@ class TabProfilMonitoring extends ConsumerWidget {
           ),
           child: Column(
             children: [
+              _buildSwitchRow(
+                icon: Icons.photo_library_outlined,
+                title: 'Simpan foto ke galeri HP',
+                subtitle:
+                    'Salinan foto bergeotag (lengkap dengan peta dan koordinat) di album Satu Rumah',
+                value: ref.watch(simpanGaleriProvider),
+                onChanged: ref.read(simpanGaleriProvider.notifier).atur,
+              ),
+              const Divider(
+                height: 1,
+                color: AppColors.enterpriseBorder,
+                indent: 58,
+              ),
               _buildMenuRow(
                 icon: Icons.headset_mic_outlined,
                 title: 'Hubungi Admin / CS',
@@ -604,6 +618,61 @@ class TabProfilMonitoring extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildSwitchRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: const Color(0xFF475569)),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.enterpriseTextMain,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.enterpriseTextMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            key: const Key('pengaturan-galeri'),
+            value: value,
+            activeThumbColor: AppColors.primaryRed,
+            onChanged: onChanged,
+          ),
+        ],
+      ),
     );
   }
 

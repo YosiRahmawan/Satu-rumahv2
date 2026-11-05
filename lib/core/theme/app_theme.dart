@@ -74,7 +74,10 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primaryRed,
           side: const BorderSide(color: AppColors.primaryRed, width: 1.5),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          // Padding vertikal kecil + tinggi minimum: tombol di dalam SizedBox setinggi 40-44 tidak lagi
+          // memotong teksnya.
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          minimumSize: const Size(64, 44),
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(12)),
           ),

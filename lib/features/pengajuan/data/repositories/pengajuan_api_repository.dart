@@ -29,7 +29,11 @@ abstract class PengajuanRemote {
 
   /// Mengganti berkas yang diminta diperbaiki (kunci Flutter → rujukan berkas
   /// baru) lalu mengirim ulang pengajuan bernomor [number].
-  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs);
+  Future<Pengajuan> resubmit(
+    String number,
+    Map<String, String> revisedDocs, {
+    String? catatan,
+  });
 }
 
 /// UUID v4 untuk header Idempotency-Key.
@@ -134,6 +138,10 @@ class PengajuanApiRepository implements PengajuanRemote {
           'version': created['version'],
           'nama_perumahan': form.namaPerumahan.trim(),
           'alamat_proyek': form.alamatProyek.trim(),
+          if (form.latitude != null && form.longitude != null) ...{
+            'latitude': form.latitude,
+            'longitude': form.longitude,
+          },
           'tipe_pengajuan': form.tipePengajuan,
           'daya_listrik': form.dayaListrik.isEmpty ? null : form.dayaListrik,
           'npwp': form.npwpPerusahaan.trim(),
@@ -170,8 +178,9 @@ class PengajuanApiRepository implements PengajuanRemote {
   @override
   Future<Pengajuan> resubmit(
     String number,
-    Map<String, String> revisedDocs,
-  ) async {
+    Map<String, String> revisedDocs, {
+    String? catatan,
+  }) async {
     try {
       if (!_idByNumber.containsKey(number)) await list();
       final id = _idByNumber[number];
@@ -224,6 +233,10 @@ class PengajuanApiRepository implements PengajuanRemote {
       final sent =
           (await _dio.post<Map<String, dynamic>>(
                 'submissions/$id/resubmit',
+                // Catatan pengembang ikut sampai ke Admin (riwayat dan notifikasi).
+                data: (catatan?.trim().isNotEmpty ?? false)
+                    ? {'catatan': catatan!.trim()}
+                    : null,
               )).data!['data']
               as Map<String, dynamic>;
       return pengajuanFromApi(sent);

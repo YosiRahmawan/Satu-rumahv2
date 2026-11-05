@@ -78,10 +78,12 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
 
   String get _nip => ref.read(roleSessionProvider).nip?.trim() ?? '';
 
+  // Server mewajibkan NIP pada akun untuk kedua cara (TTE otomatis maupun unggah manual).
   bool get _canSubmit =>
       !_submitting &&
+      _nip.isNotEmpty &&
       _password.text.isNotEmpty &&
-      (_manual ? _image != null : _nip.isNotEmpty);
+      (!_manual || _image != null);
 
   Future<void> _pick() async {
     final picked = await widget.picker();
@@ -200,6 +202,9 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
             ? 'Koneksi bermasalah. Gambar Anda masih tersimpan di layar ini; coba kirim lagi.'
             : (e.fields.isNotEmpty ? e.fields.values.first.first : e.message);
         if (e.fields.containsKey('password')) _password.clear();
+        // TTE otomatis gagal (NIP tidak ditemukan atau Suresman tidak terjangkau): langsung
+        // tawarkan jalur unggah sendiri supaya tidak buntu.
+        if (!_manual && (_error ?? '').contains('Suresman')) _manual = true;
       });
     } catch (_) {
       if (mounted) {
@@ -254,6 +259,7 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
               );
             }
             if (_done || s.ketuaSigned) return _signed(s);
+            if (_nip.isEmpty) return _nipKosong();
             return _form();
           },
         ),
@@ -293,6 +299,47 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
           Icon(icon, size: 40, color: AppColors.enterpriseTextMuted),
           const SizedBox(height: 12),
           Text(text, textAlign: TextAlign.center),
+        ],
+      ),
+    ),
+  );
+
+  /// Tanpa NIP di akun, penandatanganan ditolak server, jadi tidak ada formulir yang ditawarkan.
+  Widget _nipKosong() => Center(
+    child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.badge_outlined,
+            size: 44,
+            color: AppColors.enterpriseTextMuted,
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'NIP akun Anda belum diisi',
+            key: Key('ttd-nip-kosong'),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Tanda tangan BA memakai NIP akun Anda. Minta Admin mengisinya di Admin web '
+            '(menu Akun), lalu keluar dari aplikasi dan masuk lagi supaya NIP terbaca.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13.5,
+              height: 1.5,
+              color: AppColors.enterpriseTextMuted,
+            ),
+          ),
+          const SizedBox(height: 20),
+          OutlinedButton(
+            onPressed: () => context.canPop()
+                ? context.pop()
+                : context.go('/monitoring/lapangan'),
+            child: const Text('Kembali'),
+          ),
         ],
       ),
     ),
@@ -377,11 +424,8 @@ class _TandaTanganBaScreenState extends ConsumerState<TandaTanganBaScreen> {
             _manual
                 ? 'Unduh visualisasi TTE Anda di suresman.tasikmalayakota.go.id/visualcustom '
                       'dengan memasukkan NIP, lalu pilih gambarnya di sini.'
-                : (_nip.isEmpty
-                      ? 'NIP akun Anda belum diisi. Minta Admin melengkapinya di menu Akun, '
-                            'atau unggah gambar TTE sendiri.'
-                      : 'TTE Anda diambil otomatis dari Suresman memakai NIP akun: $_nip. '
-                            'Tidak perlu mengunduh atau mengunggah gambar.'),
+                : 'TTE Anda diambil otomatis dari Suresman memakai NIP akun: $_nip. '
+                      'Tidak perlu mengunduh atau mengunggah gambar.',
             key: const Key('ttd-petunjuk'),
             style: const TextStyle(fontSize: 13, height: 1.4),
           ),

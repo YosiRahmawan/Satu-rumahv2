@@ -8,6 +8,7 @@ import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/status_tahap_pengajuan.dart';
 import 'package:satu_rumah/features/pengajuan/data/repositories/pengajuan_api_repository.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_form_controller.dart';
+import 'package:satu_rumah/features/pengajuan/presentation/providers/pengajuan_verifikasi_controller.dart';
 import 'package:satu_rumah/features/pengajuan/presentation/screens/pengajuan_step5_review_screen.dart';
 
 class FakeRemote implements PengajuanRemote {
@@ -17,6 +18,7 @@ class FakeRemote implements PengajuanRemote {
   int submits = 0;
   String? lastKey;
   PengajuanFormState? lastForm;
+  String? lastCatatan;
 
   @override
   Future<List<Pengajuan>> list() async {
@@ -39,8 +41,10 @@ class FakeRemote implements PengajuanRemote {
   }
 
   @override
-  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs) async =>
-      _item(number);
+  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs, {String? catatan}) async {
+    lastCatatan = catatan;
+    return _item(number);
+  }
 }
 
 Pengajuan _item(String id) => Pengajuan(
@@ -134,6 +138,19 @@ void main() {
     });
   });
 
+  test('kirim perbaikan membawa catatan pengembang ke server', () async {
+    final remote = FakeRemote();
+    final c = _container(remote);
+    c.read(roleSessionProvider.notifier).signIn(AppRole.developer, username: 'a');
+
+    final hasil = await c
+        .read(pengajuanVerifikasiControllerProvider.notifier)
+        .kirimRevisiAsync('SR-2026-0001', {'ktp': 'ktp.pdf'}, catatan: 'Sudah dipindai ulang');
+
+    expect(hasil.success, isTrue);
+    expect(remote.lastCatatan, 'Sudah dipindai ulang');
+  });
+
   group('Langkah 5: kirim lewat server', () {
     Future<(ProviderContainer, FakeRemote)> pump(WidgetTester tester, {bool api = true}) async {
       final remote = FakeRemote();
@@ -218,6 +235,6 @@ class _Failing implements PengajuanRemote {
   }) => throw UnimplementedError();
 
   @override
-  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs) =>
+  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs, {String? catatan}) =>
       throw UnimplementedError();
 }

@@ -139,12 +139,18 @@ class PengajuanStep3DocumentContract {
       .toList(growable: false);
 }
 
+const Object _sentinelTitik = Object();
+
 class PengajuanFormState {
   static const String technicalOtherDocumentsKey = 'kajian_teknis';
 
   final String tipePengajuan;
   final String namaPerumahan;
   final String alamatProyek;
+
+  /// Titik lokasi proyek di peta (opsional); dikirim ke server agar petugas membuka peta tepat ke titik ini.
+  final double? latitude;
+  final double? longitude;
   final String npwpPerusahaan;
   final bool npwpVerified;
   final double luasLahan;
@@ -171,6 +177,8 @@ class PengajuanFormState {
     this.tipePengajuan = 'Pengajuan Site Plan Baru',
     this.namaPerumahan = '',
     this.alamatProyek = '',
+    this.latitude,
+    this.longitude,
     this.npwpPerusahaan = '',
     this.npwpVerified = false,
     this.luasLahan = 0.0,
@@ -198,6 +206,8 @@ class PengajuanFormState {
           json['tipePengajuan'] as String? ?? 'Pengajuan Site Plan Baru',
       namaPerumahan: json['namaPerumahan'] as String? ?? '',
       alamatProyek: json['alamatProyek'] as String? ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
       npwpPerusahaan: json['npwpPerusahaan'] as String? ?? '',
       npwpVerified: json['npwpVerified'] as bool? ?? false,
       luasLahan: (json['luasLahan'] as num? ?? 0).toDouble(),
@@ -217,6 +227,8 @@ class PengajuanFormState {
     'tipePengajuan': tipePengajuan,
     'namaPerumahan': namaPerumahan,
     'alamatProyek': alamatProyek,
+    'latitude': latitude,
+    'longitude': longitude,
     'npwpPerusahaan': npwpPerusahaan,
     'npwpVerified': npwpVerified,
     'luasLahan': luasLahan,
@@ -291,6 +303,8 @@ class PengajuanFormState {
     String? tipePengajuan,
     String? namaPerumahan,
     String? alamatProyek,
+    Object? latitude = _sentinelTitik,
+    Object? longitude = _sentinelTitik,
     String? npwpPerusahaan,
     bool? npwpVerified,
     double? luasLahan,
@@ -307,6 +321,12 @@ class PengajuanFormState {
       tipePengajuan: tipePengajuan ?? this.tipePengajuan,
       namaPerumahan: namaPerumahan ?? this.namaPerumahan,
       alamatProyek: alamatProyek ?? this.alamatProyek,
+      latitude: latitude == _sentinelTitik
+          ? this.latitude
+          : latitude as double?,
+      longitude: longitude == _sentinelTitik
+          ? this.longitude
+          : longitude as double?,
       npwpPerusahaan: npwpPerusahaan ?? this.npwpPerusahaan,
       npwpVerified: npwpVerified ?? this.npwpVerified,
       luasLahan: luasLahan ?? this.luasLahan,
@@ -459,6 +479,12 @@ class PengajuanFormNotifier extends StateNotifier<PengajuanFormState> {
   void updateNamaPerumahan(String value) {
     if (value == state.namaPerumahan) return;
     state = state.copyWith(namaPerumahan: value);
+  }
+
+  /// Mengisi atau mengosongkan titik lokasi proyek (keduanya sekaligus).
+  void setTitikLokasi(double? lat, double? lng) {
+    if (lat == state.latitude && lng == state.longitude) return;
+    state = state.copyWith(latitude: lat, longitude: lng);
   }
 
   void updateAlamatProyek(String value) {

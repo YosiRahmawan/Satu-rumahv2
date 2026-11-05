@@ -10,6 +10,7 @@ import '../../../../core/widgets/data_state_view.dart';
 import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
+import '../../../../core/widgets/app_toast.dart';
 import '../../services/maps_launcher.dart';
 import 'kamera_flow.dart';
 import '../providers/monitoring_list_provider.dart';
@@ -529,6 +530,16 @@ class _PrimaryTaskCard extends ConsumerWidget {
               a.status == 'dijadwalkan',
         );
     final alamat = assignment.alamatProyek?.trim() ?? '';
+    final tugas = ref
+        .watch(officerAssignmentsProvider)
+        .where((a) => (a.submissionNumber ?? 'TUGAS-${a.id}') == assignment.id)
+        .firstOrNull;
+    final diterima = tugas != null && tugas.status == 'diterima';
+    final adaTitik = tugas?.latitude != null && tugas?.longitude != null;
+    // Titik dari pengembang lebih tepat daripada pencarian alamat.
+    final kueriPeta = adaTitik
+        ? '${tugas!.latitude},${tugas.longitude}'
+        : alamat;
     final instructionText =
         (assignment.catatanSurvey != null &&
             assignment.catatanSurvey!.trim().isNotEmpty)
@@ -634,25 +645,28 @@ class _PrimaryTaskCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 16),
-          if (alamat.isNotEmpty) ...[
+          if (kueriPeta.isNotEmpty) ...[
             SizedBox(
               width: double.infinity,
               height: 44,
               child: OutlinedButton.icon(
                 key: const Key('tugas-buka-peta'),
                 onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
-                  final ok = await ref.read(mapsLauncherProvider)(alamat);
-                  if (!ok) {
-                    messenger.showSnackBar(
-                      const SnackBar(
-                        content: Text('Aplikasi peta tidak dapat dibuka.'),
-                      ),
+                  final ok = await ref.read(mapsLauncherProvider)(kueriPeta);
+                  if (!ok && context.mounted) {
+                    showAppToast(
+                      context,
+                      'Aplikasi peta tidak dapat dibuka.',
+                      error: true,
                     );
                   }
                 },
                 icon: const Icon(Icons.map_outlined, size: 18),
-                label: const Text('Buka Lokasi di Peta'),
+                label: Text(
+                  adaTitik
+                      ? 'Buka Titik Lokasi di Peta'
+                      : 'Cari Alamat di Peta',
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -664,18 +678,16 @@ class _PrimaryTaskCard extends ConsumerWidget {
               child: OutlinedButton.icon(
                 key: const Key('tugas-terima'),
                 onPressed: () async {
-                  final messenger = ScaffoldMessenger.of(context);
                   final error = await ref
                       .read(officerAssignmentsProvider.notifier)
                       .accept(assignment.id);
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        error == null
-                            ? 'Tugas diterima. Admin akan melihat statusnya.'
-                            : error.message,
-                      ),
-                    ),
+                  if (!context.mounted) return;
+                  showAppToast(
+                    context,
+                    error == null
+                        ? 'Tugas diterima. Admin melihat statusnya.'
+                        : error.message,
+                    error: error != null,
                   );
                 },
                 icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
@@ -683,6 +695,25 @@ class _PrimaryTaskCard extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 10),
+          ] else if (diterima) ...[
+            const Padding(
+              padding: EdgeInsets.only(bottom: 10),
+              child: Row(
+                key: Key('tugas-diterima'),
+                children: [
+                  Icon(Icons.check_circle, size: 18, color: Color(0xFF16A34A)),
+                  SizedBox(width: 6),
+                  Text(
+                    'Tugas sudah diterima',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF166534),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
           SizedBox(
             width: double.infinity,

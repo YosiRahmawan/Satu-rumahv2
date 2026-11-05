@@ -76,7 +76,7 @@ void main() {
     await tester.tap(find.text('Galeri'));
     await tester.pumpAndSettle();
 
-    expect(find.text('1 foto ditolak'), findsOneWidget);
+    expect(find.text('Foto tidak bisa dipakai'), findsOneWidget);
     expect(find.text('polos.jpg'), findsOneWidget);
     expect(find.textContaining('Tidak ada geotag'), findsOneWidget);
 

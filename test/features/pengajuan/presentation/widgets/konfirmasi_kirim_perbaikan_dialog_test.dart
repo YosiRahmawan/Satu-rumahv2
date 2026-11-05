@@ -268,9 +268,10 @@ void main() {
         await tester.tap(find.text('Ya, Kirim'));
         await tester.pumpAndSettle();
 
+        // Konfirmasi hanya lewat layar status; tidak ada pesan ganda.
         expect(
           find.text('Revisi berkas berhasil dikirim ke Verifikator!'),
-          findsOneWidget,
+          findsNothing,
         );
         expect(find.text('Status Pengajuan'), findsOneWidget);
         expect(find.text('Perbaikan Berhasil Dikirim'), findsOneWidget);

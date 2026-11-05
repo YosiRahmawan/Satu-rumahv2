@@ -88,24 +88,31 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
         icon: Stack(
           clipBehavior: Clip.none,
           children: [
-            Icon(
-              Icons.notifications_none_rounded,
-              color: iconColor,
-              size: 22,
-            ),
+            Icon(Icons.notifications_none_rounded, color: iconColor, size: 22),
             if (unreadCount > 0)
               Positioned(
-                right: -2,
-                top: -2,
+                right: -8,
+                top: -6,
                 child: Container(
-                  width: 10,
-                  height: 10,
+                  constraints: const BoxConstraints(
+                    minWidth: 16,
+                    minHeight: 16,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: AppColors.notificationUnread,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: badgeBorderColor,
-                      width: 1.5,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: badgeBorderColor, width: 1.5),
+                  ),
+                  child: Text(
+                    unreadCount > 99 ? '99+' : '$unreadCount',
+                    key: const Key('lonceng-angka'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      height: 1.1,
                     ),
                   ),
                 ),
@@ -136,16 +143,18 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
     final Color titleColor = isAuthority
         ? Colors.white
         : (currentRole == AppRole.developer
-            ? AppRoleTheme.developerHeaderTitle
-            : AppColors.textPrimary);
+              ? AppRoleTheme.developerHeaderTitle
+              : AppColors.textPrimary);
 
     final Color subtitleColor = isAuthority
         ? (currentRole == AppRole.perwaskim
-            ? AppRoleTheme.fieldHeaderSubtitle
-            : AppRoleTheme.adminHeaderSubtitle)
+              ? AppRoleTheme.fieldHeaderSubtitle
+              : AppRoleTheme.adminHeaderSubtitle)
         : AppColors.textMuted;
 
-    final Color iconColor = isAuthority ? Colors.white : AppRoleTheme.developerPrimary;
+    final Color iconColor = isAuthority
+        ? Colors.white
+        : AppRoleTheme.developerPrimary;
 
     return Material(
       color: bgColor,
@@ -162,10 +171,7 @@ class AppHeader extends ConsumerWidget implements PreferredSizeWidget {
                   IconButton(
                     onPressed: () => _goBack(context, ref),
                     tooltip: 'Kembali',
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: iconColor,
-                    ),
+                    icon: Icon(Icons.arrow_back, color: iconColor),
                   )
                 else if (isAuthority)
                   Container(

@@ -68,10 +68,14 @@ class _DetailPerbaruiDokumenScreenState
   /// contoh). Dengan data dokumen nyata, waktu yang tidak tercatat ditulis
   /// apa adanya, bukan dikarang.
   bool get _isPrototype => widget.docData == null;
-  String get _adminDateText =>
-      _isPrototype ? '14 Mar 2026' : 'Waktu belum tercatat';
-  String get _oldUploadText =>
-      _isPrototype ? 'Diunggah 12 Mar 2026' : 'Waktu unggah belum tercatat';
+  String get _adminDateText => _isPrototype ? '14 Mar 2026' : '';
+  String get _oldUploadText => _isPrototype ? 'Diunggah 12 Mar 2026' : '';
+
+  /// Rincian berkas lama: hanya bagian yang diketahui (ukuran, waktu unggah), tanpa teks pengganti.
+  String get _oldInfo => [
+    _oldFileSize,
+    _oldUploadText,
+  ].where((e) => e.isNotEmpty && e != 'Ukuran tidak tersedia').join(' • ');
 
   FileRule get _rule => FilePickerUtil.revisionRule(widget.docKey);
 
@@ -599,42 +603,14 @@ class _DetailPerbaruiDokumenScreenState
             ),
           ),
           const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFEE2E2),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                    child: Text(
-                      'Oleh Tim Verifikator Disperwaskim',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.labelSmall.copyWith(
-                        color: const Color(0xFF991B1B),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _adminDateText,
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textMuted,
-                  fontSize: 11,
-                ),
-              ),
-            ],
+          Text(
+            _adminDateText.isEmpty
+                ? 'Oleh Tim Verifikator Disperwaskim'
+                : 'Oleh Tim Verifikator Disperwaskim · $_adminDateText',
+            style: AppTextStyles.bodySmall.copyWith(
+              color: AppColors.textMuted,
+              fontSize: 11.5,
+            ),
           ),
         ],
       ),
@@ -713,14 +689,16 @@ class _DetailPerbaruiDokumenScreenState
                                     fontSize: 13,
                                   ),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '$_oldFileSize • $_oldUploadText',
-                                  style: AppTextStyles.bodySmall.copyWith(
-                                    color: AppColors.textMuted,
-                                    fontSize: 11,
+                                if (_oldInfo.isNotEmpty) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _oldInfo,
+                                    style: AppTextStyles.bodySmall.copyWith(
+                                      color: AppColors.textMuted,
+                                      fontSize: 11,
+                                    ),
                                   ),
-                                ),
+                                ],
                               ],
                             ),
                           ),
@@ -777,14 +755,16 @@ class _DetailPerbaruiDokumenScreenState
                                 fontSize: 13,
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '$_oldFileSize • $_oldUploadText',
-                              style: AppTextStyles.bodySmall.copyWith(
-                                color: AppColors.textMuted,
-                                fontSize: 11,
+                            if (_oldInfo.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                _oldInfo,
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.textMuted,
+                                  fontSize: 11,
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                       ),
@@ -852,13 +832,13 @@ class _DetailPerbaruiDokumenScreenState
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFEE2E2),
+                  color: AppColors.slate100,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   'Wajib Diisi',
                   style: AppTextStyles.labelSmall.copyWith(
-                    color: AppColors.primaryRed,
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w700,
                     fontSize: 11,
                   ),
@@ -871,7 +851,7 @@ class _DetailPerbaruiDokumenScreenState
           // Dashed Dropzone
           CustomPaint(
             painter: DashedBorderPainter(
-              color: const Color(0xFFDC2626),
+              color: AppColors.slate300,
               strokeWidth: 1.5,
               dashWidth: 6,
               dashSpace: 4,
@@ -881,7 +861,7 @@ class _DetailPerbaruiDokumenScreenState
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF5F5),
+                color: AppColors.slate50,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
@@ -891,12 +871,12 @@ class _DetailPerbaruiDokumenScreenState
                     width: 48,
                     height: 48,
                     decoration: const BoxDecoration(
-                      color: Color(0xFFFEE2E2),
+                      color: AppColors.slate200,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       FilePickerUtil.uploadIcon,
-                      color: Color(0xFFB91C1C),
+                      color: AppColors.slate700,
                       size: 26,
                     ),
                   ),
@@ -965,9 +945,9 @@ class _DetailPerbaruiDokumenScreenState
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0FDF4),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBBF7D0)),
+                border: Border.all(color: AppColors.slate200),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1190,38 +1170,6 @@ class _DetailPerbaruiDokumenScreenState
               ),
             ),
           ],
-
-          const SizedBox(height: 12),
-          // Info Box
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.slate50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.borderSubtle),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.info_outline,
-                  color: AppColors.slate500,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Ketentuan File: PDF max 10 MB (BR-002), DWG & PDF max 50 MB khusus berkas Site Plan (BR-004).',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: AppColors.slate600,
-                      fontSize: 11,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

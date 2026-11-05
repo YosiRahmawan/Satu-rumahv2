@@ -313,16 +313,45 @@ class _RejectedDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final satu = rejected.length == 1;
     return AlertDialog(
-      title: Text('${rejected.length} foto ditolak'),
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      icon: Container(
+        width: 52,
+        height: 52,
+        decoration: const BoxDecoration(
+          color: Color(0xFFFEE2E2),
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.no_photography_outlined,
+          color: AppColors.primaryRed,
+          size: 26,
+        ),
+      ),
+      title: Text(
+        satu
+            ? 'Foto tidak bisa dipakai'
+            : '${rejected.length} foto tidak bisa dipakai',
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+      ),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (final item in rejected)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.slate50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderSubtle),
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -330,19 +359,34 @@ class _RejectedDialog extends StatelessWidget {
                       item.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textMuted,
+                      ),
                     ),
-                    Text(item.error ?? ''),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.error ?? '',
+                      style: const TextStyle(fontSize: 13.5, height: 1.4),
+                    ),
                   ],
                 ),
               ),
           ],
         ),
       ),
+      actionsPadding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Mengerti'),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryRed,
+              minimumSize: const Size.fromHeight(46),
+            ),
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Mengerti'),
+          ),
         ),
       ],
     );

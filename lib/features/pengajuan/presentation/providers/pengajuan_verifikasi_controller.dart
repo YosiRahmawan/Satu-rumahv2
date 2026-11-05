@@ -558,8 +558,9 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
   /// pengajuan dikirim ulang; mode contoh: [kirimRevisi] lokal.
   Future<PengajuanOperationResult> kirimRevisiAsync(
     String pengajuanId,
-    Map<String, String> revisedDocs,
-  ) async {
+    Map<String, String> revisedDocs, {
+    String? catatan,
+  }) async {
     if (!_ref.read(apiEnabledProvider)) {
       return kirimRevisi(pengajuanId, revisedDocs);
     }
@@ -567,7 +568,7 @@ class PengajuanVerifikasiController extends StateNotifier<AsyncValue<void>> {
     try {
       final updated = await _ref
           .read(pengajuanRemoteProvider)
-          .resubmit(pengajuanId, revisedDocs);
+          .resubmit(pengajuanId, revisedDocs, catatan: catatan);
       _ref.read(pengajuanListProvider.notifier).upsert(updated);
       return PengajuanOperationResult.changed(
         message: 'Revisi dokumen berhasil dikirim dan menunggu review Admin.',

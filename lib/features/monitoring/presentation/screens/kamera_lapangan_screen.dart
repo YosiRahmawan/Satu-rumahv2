@@ -16,6 +16,7 @@ import '../../services/location_service.dart';
 import '../../services/stamp_renderer.dart';
 import '../providers/camera_providers.dart';
 import '../providers/monitoring_form_provider.dart';
+import '../providers/simpan_galeri_provider.dart';
 import '../providers/monitoring_list_provider.dart';
 import '../widgets/kamera_flow.dart';
 
@@ -282,7 +283,9 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
     final galeri = ref.read(gallerySaverProvider);
     final namaFoto =
         'SatuRumah_${pending.stamp.capturedAt.millisecondsSinceEpoch}';
-    final masukGaleri = await galeri.save(pending.bytes, namaFoto);
+    final masukGaleri = ref.read(simpanGaleriProvider)
+        ? await galeri.save(pending.bytes, namaFoto)
+        : false;
     if (!mounted) return;
     setState(() {
       _pending = null;
@@ -910,7 +913,8 @@ class _KameraLapanganScreenState extends ConsumerState<KameraLapanganScreen> {
         ),
         Expanded(
           child: Container(
-            color: const Color(0xFF0F172A),
+            // Hitam polos seperti layar: sisi foto yang tidak terisi tidak tampak sebagai pita.
+            color: Colors.black,
             alignment: Alignment.center,
             child: Image.memory(
               pending.bytes,

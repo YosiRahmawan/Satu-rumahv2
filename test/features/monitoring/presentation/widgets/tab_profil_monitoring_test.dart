@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:satu_rumah/core/auth/role_session.dart';
 import 'package:satu_rumah/features/monitoring/data/models/monitoring_model.dart';
 import 'package:satu_rumah/features/monitoring/data/models/status_hasil_evaluasi.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
+import 'package:satu_rumah/features/monitoring/presentation/providers/simpan_galeri_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/widgets/tab_profil_monitoring.dart';
 import 'package:satu_rumah/features/pengajuan/data/models/pengajuan_model.dart';
 
@@ -68,6 +70,28 @@ void main() {
       child: const MaterialApp(home: TabProfilMonitoring()),
     );
   }
+
+  testWidgets('pengaturan galeri: bawaan menyala dan bisa dimatikan', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.binding.setSurfaceSize(const Size(390, 1400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(buildSubject());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Simpan foto ke galeri HP'), findsOneWidget);
+    final saklar = find.byKey(const Key('pengaturan-galeri'));
+    expect(tester.widget<Switch>(saklar).value, isTrue);
+
+    await tester.ensureVisible(saklar);
+    await tester.tap(saklar);
+    await tester.pumpAndSettle();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(TabProfilMonitoring)),
+    );
+    expect(container.read(simpanGaleriProvider), isFalse);
+  });
 
   testWidgets('renders all redesigned sections and actual data correctly', (
     tester,

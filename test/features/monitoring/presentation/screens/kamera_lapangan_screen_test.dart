@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +13,7 @@ import 'package:satu_rumah/features/monitoring/data/repositories/monitoring_repo
 import 'package:satu_rumah/features/monitoring/presentation/providers/camera_providers.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_form_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/providers/monitoring_list_provider.dart';
+import 'package:satu_rumah/features/monitoring/presentation/providers/simpan_galeri_provider.dart';
 import 'package:satu_rumah/features/monitoring/presentation/screens/kamera_lapangan_screen.dart';
 import 'package:satu_rumah/features/monitoring/services/camera_gateway.dart';
 import 'package:satu_rumah/features/monitoring/services/gallery_saver.dart';
@@ -143,6 +146,23 @@ void main() {
     expect(gallery.saved, hasLength(1));
     expect(find.textContaining('dan galeri HP'), findsOneWidget);
   });
+
+  testWidgets(
+    'galeri dimatikan di Profil: foto tetap masuk draf, tanpa salinan',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      gallery.saved.clear();
+      await pumpScreen(tester);
+      await container.read(simpanGaleriProvider.notifier).atur(false);
+      await shoot(tester);
+      await tester.tap(find.text('Simpan ke Draf BA'));
+      await tester.pumpAndSettle();
+
+      expect(container.read(monitoringFormProvider).photos, hasLength(1));
+      expect(gallery.saved, isEmpty);
+      expect(find.textContaining('dan galeri HP'), findsNothing);
+    },
+  );
 
   testWidgets('pratinjau kamera memenuhi layar tanpa pita hitam', (
     tester,

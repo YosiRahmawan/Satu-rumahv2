@@ -14,6 +14,7 @@ import '../../../../core/widgets/stepper_header.dart';
 import '../../../profil/data/developer_profile_repository.dart';
 import '../providers/pengajuan_form_controller.dart';
 import '../widgets/pengajuan_draft_ui.dart';
+import '../widgets/titik_lokasi_field.dart';
 import '../widgets/smart_validation_bottom_sheet.dart';
 
 class PengajuanStep1Screen extends ConsumerStatefulWidget {
@@ -424,9 +425,7 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
   List<Widget> _profileFields(DeveloperProfileData? p) {
     Widget row(String label, String? value) => _buildReadOnlyField(
       label: label,
-      value: (value == null || value.trim().isEmpty)
-          ? 'Belum tersedia'
-          : value,
+      value: (value == null || value.trim().isEmpty) ? 'Belum tersedia' : value,
       isAvailable: value != null && value.trim().isNotEmpty,
     );
     return [
@@ -1071,6 +1070,8 @@ class _PengajuanStep1ScreenState extends ConsumerState<PengajuanStep1Screen>
                 ? 'Alamat lokasi proyek wajib diisi'
                 : null,
           ),
+          const SizedBox(height: AppSpacing.sm),
+          const TitikLokasiField(),
           const SizedBox(height: AppSpacing.md),
 
           // 4. NPWP Perusahaan *

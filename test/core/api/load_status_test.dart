@@ -39,7 +39,7 @@ class _Remote implements PengajuanRemote {
   }) => throw UnimplementedError();
 
   @override
-  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs) =>
+  Future<Pengajuan> resubmit(String number, Map<String, String> revisedDocs, {String? catatan}) =>
       throw UnimplementedError();
 }
 

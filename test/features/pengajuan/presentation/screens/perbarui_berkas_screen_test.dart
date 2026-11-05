@@ -468,7 +468,8 @@ void main() {
         expect(find.textContaining('Mar 2026'), findsNothing);
         expect(find.textContaining('KTP_Direktur'), findsNothing);
         expect(find.text(seed().catatanPerbaikan!), findsOneWidget);
-        expect(find.text('Waktu belum tercatat'), findsWidgets);
+        // Waktu yang tidak tercatat tidak ditulis sebagai teks pengganti.
+        expect(find.text('Waktu belum tercatat'), findsNothing);
       },
     );
 

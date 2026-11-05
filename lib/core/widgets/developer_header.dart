@@ -26,7 +26,7 @@ class DeveloperHeader extends StatelessWidget {
     this.isVerified = false,
     this.showNotification = false,
     this.notificationCount,
-    this.showNotificationCount = false,
+    this.showNotificationCount = true,
     this.onNotificationTap,
     this.notificationTooltip,
     this.onAvatarTap,
