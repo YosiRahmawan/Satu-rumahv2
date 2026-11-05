@@ -18,6 +18,13 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+    // Visualisasi TTE penanda tangan diambil dari Suresman lewat NIP akun (disetujui PM).
+    'suresman' => [
+        'base_url' => env('SURESMAN_URL', 'https://suresman.tasikmalayakota.go.id/visualcustom'),
+        'verify' => env('SURESMAN_VERIFY', true),
+        'timeout' => env('SURESMAN_TIMEOUT', 15),
+    ],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],

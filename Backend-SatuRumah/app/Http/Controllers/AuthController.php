@@ -68,7 +68,8 @@ class AuthController extends Controller
         $user->forceFill(['password' => $data['new_password'], 'must_change_password' => false])->save();
         $request->session()->regenerate();
 
-        return redirect()->route('dashboard')->with('success', 'Sandi berhasil diganti.');
+        return redirect()->route($request->input('dari') === 'pengaturan' ? 'pengaturan.index' : 'dashboard')
+            ->with('success', 'Sandi berhasil diganti.');
     }
 
     public function logout(Request $request)

@@ -164,7 +164,7 @@ class SubmissionController extends Controller
             return redirect()->route('pengajuan.show', ['id' => $id, 'tab' => 'monitoring'])->withErrors($e->errors());
         }
 
-        return $this->run($s, fn () => $signatures->sign($r, $request->user(), ReportSignature::ADMIN, $bytes, $data['password'], (int) $data['version'], $request->ip()), 'Tanda tangan Admin tersimpan.', 'monitoring');
+        return $this->run($s, fn () => $signatures->sign($r, $request->user(), ReportSignature::ADMIN, $bytes, $data['password'], (int) $data['version'], $request->ip(), $signatures->metode($request)), 'Tanda tangan Admin tersimpan.', 'monitoring');
     }
 
     public function reportPdf(int $id, int $reportId)
