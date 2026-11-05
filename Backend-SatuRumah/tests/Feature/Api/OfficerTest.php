@@ -117,6 +117,17 @@ class OfficerTest extends TestCase
         $this->getJson('/api/v1/officer/assignments?status=ngawur')->assertStatus(422);
     }
 
+    public function test_tugas_membawa_titik_lokasi_proyek_bila_ada(): void
+    {
+        $this->getJson('/api/v1/officer/assignments')->assertOk()
+            ->assertJsonPath('data.0.submission.latitude', null);
+
+        $this->submission->forceFill(['latitude' => -7.3274, 'longitude' => 108.2207])->save();
+        $this->getJson('/api/v1/officer/assignments')->assertOk()
+            ->assertJsonPath('data.0.submission.latitude', -7.3274)
+            ->assertJsonPath('data.0.submission.longitude', 108.2207);
+    }
+
     public function test_terima_tugas(): void
     {
         $this->postJson("/api/v1/officer/assignments/{$this->assignment->id}/accept")

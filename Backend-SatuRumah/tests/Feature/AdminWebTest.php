@@ -213,6 +213,82 @@ class AdminWebTest extends TestCase
         $this->assertTrue(\Illuminate\Support\Facades\Hash::check('SandiBaru2026x', $this->admin->fresh()->password));
     }
 
+    public function test_tombol_setujui_administrasi_aktif_hanya_bila_semua_berkas_sesuai_dan_ada_progres(): void
+    {
+        $this->actingAs($this->admin);
+        $id = $this->submission->id;
+
+        $this->get("/pengajuan/{$id}")->assertOk()->assertSee('Berkas administrasi sesuai')
+            ->assertSee('Nilai semua berkas di tab Dokumen')
+            ->assertSee('title="Masih ada berkas yang belum sesuai"', false);
+
+        $this->approveAllFiles();
+        $this->get("/pengajuan/{$id}")->assertOk()->assertSee('Semua berkas sudah dinilai sesuai')
+            ->assertDontSee('title="Masih ada berkas yang belum sesuai"', false);
+    }
+
+    public function test_halaman_dokumen_mengingat_posisi_gulir_setelah_menyimpan_penilaian(): void
+    {
+        $this->actingAs($this->admin);
+        $this->get("/pengajuan/{$this->submission->id}?tab=dokumen")->assertOk()
+            ->assertSee("sessionStorage.setItem(KUNCI", false)
+            ->assertSee('dok-sorot', false);
+    }
+
+    public function test_ringkasan_memuat_tindakan_tahap_teknis_dan_survei_tanpa_pindah_tab(): void
+    {
+        $this->actingAs($this->admin);
+        $id = $this->submission->id;
+        $this->approveAllFiles();
+        $this->post("/pengajuan/{$id}/setujui-administrasi")->assertSessionHas('success');
+
+        // Berkas teknis belum semua sesuai: progres dan tautan ke tab Dokumen, belum ada form jadwal.
+        $this->submission->files()->whereIn('slot_code', ['S4-02'])->update(['status' => 'menunggu_telaah']);
+        $this->get("/pengajuan/{$id}")->assertOk()->assertSee('Berkas teknis sesuai')->assertSee('Buka tab Dokumen')
+            ->assertDontSee('name="petugas_id"', false);
+
+        // Semua sesuai: form jadwal langsung ada di Ringkasan.
+        $this->approveAllFiles();
+        $this->get("/pengajuan/{$id}")->assertOk()->assertSee('Semua berkas teknis sesuai')->assertSee('name="petugas_id"', false);
+
+        // Laporan final dari petugas: tombol terima laporan langsung di Ringkasan.
+        $this->post("/pengajuan/{$id}/jadwal", ['petugas_id' => $this->officer->id, 'tanggal' => now()->addDay()->toDateString()])->assertSessionHas('success');
+        $this->get("/pengajuan/{$id}")->assertOk()->assertSee('Menunggu petugas mengirim Berita Acara');
+        InspectionReport::create([
+            'submission_id' => $id, 'officer_id' => $this->officer->id, 'status' => 'final', 'report_number' => '600.2.5/BA-MON/X/2026/009',
+            'nama_perumahan' => 'Griya Mangkubumi', 'monitoring_date' => now()->toDateString(), 'submitted_at' => now(), 'version' => 2,
+        ]);
+        $this->get("/pengajuan/{$id}")->assertOk()->assertSee('Terima Laporan Survei')->assertSee('600.2.5/BA-MON/X/2026/009');
+    }
+
+    public function test_ringkasan_menampilkan_titik_lokasi_dan_tautan_peta(): void
+    {
+        $this->actingAs($this->admin);
+        $id = $this->submission->id;
+        $this->submission->forceFill(['alamat_proyek' => 'Jl. Karikil'])->save();
+
+        $this->get("/pengajuan/{$id}")->assertOk()->assertSee('Belum dikirim pengembang')->assertSee('Cari alamat di peta');
+
+        $this->submission->forceFill(['latitude' => -7.3274, 'longitude' => 108.2207])->save();
+        $this->get("/pengajuan/{$id}")->assertOk()->assertSee('-7.327400, 108.220700')->assertSee('query=-7.3274,108.2207', false);
+    }
+
+    public function test_lonceng_menampilkan_angka_belum_dibaca_bukan_titik(): void
+    {
+        AppNotification::create(['user_id' => $this->admin->id, 'type' => 'submitted', 'title' => 'A', 'body' => 'x']);
+        AppNotification::create(['user_id' => $this->admin->id, 'type' => 'submitted', 'title' => 'B', 'body' => 'y']);
+        $this->actingAs($this->admin);
+
+        $html = $this->get('/dashboard')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/class="count-badge" id="loncengDot"\s*>2<\/span>/', $html);
+    }
+
+    public function test_pratinjau_pdf_punya_tombol_layar_penuh(): void
+    {
+        $this->actingAs($this->admin);
+        $this->get("/pengajuan/{$this->submission->id}?tab=dokumen")->assertOk()->assertSee('id="pdfLayarPenuh"', false);
+    }
+
     public function test_pengembang_tidak_bisa_membuka_web_admin(): void
     {
         $this->actingAs($this->developer)->get('/dashboard')->assertRedirect('/login');
@@ -343,12 +419,14 @@ class AdminWebTest extends TestCase
             'slot_code' => 'S2-02', 'replaces_file_id' => $flagged['id'],
             'file' => UploadedFile::fake()->createWithContent('nib-baru.pdf', "%PDF-1.4\n%%EOF\n"),
         ], ['Accept' => 'application/json'])->assertCreated();
-        $this->postJson("/api/v1/submissions/{$id}/resubmit")->assertOk()->assertJsonPath('data.sub_status', 'perbaikan_terkirim');
+        $this->postJson("/api/v1/submissions/{$id}/resubmit", ['catatan' => str_repeat('x', 501)])->assertStatus(422);
+        $this->postJson("/api/v1/submissions/{$id}/resubmit", ['catatan' => 'Sudah diganti dengan NIB yang jelas'])->assertOk()->assertJsonPath('data.sub_status', 'perbaikan_terkirim');
 
-        // Admin menerima kabar dan melihat riwayatnya.
+        // Admin menerima kabar beserta catatan pengembang, dan melihat riwayatnya.
         $this->assertSame(1, AppNotification::where('user_id', $this->admin->id)->where('type', 'resubmitted')->count());
+        $this->assertStringContainsString('Sudah diganti dengan NIB yang jelas', AppNotification::where('user_id', $this->admin->id)->where('type', 'resubmitted')->value('body'));
         $this->actingAs($this->admin, 'web');
-        $this->get("/pengajuan/{$id}?tab=riwayat")->assertOk()->assertSee('Perbaikan dikirim ulang')->assertSee('Permintaan perbaikan dikirim');
+        $this->get("/pengajuan/{$id}?tab=riwayat")->assertOk()->assertSee('Perbaikan dikirim ulang')->assertSee('Permintaan perbaikan dikirim')->assertSee('Sudah diganti dengan NIB yang jelas');
     }
 
     public function test_slot_berjamak_dengan_dua_berkas_bertanda_cukup_satu_pengganti(): void

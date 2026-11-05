@@ -101,18 +101,19 @@
 
 {{-- Pratinjau PDF di halaman (tanpa mengunduh) --}}
 <div id="pdfModal" class="modal-backdrop" style="display:none;z-index:110;" role="dialog" aria-modal="true" aria-labelledby="pdfModalTitle">
-    <div class="pdf-modal-container">
+    <div class="pdf-modal-container" id="pdfKotak">
         <div class="pdf-toolbar">
             <div>
                 <div class="modal-title" id="pdfModalTitle" style="font-size:16px;">Pratinjau Berkas</div>
                 <div class="modal-sub" id="pdfModalSub"></div>
             </div>
             <div style="display:flex;gap:10px;align-items:center;">
+                <button type="button" id="pdfLayarPenuh" class="btn btn-outline btn-sm" aria-pressed="false" title="Layar penuh">Layar penuh</button>
                 <a id="pdfModalUnduh" href="#" class="btn btn-outline btn-sm">Unduh</a>
                 <button type="button" class="modal-close" data-tutup="pdfModal" aria-label="Tutup" style="font-size:24px;">&times;</button>
             </div>
         </div>
-        <iframe id="pdfFrame" title="Pratinjau PDF" style="width:100%;height:76vh;border:0;background:#f8fafc;"></iframe>
+        <iframe id="pdfFrame" title="Pratinjau PDF" style="width:100%;flex:1;min-height:76vh;border:0;background:#f8fafc;"></iframe>
     </div>
 </div>
 
@@ -164,9 +165,15 @@
 (function () {
     const $ = (id) => document.getElementById(id);
     const buka = (id) => { $(id).style.display = 'flex'; };
+    function layarPenuh(aktif) {
+        $('pdfKotak').classList.toggle('pdf-full', aktif);
+        $('pdfLayarPenuh').setAttribute('aria-pressed', aktif ? 'true' : 'false');
+        $('pdfLayarPenuh').textContent = aktif ? 'Perkecil' : 'Layar penuh';
+    }
+    $('pdfLayarPenuh').addEventListener('click', () => layarPenuh(!$('pdfKotak').classList.contains('pdf-full')));
     const tutup = (id) => {
         $(id).style.display = 'none';
-        if (id === 'pdfModal') $('pdfFrame').src = 'about:blank'; // hentikan pemuatan PDF
+        if (id === 'pdfModal') { $('pdfFrame').src = 'about:blank'; layarPenuh(false); } // hentikan pemuatan PDF
     };
 
     function pratinjau(doc) {
@@ -177,7 +184,32 @@
         buka('pdfModal');
     }
 
+    // Setelah menyimpan penilaian, halaman dimuat ulang; posisi gulir diingat supaya Admin tidak
+    // kembali ke atas, dan baris yang baru dinilai disorot sebentar.
+    const KUNCI = 'dokScroll';
+    let barisDinilai = '';
+    $('nilaiForm').addEventListener('submit', () => {
+        try { sessionStorage.setItem(KUNCI, JSON.stringify({ path: location.pathname, y: window.scrollY, kode: barisDinilai })); } catch (e) { /* tanpa penyimpanan: tetap berfungsi */ }
+    });
+    (function pulihkan() {
+        let s = null;
+        try { s = JSON.parse(sessionStorage.getItem(KUNCI) || 'null'); sessionStorage.removeItem(KUNCI); } catch (e) { return; }
+        if (!s || s.path !== location.pathname) return;
+        window.scrollTo({ top: s.y, behavior: 'instant' });
+        const baris = [...document.querySelectorAll('tr.dok-baris')].find(r => s.kode && (r.cells[0]?.textContent || '').trim().startsWith(s.kode));
+        if (baris) baris.classList.add('dok-sorot');
+        const pesan = document.querySelector('.alert-success span');
+        if (pesan) {
+            const t = document.createElement('div');
+            t.className = 'toast-sukses';
+            t.textContent = pesan.textContent;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        }
+    })();
+
     function nilai(doc) {
+        barisDinilai = doc.syarat.split(' · ')[0];
         $('nilaiTitle').textContent = 'Verifikasi ' + doc.syarat.split(' · ').slice(1).join(' · ');
         $('nilaiForm').action = doc.nilai;
         $('nilaiSyarat').value = doc.syarat;

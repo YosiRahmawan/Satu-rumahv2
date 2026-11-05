@@ -117,7 +117,7 @@ class SubmissionWorkflow
     }
 
     /** Perlu perbaikan → perbaikan terkirim; jam SLA berjalan lagi. */
-    public function resubmit(Submission $submission): Submission
+    public function resubmit(Submission $submission, ?string $catatan = null): Submission
     {
         if (!$submission->isInRevision()) {
             throw new \DomainException('Pengajuan ini tidak sedang meminta perbaikan.');
@@ -144,8 +144,9 @@ class SubmissionWorkflow
         ])->save();
 
         $name = $submission->nama_perumahan ?? 'pengajuan';
-        $this->notifier->event($submission, $submission->developer, 'resubmitted', 'Perbaikan dikirim ulang', "Pengembang mengirim perbaikan berkas untuk {$submission->number}.");
-        $this->notifier->toVerifiers($submission, 'resubmitted', 'Perbaikan berkas dikirim', "{$submission->number} · {$name}");
+        $catatan = trim((string) $catatan);
+        $this->notifier->event($submission, $submission->developer, 'resubmitted', 'Perbaikan dikirim ulang', "Pengembang mengirim perbaikan berkas untuk {$submission->number}." . ($catatan !== '' ? " Catatan pengembang: {$catatan}" : ''));
+        $this->notifier->toVerifiers($submission, 'resubmitted', 'Perbaikan berkas dikirim', "{$submission->number} · {$name}" . ($catatan !== '' ? "\nCatatan: {$catatan}" : ''));
 
         return $submission;
     }
@@ -260,15 +261,22 @@ class SubmissionWorkflow
         });
     }
 
-    /** @throws ValidationException bila ada slot wajib pada tahap itu yang belum sesuai */
-    private function requireSlotsApproved(Submission $s, int $slotStage): void
+    /**
+     * Kemajuan penilaian berkas wajib satu tahap: jumlah total, jumlah yang sudah Sesuai,
+     * dan alasan untuk yang belum.
+     *
+     * @return array{total: int, siap: int, belum: list<string>}
+     */
+    public function slotProgress(Submission $s, int $slotStage): array
     {
         $bySlot = $s->currentFiles()->get()->groupBy('slot_code');
+        $total = 0;
         $notReady = [];
         foreach ($this->slots() as $code => $slot) {
             if (($slot['stage'] ?? 2) !== $slotStage || !($slot['required'] ?? true)) {
                 continue;
             }
+            $total++;
             $files = $bySlot->get($code);
             $alasan = match (true) {
                 !$files => 'belum diunggah pengembang',
@@ -280,6 +288,14 @@ class SubmissionWorkflow
                 $notReady[] = "{$code} · {$slot['name']} ({$alasan})";
             }
         }
+
+        return ['total' => $total, 'siap' => $total - count($notReady), 'belum' => $notReady];
+    }
+
+    /** @throws ValidationException bila ada slot wajib pada tahap itu yang belum sesuai */
+    private function requireSlotsApproved(Submission $s, int $slotStage): void
+    {
+        $notReady = $this->slotProgress($s, $slotStage)['belum'];
         if ($notReady) {
             throw ValidationException::withMessages(['slots' => $notReady]);
         }
