@@ -10,7 +10,7 @@ import '../../../../core/widgets/panduan_pengajuan_dialog.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/screens/template_berkas_screen.dart';
 
-/// Layar Pusat Bantuan resmi untuk Pengembang — SATU RUMAH V2
+/// Layar Pusat Bantuan resmi untuk Pengembang - SATU RUMAH V2
 class PusatBantuanScreen extends StatelessWidget {
   const PusatBantuanScreen({super.key});
 

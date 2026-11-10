@@ -3,13 +3,13 @@ import '../theme/app_colors.dart';
 
 /// Ukuran standar untuk [AppLoadingSpinner]
 enum AppSpinnerSize {
-  /// 18dp — Untuk tombol kecil, badge, atau inline indikator
+  /// 18dp - Untuk tombol kecil, badge, atau inline indikator
   small(18.0, 2.0),
 
-  /// 24dp — Ukuran standar untuk tombol utama dan form action
+  /// 24dp - Ukuran standar untuk tombol utama dan form action
   medium(24.0, 2.5),
 
-  /// 32dp — Ukuran besar untuk preview dokumen atau aksi modal
+  /// 32dp - Ukuran besar untuk preview dokumen atau aksi modal
   large(32.0, 3.0);
 
   final double dimension;

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../storage/auth_token_store.dart';
 
 /// The local prototype's authenticated role. This is intentionally process
 /// local: it models the current demo session without implying API auth or
@@ -117,6 +118,9 @@ class RoleSessionNotifier extends StateNotifier<RoleSessionState> {
 
   void signOut() {
     state = const RoleSessionState();
+    try {
+      const AuthTokenStore().clear();
+    } catch (_) {}
   }
 
   static AppRole roleForUsername(String username) {

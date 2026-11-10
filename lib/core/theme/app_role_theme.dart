@@ -5,7 +5,7 @@ import 'app_colors.dart';
 /// Standarisasi Tema Warna dan Tipografi Visual Resmi Per-Role.
 /// Sesuai Business Requirements Document (BRD) & Architecture Guide SATU RUMAH.
 ///
-/// Semua nilai warna **direferensikan dari [AppColors]** — tidak ada hex literal
+/// Semua nilai warna **direferensikan dari [AppColors]** - tidak ada hex literal
 /// di sini. Ini memastikan satu sumber kebenaran: ubah warna cukup di [AppColors].
 class AppRoleTheme {
   // ─── PENGEMBANG (Developer) ────────────────────────────────────────────────
@@ -38,7 +38,7 @@ class AppRoleTheme {
 
   // ─── Fungsi Resolver ───────────────────────────────────────────────────────
 
-  /// Warna primer sesuai peran aktif — dipakai oleh BottomNavigationBar.
+  /// Warna primer sesuai peran aktif - dipakai oleh BottomNavigationBar.
   static Color getPrimaryColor(AppRole role) {
     switch (role) {
       case AppRole.developer:

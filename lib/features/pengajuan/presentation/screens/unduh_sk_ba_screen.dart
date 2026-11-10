@@ -40,7 +40,7 @@ enum DocFilterCategory {
   const DocFilterCategory(this.label);
 }
 
-/// Layar Unduh SK & BA untuk Pengembang — SATU RUMAH V2
+/// Layar Unduh SK & BA untuk Pengembang - SATU RUMAH V2
 /// Mengikuti spesifikasi visual Google Stitch & Design System:
 /// - Sticky Header Merah Gradient dengan Back Button & Subtitle
 /// - Search bar nama perumahan atau nomor registrasi

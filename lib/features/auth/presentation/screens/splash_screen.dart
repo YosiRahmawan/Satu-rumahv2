@@ -29,22 +29,22 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  // Animation A — Logo Rumah (0 - 800ms)
+  // Animation A - Logo Rumah (0 - 800ms)
   late final Animation<double> _logoRevealAnim;
   late final Animation<double> _logoFadeAnim;
   late final Animation<double> _logoScaleAnim;
 
-  // Animation B — SATU RUMAH & Garis Kuning (600 - 1250ms)
+  // Animation B - SATU RUMAH & Garis Kuning (600 - 1250ms)
   late final Animation<double> _titleFadeAnim;
   late final Animation<double> _titleSlideAnim;
   late final Animation<double> _linesExpandAnim;
   late final Animation<double> _linesFadeAnim;
 
-  // Animation C — Subtitle (1150 - 1600ms)
+  // Animation C - Subtitle (1150 - 1600ms)
   late final Animation<double> _subtitleFadeAnim;
   late final Animation<double> _subtitleSlideAnim;
 
-  // Animation D — Final Transition Exit (2250 - 2600ms)
+  // Animation D - Final Transition Exit (2250 - 2600ms)
   late final Animation<double> _exitFadeAnim;
 
   bool _hasNavigated = false;

@@ -7,9 +7,9 @@ import '../theme/app_colors.dart';
 /// Menggunakan [Wrap] sehingga tombol otomatis turun baris pada layar
 /// sempit dan tidak pernah menyebabkan RenderFlex horizontal overflow.
 ///
-/// [isVerified] — null = belum diputuskan, true = Sesuai, false = Tidak Sesuai.
-/// [onVerified] — dipanggil saat user memilih "Sesuai".
-/// [onRejected] — dipanggil saat user memilih "Tidak Sesuai".
+/// [isVerified] - null = belum diputuskan, true = Sesuai, false = Tidak Sesuai.
+/// [onVerified] - dipanggil saat user memilih "Sesuai".
+/// [onRejected] - dipanggil saat user memilih "Tidak Sesuai".
 class VerificationRadioGroup extends StatelessWidget {
   final bool? isVerified;
   final VoidCallback onVerified;

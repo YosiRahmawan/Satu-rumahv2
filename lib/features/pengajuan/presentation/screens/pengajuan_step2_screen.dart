@@ -59,7 +59,7 @@ class _SlotError {
   });
 }
 
-/// Screen Pengajuan Baru Fase 2 — Berkas Legalitas Perusahaan (Berkas PT).
+/// Screen Pengajuan Baru Fase 2 - Berkas Legalitas Perusahaan (Berkas PT).
 ///
 /// Implements:
 /// - Canonical hero [PengajuanStepHeader] & 5-step [StepperHeader].
