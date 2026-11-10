@@ -128,7 +128,7 @@ class AppTheme {
   ///
   /// Fungsi ini mengambil [lightTheme] sebagai basis, kemudian menimpa
   /// [AppBarTheme] dan [BottomNavigationBarThemeData] dengan warna primer
-  /// dari peran yang diberikan — sehingga seluruh app otomatis berubah warna
+  /// dari peran yang diberikan - sehingga seluruh app otomatis berubah warna
   /// cukup dengan mengganti [role] tanpa menyentuh widget individual.
   ///
   /// Contoh penggunaan di [MaterialApp]:

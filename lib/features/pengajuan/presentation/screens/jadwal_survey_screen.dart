@@ -65,7 +65,7 @@ SurveyStatus getSurveyStatus(Pengajuan item) {
   return SurveyStatus.belumDijadwalkan;
 }
 
-/// Layar Jadwal Survey Pengembang — SATU RUMAH V2
+/// Layar Jadwal Survey Pengembang - SATU RUMAH V2
 /// Mengikuti spesifikasi visual Google Stitch:
 /// - Sticky Header Merah Gradient dengan Back Button & Subtitle
 /// - Search bar nama perumahan
@@ -452,7 +452,7 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // CARD JADWAL SURVEY (DATA TERSEDIA — GOOGLE STITCH FINAL)
+  // CARD JADWAL SURVEY (DATA TERSEDIA - GOOGLE STITCH FINAL)
   // ──────────────────────────────────────────────────────────────────────────
   Widget _buildSurveyCard(Pengajuan item) {
     final status = getSurveyStatus(item);
@@ -686,7 +686,7 @@ class _JadwalSurveyScreenState extends ConsumerState<JadwalSurveyScreen> {
             ),
           ],
 
-          // ── Status Evaluasi (Conditional — Hanya jika ada data HasilSurveyItem riil) ──
+          // ── Status Evaluasi (Conditional - Hanya jika ada data HasilSurveyItem riil) ──
           if (item.riwayatSurvey.isNotEmpty &&
               item.riwayatSurvey.any(
                 (s) =>

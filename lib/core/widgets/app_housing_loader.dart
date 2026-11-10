@@ -5,13 +5,13 @@ import '../theme/app_text_styles.dart';
 
 /// Pilihan ukuran standar untuk [AppHousingLoader]
 enum AppHousingLoaderSize {
-  /// 64dp — Untuk card loading atau ruang terbatas
+  /// 64dp - Untuk card loading atau ruang terbatas
   small(64.0),
 
-  /// 96dp — Ukuran default untuk view konten dan dialog
+  /// 96dp - Ukuran default untuk view konten dan dialog
   medium(96.0),
 
-  /// 120dp — Ukuran besar untuk full page loading
+  /// 120dp - Ukuran besar untuk full page loading
   large(120.0);
 
   final double dimension;

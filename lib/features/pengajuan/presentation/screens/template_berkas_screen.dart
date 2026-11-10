@@ -7,8 +7,8 @@ import '../widgets/survey_not_found_illustration.dart';
 
 /// Enum kelompok fase dokumen pengajuan
 enum TemplateBerkasGroup {
-  perusahaan('Perusahaan', 'Berkas Perusahaan — Fase 2', 5),
-  perumahan('Perumahan', 'Berkas Perumahan — Fase 3', 11);
+  perusahaan('Perusahaan', 'Berkas Perusahaan - Fase 2', 5),
+  perumahan('Perumahan', 'Berkas Perumahan - Fase 3', 11);
 
   final String chipLabel;
   final String sectionTitle;
@@ -457,7 +457,7 @@ class TemplateBerkasCatalog {
   ];
 }
 
-/// Layar Template Berkas untuk Pengembang — SATU RUMAH V2
+/// Layar Template Berkas untuk Pengembang - SATU RUMAH V2
 /// Mengikuti spesifikasi visual Google Stitch & Design System:
 /// - Sticky Header Merah Gradient dengan Back Button & Subtitle
 /// - Search bar dengan clear button
@@ -578,10 +578,10 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
                 : ListView(
                     padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                     children: [
-                      // GROUP 1: Berkas Perusahaan — Fase 2
+                      // GROUP 1: Berkas Perusahaan - Fase 2
                       if (visiblePerusahaan.isNotEmpty) ...[
                         _buildSectionHeader(
-                          title: 'Berkas Perusahaan — Fase 2',
+                          title: 'Berkas Perusahaan - Fase 2',
                           countText: '${visiblePerusahaan.length} Dokumen',
                           dotColor: const Color(0xFFB91C1C),
                         ),
@@ -590,10 +590,10 @@ class _TemplateBerkasScreenState extends State<TemplateBerkasScreen> {
                         const SizedBox(height: 16),
                       ],
 
-                      // GROUP 2: Berkas Perumahan — Fase 3
+                      // GROUP 2: Berkas Perumahan - Fase 3
                       if (visiblePerumahan.isNotEmpty) ...[
                         _buildSectionHeader(
-                          title: 'Berkas Perumahan — Fase 3',
+                          title: 'Berkas Perumahan - Fase 3',
                           countText: '${visiblePerumahan.length} Dokumen',
                           dotColor: const Color(0xFF881337),
                         ),

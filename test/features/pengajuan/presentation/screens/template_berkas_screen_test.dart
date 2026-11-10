@@ -35,7 +35,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Section header 1
-      expect(find.text('BERKAS PERUSAHAAN — FASE 2'), findsOneWidget);
+      expect(find.text('BERKAS PERUSAHAAN - FASE 2'), findsOneWidget);
       expect(find.text('5 Dokumen'), findsOneWidget);
 
       // Verify all 16 items exist in the catalog
@@ -60,7 +60,7 @@ void main() {
       await tester.drag(find.byType(ListView), const Offset(0, -400));
       await tester.pumpAndSettle();
 
-      final group2Finder = find.text('BERKAS PERUMAHAN — FASE 3');
+      final group2Finder = find.text('BERKAS PERUMAHAN - FASE 3');
       expect(group2Finder, findsOneWidget);
       expect(find.text('11 Dokumen'), findsOneWidget);
 
@@ -79,8 +79,8 @@ void main() {
       await tester.tap(find.text('Perusahaan (5)'));
       await tester.pumpAndSettle();
 
-      expect(find.text('BERKAS PERUSAHAAN — FASE 2'), findsOneWidget);
-      expect(find.text('BERKAS PERUMAHAN — FASE 3'), findsNothing);
+      expect(find.text('BERKAS PERUSAHAAN - FASE 2'), findsOneWidget);
+      expect(find.text('BERKAS PERUMAHAN - FASE 3'), findsNothing);
 
       // All 5 company slots visible
       expect(find.text('KTP-el Pemohon / Direktur Utama'), findsOneWidget);
@@ -101,8 +101,8 @@ void main() {
       await tester.tap(find.text('Perumahan (11)'));
       await tester.pumpAndSettle();
 
-      expect(find.text('BERKAS PERUSAHAAN — FASE 2'), findsNothing);
-      expect(find.text('BERKAS PERUMAHAN — FASE 3'), findsOneWidget);
+      expect(find.text('BERKAS PERUSAHAAN - FASE 2'), findsNothing);
+      expect(find.text('BERKAS PERUMAHAN - FASE 3'), findsOneWidget);
 
       // Phase 2 slot not visible
       expect(find.text('KTP-el Pemohon / Direktur Utama'), findsNothing);
@@ -169,7 +169,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Full list is restored
-      expect(find.text('BERKAS PERUSAHAAN — FASE 2'), findsOneWidget);
+      expect(find.text('BERKAS PERUSAHAAN - FASE 2'), findsOneWidget);
       expect(find.text('Dokumen Tidak Ditemukan'), findsNothing);
     });
 
