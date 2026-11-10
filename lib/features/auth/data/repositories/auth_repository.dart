@@ -54,9 +54,11 @@ class AuthRepository {
     required String password,
   }) async {
     try {
+      final isEmail = username.contains('@');
       final response = await dioClient.post(
         '/auth/login',
         data: {
+          'email': isEmail ? username : '$username@saturumah.go.id',
           'username': username,
           'password': password,
         },
