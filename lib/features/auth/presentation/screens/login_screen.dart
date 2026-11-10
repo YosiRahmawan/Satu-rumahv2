@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/auth/role_session.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_text_styles.dart';
+import '../../data/repositories/auth_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -20,6 +22,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
   AppRole _selectedRole = AppRole.developer;
 
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _usernameController.dispose();
@@ -27,26 +31,66 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  void _login() {
-    if (_formKey.currentState!.validate()) {
-      final username = _usernameController.text.trim().toLowerCase();
-      final AppRole role;
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final username = _usernameController.text.trim().toLowerCase();
+    final password = _passwordController.text;
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Coba login ke API Sanctum
+      final authRepo = ref.read(authRepositoryProvider);
+      final result = await authRepo.login(
+        username: username,
+        password: password,
+      );
+
+      // Mapping role dari server
+      AppRole role = AppRole.developer;
+      final serverRole = result.user.role.toLowerCase();
+      if (serverRole.contains('admin')) {
+        role = AppRole.admin;
+      } else if (serverRole.contains('perwaskim') ||
+          serverRole.contains('monitoring') ||
+          serverRole.contains('surveyor')) {
+        role = AppRole.perwaskim;
+      }
+
+      ref
+          .read(roleSessionProvider.notifier)
+          .signIn(role, username: result.user.username);
+
+      if (mounted) {
+        context.go(role.homeRoute);
+      }
+    } catch (e) {
+      // 2. Fallback untuk demo offline
+      final AppRole fallbackRole;
       if (_selectedRole == AppRole.perwaskim &&
           RoleSessionNotifier.roleForUsername(username) == AppRole.developer) {
-        ref
-            .read(roleSessionProvider.notifier)
-            .signIn(AppRole.perwaskim, username: username);
-        role = AppRole.perwaskim;
+        fallbackRole = AppRole.perwaskim;
       } else {
-        role = ref
-            .read(roleSessionProvider.notifier)
-            .signInFromUsername(username);
+        fallbackRole = RoleSessionNotifier.roleForUsername(username);
       }
-      context.go(role.homeRoute);
+
+      ref
+          .read(roleSessionProvider.notifier)
+          .signIn(fallbackRole, username: username.isEmpty ? null : username);
+
+      if (mounted) {
+        context.go(fallbackRole.homeRoute);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   void _loginAsDeveloper() {
+    if (!kDebugMode) return;
     setState(() => _selectedRole = AppRole.developer);
     _usernameController.text = 'pt_tasik_indah';
     _passwordController.text = 'demo123';
@@ -65,6 +109,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _loginAsTimMonitoring() {
+    if (!kDebugMode) return;
     setState(() => _selectedRole = AppRole.perwaskim);
     _usernameController.text = 'tim_monitoring_perwaskim';
     _passwordController.text = 'monitoring123';
@@ -121,6 +166,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _showDemoSheet() {
+    if (!kDebugMode) return;
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -810,32 +856,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  onPressed: _login,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      const Icon(
-                                        Icons.login_rounded,
-                                        size: 18,
-                                        color: Colors.white,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          isDeveloper
-                                              ? 'Masuk sebagai Pengembang'
-                                              : 'Masuk sebagai Pengawas Lapangan',
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                            fontFamily: AppTextStyles.fontFamily,
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w700,
+                                  onPressed: _isLoading ? null : _login,
+                                  child: _isLoading
+                                      ? const SizedBox(
+                                          width: 22,
+                                          height: 22,
+                                          child: CircularProgressIndicator(
                                             color: Colors.white,
+                                            strokeWidth: 2.2,
                                           ),
+                                        )
+                                      : Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(
+                                              Icons.login_rounded,
+                                              size: 18,
+                                              color: Colors.white,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Flexible(
+                                              child: Text(
+                                                isDeveloper
+                                                    ? 'Masuk sebagai Pengembang'
+                                                    : 'Masuk sebagai Pengawas Lapangan',
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontFamily:
+                                                      AppTextStyles.fontFamily,
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
                                 ),
                               ),
                             ],

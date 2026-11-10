@@ -3,14 +3,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:satu_rumah/app.dart';
 
 void main() {
-  testWidgets('App renders dashboard screen', (WidgetTester tester) async {
+  testWidgets('App renders screen and displays brand text', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
         child: SatuRumahApp(),
       ),
     );
 
-    await tester.pumpAndSettle();
+    // Initial frame on splash screen renders brand title
+    await tester.pump();
     expect(find.textContaining('SATU RUMAH'), findsWidgets);
   });
 }

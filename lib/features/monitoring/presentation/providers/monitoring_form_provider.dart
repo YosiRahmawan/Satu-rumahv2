@@ -9,10 +9,11 @@ import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart
 import '../../../pengajuan/presentation/providers/pengajuan_verifikasi_controller.dart';
 import '../../data/models/monitoring_model.dart';
 import '../../data/models/status_hasil_evaluasi.dart';
+import '../../data/repositories/i_monitoring_repository.dart';
 import '../../data/repositories/monitoring_repository.dart';
 import 'monitoring_list_provider.dart';
 
-final monitoringRepositoryProvider = Provider<MonitoringRepository>((ref) {
+final monitoringRepositoryProvider = Provider<IMonitoringRepository>((ref) {
   return MonitoringRepository();
 });
 
@@ -157,7 +158,7 @@ class MonitoringFormState {
 }
 
 class MonitoringFormNotifier extends StateNotifier<MonitoringFormState> {
-  final MonitoringRepository _repository;
+  final IMonitoringRepository _repository;
   final Ref _ref;
   final MonitoringBaUpload? _baUploadOverride;
   final Map<String, MonitoringModel> _successfulSubmissions = {};

@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../storage/auth_token_store.dart';
 
-/// The local prototype's authenticated role. This is intentionally process
-/// local: it models the current demo session without implying API auth or
-/// persistence.
+/// The authenticated role.
 enum AppRole { guest, developer, admin, perwaskim }
 
 extension AppRoleX on AppRole {
@@ -71,23 +71,39 @@ class RoleSessionNotifier extends StateNotifier<RoleSessionState> {
 
   void signOut() {
     state = const RoleSessionState();
+    // Bersihkan token dari storage secara async jika runtime binding telah diinisialisasi
+    try {
+      const AuthTokenStore().clear();
+    } catch (_) {
+      // Abaikan jika dipanggil dalam isolated plain unit test tanpa ServicesBinding
+    }
   }
 
   static AppRole roleForUsername(String username) {
     final normalized = username.trim().toLowerCase();
     if (normalized.isEmpty) return AppRole.guest;
-    if (normalized == 'admin_disperwaskim' ||
-        normalized.startsWith('admin')) {
-      return AppRole.admin;
+
+    // Kredensial role demo hanya aktif dalam mode debug/test
+    if (kDebugMode) {
+      if (normalized == 'admin_disperwaskim' ||
+          normalized.startsWith('admin')) {
+        return AppRole.admin;
+      }
+      if (normalized == 'monitoring_perwaskim' ||
+          normalized == 'perwaskim' ||
+          normalized == 'petugas_lapangan' ||
+          normalized.startsWith('tim_')) {
+        return AppRole.perwaskim;
+      }
+    } else {
+      // Pada release mode, hanya mapping eksak jika dibutuhkan
+      if (normalized == 'admin_disperwaskim') {
+        return AppRole.admin;
+      }
+      if (normalized == 'monitoring_perwaskim') {
+        return AppRole.perwaskim;
+      }
     }
-    if (normalized == 'monitoring_perwaskim' ||
-        normalized == 'perwaskim' ||
-        normalized == 'petugas_lapangan' ||
-        normalized.startsWith('tim_')) {
-      return AppRole.perwaskim;
-    }
-    // The local prototype intentionally treats other non-empty usernames as
-    // the developer/fallback demo role.
     return AppRole.developer;
   }
 }

@@ -1,7 +1,8 @@
 import '../models/monitoring_model.dart';
 import '../models/status_hasil_evaluasi.dart';
+import 'i_monitoring_repository.dart';
 
-class MonitoringRepository {
+class MonitoringRepository implements IMonitoringRepository {
   final List<MonitoringModel> _items = [
     MonitoringModel(
       id: 'm1',
@@ -84,12 +85,14 @@ class MonitoringRepository {
     ),
   ];
 
+  @override
   List<MonitoringModel> getAllMonitoring() {
     return List.unmodifiable(
       _items..sort((a, b) => b.createdAt.compareTo(a.createdAt)),
     );
   }
 
+  @override
   MonitoringModel? getMonitoringById(String id) {
     try {
       return _items.firstWhere((e) => e.id == id);
@@ -98,6 +101,7 @@ class MonitoringRepository {
     }
   }
 
+  @override
   void addMonitoring(MonitoringModel item) {
     final existingIndex = _items.indexWhere(
       (existing) => existing.id == item.id,
@@ -113,6 +117,7 @@ class MonitoringRepository {
     _items.insert(0, item);
   }
 
+  @override
   List<MonitoringModel> searchMonitoring({
     String? query,
     DateTime? fromDate,

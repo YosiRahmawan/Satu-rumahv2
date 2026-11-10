@@ -3,6 +3,7 @@ import '../../../pengajuan/data/models/pengajuan_model.dart';
 import '../../../pengajuan/data/models/status_tahap_pengajuan.dart';
 import '../../../pengajuan/presentation/providers/pengajuan_form_controller.dart';
 import '../../data/models/monitoring_model.dart';
+import '../../data/repositories/i_monitoring_repository.dart';
 import 'monitoring_form_provider.dart';
 
 final monitoringListProvider =
@@ -31,7 +32,7 @@ final surveyAktifProvider = Provider<List<Pengajuan>>((ref) {
 });
 
 class MonitoringListNotifier extends StateNotifier<List<MonitoringModel>> {
-  final dynamic _repository;
+  final IMonitoringRepository _repository;
 
   MonitoringListNotifier(this._repository) : super([]) {
     refresh();

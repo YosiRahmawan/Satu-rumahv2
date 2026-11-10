@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/file_picker_util.dart';
+import '../../../../core/utils/media_upload_optimizer.dart';
 
 typedef PhotoPathPicker = Future<List<String>> Function();
 
@@ -46,7 +47,25 @@ class _EvidencePhotoPickerState extends State<EvidencePhotoPicker> {
     final pickedFiles = await FilePickerUtil.pickMultipleFiles(
       allowedExtensions: ['jpg', 'jpeg', 'png', 'heic', 'webp'],
     );
-    return pickedFiles.map((file) => file.path ?? file.name).toList();
+
+    final paths = <String>[];
+    for (final file in pickedFiles) {
+      final filePath = file.path;
+      if (filePath != null && filePath.isNotEmpty) {
+        // Optimasi & kompresi foto evidence
+        try {
+          final result = await MediaUploadOptimizer.compressEvidencePhoto(
+            filePath: filePath,
+          );
+          paths.add(result.path);
+        } catch (_) {
+          paths.add(filePath);
+        }
+      } else {
+        paths.add(file.name);
+      }
+    }
+    return paths;
   }
 
   Future<void> _pickPhotos() async {
