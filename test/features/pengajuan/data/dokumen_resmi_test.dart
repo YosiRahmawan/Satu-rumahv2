@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:satu_rumah/core/api/api_client.dart';
 import 'package:satu_rumah/core/auth/token_store.dart';

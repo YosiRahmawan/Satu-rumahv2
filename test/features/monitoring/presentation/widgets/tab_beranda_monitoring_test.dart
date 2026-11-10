@@ -138,7 +138,7 @@ void main() {
     ) async {
       await tester.binding.setSurfaceSize(const Size(390, 844));
       await tester.pumpWidget(
-        ProviderScope(child: const MaterialApp(home: TabBerandaMonitoring())),
+        const ProviderScope(child: MaterialApp(home: TabBerandaMonitoring())),
       );
       await tester.pumpAndSettle();
 

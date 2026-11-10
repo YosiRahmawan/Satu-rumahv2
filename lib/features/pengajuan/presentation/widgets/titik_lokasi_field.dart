@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../monitoring/presentation/providers/camera_providers.dart';
-import '../../../monitoring/services/location_service.dart';
 import '../../utils/koordinat_peta.dart';
 import '../providers/pengajuan_form_controller.dart';
 

@@ -13,17 +13,18 @@ class MonitoringRepository {
   ///
   /// [seed] false (mode API) membuang laporan contoh bawaan agar riwayat hanya
   /// berisi laporan nyata.
-  MonitoringRepository({MonitoringStore? store, bool seed = true})
-    : _store = store {
-    if (!seed) _items.clear();
-    _seedJson = {for (final item in _items) item.id: jsonEncode(item.toJson())};
-  }
-
   final MonitoringStore? _store;
 
   /// Isi data contoh bawaan; hanya laporan yang berbeda darinya yang disimpan.
   late final Map<String, String> _seedJson;
   Future<void> _persistQueue = Future.value();
+
+  MonitoringRepository({MonitoringStore? store, bool seed = true})
+      // ignore: prefer_initializing_formals
+      : _store = store {
+    if (!seed) _items.clear();
+    _seedJson = {for (final item in _items) item.id: jsonEncode(item.toJson())};
+  }
 
   final List<MonitoringModel> _items = [
     MonitoringModel(

@@ -370,6 +370,7 @@ class _DialogButtons extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _TombolUtama extends StatelessWidget {
   const _TombolUtama({required this.label, required this.onPressed});
 
@@ -391,6 +392,7 @@ class _TombolUtama extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _TombolTenang extends StatelessWidget {
   const _TombolTenang({required this.label, required this.onPressed});
 

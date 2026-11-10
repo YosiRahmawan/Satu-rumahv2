@@ -23,8 +23,9 @@ class BaSignatureEntryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!ref.watch(apiEnabledProvider) || number.trim().isEmpty)
+    if (!ref.watch(apiEnabledProvider) || number.trim().isEmpty) {
       return const SizedBox.shrink();
+    }
     // BA yang dikembalikan Admin tidak bisa ditandatangani; petugas membuat BA pengganti.
     if (ref.watch(serverReportProvider(number))?.isRevisi ?? false) {
       return Container(
